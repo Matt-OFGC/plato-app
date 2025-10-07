@@ -1,4 +1,4 @@
-export type BaseUnit = "g" | "ml" | "each";
+export type BaseUnit = "g" | "ml" | "each" | "slices";
 export type Unit =
   | "g"
   | "kg"
@@ -14,9 +14,10 @@ export type Unit =
   | "tbsp"
   | "cup"
   | "floz"
-  | "each";
+  | "each"
+  | "slices";
 
-type UnitKind = "mass" | "volume" | "each";
+type UnitKind = "mass" | "volume" | "each" | "slices";
 
 const MASS_TO_G: Record<"g" | "kg" | "mg" | "lb" | "oz", number> = {
   g: 1,
@@ -39,6 +40,12 @@ const VOLUME_TO_ML: Record<"ml" | "l" | "tsp" | "tbsp" | "cup" | "floz" | "pint"
   gallon: 4546.09, // UK imperial gallon (8 pints)
 };
 
+// Discrete items - slices are treated as discrete items
+const DISCRETE_TO_EACH: Record<"each" | "slices", number> = {
+  each: 1,
+  slices: 1, // 1 slice = 1 slice
+};
+
 const UNIT_KIND: Record<Unit, UnitKind> = {
   g: "mass",
   kg: "mass",
@@ -55,11 +62,13 @@ const UNIT_KIND: Record<Unit, UnitKind> = {
   cup: "volume",
   floz: "volume",
   each: "each",
+  slices: "slices",
 };
 
 export function toBase(quantity: number, unit: Unit, densityGPerMl?: number): { amount: number; base: BaseUnit } {
   const kind = UNIT_KIND[unit];
   if (kind === "each") return { amount: quantity, base: "each" };
+  if (kind === "slices") return { amount: quantity, base: "slices" };
 
   if (kind === "mass") {
     const amountG = MASS_TO_G[unit as keyof typeof MASS_TO_G] * quantity;
@@ -75,6 +84,7 @@ export function toBase(quantity: number, unit: Unit, densityGPerMl?: number): { 
 export function fromBase(amount: number, target: Unit, densityGPerMl?: number): number {
   const kind = UNIT_KIND[target];
   if (kind === "each") return amount; // amount is already count
+  if (kind === "slices") return amount; // amount is already count
 
   if (kind === "mass") {
     const per = MASS_TO_G[target as keyof typeof MASS_TO_G];
@@ -116,9 +126,15 @@ export function computeIngredientUsageCost(params: {
     packUnit: BaseUnit;
     packPrice: number;
     densityGPerMl?: number | null;
-  };
+  } | null;
 }): number {
   const { usageQuantity, usageUnit, ingredient } = params;
+  
+  // Return 0 if ingredient is null/undefined
+  if (!ingredient) {
+    return 0;
+  }
+  
   const { amount: usageBaseAmount, base: usageBase } = toBase(
     usageQuantity,
     usageUnit,

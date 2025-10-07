@@ -16,9 +16,10 @@ datasource db {
 
 // Canonical base units used for storage and costing
 enum BaseUnit {
-  g     // grams
-  ml    // milliliters
-  each  // discrete items
+  g      // grams
+  ml     // milliliters
+  each   // discrete items
+  slices // slices
 }
 
 // Supported user-facing units for recipe item entry
@@ -38,6 +39,7 @@ enum Unit {
   cup
   floz
   each
+  slices
 }
 
 model Ingredient {
@@ -46,16 +48,22 @@ model Ingredient {
   updatedAt       DateTime  @updatedAt
 
   name            String    @unique
-  supplier        String?
+  supplier        String?   // Keep for backward compatibility
+  supplierId      Int?      // New supplier relationship
+  supplierRef     Supplier? @relation(fields: [supplierId], references: [id])
 
   // Purchase pack information
   packQuantity    Decimal
   packUnit        BaseUnit
+  originalUnit    Unit?     // Store the original unit the user selected
   packPrice       Decimal
   currency        String    @default("GBP")
 
   // Density in g/ml to enable volume↔mass conversions when needed
   densityGPerMl   Decimal?
+
+  // Allergens information
+  allergens       String[]  @default([]) // Array of allergen strings
 
   notes           String?
 
@@ -73,6 +81,7 @@ model Recipe {
   updatedAt      DateTime     @updatedAt
 
   name           String       @unique
+  description    String?
 
   // Output yield
   yieldQuantity  Decimal
@@ -81,12 +90,36 @@ model Recipe {
   // Optional image URL
   imageUrl       String?
 
+  // Method/instructions
+  method         String?
+
+  // Sub-recipe flag
+  isSubRecipe    Boolean      @default(false)
+
+  // Recipe metadata
+  bakeTime       Int?         // in minutes
+  bakeTemp       Int?         // in Celsius
+  storage        String?      // Legacy field - will be replaced by storageId
+  storageId      Int?         // Reference to StorageOption model
+  shelfLife      String?      // Legacy field - will be replaced by shelfLifeId
+  shelfLifeId    Int?         // Reference to ShelfLifeOption model
+  category       String?      // Legacy field - will be replaced by categoryId
+  categoryId     Int?         // Reference to Category model
+
   company        Company?     @relation(fields: [companyId], references: [id])
   companyId      Int?
+  
+  categoryRef    Category?    @relation(fields: [categoryId], references: [id])
+  storageRef     StorageOption? @relation(fields: [storageId], references: [id])
+  shelfLifeRef   ShelfLifeOption? @relation(fields: [shelfLifeId], references: [id])
 
   items          RecipeItem[]
+  sections       RecipeSection[]
+  subRecipes     RecipeSubRecipe[]
+  parentRecipes  RecipeSubRecipe[] @relation("ParentRecipe")
 
   @@index([companyId])
+  @@index([category])
 }
 
 model RecipeItem {
@@ -103,8 +136,52 @@ model RecipeItem {
 
   note          String?
 
+  // Optional section assignment
+  section       RecipeSection? @relation(fields: [sectionId], references: [id])
+  sectionId     Int?
+
   @@index([recipeId])
   @@index([ingredientId])
+  @@index([sectionId])
+}
+
+model RecipeSection {
+  id            Int        @id @default(autoincrement())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  recipe        Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId      Int
+
+  title         String
+  description   String?
+  method        String?
+  order         Int        @default(0)
+
+  items         RecipeItem[]
+
+  @@index([recipeId])
+  @@index([recipeId, order])
+}
+
+model RecipeSubRecipe {
+  id            Int        @id @default(autoincrement())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  parentRecipe  Recipe     @relation("ParentRecipe", fields: [parentRecipeId], references: [id], onDelete: Cascade)
+  parentRecipeId Int
+
+  subRecipe     Recipe     @relation(fields: [subRecipeId], references: [id], onDelete: Cascade)
+  subRecipeId   Int
+
+  quantity      Decimal
+  unit          Unit
+  note          String?
+
+  @@index([parentRecipeId])
+  @@index([subRecipeId])
+  @@unique([parentRecipeId, subRecipeId])
 }
 
 model User {
@@ -114,7 +191,7 @@ model User {
 
   email        String    @unique
   name         String?
-  passwordHash String
+  passwordHash String?   // Made optional for Google OAuth users
 
   memberships  Membership[]
   preferences  UserPreference?
@@ -130,6 +207,10 @@ model Company {
   ingredients  Ingredient[]
   recipes      Recipe[]
   memberships  Membership[]
+  categories   Category[]
+  shelfLifeOptions ShelfLifeOption[]
+  storageOptions   StorageOption[]
+  suppliers        Supplier[]
 }
 
 model Membership {
@@ -148,4 +229,98 @@ model UserPreference {
   user         User     @relation(fields: [userId], references: [id])
   userId       Int      @unique
   currency     String   @default("GBP")
+}
+
+model Category {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  name         String
+  description  String?
+  color        String?  // Optional color for UI
+  
+  company      Company? @relation(fields: [companyId], references: [id])
+  companyId    Int?
+  
+  recipes      Recipe[]
+  
+  @@unique([name, companyId])
+  @@index([companyId])
+}
+
+model ShelfLifeOption {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  name         String
+  description  String?
+  
+  company      Company? @relation(fields: [companyId], references: [id])
+  companyId    Int?
+  
+  recipes      Recipe[]
+  
+  @@unique([name, companyId])
+  @@index([companyId])
+}
+
+model Supplier {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  name         String
+  description  String?
+  contactName  String?
+  email        String?
+  phone        String?
+  website      String?
+  
+  // Delivery information
+  deliveryDays String[] @default([]) // Array of days like ["Monday", "Wednesday", "Friday"]
+  deliveryNotes String?
+  
+  // Account credentials (encrypted)
+  accountLogin String?
+  accountPassword String? // This should be encrypted in production
+  accountNumber String?
+  
+  // Additional supplier info
+  address      String?
+  city         String?
+  postcode     String?
+  country      String?
+  currency     String? @default("GBP")
+  paymentTerms String?
+  minimumOrder Decimal?
+  
+  // Company relationship
+  company      Company? @relation(fields: [companyId], references: [id])
+  companyId    Int?
+  
+  // Ingredients using this supplier
+  ingredients  Ingredient[]
+  
+  @@unique([name, companyId])
+  @@index([companyId])
+}
+
+model StorageOption {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  name         String
+  description  String?
+  icon         String?  // Optional icon for UI
+  
+  company      Company? @relation(fields: [companyId], references: [id])
+  companyId    Int?
+  
+  recipes      Recipe[]
+  
+  @@unique([name, companyId])
+  @@index([companyId])
 }

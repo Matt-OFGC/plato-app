@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { updateRecipe } from "../actions";
 import { RecipeForm } from "../RecipeForm";
 
-interface Props { params: { id: string } }
+interface Props { params: Promise<{ id: string }> }
 
 export default async function EditRecipePage({ params }: Props) {
-  const id = Number(params.id);
+  const { id: idParam } = await params;
+  const id = Number(idParam);
   const [recipe, ingredients] = await Promise.all([
     prisma.recipe.findUnique({ where: { id }, include: { items: true } }),
     prisma.ingredient.findMany({ orderBy: { name: "asc" } }),

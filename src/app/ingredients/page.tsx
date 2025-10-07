@@ -3,22 +3,54 @@ import { prisma } from "@/lib/prisma";
 import { deleteIngredient } from "./actions";
 import { formatCurrency } from "@/lib/currency";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { fromBase, Unit } from "@/lib/units";
+import { SearchBar } from "@/components/SearchBar";
 
 export const dynamic = "force-dynamic";
 
-export default async function IngredientsPage() {
+interface Props {
+  searchParams: Promise<{ search?: string }>;
+}
+
+export default async function IngredientsPage({ searchParams }: Props) {
+  const { search } = await searchParams;
   const { companyId } = await getCurrentUserAndCompany();
-  const where = companyId ? { companyId } : {};
-  const ingredients = await prisma.ingredient.findMany({ where, orderBy: { name: "asc" } });
+  
+  const where = companyId 
+    ? { 
+        companyId,
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { supplier: { contains: search, mode: "insensitive" as const } },
+            { notes: { contains: search, mode: "insensitive" as const } },
+          ]
+        })
+      }
+    : {
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { supplier: { contains: search, mode: "insensitive" as const } },
+            { notes: { contains: search, mode: "insensitive" as const } },
+          ]
+        })
+      };
+      
+  const ingredients = await prisma.ingredient.findMany({ 
+    where, 
+    include: { supplierRef: true },
+    orderBy: { name: "asc" } 
+  });
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ingredients</h1>
-          <p className="text-gray-600 mt-2">Manage your ingredient inventory and pricing data</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">Ingredients</h1>
+          <p className="text-[var(--muted-foreground)] mt-2">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
         </div>
-        <Link href="/ingredients/new" className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
+        <Link href="/ingredients/new" className="bg-[var(--primary)] text-[var(--primary-foreground)] px-6 py-3 rounded-xl hover:bg-[var(--accent)] transition-colors font-medium flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -26,66 +58,99 @@ export default async function IngredientsPage() {
         </Link>
       </div>
 
+      <div className="mb-6">
+        <SearchBar placeholder="Search ingredients by name, supplier, or notes..." />
+      </div>
+
       {ingredients.length === 0 ? (
         <div className="text-center py-16">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-24 h-24 bg-[var(--secondary)] rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-12 h-12 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No ingredients yet</h3>
-          <p className="text-gray-600 mb-6">Get started by adding your first ingredient</p>
-          <Link href="/ingredients/new" className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium">
+          <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">No ingredients yet</h3>
+          <p className="text-[var(--muted-foreground)] mb-6">Get started by adding your first ingredient</p>
+          <Link href="/ingredients/new" className="bg-[var(--primary)] text-[var(--primary-foreground)] px-6 py-3 rounded-xl hover:bg-[var(--accent)] transition-colors font-medium">
             Add First Ingredient
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Supplier</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Pack Size</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Price</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Density</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {ingredients.map((ing) => (
-                  <tr key={ing.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <Link href={`/ingredients/${ing.id}`} className="text-blue-600 hover:text-blue-700 font-medium">
-                        {ing.name}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{ing.supplier ?? "—"}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {String(ing.packQuantity)} {ing.packUnit}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {ingredients.map((ing) => (
+            <div key={ing.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
+              {/* Ingredient Icon */}
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+
+              {/* Ingredient Info */}
+              <div className="space-y-3">
+                <div>
+                  <Link href={`/ingredients/${ing.id}`} className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
+                    {ing.name}
+                  </Link>
+                  {(ing.supplierRef || ing.supplier) && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Supplier: {ing.supplierRef?.name || ing.supplier}
+                      {ing.supplierRef?.contactName && (
+                        <span className="text-gray-500"> ({ing.supplierRef.contactName})</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Pack Size:</span>
+                    <span className="font-medium text-gray-900">
+                      {(() => {
+                        const originalUnit = ing.originalUnit || ing.packUnit;
+                        const originalQuantity = ing.originalUnit 
+                          ? fromBase(Number(ing.packQuantity), originalUnit as Unit, ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined)
+                          : Number(ing.packQuantity);
+                        return `${originalQuantity} ${originalUnit}`;
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Price:</span>
+                    <span className="font-semibold text-emerald-600">
                       {formatCurrency(Number(ing.packPrice), ing.currency)}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {ing.densityGPerMl ? `${String(ing.densityGPerMl)} g/ml` : "—"}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <form action={async () => { 'use server'; await deleteIngredient(ing.id); }}>
-                        <button 
-                          type="submit" 
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium"
-                        >
-                          Delete
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </span>
+                  </div>
+                  {ing.densityGPerMl && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500">Density:</span>
+                      <span className="font-medium text-gray-900">
+                        {String(ing.densityGPerMl)} g/ml
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 pt-2">
+                  <Link 
+                    href={`/ingredients/${ing.id}`}
+                    className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium text-center"
+                  >
+                    Edit
+                  </Link>
+                  <form action={async () => { 'use server'; await deleteIngredient(ing.id); }} className="inline">
+                    <button 
+                      type="submit" 
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

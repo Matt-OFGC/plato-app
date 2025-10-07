@@ -30,10 +30,11 @@ export function UnitConversionHelp() {
       ]
     },
     {
-      category: "Count",
-      units: ["each"],
+      category: "Count/Discrete",
+      units: ["each", "slices"],
       examples: [
-        "Used for discrete items like eggs, apples, etc."
+        "Used for discrete items like eggs, apples, etc.",
+        "Slices for items like bread, cake, cheese, etc."
       ]
     }
   ];

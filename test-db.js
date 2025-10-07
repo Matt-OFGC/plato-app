@@ -1,29 +1,39 @@
-// Test script to verify your PostgreSQL connection
-// Run with: node test-db.js
-
+// Test database connectivity
 const { PrismaClient } = require('./src/generated/prisma');
 
-async function testConnection() {
+async function testDatabase() {
   const prisma = new PrismaClient();
   
   try {
-    // Test the connection
-    await prisma.$connect();
-    console.log('✅ Database connection successful!');
+    console.log('Testing database connectivity...');
     
-    // Test a simple query
-    const result = await prisma.$queryRaw`SELECT 1 as test`;
-    console.log('✅ Database query successful:', result);
+    // Test basic query
+    const userCount = await prisma.user.count();
+    console.log('User count:', userCount);
+    
+    // Test ingredient query
+    const ingredientCount = await prisma.ingredient.count();
+    console.log('Ingredient count:', ingredientCount);
+    
+    // Test recipe query
+    const recipeCount = await prisma.recipe.count();
+    console.log('Recipe count:', recipeCount);
+    
+    // Test supplier query
+    const supplierCount = await prisma.supplier.count();
+    console.log('Supplier count:', supplierCount);
+    
+    // Test category query
+    const categoryCount = await prisma.category.count();
+    console.log('Category count:', categoryCount);
+    
+    console.log('Database connectivity test completed successfully!');
     
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    console.log('\n🔧 Troubleshooting:');
-    console.log('1. Make sure your DATABASE_URL is correct');
-    console.log('2. Check that your database is running');
-    console.log('3. Verify your connection string format');
+    console.error('Database test failed:', error.message);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-testConnection();
+testDatabase();

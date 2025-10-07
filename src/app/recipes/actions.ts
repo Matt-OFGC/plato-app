@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { z } from "zod";
 
-const baseUnitEnum = z.enum(["g", "ml", "each"]);
-const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "each"]);
+const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
+const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "each", "slices"]);
 
 const recipeSchema = z.object({
   name: z.string().min(1),

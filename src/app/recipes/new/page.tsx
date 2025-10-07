@@ -1,17 +1,21 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { createRecipe } from "../actions";
-import { RecipeForm } from "../RecipeForm";
+import { createRecipeWithSections } from "../actionsWithSections";
+import { UnifiedRecipeForm } from "@/components/UnifiedRecipeForm";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
 export default async function NewRecipePage() {
   const { companyId } = await getCurrentUserAndCompany();
   const where = companyId ? { companyId } : {};
   const ingredients = await prisma.ingredient.findMany({ where, orderBy: { name: "asc" } });
+  const allRecipes = await prisma.recipe.findMany({ where, orderBy: { name: "asc" }, include: { items: true } });
+  const categories = await prisma.category.findMany({ where, orderBy: { name: "asc" } });
+  const shelfLifeOptions = await prisma.shelfLifeOption.findMany({ where, orderBy: { name: "asc" } });
+  const storageOptions = await prisma.storageOption.findMany({ where, orderBy: { name: "asc" } });
 
   async function action(formData: FormData) {
     "use server";
-    await createRecipe(formData);
+    await createRecipeWithSections(formData);
   }
 
   return (
@@ -19,7 +23,7 @@ export default async function NewRecipePage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">New Recipe</h1>
-          <p className="text-gray-600 mt-2">Create a new recipe with automatic cost calculation</p>
+          <p className="text-gray-600 mt-2">Create a new recipe with automatic cost calculation and optional sections</p>
         </div>
         <Link href="/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
           ← Back to Recipes
@@ -37,7 +41,7 @@ export default async function NewRecipePage() {
         </div>
       ) : null}
       
-      <RecipeForm
+      <UnifiedRecipeForm
         ingredients={ingredients.map((i) => ({
           id: i.id,
           name: i.name,
@@ -46,6 +50,20 @@ export default async function NewRecipePage() {
           packPrice: Number(i.packPrice),
           densityGPerMl: i.densityGPerMl == null ? null : Number(i.densityGPerMl),
         }))}
+        allRecipes={allRecipes.map((r) => ({
+          id: r.id,
+          name: r.name,
+          yieldQuantity: Number(r.yieldQuantity),
+          yieldUnit: r.yieldUnit as any,
+          items: r.items.map(item => ({
+            ingredientId: item.ingredientId,
+            quantity: Number(item.quantity),
+            unit: item.unit as any,
+          })),
+        }))}
+        categories={categories}
+        shelfLifeOptions={shelfLifeOptions}
+        storageOptions={storageOptions}
         onSubmit={action}
       />
     </div>

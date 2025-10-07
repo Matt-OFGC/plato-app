@@ -64,7 +64,11 @@ export function RecipeForm({
 
   const subtotal = useMemo(() => computeRecipeCost({ items: detailedItems }), [detailedItems]);
   const total = subtotal;
-  const perOutput = useMemo(() => computeCostPerOutputUnit({ totalCost: total, yieldQuantity: yieldQuantity || 1 }), [total, yieldQuantity]);
+  const perOutput = useMemo(() => {
+    const qty = yieldQuantity || 1;
+    if (qty <= 0) return 0;
+    return computeCostPerOutputUnit({ totalCost: total, yieldQuantity: qty });
+  }, [total, yieldQuantity]);
 
   function handleAddRow() {
     setItems((prev) => [...prev, { id: String(prev.length ? Number(prev[prev.length - 1].id) + 1 : 1) }]);
@@ -129,6 +133,7 @@ export function RecipeForm({
                   <option value="g">Grams (g)</option>
                   <option value="ml">Milliliters (ml)</option>
                   <option value="each">Each</option>
+                  <option value="slices">Slices</option>
                 </select>
               </div>
             </div>
@@ -211,7 +216,7 @@ export function RecipeForm({
                   onChange={(e) => setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, unit: e.target.value as Unit } : r)))}
                 >
                   {[
-                    "g","kg","mg","lb","oz","ml","l","pint","quart","gallon","tsp","tbsp","cup","floz","each"
+                    "g","kg","mg","lb","oz","ml","l","pint","quart","gallon","tsp","tbsp","cup","floz","each","slices"
                   ].map((u) => (
                     <option key={u} value={u}>{u}</option>
                   ))}
