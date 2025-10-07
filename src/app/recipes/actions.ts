@@ -16,6 +16,7 @@ const recipeSchema = z.object({
   imageUrl: z.string().url().optional().or(z.literal("")).transform((v) => (v === "" ? undefined : v)),
   items: z
     .string()
+    .default("[]")
     .transform((s) => {
       try {
         return JSON.parse(s as string) as Array<{ ingredientId: number; quantity: number; unit: z.infer<typeof unitEnum> }>;
@@ -24,15 +25,13 @@ const recipeSchema = z.object({
       }
     })
     .pipe(
-      z
-        .array(
-          z.object({
-            ingredientId: z.number().int().positive(),
-            quantity: z.number().positive(),
-            unit: unitEnum,
-          })
-        )
-        .default([])
+      z.array(
+        z.object({
+          ingredientId: z.number().int().positive(),
+          quantity: z.number().positive(),
+          unit: unitEnum,
+        })
+      )
     ),
 });
 

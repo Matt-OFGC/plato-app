@@ -18,7 +18,7 @@ export type Unit =
 
 type UnitKind = "mass" | "volume" | "each";
 
-const MASS_TO_G: Record<Exclude<Unit, "ml" | "l" | "tsp" | "tbsp" | "cup" | "floz" | "each">, number> = {
+const MASS_TO_G: Record<"g" | "kg" | "mg" | "lb" | "oz", number> = {
   g: 1,
   kg: 1000,
   mg: 1 / 1000,
@@ -27,7 +27,7 @@ const MASS_TO_G: Record<Exclude<Unit, "ml" | "l" | "tsp" | "tbsp" | "cup" | "flo
 };
 
 // British-first: metric culinary measures and UK imperial where applicable
-const VOLUME_TO_ML: Record<Exclude<Unit, "g" | "kg" | "mg" | "lb" | "oz" | "each">, number> = {
+const VOLUME_TO_ML: Record<"ml" | "l" | "tsp" | "tbsp" | "cup" | "floz" | "pint" | "quart" | "gallon", number> = {
   ml: 1,
   l: 1000,
   tsp: 5, // metric teaspoon

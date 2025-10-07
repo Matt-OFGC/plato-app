@@ -11,6 +11,7 @@ export default async function AccountPage() {
 
   async function action(formData: FormData) {
     "use server";
+    if (!user) return redirect("/login");
     const currency = String(formData.get("currency") || "GBP");
     await prisma.userPreference.upsert({
       where: { userId: user.id },

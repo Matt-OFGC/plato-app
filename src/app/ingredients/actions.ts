@@ -25,7 +25,8 @@ const ingredientSchema = z.object({
 export async function createIngredient(formData: FormData) {
   const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return { ok: false as const, error: parsed.error.flatten() };
+    // For now, just redirect on error - in production you'd want better error handling
+    redirect("/ingredients?error=validation");
   }
 
   const data = parsed.data;
@@ -50,7 +51,7 @@ export async function createIngredient(formData: FormData) {
 export async function updateIngredient(id: number, formData: FormData) {
   const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return { ok: false as const, error: parsed.error.flatten() };
+    redirect("/ingredients?error=validation");
   }
   const data = parsed.data;
   await prisma.ingredient.update({
