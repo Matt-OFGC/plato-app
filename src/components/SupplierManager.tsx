@@ -247,10 +247,11 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   Website
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   value={formData.website}
                   onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                  placeholder="https://example.com"
                 />
               </div>
               <div>

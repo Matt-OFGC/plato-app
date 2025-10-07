@@ -10,7 +10,7 @@ const supplierSchema = z.object({
   contactName: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
-  website: z.string().url().optional().or(z.literal("")),
+  website: z.string().optional(),
   deliveryDays: z.array(z.string()).optional(),
   deliveryNotes: z.string().optional(),
   accountLogin: z.string().optional(),
