@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Canonical base units used for storage and costing
+enum BaseUnit {
+  g     // grams
+  ml    // milliliters
+  each  // discrete items
+}
+
+// Supported user-facing units for recipe item entry
+enum Unit {
+  g
+  kg
+  mg
+  lb
+  oz
+  ml
+  l
+  pint
+  quart
+  gallon
+  tsp
+  tbsp
+  cup
+  floz
+  each
+}
+
+model Ingredient {
+  id              Int       @id @default(autoincrement())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  name            String    @unique
+  supplier        String?
+
+  // Purchase pack information
+  packQuantity    Decimal
+  packUnit        BaseUnit
+  packPrice       Decimal
+  currency        String    @default("GBP")
+
+  // Density in g/ml to enable volume↔mass conversions when needed
+  densityGPerMl   Decimal?
+
+  notes           String?
+
+  company         Company?  @relation(fields: [companyId], references: [id])
+  companyId       Int?
+
+  recipeItems     RecipeItem[]
+
+  @@index([companyId])
+}
+
+model Recipe {
+  id             Int          @id @default(autoincrement())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  name           String       @unique
+
+  // Output yield
+  yieldQuantity  Decimal
+  yieldUnit      BaseUnit
+
+  // Optional image URL
+  imageUrl       String?
+
+  company        Company?     @relation(fields: [companyId], references: [id])
+  companyId      Int?
+
+  items          RecipeItem[]
+
+  @@index([companyId])
+}
+
+model RecipeItem {
+  id            Int        @id @default(autoincrement())
+
+  recipe        Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId      Int
+
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId  Int
+
+  quantity      Decimal
+  unit          Unit
+
+  note          String?
+
+  @@index([recipeId])
+  @@index([ingredientId])
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  email        String    @unique
+  name         String?
+  passwordHash String
+
+  memberships  Membership[]
+  preferences  UserPreference?
+}
+
+model Company {
+  id           Int       @id @default(autoincrement())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  name         String    @unique
+
+  ingredients  Ingredient[]
+  recipes      Recipe[]
+  memberships  Membership[]
+}
+
+model Membership {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  company    Company  @relation(fields: [companyId], references: [id])
+  companyId  Int
+  role       String   @default("admin")
+
+  @@unique([userId, companyId])
+}
+
+model UserPreference {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       Int      @unique
+  currency     String   @default("GBP")
+}
