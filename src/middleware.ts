@@ -1,34 +1,11 @@
-import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
-
-  // Protect API routes
-  if (nextUrl.pathname.startsWith("/api/")) {
-    // Allow auth routes
-    if (nextUrl.pathname.startsWith("/api/auth/")) {
-      return NextResponse.next();
-    }
-    
-    // For other API routes, check if user is logged in
-    if (!isLoggedIn) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
-
-  // Protect dashboard routes
-  if (nextUrl.pathname.startsWith("/recipes") || 
-      nextUrl.pathname.startsWith("/ingredients") ||
-      nextUrl.pathname.startsWith("/account")) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/login", nextUrl));
-    }
-  }
-
+export function middleware(request: NextRequest) {
+  // For now, just pass through all requests
+  // We'll handle auth in the individual pages
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
