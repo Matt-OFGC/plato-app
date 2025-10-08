@@ -3,13 +3,13 @@ import Link from "next/link";
 export default function PricingPage() {
   const plans = [
     {
-      name: "Starter",
+      name: "Free",
       price: "Free",
       period: "forever",
       description: "Perfect for home cooks and small kitchens",
       features: [
-        "Up to 50 ingredients",
-        "Up to 25 recipes", 
+        "Up to 15 ingredients",
+        "Up to 5 recipes", 
         "Basic unit conversions",
         "Cost calculations",
         "Community support"
@@ -19,7 +19,7 @@ export default function PricingPage() {
       popular: false
     },
     {
-      name: "Professional",
+      name: "Pro",
       price: "£9.99",
       period: "per month",
       description: "Ideal for professional chefs and restaurants",
@@ -31,30 +31,11 @@ export default function PricingPage() {
         "Recipe scaling",
         "Export to PDF",
         "Priority support",
-        "Team collaboration (up to 5 users)"
+        "Advanced analytics"
       ],
-      cta: "Start Free Trial",
-      ctaLink: "/register?plan=professional",
+      cta: "Upgrade to Pro",
+      ctaLink: "/api/subscription/checkout",
       popular: true
-    },
-    {
-      name: "Enterprise",
-      price: "£29.99",
-      period: "per month",
-      description: "For large restaurants and food service companies",
-      features: [
-        "Everything in Professional",
-        "Unlimited team members",
-        "Advanced analytics",
-        "API access",
-        "Custom integrations",
-        "Dedicated account manager",
-        "24/7 phone support",
-        "Custom reporting"
-      ],
-      cta: "Contact Sales",
-      ctaLink: "/contact",
-      popular: false
     }
   ];
 

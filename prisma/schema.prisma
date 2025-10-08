@@ -196,6 +196,22 @@ model User {
 
   memberships  Membership[]
   preferences  UserPreference?
+  
+  // Subscription management
+  subscription  Subscription?
+  stripeCustomerId String? @unique
+  subscriptionStatus String @default("free") // free, active, past_due, canceled, trialing
+  subscriptionTier String @default("free") // free, pro
+  subscriptionEndsAt DateTime?
+  
+  // Usage tracking
+  ingredientCount Int @default(0)
+  recipeCount Int @default(0)
+  
+  // Admin fields
+  isAdmin Boolean @default(false)
+  isActive Boolean @default(true)
+  lastLoginAt DateTime?
 }
 
 model Company {
@@ -230,6 +246,40 @@ model UserPreference {
   user         User     @relation(fields: [userId], references: [id])
   userId       Int      @unique
   currency     String   @default("GBP")
+}
+
+model Subscription {
+  id                Int       @id @default(autoincrement())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id])
+  userId            Int       @unique
+  
+  // Stripe fields
+  stripeSubscriptionId String? @unique
+  stripePriceId     String?
+  stripeProductId   String?
+  
+  // Subscription details
+  status            String    @default("active") // active, canceled, past_due, trialing
+  tier              String    @default("pro") // free, pro
+  price             Decimal   @default(9.99)
+  currency          String    @default("GBP")
+  interval          String    @default("month") // month, year
+  
+  // Dates
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  canceledAt         DateTime?
+  
+  // Usage limits
+  maxIngredients     Int?      // null = unlimited
+  maxRecipes         Int?      // null = unlimited
+  
+  // Metadata
+  metadata           Json?     // Store additional Stripe metadata
 }
 
 model Category {

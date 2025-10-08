@@ -7,6 +7,7 @@ import { ShelfLifeManager } from "@/components/ShelfLifeManager";
 import { StorageManager } from "@/components/StorageManager";
 import { SupplierManager } from "@/components/SupplierManager";
 import { DatabaseManager } from "@/components/DatabaseManager";
+import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -95,6 +96,9 @@ export default async function AccountPage() {
         <h1 className="text-3xl font-bold text-[var(--foreground)]">Account Settings</h1>
         <p className="text-[var(--muted-foreground)] mt-2">Manage your account preferences and categories</p>
       </div>
+
+      {/* Subscription Status */}
+      <SubscriptionStatus />
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Currency Preferences */}

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
+import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
 
 const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices"]);
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
@@ -41,7 +42,13 @@ export async function createIngredient(formData: FormData) {
     }
 
     const data = parsed.data;
-    const { companyId } = await getCurrentUserAndCompany();
+    const { companyId, user } = await getCurrentUserAndCompany();
+    const userId = user?.id;
+    
+    // Check subscription limits
+    if (userId && !(await canAddIngredient(userId))) {
+      redirect("/ingredients?error=limit_reached&type=ingredient");
+    }
     
     // Check if ingredient with this name already exists for this company
     const existingIngredient = await prisma.ingredient.findFirst({
@@ -77,12 +84,17 @@ export async function createIngredient(formData: FormData) {
       companyId: companyId ?? undefined,
     };
     
-    await prisma.ingredient.create({
-      data: ingredientData,
-    });
-    
-    revalidatePath("/ingredients");
-    redirect("/ingredients");
+        await prisma.ingredient.create({
+          data: ingredientData,
+        });
+        
+        // Update user's ingredient count
+        if (userId) {
+          await updateIngredientCount(userId, 1);
+        }
+        
+        revalidatePath("/ingredients");
+        redirect("/ingredients");
   } catch (error) {
     console.error("Error in createIngredient:", error);
     // Check if it's a unique constraint error
