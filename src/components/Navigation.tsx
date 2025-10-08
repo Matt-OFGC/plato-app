@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 
 export function Navigation() {
   const { data: session } = useSession();
@@ -35,12 +35,12 @@ export function Navigation() {
           >
             My Account
           </Link>
-          <a 
-            href="/api/auth/signout" 
+          <button 
+            onClick={() => signOut({ callbackUrl: "/" })}
             className="btn-outline text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
           >
             Sign out
-          </a>
+          </button>
         </div>
       ) : (
         <div className="flex items-center gap-4">
