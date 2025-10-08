@@ -6,6 +6,7 @@ import { CategoryManager } from "@/components/CategoryManager";
 import { ShelfLifeManager } from "@/components/ShelfLifeManager";
 import { StorageManager } from "@/components/StorageManager";
 import { SupplierManager } from "@/components/SupplierManager";
+import { DatabaseManager } from "@/components/DatabaseManager";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -55,6 +56,23 @@ export default async function AccountPage() {
       _count: {
         select: { ingredients: true }
       }
+    },
+    orderBy: { name: "asc" }
+  });
+
+  // Get all data for database management
+  const allIngredients = await prisma.ingredient.findMany({
+    where: { companyId },
+    include: { supplierRef: true },
+    orderBy: { name: "asc" }
+  });
+
+  const allRecipes = await prisma.recipe.findMany({
+    where: { companyId },
+    include: { 
+      categoryRef: true,
+      storageRef: true,
+      shelfLifeRef: true
     },
     orderBy: { name: "asc" }
   });
@@ -123,6 +141,18 @@ export default async function AccountPage() {
       {/* Supplier Management */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <SupplierManager suppliers={suppliers as any} />
+      </div>
+
+      {/* Database Management */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <DatabaseManager 
+          ingredients={allIngredients}
+          recipes={allRecipes}
+          suppliers={suppliers}
+          categories={categories}
+          shelfLifeOptions={shelfLifeOptions}
+          storageOptions={storageOptions}
+        />
       </div>
     </div>
   );
