@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { SeatManager } from "@/components/SeatManager";
+import { TeamManagerFixed } from "@/components/TeamManagerFixed";
 
 export default async function TeamPage() {
   try {
@@ -37,7 +38,7 @@ export default async function TeamPage() {
             <p><strong>Membership Found:</strong> {membership ? "Yes" : "No"}</p>
             <p><strong>Membership Role:</strong> {membership?.role || "None"}</p>
             <p><strong>Membership Active:</strong> {membership?.isActive ? "Yes" : "No"}</p>
-            <p><strong>Status:</strong> Team page working with simplified components</p>
+            <p><strong>Status:</strong> Full team management functionality restored</p>
           </div>
         </div>
 
@@ -50,23 +51,12 @@ export default async function TeamPage() {
           />
         </div>
 
-        {/* Team Management - Simplified */}
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-green-900 mb-4">Team Management</h3>
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <h4 className="font-semibold text-gray-900 mb-2">Team Members</h4>
-              <p className="text-gray-600 text-sm">Team member management will be available soon.</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <h4 className="font-semibold text-gray-900 mb-2">Invitations</h4>
-              <p className="text-gray-600 text-sm">Send team invitations functionality coming soon.</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <h4 className="font-semibold text-gray-900 mb-2">Role Management</h4>
-              <p className="text-gray-600 text-sm">Your role: <span className="font-semibold">{membership?.role}</span></p>
-            </div>
-          </div>
+        {/* Team Management - Full Functionality */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <TeamManagerFixed 
+            companyId={companyId!} 
+            currentUserRole={membership?.role || "VIEWER"} 
+          />
         </div>
       </div>
     );
