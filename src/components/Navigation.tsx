@@ -1,10 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+
+interface User {
+  id: number;
+  email: string;
+  name?: string;
+}
 
 export function Navigation() {
-  const { data: session } = useSession();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/session")
+      .then((res) => res.json())
+      .then((data) => {
+        setUser(data.user);
+        setLoading(false);
+      })
+      .catch(() => {
+        setUser(null);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      setUser(null);
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <nav className="flex items-center gap-8 text-sm font-medium">
+        <div className="h-6 w-20 bg-gray-200 animate-pulse rounded"></div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="flex items-center gap-8 text-sm font-medium">
@@ -26,9 +67,9 @@ export function Navigation() {
       >
         Pricing
       </Link>
-      {session?.user ? (
+      {user ? (
         <div className="flex items-center gap-4">
-          <span className="text-[var(--muted-foreground)] text-sm">{session.user.email}</span>
+          <span className="text-[var(--muted-foreground)] text-sm">{user.email}</span>
           <Link 
             href="/account" 
             className="text-[var(--foreground)] hover:text-[var(--primary)] transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
@@ -36,7 +77,7 @@ export function Navigation() {
             My Account
           </Link>
           <button 
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={handleSignOut}
             className="btn-outline text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
           >
             Sign out

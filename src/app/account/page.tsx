@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { CategoryManager } from "@/components/CategoryManager";
@@ -10,9 +10,7 @@ import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 
 export default async function AccountPage() {
-  const session = await auth();
-  if (!session?.user?.email) redirect("/login");
-  const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { preferences: true } });
+  const user = await getUserFromSession();
   if (!user) redirect("/login");
   
   const { companyId } = await getCurrentUserAndCompany();
