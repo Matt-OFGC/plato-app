@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import { Navigation } from "@/components/Navigation";
+import { Sidebar } from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,23 +31,19 @@ export default async function RootLayout({
   // Auth will be handled in individual pages that need it
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
         <Providers>
-          <header className="border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-            <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-              <a href="/" className="flex items-center hover:opacity-80 transition-opacity">
-                <img 
-                  src="/images/plato-logo.svg" 
-                  alt="Plato" 
-                  className="h-8 w-auto"
-                />
-              </a>
-              <Navigation />
-            </div>
-          </header>
-          <main className="mx-auto max-w-7xl px-4 py-8">
-            {children}
-          </main>
+          <div className="flex min-h-screen">
+            {/* Sidebar Navigation */}
+            <Sidebar />
+            
+            {/* Main Content Area */}
+            <main className="flex-1 lg:ml-72 transition-all duration-300">
+              <div className="max-w-7xl mx-auto px-4 py-8 lg:px-8">
+                {children}
+              </div>
+            </main>
+          </div>
         </Providers>
       </body>
     </html>
