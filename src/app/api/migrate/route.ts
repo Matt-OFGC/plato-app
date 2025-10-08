@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export async function POST(request: NextRequest) {
+  try {
+    // Only allow this in development or with a secret key
+    const authHeader = request.headers.get('authorization');
+    const secret = process.env.MIGRATION_SECRET || 'dev-only';
+    
+    if (authHeader !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Run Prisma migrations
+    const { execSync } = require('child_process');
+    
+    try {
+      // Generate Prisma client
+      execSync('npx prisma generate', { stdio: 'inherit' });
+      
+      // Push schema to database (this creates tables)
+      execSync('npx prisma db push', { stdio: 'inherit' });
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Database migrations completed successfully' 
+      });
+    } catch (error) {
+      console.error('Migration error:', error);
+      return NextResponse.json({ 
+        error: 'Migration failed', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      }, { status: 500 });
+    }
+  } catch (error) {
+    console.error('API error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  return NextResponse.json({ 
+    message: 'Migration endpoint. Use POST with authorization header.' 
+  });
+}
