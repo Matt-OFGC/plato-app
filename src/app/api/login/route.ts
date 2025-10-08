@@ -6,7 +6,7 @@ import { createSession } from "@/lib/auth-simple";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, password, rememberMe = true } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -41,12 +41,12 @@ export async function POST(request: NextRequest) {
       data: { lastLoginAt: new Date() },
     });
 
-    // Create session
+    // Create session with remember me option
     await createSession({
       id: user.id,
       email: user.email,
       name: user.name || undefined,
-    });
+    }, rememberMe);
 
     return NextResponse.json({
       success: true,

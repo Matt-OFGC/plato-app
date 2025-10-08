@@ -12,10 +12,14 @@ export interface SessionUser {
   name?: string;
 }
 
-export async function createSession(user: SessionUser) {
+export async function createSession(user: SessionUser, rememberMe: boolean = true) {
+  // If remember me is checked, session lasts 30 days, otherwise 24 hours
+  const expirationDays = rememberMe ? 30 : 1;
+  const expirationSeconds = 60 * 60 * 24 * expirationDays;
+  
   const token = await new SignJWT({ user })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("7d")
+    .setExpirationTime(`${expirationDays}d`)
     .sign(JWT_SECRET);
 
   const cookieStore = await cookies();
@@ -23,7 +27,7 @@ export async function createSession(user: SessionUser) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: expirationSeconds,
     path: "/",
   });
 
