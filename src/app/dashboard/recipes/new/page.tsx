@@ -14,11 +14,15 @@ interface NewRecipePageProps {
 export default async function NewRecipePage({ searchParams }: NewRecipePageProps) {
   const { companyId } = await getCurrentUserAndCompany();
   const where = companyId ? { companyId } : {};
-  const ingredients = await prisma.ingredient.findMany({ where, orderBy: { name: "asc" } });
-  const allRecipes = await prisma.recipe.findMany({ where, orderBy: { name: "asc" }, include: { items: true } });
-  const categories = await prisma.category.findMany({ where, orderBy: { name: "asc" } });
-  const shelfLifeOptions = await prisma.shelfLifeOption.findMany({ where, orderBy: { name: "asc" } });
-  const storageOptions = await prisma.storageOption.findMany({ where, orderBy: { name: "asc" } });
+  
+  // Parallel queries for better performance
+  const [ingredients, allRecipes, categories, shelfLifeOptions, storageOptions] = await Promise.all([
+    prisma.ingredient.findMany({ where, orderBy: { name: "asc" } }),
+    prisma.recipe.findMany({ where, orderBy: { name: "asc" }, include: { items: true } }),
+    prisma.category.findMany({ where, orderBy: { name: "asc" } }),
+    prisma.shelfLifeOption.findMany({ where, orderBy: { name: "asc" } }),
+    prisma.storageOption.findMany({ where, orderBy: { name: "asc" } })
+  ]);
 
   async function action(formData: FormData) {
     "use server";

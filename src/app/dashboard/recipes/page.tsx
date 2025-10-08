@@ -59,12 +59,8 @@ export default async function RecipesPage({ searchParams }: Props) {
     } 
   });
   
-  // Get all unique categories for the filter
-  const allRecipes = await prisma.recipe.findMany({ 
-    where: companyId ? { companyId } : {},
-    include: { categoryRef: true }
-  });
-  const categories = Array.from(new Set(allRecipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();
+  // Get categories from the already fetched recipes (no extra query needed)
+  const categories = Array.from(new Set(recipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();
 
   return (
     <div className="max-w-7xl mx-auto">
