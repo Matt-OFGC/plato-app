@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Ingredient, Recipe, Supplier, Category, ShelfLifeOption, StorageOption } from "@prisma/client";
+import { Ingredient, Recipe, Supplier, Category, ShelfLifeOption, StorageOption } from "@/generated/prisma";
 
 interface DatabaseManagerProps {
   ingredients: (Ingredient & { supplierRef?: Supplier | null })[];
@@ -158,7 +158,7 @@ export function DatabaseManager({
                       <div className="text-sm text-gray-900">
                         {ingredient.allergens.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {ingredient.allergens.map((allergen, index) => (
+                            {ingredient.allergens.map((allergen: string, index: number) => (
                               <span key={index} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                                 {allergen}
                               </span>
