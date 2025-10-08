@@ -23,35 +23,19 @@ export default async function TeamPage() {
     });
     
     return (
-      <div className="max-w-6xl mx-auto p-6 space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
-          <p className="text-gray-600 mt-2">Manage your team members and their permissions</p>
-        </div>
-        
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Debug Information</h2>
-          <div className="space-y-2 text-sm">
-            <p><strong>User ID:</strong> {user.id}</p>
-            <p><strong>User Email:</strong> {user.email}</p>
-            <p><strong>Company ID:</strong> {companyId || "None"}</p>
-            <p><strong>Membership Found:</strong> {membership ? "Yes" : "No"}</p>
-            <p><strong>Membership Role:</strong> {membership?.role || "None"}</p>
-            <p><strong>Membership Active:</strong> {membership?.isActive ? "Yes" : "No"}</p>
-            <p><strong>Status:</strong> Full team management functionality restored</p>
-          </div>
+          <p className="text-gray-600 mt-2">Manage your team members, permissions, and billing</p>
         </div>
 
-        {/* Test SeatManager Component */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">Testing SeatManager Component</h3>
-          <SeatManager 
-            companyId={companyId!} 
-            canManageBilling={membership?.role === "OWNER"} 
-          />
-        </div>
+        {/* Seat Management */}
+        <SeatManager 
+          companyId={companyId!} 
+          canManageBilling={membership?.role === "OWNER"} 
+        />
 
-        {/* Team Management - Full Functionality */}
+        {/* Team Management */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <TeamManagerFixed 
             companyId={companyId!} 
