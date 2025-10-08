@@ -89,7 +89,7 @@ export default async function IngredientsPage({ searchParams }: Props) {
               {/* Ingredient Info */}
               <div className="space-y-3">
                 <div>
-                  <Link href={`/ingredients/${ing.id}`} className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
+                  <Link href={`/dashboard/ingredients/${ing.id}`} className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
                     {ing.name}
                   </Link>
                   {(ing.supplierRef || ing.supplier) && (
@@ -134,7 +134,7 @@ export default async function IngredientsPage({ searchParams }: Props) {
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-2">
                   <Link 
-                    href={`/ingredients/${ing.id}`}
+                    href={`/dashboard/ingredients/${ing.id}`}
                     className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium text-center"
                   >
                     Edit

@@ -126,7 +126,7 @@ export default async function RecipesPage({ searchParams }: Props) {
               {/* Recipe Info */}
               <div className="space-y-3">
                 <div>
-                  <Link href={`/recipes/${r.id}/view`} className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition-colors">
+                  <Link href={`/dashboard/recipes/${r.id}/view`} className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition-colors">
                     {r.name}
                   </Link>
                   {r.description && (
@@ -181,13 +181,13 @@ export default async function RecipesPage({ searchParams }: Props) {
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-2">
                   <Link 
-                    href={`/recipes/${r.id}/view`}
+                    href={`/dashboard/recipes/${r.id}/view`}
                     className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium text-center"
                   >
                     View
                   </Link>
                   <Link 
-                    href={`/recipes/${r.id}`}
+                    href={`/dashboard/recipes/${r.id}`}
                     className="flex-1 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium text-center"
                   >
                     Edit
