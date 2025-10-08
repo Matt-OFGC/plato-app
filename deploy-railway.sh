@@ -29,3 +29,4 @@ echo "1. Set up your database in Railway dashboard"
 echo "2. Configure environment variables"
 echo "3. Set up Google OAuth credentials"
 echo "4. Run database migrations"
+

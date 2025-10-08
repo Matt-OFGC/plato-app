@@ -1,6 +1,37 @@
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 
 export default function PricingPage() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleUpgrade = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/subscription/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Failed to start checkout. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const plans = [
     {
       name: "Free",
@@ -16,7 +47,8 @@ export default function PricingPage() {
       ],
       cta: "Get Started Free",
       ctaLink: "/register",
-      popular: false
+      popular: false,
+      isLink: true
     },
     {
       name: "Pro",
@@ -35,7 +67,8 @@ export default function PricingPage() {
       ],
       cta: "Upgrade to Pro",
       ctaLink: "/api/subscription/checkout",
-      popular: true
+      popular: true,
+      isLink: false
     }
   ];
 
@@ -86,16 +119,30 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <Link
-              href={plan.ctaLink}
-              className={`block w-full text-center py-3 px-6 rounded-xl font-medium transition-colors ${
-                plan.popular
-                  ? 'bg-purple-600 text-white hover:bg-purple-700'
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-              }`}
-            >
-              {plan.cta}
-            </Link>
+            {plan.isLink ? (
+              <Link
+                href={plan.ctaLink}
+                className={`block w-full text-center py-3 px-6 rounded-xl font-medium transition-colors ${
+                  plan.popular
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                {plan.cta}
+              </Link>
+            ) : (
+              <button
+                onClick={handleUpgrade}
+                disabled={isLoading}
+                className={`block w-full text-center py-3 px-6 rounded-xl font-medium transition-colors ${
+                  plan.popular
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50'
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50'
+                }`}
+              >
+                {isLoading ? 'Processing...' : plan.cta}
+              </button>
+            )}
           </div>
         ))}
       </div>

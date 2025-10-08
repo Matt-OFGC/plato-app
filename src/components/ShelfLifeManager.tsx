@@ -175,3 +175,4 @@ export function ShelfLifeManager({ shelfLifeOptions }: Props) {
     </div>
   );
 }
+

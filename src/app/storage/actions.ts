@@ -101,3 +101,4 @@ export async function deleteStorageOption(id: number) {
     redirect("/account?error=delete_failed");
   }
 }
+

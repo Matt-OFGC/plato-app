@@ -7,3 +7,4 @@ export async function GET() {
     environment: process.env.NODE_ENV
   });
 }
+
