@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import { Sidebar } from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,23 +26,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Don't call auth() in layout to avoid dynamic server usage
-  // Auth will be handled in individual pages that need it
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white`}>
         <Providers>
-          <div className="flex min-h-screen">
-            {/* Sidebar Navigation */}
-            <Sidebar />
-            
-            {/* Main Content Area */}
-            <main className="flex-1 lg:ml-72 transition-all duration-300">
-              <div className="max-w-7xl mx-auto px-4 py-8 lg:px-8">
-                {children}
-              </div>
-            </main>
-          </div>
+          {children}
         </Providers>
       </body>
     </html>

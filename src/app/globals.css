@@ -1,29 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  /* Green color scheme with warm, food-friendly palette */
-  --background: #fdf7e9; /* warm cream background */
-  --foreground: #7b8971; /* sage green text */
-  --primary: #059669; /* emerald green */
+  /* Clean white minimalistic with indigo and amber accents */
+  --background: #ffffff; /* pure white background */
+  --foreground: #1f2937; /* dark gray text */
+  --primary: #4f46e5; /* indigo primary */
   --primary-foreground: #ffffff;
-  --secondary: #f0fdf4; /* very light green */
-  --secondary-foreground: #365314;
-  --accent: #16a34a; /* vibrant green */
+  --secondary: #f9fafb; /* very light gray */
+  --secondary-foreground: #374151;
+  --accent: #f59e0b; /* amber accent */
   --accent-foreground: #ffffff;
-  --muted: #f7fee7; /* light lime */
-  --muted-foreground: #4b5563;
-  --border: #d1fae5; /* light green border */
+  --muted: #f3f4f6; /* light gray */
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb; /* light gray border */
   --input: #ffffff;
-  --ring: #059669;
+  --ring: #4f46e5;
   --success: #10b981; /* emerald */
   --warning: #f59e0b; /* amber */
   --error: #ef4444; /* red */
   
   /* Additional modern colors */
   --card: #ffffff;
-  --card-foreground: #7b8971;
+  --card-foreground: #1f2937;
   --popover: #ffffff;
-  --popover-foreground: #7b8971;
+  --popover-foreground: #1f2937;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 }

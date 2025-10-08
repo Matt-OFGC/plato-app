@@ -34,7 +34,7 @@ export function Sidebar() {
     try {
       await fetch("/api/logout", { method: "POST" });
       setUser(null);
-      router.push("/");
+      router.push("/login");
       router.refresh();
     } catch (error) {
       console.error("Sign out error:", error);
@@ -44,10 +44,10 @@ export function Sidebar() {
   const isActive = (path: string) => pathname === path;
 
   const navItems = [
-    { href: "/", label: "Home", icon: "🏠" },
-    { href: "/ingredients", label: "Ingredients", icon: "🥘" },
-    { href: "/recipes", label: "Recipes", icon: "📖" },
-    { href: "/pricing", label: "Pricing", icon: "💳" },
+    { href: "/dashboard", label: "Dashboard", icon: "🏠" },
+    { href: "/dashboard/ingredients", label: "Ingredients", icon: "🥘" },
+    { href: "/dashboard/recipes", label: "Recipes", icon: "📖" },
+    { href: "/dashboard/account", label: "Account", icon: "⚙️" },
   ];
 
   return (
@@ -83,7 +83,7 @@ export function Sidebar() {
         <div className="flex flex-col h-full">
           {/* Logo Section - Much Bigger! */}
           <div className="p-8 border-b border-white/10">
-            <Link href="/" onClick={() => setIsOpen(false)} className="block">
+            <Link href="/dashboard" onClick={() => setIsOpen(false)} className="block">
               <div className="flex items-center gap-4 group">
                 <img
                   src="/images/plato-logo.svg"
@@ -130,10 +130,10 @@ export function Sidebar() {
             ) : user ? (
               <div className="space-y-2">
                 <Link
-                  href="/account"
+                  href="/dashboard/account"
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isActive("/account")
+                    isActive("/dashboard/account")
                       ? "bg-white text-indigo-700 shadow-lg"
                       : "text-white/90 hover:bg-white/10 hover:text-white"
                   }`}
@@ -159,7 +159,7 @@ export function Sidebar() {
             ) : (
               <div className="space-y-2">
                 <Link
-                  href="/login"
+                  href="/login?redirect=/dashboard"
                   onClick={() => setIsOpen(false)}
                   className="block w-full px-4 py-3 rounded-xl text-center font-medium bg-white/10 hover:bg-white/20 transition-all duration-200"
                 >
