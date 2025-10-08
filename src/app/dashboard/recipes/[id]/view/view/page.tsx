@@ -55,7 +55,7 @@ export default async function RecipeViewPage({ params }: Props) {
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-[var(--foreground)] mb-4">Recipe Not Found</h1>
-          <Link href="/recipes" className="text-[var(--primary)] hover:text-[var(--accent)]">
+          <Link href="/dashboard/recipes" className="text-[var(--primary)] hover:text-[var(--accent)]">
             ← Back to Recipes
           </Link>
         </div>
@@ -136,7 +136,7 @@ export default async function RecipeViewPage({ params }: Props) {
     <div className="max-w-6xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <Link 
-          href="/recipes" 
+          href="/dashboard/recipes" 
           className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
