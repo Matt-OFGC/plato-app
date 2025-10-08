@@ -34,8 +34,6 @@ const ingredientSchema = z.object({
 
 export async function createIngredient(formData: FormData) {
   try {
-    console.log("Starting createIngredient with formData:", Object.fromEntries(formData));
-    
     const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
     if (!parsed.success) {
       console.error("Validation error:", parsed.error);
@@ -43,10 +41,19 @@ export async function createIngredient(formData: FormData) {
     }
 
     const data = parsed.data;
-    console.log("Parsed data:", data);
-    
     const { companyId } = await getCurrentUserAndCompany();
-    console.log("Company ID:", companyId);
+    
+    // Check if ingredient with this name already exists for this company
+    const existingIngredient = await prisma.ingredient.findFirst({
+      where: {
+        name: data.name,
+        companyId: companyId ?? null,
+      },
+    });
+
+    if (existingIngredient) {
+      redirect(`/ingredients/new?error=duplicate_name&name=${encodeURIComponent(data.name)}`);
+    }
     
     // Convert the user-selected unit to a base unit for storage
     const { amount: baseQuantity, base: baseUnit } = toBase(
@@ -54,7 +61,6 @@ export async function createIngredient(formData: FormData) {
       data.packUnit as Unit,
       data.densityGPerMl ?? undefined
     );
-    console.log("Unit conversion result:", { baseQuantity, baseUnit });
     
     const ingredientData = {
       name: data.name,
@@ -70,17 +76,19 @@ export async function createIngredient(formData: FormData) {
       notes: data.notes ?? null,
       companyId: companyId ?? undefined,
     };
-    console.log("Ingredient data to create:", ingredientData);
     
     await prisma.ingredient.create({
       data: ingredientData,
     });
-    console.log("Ingredient created successfully");
     
     revalidatePath("/ingredients");
     redirect("/ingredients");
   } catch (error) {
     console.error("Error in createIngredient:", error);
+    // Check if it's a unique constraint error
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      redirect("/ingredients/new?error=duplicate_name");
+    }
     redirect("/ingredients?error=server_error");
   }
 }

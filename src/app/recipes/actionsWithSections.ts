@@ -81,6 +81,18 @@ export async function createRecipeWithSections(formData: FormData) {
   const { companyId } = await getCurrentUserAndCompany();
 
   try {
+    // Check if recipe with this name already exists for this company
+    const existingRecipe = await prisma.recipe.findFirst({
+      where: {
+        name: data.name,
+        companyId: companyId ?? null,
+      },
+    });
+
+    if (existingRecipe) {
+      redirect(`/recipes/new?error=duplicate_name&name=${encodeURIComponent(data.name)}`);
+    }
+
     // Create the recipe
     const recipe = await prisma.recipe.create({
       data: {
@@ -184,6 +196,10 @@ export async function createRecipeWithSections(formData: FormData) {
     redirect("/recipes");
   } catch (error) {
     console.error("Error creating recipe:", error);
+    // Check if it's a unique constraint error
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      redirect("/recipes/new?error=duplicate_name");
+    }
     redirect("/recipes?error=creation");
   }
 }
