@@ -1,4 +1,5 @@
 export default function Home() {
+  // Force redeploy to fix 404 issue
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       {/* Hero Section */}
