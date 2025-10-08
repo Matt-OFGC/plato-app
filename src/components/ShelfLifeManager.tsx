@@ -19,15 +19,22 @@ interface Props {
 export function ShelfLifeManager({ shelfLifeOptions }: Props) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [days, setDays] = useState<number>(1);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
   });
 
+  // Generate day options (1-365 days)
+  const dayOptions = Array.from({ length: 365 }, (_, i) => i + 1);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = new FormData();
-    data.append("name", formData.name);
+    
+    // Generate name from days
+    const dayText = days === 1 ? "1 day" : `${days} days`;
+    data.append("name", dayText);
     data.append("description", formData.description);
     
     if (editingId) {
@@ -38,11 +45,17 @@ export function ShelfLifeManager({ shelfLifeOptions }: Props) {
     
     // Reset form
     setFormData({ name: "", description: "" });
+    setDays(1);
     setIsAdding(false);
     setEditingId(null);
   };
 
   const handleEdit = (option: ShelfLifeOption) => {
+    // Extract days from name (e.g., "3 days" -> 3)
+    const daysMatch = option.name.match(/^(\d+)/);
+    const extractedDays = daysMatch ? parseInt(daysMatch[1]) : 1;
+    
+    setDays(extractedDays);
     setFormData({
       name: option.name,
       description: option.description || "",
@@ -86,18 +99,30 @@ export function ShelfLifeManager({ shelfLifeOptions }: Props) {
           </h4>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                Shelf Life Name *
+              <label htmlFor="days" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                Shelf Life (Days) *
               </label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                placeholder="e.g., 3 days, 1 week, 2 months"
+              <select
+                id="days"
+                value={days}
+                onChange={(e) => setDays(parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent text-base"
                 required
-              />
+              >
+                {dayOptions.map((day) => (
+                  <option key={day} value={day}>
+                    {day === 1 ? "1 day" : `${day} days`}
+                    {day === 7 && " (1 week)"}
+                    {day === 14 && " (2 weeks)"}
+                    {day === 30 && " (1 month)"}
+                    {day === 60 && " (2 months)"}
+                    {day === 90 && " (3 months)"}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Preview: "{days === 1 ? "1 day" : `${days} days`}"
+              </p>
             </div>
             
             <div>
