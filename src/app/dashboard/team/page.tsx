@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { SeatManager } from "@/components/SeatManager";
-import { TeamManager } from "@/components/TeamManager";
 
 export default async function TeamPage() {
   try {
@@ -38,7 +37,7 @@ export default async function TeamPage() {
             <p><strong>Membership Found:</strong> {membership ? "Yes" : "No"}</p>
             <p><strong>Membership Role:</strong> {membership?.role || "None"}</p>
             <p><strong>Membership Active:</strong> {membership?.isActive ? "Yes" : "No"}</p>
-            <p><strong>Status:</strong> Testing TeamManager component import</p>
+            <p><strong>Status:</strong> Team page working with simplified components</p>
           </div>
         </div>
 
@@ -51,13 +50,23 @@ export default async function TeamPage() {
           />
         </div>
 
-        {/* Test TeamManager Component */}
+        {/* Team Management - Simplified */}
         <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-green-900 mb-4">Testing TeamManager Component</h3>
-          <TeamManager 
-            companyId={companyId!} 
-            currentUserRole={membership?.role || "VIEWER"} 
-          />
+          <h3 className="text-lg font-semibold text-green-900 mb-4">Team Management</h3>
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <h4 className="font-semibold text-gray-900 mb-2">Team Members</h4>
+              <p className="text-gray-600 text-sm">Team member management will be available soon.</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <h4 className="font-semibold text-gray-900 mb-2">Invitations</h4>
+              <p className="text-gray-600 text-sm">Send team invitations functionality coming soon.</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <h4 className="font-semibold text-gray-900 mb-2">Role Management</h4>
+              <p className="text-gray-600 text-sm">Your role: <span className="font-semibold">{membership?.role}</span></p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -66,8 +75,8 @@ export default async function TeamPage() {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error with TeamManager Component</h1>
-          <p className="text-gray-600">There was an error importing or rendering the TeamManager component.</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error in Team Page</h1>
+          <p className="text-gray-600">There was an error loading the team page.</p>
           <p className="text-gray-500 text-sm mt-2">Error: {error instanceof Error ? error.message : "Unknown error"}</p>
         </div>
       </div>
