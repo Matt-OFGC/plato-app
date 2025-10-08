@@ -220,6 +220,12 @@ model Company {
   updatedAt    DateTime  @updatedAt
 
   name         String    @unique
+  
+  // Team/billing info
+  ownerId      Int?      // Primary owner who manages billing
+  maxSeats     Int       @default(5) // Max team members allowed
+  seatsUsed    Int       @default(1) // Current team member count
+  pricePerSeat Decimal   @default(5.00) // Additional cost per extra user
 
   ingredients  Ingredient[]
   recipes      Recipe[]
@@ -228,17 +234,38 @@ model Company {
   shelfLifeOptions ShelfLifeOption[]
   storageOptions   StorageOption[]
   suppliers        Supplier[]
+  invitations  TeamInvitation[]
+}
+
+enum MemberRole {
+  OWNER    // Full access, can manage team, billing, and delete company
+  ADMIN    // Full access to content, can manage team members
+  EDITOR   // Can create and edit all content
+  VIEWER   // Read-only access to all content
 }
 
 model Membership {
-  id         Int      @id @default(autoincrement())
-  user       User     @relation(fields: [userId], references: [id])
+  id         Int        @id @default(autoincrement())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @default(now()) @updatedAt
+  
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     Int
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId  Int
-  role       String   @default("admin")
+  role       MemberRole @default(VIEWER)
+  
+  // Invitation tracking
+  invitedBy  Int?
+  invitedAt  DateTime   @default(now())
+  acceptedAt DateTime?
+  
+  // Status
+  isActive   Boolean    @default(true)
 
   @@unique([userId, companyId])
+  @@index([companyId])
+  @@index([userId])
 }
 
 model UserPreference {
@@ -374,4 +401,26 @@ model StorageOption {
   
   @@unique([name, companyId])
   @@index([companyId])
+}
+
+model TeamInvitation {
+  id           Int        @id @default(autoincrement())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  company      Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId    Int
+  
+  email        String
+  role         MemberRole @default(VIEWER)
+  
+  invitedBy    Int        // User ID of person who sent invite
+  token        String     @unique
+  
+  acceptedAt   DateTime?
+  expiresAt    DateTime
+  
+  @@index([companyId])
+  @@index([email])
+  @@unique([companyId, email])
 }
