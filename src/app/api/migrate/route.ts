@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,11 +14,8 @@ export async function POST(request: NextRequest) {
     const { execSync } = require('child_process');
     
     try {
-      // Generate Prisma client
-      execSync('npx prisma generate', { stdio: 'inherit' });
-      
       // Push schema to database (this creates tables)
-      execSync('npx prisma db push', { stdio: 'inherit' });
+      execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
       
       return NextResponse.json({ 
         success: true, 
