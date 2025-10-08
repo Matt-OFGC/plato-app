@@ -31,7 +31,14 @@ export default function RegisterPage() {
       if (res.ok) {
         setStatus("Account created successfully! You can now sign in.");
       } else {
-        setStatus(`Failed to register: ${result.error || 'Unknown error'}`);
+        const errorMessage = result.error || 'Unknown error';
+        if (errorMessage === "Email in use") {
+          setStatus("This email is already registered. Please use a different email or try signing in.");
+        } else if (errorMessage === "Missing fields") {
+          setStatus("Please fill in all required fields.");
+        } else {
+          setStatus(`Failed to register: ${errorMessage}`);
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);
