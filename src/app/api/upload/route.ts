@@ -42,6 +42,14 @@ export async function POST(req: Request) {
 
     console.log("Uploading to Vercel Blob storage...");
     
+    // Check if Blob token is configured
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error("BLOB_READ_WRITE_TOKEN not configured");
+      return NextResponse.json({ 
+        error: "Storage not configured. Please set up Vercel Blob storage." 
+      }, { status: 500 });
+    }
+    
     // Upload to Vercel Blob storage
     const blob = await put(fileObj.name, fileObj, {
       access: 'public',
