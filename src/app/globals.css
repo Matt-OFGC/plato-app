@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  /* Clean white minimalistic with indigo and amber accents */
+  /* Clean white minimalistic with green accents from logo */
   --background: #ffffff; /* pure white background */
   --foreground: #1f2937; /* dark gray text */
-  --primary: #4f46e5; /* indigo primary */
+  --primary: #059669; /* emerald green from logo */
   --primary-foreground: #ffffff;
-  --secondary: #f9fafb; /* very light gray */
-  --secondary-foreground: #374151;
-  --accent: #f59e0b; /* amber accent */
+  --secondary: #f0fdf4; /* very light green */
+  --secondary-foreground: #166534;
+  --accent: #10b981; /* bright green accent */
   --accent-foreground: #ffffff;
   --muted: #f3f4f6; /* light gray */
   --muted-foreground: #6b7280;
   --border: #e5e7eb; /* light gray border */
   --input: #ffffff;
-  --ring: #4f46e5;
+  --ring: #059669;
   --success: #10b981; /* emerald */
   --warning: #f59e0b; /* amber */
   --error: #ef4444; /* red */
@@ -80,23 +80,22 @@ body {
 
 /* Enhanced button styling with feedback */
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   color: var(--primary-foreground);
   border: none;
   border-radius: 12px;
   padding: 0.75rem 1.5rem;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  box-shadow: 0 2px 8px 0 rgb(5 150 105 / 0.2);
 }
 
 .btn-primary:hover {
-  background: var(--accent);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px 0 rgb(5 150 105 / 0.3);
 }
 
 .btn-primary:active {

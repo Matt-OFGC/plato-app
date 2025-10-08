@@ -86,7 +86,7 @@ function LoginForm() {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 px-4 rounded-lg hover:shadow-md transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
@@ -95,7 +95,7 @@ function LoginForm() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
-              <a href="/register" className="text-indigo-600 hover:text-indigo-500 font-medium">
+              <a href="/register" className="text-emerald-600 hover:text-emerald-700 font-semibold">
                 Create one here
               </a>
             </p>

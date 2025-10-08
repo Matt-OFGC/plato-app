@@ -101,7 +101,7 @@ export default function PricingPage() {
               </a>
               <a
                 href="/register"
-                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-medium transition-colors shadow-sm"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-2 rounded-lg hover:shadow-md font-semibold transition-all shadow-sm"
               >
                 Get Started
               </a>
@@ -124,13 +124,13 @@ export default function PricingPage() {
               key={plan.name}
               className={`relative bg-white rounded-2xl border-2 p-8 ${
                 plan.popular 
-                  ? 'border-indigo-500 shadow-xl' 
+                  ? 'border-emerald-500 shadow-xl' 
                   : 'border-gray-200 hover:border-gray-300'
               } transition-all duration-300`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-1 rounded-full text-sm font-semibold shadow-md">
                     Most Popular
                   </span>
                 </div>
@@ -159,9 +159,9 @@ export default function PricingPage() {
               {plan.isLink ? (
                 <Link
                   href={plan.ctaLink}
-                  className={`block w-full text-center py-3 px-6 rounded-xl font-medium transition-colors ${
+                  className={`block w-full text-center py-3 px-6 rounded-xl font-semibold transition-all ${
                     plan.popular
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:shadow-md'
                       : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                   }`}
                 >
@@ -171,9 +171,9 @@ export default function PricingPage() {
                 <button
                   onClick={handleUpgrade}
                   disabled={isLoading}
-                  className={`block w-full text-center py-3 px-6 rounded-xl font-medium transition-colors ${
+                  className={`block w-full text-center py-3 px-6 rounded-xl font-semibold transition-all ${
                     plan.popular
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50'
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:shadow-md disabled:opacity-50'
                       : 'bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50'
                   }`}
                 >

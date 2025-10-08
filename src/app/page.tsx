@@ -28,7 +28,7 @@ export default function Home() {
               </a>
               <a
                 href="/register"
-                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-medium transition-colors shadow-sm"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-2 rounded-lg hover:shadow-md font-semibold transition-all shadow-sm"
               >
                 Get Started
               </a>
@@ -59,7 +59,7 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="/register"
-            className="bg-indigo-600 text-white text-lg px-10 py-4 rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-lg px-10 py-4 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 shadow-lg transform hover:-translate-y-1"
           >
             Get Started Free
           </a>
@@ -163,7 +163,7 @@ export default function Home() {
       {/* Call to Action */}
       <div className="py-24 px-4">
         <div className="max-w-5xl mx-auto text-center">
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-16 text-white relative overflow-hidden shadow-2xl">
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl p-16 text-white relative overflow-hidden shadow-2xl">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE0YzMuMzEgMCA2IDIuNjkgNiA2cy0yLjY5IDYtNiA2LTYtMi42OS02LTYgMi42OS02IDYtNk0xMiA0MGMzLjMxIDAgNiAyLjY5IDYgNnMtMi42OSA2LTYgNi02LTIuNjktNi02IDIuNjktNiA2LTYiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40"></div>
             <div className="relative z-10">
               <h2 className="text-5xl font-bold mb-6">Ready to streamline your kitchen?</h2>
@@ -173,7 +173,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
                   href="/register"
-                  className="bg-white text-indigo-600 px-10 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className="bg-white text-emerald-600 px-10 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                 >
                   Start Free Trial
                 </a>

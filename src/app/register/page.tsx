@@ -111,7 +111,7 @@ export default function RegisterPage() {
             </div>
             <button 
               type="submit"
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 px-4 rounded-lg hover:shadow-md transition-all font-semibold"
             >
               Create account
             </button>
@@ -130,7 +130,7 @@ export default function RegisterPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
-              <a href="/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
+              <a href="/login" className="text-emerald-600 hover:text-emerald-700 font-semibold">
                 Sign in here
               </a>
             </p>
