@@ -33,24 +33,30 @@ const ingredientSchema = z.object({
 });
 
 export async function createIngredient(formData: FormData) {
-  const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) {
-    // For now, just redirect on error - in production you'd want better error handling
-    redirect("/ingredients?error=validation");
-  }
+  try {
+    console.log("Starting createIngredient with formData:", Object.fromEntries(formData));
+    
+    const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) {
+      console.error("Validation error:", parsed.error);
+      redirect("/ingredients?error=validation");
+    }
 
-  const data = parsed.data;
-  const { companyId } = await getCurrentUserAndCompany();
-  
-  // Convert the user-selected unit to a base unit for storage
-  const { amount: baseQuantity, base: baseUnit } = toBase(
-    data.packQuantity,
-    data.packUnit as Unit,
-    data.densityGPerMl ?? undefined
-  );
-  
-  await prisma.ingredient.create({
-    data: {
+    const data = parsed.data;
+    console.log("Parsed data:", data);
+    
+    const { companyId } = await getCurrentUserAndCompany();
+    console.log("Company ID:", companyId);
+    
+    // Convert the user-selected unit to a base unit for storage
+    const { amount: baseQuantity, base: baseUnit } = toBase(
+      data.packQuantity,
+      data.packUnit as Unit,
+      data.densityGPerMl ?? undefined
+    );
+    console.log("Unit conversion result:", { baseQuantity, baseUnit });
+    
+    const ingredientData = {
       name: data.name,
       supplier: data.supplier ?? null,
       supplierId: data.supplierId,
@@ -63,10 +69,20 @@ export async function createIngredient(formData: FormData) {
       allergens: data.allergens,
       notes: data.notes ?? null,
       companyId: companyId ?? undefined,
-    },
-  });
-  revalidatePath("/ingredients");
-  redirect("/ingredients");
+    };
+    console.log("Ingredient data to create:", ingredientData);
+    
+    await prisma.ingredient.create({
+      data: ingredientData,
+    });
+    console.log("Ingredient created successfully");
+    
+    revalidatePath("/ingredients");
+    redirect("/ingredients");
+  } catch (error) {
+    console.error("Error in createIngredient:", error);
+    redirect("/ingredients?error=server_error");
+  }
 }
 
 export async function updateIngredient(id: number, formData: FormData) {
