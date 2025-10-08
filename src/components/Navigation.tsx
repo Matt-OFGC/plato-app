@@ -8,21 +8,52 @@ export function Navigation() {
 
   return (
     <nav className="flex items-center gap-8 text-sm font-medium">
-      <Link href="/ingredients" className="text-gray-700 hover:text-indigo-600 transition-colors">Ingredients</Link>
-      <Link href="/recipes" className="text-gray-700 hover:text-indigo-600 transition-colors">Recipes</Link>
-      <Link href="/pricing" className="text-gray-700 hover:text-indigo-600 transition-colors">Pricing</Link>
+      <Link 
+        href="/ingredients" 
+        className="text-[var(--foreground)] hover:text-[var(--primary)] transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
+      >
+        Ingredients
+      </Link>
+      <Link 
+        href="/recipes" 
+        className="text-[var(--foreground)] hover:text-[var(--primary)] transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
+      >
+        Recipes
+      </Link>
+      <Link 
+        href="/pricing" 
+        className="text-[var(--foreground)] hover:text-[var(--primary)] transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
+      >
+        Pricing
+      </Link>
       {session?.user ? (
         <div className="flex items-center gap-4">
-          <span className="text-gray-500 text-sm">{session.user.email}</span>
-          <Link href="/account" className="text-gray-700 hover:text-indigo-600 transition-colors">My Account</Link>
-          <a href="/api/auth/signout" className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
+          <span className="text-[var(--muted-foreground)] text-sm">{session.user.email}</span>
+          <Link 
+            href="/account" 
+            className="text-[var(--foreground)] hover:text-[var(--primary)] transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
+          >
+            My Account
+          </Link>
+          <a 
+            href="/api/auth/signout" 
+            className="btn-outline text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
+          >
             Sign out
           </a>
         </div>
       ) : (
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-gray-700 hover:text-indigo-600 transition-colors">Sign In</Link>
-          <Link href="/register" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+          <Link 
+            href="/login" 
+            className="text-[var(--foreground)] hover:text-[var(--primary)] transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
+          >
+            Sign In
+          </Link>
+          <Link 
+            href="/register" 
+            className="btn-primary"
+          >
             Get Started
           </Link>
         </div>

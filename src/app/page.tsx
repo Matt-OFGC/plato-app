@@ -25,13 +25,13 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="/register"
-            className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            className="btn-primary text-lg px-8 py-4 font-semibold"
           >
             Get Started Free
           </a>
           <a
             href="/pricing"
-            className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
+            className="btn-outline text-lg px-8 py-4 font-semibold"
           >
             View Pricing
           </a>
@@ -47,7 +47,7 @@ export default function Home() {
         
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           <a href="/ingredients" className="group block">
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-indigo-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-[var(--primary)] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95">
               <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -58,7 +58,7 @@ export default function Home() {
                 Track your ingredient purchases with precise cost data. Input bulk purchases and let Plato 
                 calculate per-unit costs automatically.
               </p>
-              <div className="flex items-center text-indigo-600 font-medium group-hover:text-indigo-700">
+              <div className="flex items-center text-[var(--primary)] font-medium group-hover:text-[var(--accent)]">
                 Manage Ingredients
                 <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -68,7 +68,7 @@ export default function Home() {
           </a>
 
           <a href="/recipes" className="group block">
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-amber-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-[var(--primary)] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95">
               <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -89,7 +89,7 @@ export default function Home() {
           </a>
 
           <a href="/pricing" className="group block">
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-emerald-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-[var(--primary)] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95">
               <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -100,7 +100,7 @@ export default function Home() {
                 Get insights into your costs, margins, and ingredient usage. Make data-driven decisions 
                 to optimize your kitchen operations.
               </p>
-              <div className="flex items-center text-emerald-600 font-medium group-hover:text-emerald-700">
+              <div className="flex items-center text-[var(--primary)] font-medium group-hover:text-[var(--accent)]">
                 View Analytics
                 <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
