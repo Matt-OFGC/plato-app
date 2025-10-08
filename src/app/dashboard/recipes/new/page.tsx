@@ -32,7 +32,7 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
           <h1 className="text-3xl font-bold text-gray-900">New Recipe</h1>
           <p className="text-gray-600 mt-2">Create a new recipe with automatic cost calculation and optional sections</p>
         </div>
-        <Link href="/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
+        <Link href="/dashboard/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
           ← Back to Recipes
         </Link>
       </div>

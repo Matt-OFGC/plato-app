@@ -50,7 +50,7 @@ export default async function IngredientsPage({ searchParams }: Props) {
           <h1 className="text-3xl font-bold text-[var(--foreground)]">Ingredients</h1>
           <p className="text-[var(--muted-foreground)] mt-2">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
         </div>
-        <Link href="/ingredients/new" className="btn-primary flex items-center gap-2">
+        <Link href="/dashboard/ingredients/new" className="btn-primary flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -71,7 +71,7 @@ export default async function IngredientsPage({ searchParams }: Props) {
           </div>
           <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">No ingredients yet</h3>
           <p className="text-[var(--muted-foreground)] mb-6">Get started by adding your first ingredient</p>
-          <Link href="/ingredients/new" className="btn-primary">
+          <Link href="/dashboard/ingredients/new" className="btn-primary">
             Add First Ingredient
           </Link>
         </div>

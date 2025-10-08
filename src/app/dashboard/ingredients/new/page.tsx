@@ -58,7 +58,7 @@ export default async function NewIngredientPage({ searchParams }: NewIngredientP
       
       <div className="mt-6">
         <Link 
-          href="/ingredients" 
+          href="/dashboard/ingredients" 
           className="text-gray-600 hover:text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors font-medium"
         >
           ← Back to Ingredients
