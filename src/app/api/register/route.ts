@@ -3,13 +3,21 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
 export async function POST(req: Request) {
-  const body = await req.text();
-  const params = new URLSearchParams(body);
-  const email = params.get("email");
-  const password = params.get("password");
-  const company = params.get("company");
-  const name = params.get("name") || undefined;
-  if (!email || !password || !company) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  try {
+    const body = await req.text();
+    console.log("Registration request body:", body);
+    const params = new URLSearchParams(body);
+    const email = params.get("email");
+    const password = params.get("password");
+    const company = params.get("company");
+    const name = params.get("name") || undefined;
+    
+    console.log("Registration data:", { email, password: password ? "***" : null, company, name });
+    
+    if (!email || !password || !company) {
+      console.log("Missing fields:", { email: !!email, password: !!password, company: !!company });
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return NextResponse.json({ error: "Email in use" }, { status: 400 });
@@ -26,6 +34,10 @@ export async function POST(req: Request) {
     return { user, co };
   });
   return NextResponse.json({ ok: true, userId: created.user.id });
+  } catch (error) {
+    console.error("Registration error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 

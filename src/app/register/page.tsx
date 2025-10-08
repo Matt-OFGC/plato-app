@@ -11,9 +11,32 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/register", { method: "POST", body: new URLSearchParams({ email, password, company, name }) });
-    if (res.ok) setStatus("Account created. You can sign in.");
-    else setStatus("Failed to register");
+    setStatus("Creating account...");
+    
+    try {
+      const formData = new URLSearchParams({ email, password, company, name });
+      console.log("Sending registration data:", { email, company, name, password: "***" });
+      
+      const res = await fetch("/api/register", { 
+        method: "POST", 
+        body: formData,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }
+      });
+      
+      const result = await res.json();
+      console.log("Registration response:", result);
+      
+      if (res.ok) {
+        setStatus("Account created successfully! You can now sign in.");
+      } else {
+        setStatus(`Failed to register: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      setStatus("Failed to register: Network error");
+    }
   }
 
   return (
