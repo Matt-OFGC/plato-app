@@ -759,8 +759,8 @@ export function UnifiedRecipeForm({
         </div>
       </div>
 
-      <aside className="lg:col-span-1">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-8">
+      <aside className="lg:col-span-1 space-y-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Analysis</h3>
           
           {/* Individual Ingredient Costs */}
@@ -852,7 +852,7 @@ export function UnifiedRecipeForm({
         </div>
         
         {/* Recipe Image Upload */}
-        <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recipe Image</h3>
           {imageUrl ? (
             <div className="mb-4 relative">
@@ -926,7 +926,8 @@ export function UnifiedRecipeForm({
         </div>
         
         {/* Cost Breakdown Pie Chart */}
-        <div className="mt-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Breakdown</h3>
           <CostBreakdownChart 
             items={detailedItems}
             ingredients={ingredients}
