@@ -43,14 +43,19 @@ export function TeamManager({ companyId, currentUserRole }: { companyId: number;
 
   async function loadMembers() {
     try {
+      setLoading(true);
+      setError("");
       const res = await fetch(`/api/team/members?companyId=${companyId}`);
       const data = await res.json();
       if (res.ok) {
-        setMembers(data.members);
-        setInvitations(data.invitations);
+        setMembers(data.members || []);
+        setInvitations(data.invitations || []);
+      } else {
+        setError(data.error || "Failed to load team members");
       }
     } catch (err) {
       console.error("Failed to load members:", err);
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -26,10 +26,13 @@ export function SeatManager({ companyId, canManageBilling }: SeatManagerProps) {
 
   async function loadSeatInfo() {
     try {
+      setLoading(true);
       const res = await fetch(`/api/team/seats?companyId=${companyId}`);
       const data = await res.json();
       if (res.ok) {
         setSeatInfo(data);
+      } else {
+        console.error("Failed to load seat info:", data.error);
       }
     } catch (err) {
       console.error("Failed to load seat info:", err);
