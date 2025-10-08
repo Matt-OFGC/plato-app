@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir, stat } from "fs/promises";
-import path from "path";
-import crypto from "crypto";
+import { put } from '@vercel/blob';
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -42,33 +40,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await fileObj.arrayBuffer());
-    console.log("Buffer created, size:", buffer.length);
+    console.log("Uploading to Vercel Blob storage...");
     
-    const ext = path.extname(fileObj.name) || ".jpg";
-    const base = crypto.randomBytes(16).toString("hex");
-    const fileName = `${base}${ext.toLowerCase()}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    // Upload to Vercel Blob storage
+    const blob = await put(fileObj.name, fileObj, {
+      access: 'public',
+      addRandomSuffix: true,
+    });
     
-    console.log("Upload directory:", uploadDir);
+    console.log("File uploaded successfully to:", blob.url);
     
-    try {
-      await stat(uploadDir);
-      console.log("Upload directory exists");
-    } catch {
-      console.log("Creating upload directory");
-      await mkdir(uploadDir, { recursive: true });
-    }
-    
-    const filePath = path.join(uploadDir, fileName);
-    console.log("Writing file to:", filePath);
-    
-    await writeFile(filePath, buffer);
-    console.log("File written successfully");
-    
-    const publicUrl = `/uploads/${fileName}`;
-    
-    return NextResponse.json({ url: publicUrl });
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
     console.error("Upload error:", error);
     console.error("Error details:", error instanceof Error ? error.message : String(error));
