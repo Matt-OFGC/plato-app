@@ -11,17 +11,29 @@ export default async function TeamPage() {
   
   const { companyId } = await getCurrentUserAndCompany();
   
+  // Check if user has a company
+  if (!companyId) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Company Found</h1>
+          <p className="text-gray-600">You need to be part of a company to access team management.</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Get user's membership and role
   const membership = await prisma.membership.findUnique({
     where: {
       userId_companyId: {
         userId: user.id,
-        companyId: companyId || 0,
+        companyId: companyId,
       },
     },
   });
 
-  if (!membership) {
+  if (!membership || !membership.isActive) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center">
@@ -41,13 +53,13 @@ export default async function TeamPage() {
 
       {/* Seat Management */}
       <SeatManager 
-        companyId={companyId!} 
+        companyId={companyId} 
         canManageBilling={membership.role === "OWNER"} 
       />
       
       {/* Team Management */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <TeamManager companyId={companyId!} currentUserRole={membership.role} />
+        <TeamManager companyId={companyId} currentUserRole={membership.role} />
       </div>
     </div>
   );
