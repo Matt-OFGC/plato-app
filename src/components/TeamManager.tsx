@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MemberRole } from "@/generated/prisma";
 import { getRoleDisplayName, getRoleDescription } from "@/lib/permissions";
+import { SeatManager } from "./SeatManager";
 
 interface TeamMember {
   id: number;

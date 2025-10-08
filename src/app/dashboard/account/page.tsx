@@ -9,6 +9,7 @@ import { SupplierManager } from "@/components/SupplierManager";
 import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 import { TeamManager } from "@/components/TeamManager";
+import { SeatManager } from "@/components/SeatManager";
 
 export default async function AccountPage() {
   const user = await getUserFromSession();
@@ -111,8 +112,17 @@ export default async function AccountPage() {
 
       {/* Team Management */}
       {companyId && membership && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <TeamManager companyId={companyId} currentUserRole={membership.role} />
+        <div className="space-y-6">
+          {/* Seat Management */}
+          <SeatManager 
+            companyId={companyId} 
+            canManageBilling={membership.role === "OWNER"} 
+          />
+          
+          {/* Team Management */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <TeamManager companyId={companyId} currentUserRole={membership.role} />
+          </div>
         </div>
       )}
 

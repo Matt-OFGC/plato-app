@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
 import { MemberRole } from "@/generated/prisma";
+import { updateSubscriptionSeats } from "@/lib/stripe";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -28,16 +29,35 @@ export async function POST(request: NextRequest) {
     // Check if company has reached seat limit
     const company = await prisma.company.findUnique({
       where: { id: companyId },
-      include: { memberships: true },
+      include: { 
+        memberships: {
+          where: { isActive: true }
+        }
+      },
     });
 
     if (!company) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    if (company.memberships.length >= company.maxSeats) {
+    // Get current subscription to check seat limits
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: session.id },
+    });
+
+    if (!subscription || subscription.status !== 'active') {
       return NextResponse.json({ 
-        error: `Maximum seats (${company.maxSeats}) reached. Please upgrade your plan.` 
+        error: "Active subscription required to invite team members" 
+      }, { status: 400 });
+    }
+
+    // Calculate current seat usage and limits
+    const currentActiveMembers = company.memberships.length;
+    const maxSeats = company.maxSeats;
+
+    if (currentActiveMembers >= maxSeats) {
+      return NextResponse.json({ 
+        error: `Maximum seats (${maxSeats}) reached. Please upgrade your plan to add more team members.` 
       }, { status: 400 });
     }
 
@@ -89,6 +109,9 @@ export async function POST(request: NextRequest) {
     // TODO: Send invitation email
     const inviteUrl = `${request.nextUrl.origin}/invite/${token}`;
     console.log(`Invitation URL: ${inviteUrl}`);
+
+    // Note: We don't update Stripe subscription here because the user hasn't accepted yet
+    // The subscription will be updated when they accept the invitation
 
     return NextResponse.json({ 
       success: true,
