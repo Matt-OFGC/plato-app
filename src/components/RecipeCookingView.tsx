@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency } from "@/lib/currency";
+import { RecipeExportButtons } from "./RecipeExportButtons";
 
 interface RecipeCookingViewProps {
   recipe: {
@@ -103,6 +104,13 @@ export function RecipeCookingView({ recipe, costBreakdown }: RecipeCookingViewPr
               <span>Total Cost: {formatCurrency(costBreakdown.totalCost * scaleFactor)}</span>
               <span>Cost per serving: {formatCurrency(costBreakdown.costPerOutputUnit * scaleFactor)}</span>
             </div>
+          </div>
+          <div className="ml-6">
+            <RecipeExportButtons 
+              recipe={recipe} 
+              costBreakdown={costBreakdown} 
+              servings={servings} 
+            />
           </div>
         </div>
       </div>
