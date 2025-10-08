@@ -143,6 +143,7 @@ export function UnifiedRecipeForm({
   ]);
   const [subRecipes, setSubRecipes] = useState<RecipeSubRecipe[]>(initial?.subRecipes || []);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>("");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -848,6 +849,80 @@ export function UnifiedRecipeForm({
           <div className="mt-4">
             <UnitConversionHelp />
           </div>
+        </div>
+        
+        {/* Recipe Image Upload */}
+        <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recipe Image</h3>
+          {imageUrl ? (
+            <div className="mb-4 relative">
+              <img src={imageUrl} alt="Recipe" className="w-full h-48 object-cover rounded-xl border border-gray-200" />
+              <button
+                type="button"
+                onClick={() => {
+                  setImageUrl("");
+                  setUploadError("");
+                }}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors shadow-lg"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ) : null}
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                
+                // Client-side file size check (10MB)
+                const maxSize = 10 * 1024 * 1024;
+                if (file.size > maxSize) {
+                  setUploadError("File is too large. Maximum size is 10MB.");
+                  return;
+                }
+                
+                setUploading(true);
+                setUploadError("");
+                
+                try {
+                  const fd = new FormData();
+                  fd.append("file", file);
+                  const res = await fetch("/api/upload", { method: "POST", body: fd });
+                  const data = await res.json();
+                  
+                  if (res.ok) {
+                    setImageUrl(data.url);
+                  } else {
+                    setUploadError(data.error || "Upload failed");
+                  }
+                } catch (error) {
+                  setUploadError("Network error. Please try again.");
+                } finally {
+                  setUploading(false);
+                }
+              }}
+              disabled={uploading}
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-2">Maximum file size: 10MB (JPEG, PNG, GIF, WebP)</p>
+            {uploadError && (
+              <p className="text-sm text-red-600 mt-2">{uploadError}</p>
+            )}
+            {uploading && (
+              <div className="text-sm text-gray-500 mt-2 flex items-center gap-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Uploading...
+              </div>
+            )}
+          </div>
+          <input type="hidden" name="imageUrl" value={imageUrl} />
         </div>
         
         {/* Cost Breakdown Pie Chart */}
