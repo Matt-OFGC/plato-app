@@ -8,24 +8,12 @@ import { StorageManager } from "@/components/StorageManager";
 import { SupplierManager } from "@/components/SupplierManager";
 import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
-import { TeamManager } from "@/components/TeamManager";
-import { SeatManager } from "@/components/SeatManager";
 
 export default async function AccountPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login");
   
   const { companyId } = await getCurrentUserAndCompany();
-  
-  // Get user's membership and role
-  const membership = await prisma.membership.findUnique({
-    where: {
-      userId_companyId: {
-        userId: user.id,
-        companyId: companyId || 0,
-      },
-    },
-  });
   
   // Get user's categories
   const categories = await prisma.category.findMany({
@@ -110,21 +98,6 @@ export default async function AccountPage() {
       {/* Subscription Status */}
       <SubscriptionStatus />
 
-      {/* Team Management */}
-      {companyId && membership && (
-        <div className="space-y-6">
-          {/* Seat Management */}
-          <SeatManager 
-            companyId={companyId} 
-            canManageBilling={membership.role === "OWNER"} 
-          />
-          
-          {/* Team Management */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <TeamManager companyId={companyId} currentUserRole={membership.role} />
-          </div>
-        </div>
-      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Currency Preferences */}

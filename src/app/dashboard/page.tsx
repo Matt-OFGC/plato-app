@@ -43,6 +43,21 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
+        <Link href="/dashboard/team" className="group">
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-emerald-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Team Management</h3>
+            <p className="text-gray-600">Manage team members and permissions</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Main Navigation Cards */}
+      <div className="grid gap-8 md:grid-cols-3">
         <Link href="/dashboard/account" className="group">
           <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-gray-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <div className="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -55,10 +70,6 @@ export default async function DashboardPage() {
             <p className="text-gray-600">Manage your account and preferences</p>
           </div>
         </Link>
-      </div>
-
-      {/* Main Navigation Cards */}
-      <div className="grid gap-8 md:grid-cols-2">
         <Link href="/dashboard/ingredients" className="group">
           <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-indigo-500 hover:shadow-xl transition-all duration-300">
             <div className="flex items-start justify-between mb-6">
