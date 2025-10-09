@@ -2,7 +2,27 @@
 
 import { useState, useMemo } from "react";
 import { Unit } from "@/generated/prisma";
-import { computeRecipeCost } from "@/lib/units";
+import { computeRecipeCost, computeIngredientUsageCost } from "@/lib/units";
+import { formatCurrency } from "@/lib/currency";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Ingredient {
   id: number;
@@ -26,6 +46,18 @@ interface ShelfLifeOption {
 interface StorageOption {
   id: number;
   name: string;
+}
+
+interface RecipeSection {
+  id: string;
+  title: string;
+  method?: string;
+  items: Array<{
+    id: string;
+    ingredientId: number;
+    quantity: string;
+    unit: Unit;
+  }>;
 }
 
 interface RecipeFormSimplifiedProps {
@@ -74,15 +106,52 @@ export function RecipeFormSimplified({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   
+  // Sections-based state
+  const [useSections, setUseSections] = useState(false);
+  const [sections, setSections] = useState<RecipeSection[]>([
+    {
+      id: "section-1",
+      title: "Main ingredients",
+      method: "",
+      items: [{ id: "item-1", ingredientId: 0, quantity: "", unit: "g" as Unit }]
+    }
+  ]);
+  
+  // Simple list state (fallback)
   const [recipeItems, setRecipeItems] = useState<Array<{
     ingredientId: number;
     quantity: string;
     unit: Unit;
   }>>(initial?.items || [{ ingredientId: 0, quantity: "", unit: "g" as Unit }]);
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Get all items from sections or simple list
+  const allItems = useMemo(() => {
+    if (useSections) {
+      return sections.flatMap(section => 
+        section.items.map(item => ({
+          ...item,
+          sectionTitle: section.title
+        }))
+      );
+    } else {
+      return recipeItems.map(item => ({
+        ...item,
+        sectionTitle: "Main ingredients"
+      }));
+    }
+  }, [useSections, sections, recipeItems]);
+
   // Calculate real-time cost
   const totalCost = useMemo(() => {
-    const validItems = recipeItems
+    const validItems = allItems
       .filter(item => item.ingredientId && item.quantity)
       .map(item => {
         const ing = ingredients.find(i => i.id === item.ingredientId);
@@ -108,7 +177,7 @@ export function RecipeFormSimplified({
     } catch {
       return 0;
     }
-  }, [recipeItems, ingredients]);
+  }, [allItems, ingredients]);
 
   const costPerServing = totalCost / servings;
 
@@ -120,6 +189,7 @@ export function RecipeFormSimplified({
     formData.append("name", name);
     formData.append("recipeType", recipeType);
     formData.append("servings", servings.toString());
+    formData.append("useSections", useSections.toString());
     
     if (method) formData.append("method", method);
     if (imageUrl) formData.append("imageUrl", imageUrl);
@@ -129,16 +199,125 @@ export function RecipeFormSimplified({
     if (bakeTime) formData.append("bakeTime", bakeTime.toString());
     if (bakeTemp) formData.append("bakeTemp", bakeTemp.toString());
     
-    // Add each ingredient
-    recipeItems
-      .filter(item => item.ingredientId && item.quantity)
-      .forEach(item => {
-        formData.append("ingredientId", item.ingredientId.toString());
-        formData.append("quantity", item.quantity);
-        formData.append("unit", item.unit);
+    // Add sections if using sections
+    if (useSections) {
+      sections.forEach((section, sectionIndex) => {
+        formData.append(`section_${sectionIndex}_title`, section.title);
+        if (section.method) formData.append(`section_${sectionIndex}_method`, section.method);
+        
+        section.items
+          .filter(item => item.ingredientId && item.quantity)
+          .forEach((item, itemIndex) => {
+            formData.append(`section_${sectionIndex}_item_${itemIndex}_ingredientId`, item.ingredientId.toString());
+            formData.append(`section_${sectionIndex}_item_${itemIndex}_quantity`, item.quantity);
+            formData.append(`section_${sectionIndex}_item_${itemIndex}_unit`, item.unit);
+          });
       });
+    } else {
+      // Add each ingredient (simple list)
+      recipeItems
+        .filter(item => item.ingredientId && item.quantity)
+        .forEach(item => {
+          formData.append("ingredientId", item.ingredientId.toString());
+          formData.append("quantity", item.quantity);
+          formData.append("unit", item.unit);
+        });
+    }
     
     onSubmit(formData);
+  };
+
+  // Helper functions for sections
+  const addSection = () => {
+    const newSection: RecipeSection = {
+      id: `section-${Date.now()}`,
+      title: `Section ${sections.length + 1}`,
+      method: "",
+      items: [{ id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit }]
+    };
+    setSections([...sections, newSection]);
+  };
+
+  const removeSection = (sectionId: string) => {
+    if (sections.length > 1) {
+      setSections(sections.filter(s => s.id !== sectionId));
+    }
+  };
+
+  const updateSection = (sectionId: string, field: keyof RecipeSection, value: any) => {
+    setSections(sections.map(s => 
+      s.id === sectionId ? { ...s, [field]: value } : s
+    ));
+  };
+
+  const addItemToSection = (sectionId: string) => {
+    const newItem = {
+      id: `item-${Date.now()}`,
+      ingredientId: 0,
+      quantity: "",
+      unit: "g" as Unit
+    };
+    
+    setSections(sections.map(s => 
+      s.id === sectionId 
+        ? { ...s, items: [...s.items, newItem] }
+        : s
+    ));
+  };
+
+  const removeItemFromSection = (sectionId: string, itemId: string) => {
+    setSections(sections.map(s => 
+      s.id === sectionId 
+        ? { ...s, items: s.items.filter(item => item.id !== itemId) }
+        : s
+    ));
+  };
+
+  const updateItemInSection = (sectionId: string, itemId: string, field: string, value: any) => {
+    setSections(sections.map(s => 
+      s.id === sectionId 
+        ? { 
+            ...s, 
+            items: s.items.map(item => 
+              item.id === itemId ? { ...item, [field]: value } : item
+            )
+          }
+        : s
+    ));
+  };
+
+  // Drag and drop handlers
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    // Handle section reordering
+    if (active.id.toString().startsWith('section-') && over.id.toString().startsWith('section-')) {
+      const oldIndex = sections.findIndex(s => s.id === active.id);
+      const newIndex = sections.findIndex(s => s.id === over.id);
+      
+      if (oldIndex !== newIndex) {
+        setSections(arrayMove(sections, oldIndex, newIndex));
+      }
+      return;
+    }
+    
+    // Handle item reordering within a section
+    const activeItem = active.id.toString();
+    const overItem = over.id.toString();
+    
+    if (activeItem.startsWith('item-') && overItem.startsWith('item-')) {
+      sections.forEach(section => {
+        const activeIndex = section.items.findIndex(item => item.id === activeItem);
+        const overIndex = section.items.findIndex(item => item.id === overItem);
+        
+        if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+          const newItems = arrayMove(section.items, activeIndex, overIndex);
+          updateSection(section.id, 'items', newItems);
+        }
+      });
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,94 +368,239 @@ export function RecipeFormSimplified({
 
   const currencySymbol = "£"; // TODO: Get from user preferences
 
-  return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* LEFT COLUMN - COST BREAKDOWN (STICKY) */}
-      <div className="lg:col-span-1">
-        <div className="lg:sticky lg:top-8 space-y-6">
-          {/* Real-time Cost Display */}
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-6 border-2 border-emerald-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Live Cost Breakdown
-            </h3>
+  // Sortable Section Component
+  const SortableSection = ({ section, index }: { section: RecipeSection; index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+    } = useSortable({ id: section.id });
 
-            {recipeType === "single" ? (
-              /* Single Serving Display */
-              <div className="space-y-3">
-                <div className="bg-white rounded-lg p-4 border border-emerald-200">
-                  <p className="text-sm text-gray-600 mb-1">Cost per serving</p>
-                  <p className="text-3xl font-bold text-emerald-600">
-                    {currencySymbol}{totalCost.toFixed(2)}
-                  </p>
-                </div>
-                <p className="text-xs text-gray-600 text-center">
-                  Updates as you add ingredients
-                </p>
-              </div>
-            ) : (
-              /* Batch Recipe Display */
-              <div className="space-y-3">
-                <div className="bg-white rounded-lg p-4 border border-emerald-200">
-                  <p className="text-sm text-gray-600 mb-1">Total batch cost</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {currencySymbol}{totalCost.toFixed(2)}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-2 text-gray-600 text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                  <span>Divided by {servings} servings</span>
-                </div>
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
 
-                <div className="bg-emerald-600 text-white rounded-lg p-4">
-                  <p className="text-sm opacity-90 mb-1">Cost per serving</p>
-                  <p className="text-3xl font-bold">
-                    {currencySymbol}{costPerServing.toFixed(2)}
-                  </p>
-                </div>
-
-                <p className="text-xs text-gray-600 text-center">
-                  Updates as you add ingredients
-                </p>
-              </div>
-            )}
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="bg-white border border-gray-200 rounded-xl p-6"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          {/* Drag handle */}
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+            </svg>
           </div>
-
-          {/* Pricing Suggestions */}
-          {totalCost > 0 && (
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                Suggested Pricing
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Conservative (2x):</span>
-                  <span className="font-semibold">{currencySymbol}{(costPerServing * 2).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between bg-blue-600 text-white px-2 py-1 rounded">
-                  <span>Recommended (3x):</span>
-                  <span className="font-bold">{currencySymbol}{(costPerServing * 3).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Premium (4x):</span>
-                  <span className="font-semibold">{currencySymbol}{(costPerServing * 4).toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
+          
+          {/* Section title */}
+          <input
+            type="text"
+            value={section.title}
+            onChange={(e) => updateSection(section.id, 'title', e.target.value)}
+            className="flex-1 text-lg font-semibold border-none outline-none bg-transparent"
+            placeholder="Section name"
+          />
+          
+          {/* Delete section */}
+          {sections.length > 1 && (
+            <button
+              type="button"
+              onClick={() => removeSection(section.id)}
+              className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           )}
         </div>
-      </div>
 
-      {/* RIGHT COLUMN - FORM FIELDS */}
-      <div className="lg:col-span-2 space-y-6">
+        {/* Section method */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Method</label>
+          <textarea
+            value={section.method || ""}
+            onChange={(e) => updateSection(section.id, 'method', e.target.value)}
+            placeholder="Instructions for this section..."
+            rows={2}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 resize-y"
+          />
+        </div>
+
+        {/* Section items */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-gray-900">Ingredients</h4>
+            <button
+              type="button"
+              onClick={() => addItemToSection(section.id)}
+              className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+            >
+              + Add ingredient
+            </button>
+          </div>
+
+          <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
+            {section.items.map((item, itemIndex) => (
+              <SortableItem
+                key={item.id}
+                item={item}
+                sectionId={section.id}
+                onUpdate={updateItemInSection}
+                onRemove={removeItemFromSection}
+                ingredients={ingredients}
+                currencySymbol={currencySymbol}
+              />
+            ))}
+          </SortableContext>
+        </div>
+      </div>
+    );
+  };
+
+  // Sortable Item Component
+  const SortableItem = ({ 
+    item, 
+    sectionId, 
+    onUpdate, 
+    onRemove, 
+    ingredients, 
+    currencySymbol 
+  }: {
+    item: any;
+    sectionId: string;
+    onUpdate: (sectionId: string, itemId: string, field: string, value: any) => void;
+    onRemove: (sectionId: string, itemId: string) => void;
+    ingredients: Ingredient[];
+    currencySymbol: string;
+  }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+    } = useSortable({ id: item.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    // Calculate cost for this item
+    const itemCost = useMemo(() => {
+      if (!item.ingredientId || !item.quantity) return 0;
+      
+      const ingredient = ingredients.find(i => i.id === item.ingredientId);
+      if (!ingredient || !ingredient.packQuantity || !ingredient.packPrice) return 0;
+      
+      try {
+        return computeIngredientUsageCost({
+          usageQuantity: parseFloat(item.quantity),
+          usageUnit: item.unit,
+          ingredient: {
+            packQuantity: ingredient.packQuantity,
+            packUnit: ingredient.packUnit as any,
+            packPrice: ingredient.packPrice,
+            densityGPerMl: ingredient.densityGPerMl || undefined,
+          }
+        });
+      } catch {
+        return 0;
+      }
+    }, [item, ingredients]);
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border"
+      >
+        {/* Drag handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+          </svg>
+        </div>
+
+        {/* Ingredient selection */}
+        <select
+          value={item.ingredientId}
+          onChange={(e) => onUpdate(sectionId, item.id, 'ingredientId', parseInt(e.target.value))}
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        >
+          <option value="0">Select ingredient...</option>
+          {ingredients.map((ing) => (
+            <option key={ing.id} value={ing.id}>{ing.name}</option>
+          ))}
+        </select>
+
+        {/* Quantity */}
+        <input
+          type="number"
+          step="0.01"
+          value={item.quantity}
+          onChange={(e) => onUpdate(sectionId, item.id, 'quantity', e.target.value)}
+          placeholder="Amount"
+          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        />
+
+        {/* Unit */}
+        <select
+          value={item.unit}
+          onChange={(e) => onUpdate(sectionId, item.id, 'unit', e.target.value)}
+          className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        >
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l</option>
+          <option value="each">each</option>
+          <option value="slices">slices</option>
+          <option value="tsp">tsp</option>
+          <option value="tbsp">tbsp</option>
+          <option value="cup">cup</option>
+        </select>
+
+        {/* Cost display */}
+        <div className="w-20 text-right">
+          <span className="text-sm font-medium text-emerald-600">
+            {currencySymbol}{itemCost.toFixed(2)}
+          </span>
+        </div>
+
+        {/* Remove button */}
+        <button
+          type="button"
+          onClick={() => onRemove(sectionId, item.id)}
+          className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        {/* LEFT COLUMN - FORM FIELDS (3 columns) */}
+        <div className="xl:col-span-3 space-y-6">
         {/* Recipe Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -387,85 +711,165 @@ export function RecipeFormSimplified({
         </div>
       )}
 
-      {/* Ingredients List */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Ingredients</h3>
-          <p className="text-sm text-gray-500">
-            {recipeType === "single" ? "For 1 serving" : `For 1 batch (${servings} servings)`}
-          </p>
-        </div>
+          {/* Ingredients Section */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-semibold text-gray-900">Ingredients</h3>
+                
+                {/* Use Sections Toggle */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useSections}
+                    onChange={(e) => setUseSections(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Use sections</span>
+                </label>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-gray-500">
+                  {recipeType === "single" ? "For 1 serving" : `For 1 batch (${servings} servings)`}
+                </p>
+                
+                {useSections && (
+                  <button
+                    type="button"
+                    onClick={addSection}
+                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Section
+                  </button>
+                )}
+              </div>
+            </div>
 
-        <div className="space-y-3">
-          {recipeItems.map((item, index) => (
-            <div key={index} className="flex gap-3 items-start">
-              {/* Ingredient Selection */}
-              <select
-                value={item.ingredientId}
-                onChange={(e) => updateIngredient(index, "ingredientId", parseInt(e.target.value))}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                required
+            {/* Ingredients Content */}
+            {useSections ? (
+              /* Sections-based ingredients */
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
               >
-                <option value="0">Select ingredient...</option>
-                {ingredients.map((ing) => (
-                  <option key={ing.id} value={ing.id}>
-                    {ing.name}
-                  </option>
-                ))}
-              </select>
+                <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-6">
+                    {sections.map((section, index) => (
+                      <SortableSection key={section.id} section={section} index={index} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              /* Simple list ingredients */
+              <div className="space-y-3">
+                {recipeItems.map((item, index) => {
+                  // Calculate cost for this item
+                  const itemCost = useMemo(() => {
+                    if (!item.ingredientId || !item.quantity) return 0;
+                    
+                    const ingredient = ingredients.find(i => i.id === item.ingredientId);
+                    if (!ingredient || !ingredient.packQuantity || !ingredient.packPrice) return 0;
+                    
+                    try {
+                      return computeIngredientUsageCost({
+                        usageQuantity: parseFloat(item.quantity),
+                        usageUnit: item.unit,
+                        ingredient: {
+                          packQuantity: ingredient.packQuantity,
+                          packUnit: ingredient.packUnit as any,
+                          packPrice: ingredient.packPrice,
+                          densityGPerMl: ingredient.densityGPerMl || undefined,
+                        }
+                      });
+                    } catch {
+                      return 0;
+                    }
+                  }, [item, ingredients]);
 
-              {/* Quantity */}
-              <input
-                type="number"
-                step="0.01"
-                value={item.quantity}
-                onChange={(e) => updateIngredient(index, "quantity", e.target.value)}
-                placeholder="Amount"
-                className="w-28 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                required
-              />
+                  return (
+                    <div key={index} className="flex gap-3 items-center p-3 bg-gray-50 rounded-lg border">
+                      {/* Ingredient Selection */}
+                      <select
+                        value={item.ingredientId}
+                        onChange={(e) => updateIngredient(index, "ingredientId", parseInt(e.target.value))}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                        required
+                      >
+                        <option value="0">Select ingredient...</option>
+                        {ingredients.map((ing) => (
+                          <option key={ing.id} value={ing.id}>
+                            {ing.name}
+                          </option>
+                        ))}
+                      </select>
 
-              {/* Unit */}
-              <select
-                value={item.unit}
-                onChange={(e) => updateIngredient(index, "unit", e.target.value as Unit)}
-                className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-                <option value="ml">ml</option>
-                <option value="l">l</option>
-                <option value="each">each</option>
-                <option value="slices">slices</option>
-                <option value="tsp">tsp</option>
-                <option value="tbsp">tbsp</option>
-                <option value="cup">cup</option>
-              </select>
+                      {/* Quantity */}
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.quantity}
+                        onChange={(e) => updateIngredient(index, "quantity", e.target.value)}
+                        placeholder="Amount"
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                        required
+                      />
 
-              {/* Remove Button */}
-              {recipeItems.length > 1 && (
+                      {/* Unit */}
+                      <select
+                        value={item.unit}
+                        onChange={(e) => updateIngredient(index, "unit", e.target.value as Unit)}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="g">g</option>
+                        <option value="kg">kg</option>
+                        <option value="ml">ml</option>
+                        <option value="l">l</option>
+                        <option value="each">each</option>
+                        <option value="slices">slices</option>
+                        <option value="tsp">tsp</option>
+                        <option value="tbsp">tbsp</option>
+                        <option value="cup">cup</option>
+                      </select>
+
+                      {/* Cost Display */}
+                      <div className="w-20 text-right">
+                        <span className="text-sm font-medium text-emerald-600">
+                          {currencySymbol}{itemCost.toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* Remove Button */}
+                      {recipeItems.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeIngredient(index)}
+                          className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
                 <button
                   type="button"
-                  onClick={() => removeIngredient(index)}
-                  className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  onClick={addIngredient}
+                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-emerald-500 hover:text-emerald-600 transition-colors font-medium"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  + Add Ingredient
                 </button>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={addIngredient}
-          className="mt-3 w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-emerald-500 hover:text-emerald-600 transition-colors font-medium"
-        >
-          + Add Ingredient
-        </button>
-      </div>
+              </div>
+            )}
+          </div>
 
       {/* Additional Details Section */}
       <div className="border-t-2 border-gray-200 pt-6 space-y-6">
@@ -588,13 +992,98 @@ export function RecipeFormSimplified({
         </div>
       </div>
 
-      {/* Submit Button */}
-      <button
-        type="submit"
-        className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-lg shadow-lg"
-      >
-        Save Recipe
-      </button>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-lg shadow-lg"
+          >
+            Save Recipe
+          </button>
+        </div>
+
+        {/* RIGHT COLUMN - COST BREAKDOWN (STICKY) */}
+        <div className="xl:col-span-1">
+          <div className="xl:sticky xl:top-8 space-y-6">
+            {/* Real-time Cost Display */}
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-6 border-2 border-emerald-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Live Cost Breakdown
+              </h3>
+
+              {recipeType === "single" ? (
+                /* Single Serving Display */
+                <div className="space-y-3">
+                  <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                    <p className="text-sm text-gray-600 mb-1">Cost per serving</p>
+                    <p className="text-3xl font-bold text-emerald-600">
+                      {currencySymbol}{totalCost.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-600 text-center">
+                    Updates as you add ingredients
+                  </p>
+                </div>
+              ) : (
+                /* Batch Recipe Display */
+                <div className="space-y-3">
+                  <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                    <p className="text-sm text-gray-600 mb-1">Total batch cost</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {currencySymbol}{totalCost.toFixed(2)}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-gray-600 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <span>Divided by {servings} servings</span>
+                  </div>
+
+                  <div className="bg-emerald-600 text-white rounded-lg p-4">
+                    <p className="text-sm opacity-90 mb-1">Cost per serving</p>
+                    <p className="text-3xl font-bold">
+                      {currencySymbol}{costPerServing.toFixed(2)}
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-gray-600 text-center">
+                    Updates as you add ingredients
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Pricing Suggestions */}
+            {totalCost > 0 && (
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Suggested Pricing
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Conservative (2x):</span>
+                    <span className="font-semibold">{currencySymbol}{(costPerServing * 2).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between bg-blue-600 text-white px-2 py-1 rounded">
+                    <span>Recommended (3x):</span>
+                    <span className="font-bold">{currencySymbol}{(costPerServing * 3).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Premium (4x):</span>
+                    <span className="font-semibold">{currencySymbol}{(costPerServing * 4).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </form>
   );
