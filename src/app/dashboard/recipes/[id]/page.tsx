@@ -55,14 +55,14 @@ export default async function EditRecipePage({ params }: Props) {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Edit Recipe</h1>
-          <p className="text-gray-600 mt-2">Update your recipe with automatic cost calculation and sections</p>
+          <p className="text-gray-600 mt-2">Quick and easy recipe costing - works for sandwiches to cakes!</p>
         </div>
         <Link href="/dashboard/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
-          ← Back to Recipes
+          ← Back
         </Link>
       </div>
-
-      <RecipeFormSimplified
+      
+      <RecipeFormSimplified 
         ingredients={ingredients.map((i) => ({
           id: i.id,
           name: i.name,
@@ -76,15 +76,15 @@ export default async function EditRecipePage({ params }: Props) {
         storageOptions={storageOptions}
         initial={{
           name: recipe.name,
-          recipeType: recipe.portionsPerBatch ? "batch" : "single",
+          recipeType: recipe.portionsPerBatch && recipe.portionsPerBatch > 1 ? "batch" : "single",
           servings: recipe.portionsPerBatch || 1,
-          imageUrl: recipe.imageUrl || undefined,
           method: recipe.method || undefined,
-          bakeTime: recipe.bakeTime || undefined,
-          bakeTemp: recipe.bakeTemp || undefined,
+          imageUrl: recipe.imageUrl || undefined,
           categoryId: recipe.categoryId || undefined,
           shelfLifeId: recipe.shelfLifeId || undefined,
           storageId: recipe.storageId || undefined,
+          bakeTime: recipe.bakeTime || undefined,
+          bakeTemp: recipe.bakeTemp || undefined,
           items: recipe.items.map(item => ({
             ingredientId: item.ingredientId,
             quantity: item.quantity.toString(),
