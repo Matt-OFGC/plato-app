@@ -106,7 +106,7 @@ export async function createSimplifiedRecipe(formData: FormData) {
     }
 
     revalidatePath("/dashboard/recipes");
-    redirect(`/dashboard/recipes/${recipe.id}`);
+    redirect("/dashboard/recipes");
   } catch (error) {
     console.error("Error creating recipe:", error);
     throw error;
