@@ -599,9 +599,8 @@ export function RecipeFormSimplified({
 
 
   return (
-    <form onSubmit={handleSubmit} className="min-h-screen bg-gray-50">
-      <div className="max-w-none mx-auto px-8 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
+    <form onSubmit={handleSubmit} className="w-full">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
           {/* LEFT SIDEBAR - ADDITIONAL DETAILS (3 columns) */}
           <div className="xl:col-span-3">
             <div className="xl:sticky xl:top-8">
