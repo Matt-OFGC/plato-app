@@ -600,9 +600,135 @@ export function RecipeFormSimplified({
 
   return (
     <form onSubmit={handleSubmit} className="max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        {/* LEFT COLUMN - FORM FIELDS (3 columns) */}
-        <div className="xl:col-span-3 space-y-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* LEFT SIDEBAR - ADDITIONAL DETAILS (2 columns) */}
+        <div className="xl:col-span-2">
+          <div className="xl:sticky xl:top-8 space-y-6">
+            {/* Additional Details Section */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h3>
+
+              {/* Category, Shelf Life, Storage in a vertical stack */}
+              <div className="space-y-4">
+                {categories.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select
+                      value={categoryId || ""}
+                      onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                    >
+                      <option value="">None</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {shelfLifeOptions.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
+                    <select
+                      value={shelfLifeId || ""}
+                      onChange={(e) => setShelfLifeId(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                    >
+                      <option value="">None</option>
+                      {shelfLifeOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {storageOptions.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
+                    <select
+                      value={storageId || ""}
+                      onChange={(e) => setStorageId(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                    >
+                      <option value="">None</option>
+                      {storageOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Bake Time & Temperature */}
+              <div className="mt-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bake Time (min)
+                  </label>
+                  <input
+                    type="number"
+                    value={bakeTime || ""}
+                    onChange={(e) => setBakeTime(e.target.value ? parseInt(e.target.value) : undefined)}
+                    placeholder="e.g., 25"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bake Temp (°C)
+                  </label>
+                  <input
+                    type="number"
+                    value={bakeTemp || ""}
+                    onChange={(e) => setBakeTemp(e.target.value ? parseInt(e.target.value) : undefined)}
+                    placeholder="e.g., 180"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Method */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Method
+                </label>
+                <textarea
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  placeholder="Step-by-step instructions..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 resize-y text-sm"
+                />
+              </div>
+
+              {/* Image Upload */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Recipe Image
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="w-full text-sm"
+                  />
+                  {uploading && <span className="text-xs text-gray-600">Uploading...</span>}
+                  {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+                  {imageUrl && (
+                    <div>
+                      <img src={imageUrl} alt="Preview" className="h-20 w-20 object-cover rounded-lg border" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CENTER COLUMN - MAIN RECIPE CONTENT (7 columns) */}
+        <div className="xl:col-span-7 space-y-6">
         {/* Recipe Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -873,127 +999,6 @@ export function RecipeFormSimplified({
             )}
           </div>
 
-      {/* Additional Details Section */}
-      <div className="border-t-2 border-gray-200 pt-6 space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">Additional Details (Optional)</h3>
-
-        {/* Category, Shelf Life, Storage in a grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {categories.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                value={categoryId || ""}
-                onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : undefined)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="">None</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {shelfLifeOptions.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
-              <select
-                value={shelfLifeId || ""}
-                onChange={(e) => setShelfLifeId(e.target.value ? parseInt(e.target.value) : undefined)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="">None</option>
-                {shelfLifeOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {storageOptions.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
-              <select
-                value={storageId || ""}
-                onChange={(e) => setStorageId(e.target.value ? parseInt(e.target.value) : undefined)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="">None</option>
-                {storageOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-
-        {/* Bake Time & Temperature */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bake Time (minutes)
-            </label>
-            <input
-              type="number"
-              value={bakeTime || ""}
-              onChange={(e) => setBakeTime(e.target.value ? parseInt(e.target.value) : undefined)}
-              placeholder="e.g., 25"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bake Temperature (°C)
-            </label>
-            <input
-              type="number"
-              value={bakeTemp || ""}
-              onChange={(e) => setBakeTemp(e.target.value ? parseInt(e.target.value) : undefined)}
-              placeholder="e.g., 180"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-        </div>
-
-        {/* Method */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Method / Instructions
-          </label>
-          <textarea
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-            placeholder="Step-by-step instructions..."
-            rows={6}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 resize-y"
-          />
-        </div>
-
-        {/* Image Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Recipe Image
-          </label>
-          <div className="flex items-center gap-4">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploading}
-              className="flex-1"
-            />
-            {uploading && <span className="text-sm text-gray-600">Uploading...</span>}
-          </div>
-          {uploadError && <p className="text-sm text-red-600 mt-1">{uploadError}</p>}
-          {imageUrl && (
-            <div className="mt-3">
-              <img src={imageUrl} alt="Preview" className="h-32 w-32 object-cover rounded-lg border" />
-            </div>
-          )}
-        </div>
-      </div>
-
           {/* Submit Button */}
           <button
             type="submit"
@@ -1003,8 +1008,8 @@ export function RecipeFormSimplified({
           </button>
         </div>
 
-        {/* RIGHT COLUMN - COST BREAKDOWN (STICKY) */}
-        <div className="xl:col-span-1">
+        {/* RIGHT SIDEBAR - COST BREAKDOWN (3 columns) */}
+        <div className="xl:col-span-3">
           <div className="xl:sticky xl:top-8 space-y-6">
             {/* Real-time Cost Display */}
             <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-6 border-2 border-emerald-200">
