@@ -10,6 +10,9 @@ import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 import { SettingsTabs } from "@/components/SettingsTabs";
 
+// Force dynamic rendering since this page uses cookies
+export const dynamic = 'force-dynamic';
+
 export default async function AccountPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login");

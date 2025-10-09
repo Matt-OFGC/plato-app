@@ -8,6 +8,8 @@ import { RecipeIdeasList } from "@/components/RecipeIdeasList";
 import { computeRecipeCost } from "@/lib/units";
 import { checkPriceStatus } from "@/lib/priceTracking";
 
+// Force dynamic rendering since this page uses cookies
+export const dynamic = 'force-dynamic';
 // Revalidate this page every 60 seconds for better performance
 export const revalidate = 60;
 

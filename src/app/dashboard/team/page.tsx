@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { SeatManager } from "@/components/SeatManager";
 import { TeamManagerFixed } from "@/components/TeamManagerFixed";
 
+// Force dynamic rendering since this page uses cookies
+export const dynamic = 'force-dynamic';
+
 export default async function TeamPage() {
   try {
     const user = await getUserFromSession();
