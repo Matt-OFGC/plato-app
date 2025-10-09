@@ -1,43 +1,46 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { createRecipeWithSections } from "../actionsWithSections";
-import { UnifiedRecipeForm } from "@/components/UnifiedRecipeForm";
+import { createSimplifiedRecipe } from "../actionsSimplified";
+import { RecipeFormSimplified } from "@/components/RecipeFormSimplified";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
 interface NewRecipePageProps {
-  searchParams: {
+  searchParams: Promise<{
     error?: string;
     name?: string;
-  };
+    mode?: string;
+  }>;
 }
 
 export default async function NewRecipePage({ searchParams }: NewRecipePageProps) {
+  const params = await searchParams;
   const { companyId } = await getCurrentUserAndCompany();
   const where = companyId ? { companyId } : {};
   
-  // Parallel queries for better performance
-  const [ingredients, allRecipes, categories, shelfLifeOptions, storageOptions] = await Promise.all([
-    prisma.ingredient.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.recipe.findMany({ where, orderBy: { name: "asc" }, include: { items: true } }),
-    prisma.category.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.shelfLifeOption.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.storageOption.findMany({ where, orderBy: { name: "asc" } })
-  ]);
+  // Just fetch ingredients - that's all we need for the simplified form!
+  const ingredients = await prisma.ingredient.findMany({ 
+    where, 
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+    }
+  });
 
   async function action(formData: FormData) {
     "use server";
-    await createRecipeWithSections(formData);
+    await createSimplifiedRecipe(formData);
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">New Recipe</h1>
-          <p className="text-gray-600 mt-2">Create a new recipe with automatic cost calculation and optional sections</p>
+          <h1 className="text-3xl font-bold text-gray-900">Create New Recipe</h1>
+          <p className="text-gray-600 mt-2">Quick and easy recipe costing - works for sandwiches to cakes!</p>
         </div>
         <Link href="/dashboard/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
-          ← Back to Recipes
+          ← Back
         </Link>
       </div>
       
@@ -47,12 +50,12 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
-            No company found for your account; items will be created without company scoping.
+            No company found for your account
           </div>
         </div>
       ) : null}
 
-      {searchParams.error === 'duplicate_name' && (
+      {params.error === 'duplicate_name' && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,39 +64,31 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
             <div>
               <h3 className="text-red-800 font-semibold">Recipe Already Exists</h3>
               <p className="text-red-700 text-sm mt-1">
-                You already have a recipe named "{searchParams.name || 'this name'}" in your collection. 
-                Please choose a different name or edit the existing recipe.
+                A recipe named "{params.name || 'this name'}" already exists. Please choose a different name.
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Helpful Tips */}
+      <div className="mb-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-6 border border-emerald-200">
+        <div className="flex items-start gap-3">
+          <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900 mb-2">💡 Quick Start Guide</h3>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li><strong>Making 1 item?</strong> (Sandwich, burger, drink) → Choose "Single Serving"</li>
+              <li><strong>Making a batch?</strong> (Cake tray, soup pot) → Choose "Batch Recipe" and enter servings</li>
+              <li><strong>Need ingredients?</strong> <Link href="/dashboard/ingredients/new" className="text-emerald-600 hover:text-emerald-700 font-semibold underline">Add them here first</Link></li>
+            </ul>
+          </div>
+        </div>
+      </div>
       
-      <UnifiedRecipeForm
-        ingredients={ingredients.map((i) => ({
-          id: i.id,
-          name: i.name,
-          packQuantity: Number(i.packQuantity),
-          packUnit: i.packUnit as any,
-          packPrice: Number(i.packPrice),
-          densityGPerMl: i.densityGPerMl == null ? null : Number(i.densityGPerMl),
-        }))}
-        allRecipes={allRecipes.map((r) => ({
-          id: r.id,
-          name: r.name,
-          yieldQuantity: Number(r.yieldQuantity),
-          yieldUnit: r.yieldUnit as any,
-          items: r.items.map(item => ({
-            ingredientId: item.ingredientId,
-            quantity: Number(item.quantity),
-            unit: item.unit as any,
-          })),
-        }))}
-        categories={categories}
-        shelfLifeOptions={shelfLifeOptions}
-        storageOptions={storageOptions}
-        onSubmit={action}
-      />
+      <RecipeFormSimplified ingredients={ingredients} onSubmit={action} />
     </div>
   );
 }
