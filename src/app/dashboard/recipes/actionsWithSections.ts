@@ -41,6 +41,8 @@ const recipeSchema = z.object({
   categoryId: z.string().optional().transform((v) => v === "" ? null : (v ? parseInt(v) : null)),
   shelfLifeId: z.string().optional().transform((v) => v === "" ? null : (v ? parseInt(v) : null)),
   storageId: z.string().optional().transform((v) => v === "" ? null : (v ? parseInt(v) : null)),
+  sellingPrice: z.string().optional().transform((v) => v === "" ? null : (v ? parseFloat(v) : null)),
+  portionsPerBatch: z.string().optional().transform((v) => v === "" ? null : (v ? parseInt(v) : null)),
   sections: z
     .string()
     .default("[]")
@@ -105,12 +107,14 @@ export async function createRecipeWithSections(formData: FormData) {
         isSubRecipe: data.isSubRecipe,
         bakeTime: data.bakeTime,
         bakeTemp: data.bakeTemp,
-      storage: data.storage,
-      shelfLife: data.shelfLife,
-      category: data.category,
-      categoryId: data.categoryId,
-      shelfLifeId: data.shelfLifeId,
-      storageId: data.storageId,
+        storage: data.storage,
+        shelfLife: data.shelfLife,
+        category: data.category,
+        categoryId: data.categoryId,
+        shelfLifeId: data.shelfLifeId,
+        storageId: data.storageId,
+        sellingPrice: data.sellingPrice,
+        portionsPerBatch: data.portionsPerBatch,
         companyId: companyId ?? undefined,
       },
     });
@@ -224,6 +228,17 @@ export async function updateRecipeWithSections(id: number, formData: FormData) {
         yieldUnit: data.yieldUnit,
         imageUrl: data.imageUrl,
         method: data.method,
+        isSubRecipe: data.isSubRecipe,
+        bakeTime: data.bakeTime,
+        bakeTemp: data.bakeTemp,
+        storage: data.storage,
+        shelfLife: data.shelfLife,
+        category: data.category,
+        categoryId: data.categoryId,
+        shelfLifeId: data.shelfLifeId,
+        storageId: data.storageId,
+        sellingPrice: data.sellingPrice,
+        portionsPerBatch: data.portionsPerBatch,
       },
     });
 

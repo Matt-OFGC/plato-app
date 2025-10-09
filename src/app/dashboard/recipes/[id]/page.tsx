@@ -128,6 +128,8 @@ export default async function EditRecipePage({ params }: Props) {
           category: recipe.category || undefined,
           shelfLife: recipe.shelfLife || undefined,
           storage: recipe.storage || undefined,
+          sellingPrice: recipe.sellingPrice ? Number(recipe.sellingPrice) : null,
+          portionsPerBatch: recipe.portionsPerBatch || null,
           sections: sectionsData,
           subRecipes: recipe.subRecipes.map(sr => ({
             id: String(sr.id),

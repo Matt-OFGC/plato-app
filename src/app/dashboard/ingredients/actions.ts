@@ -114,12 +114,21 @@ export async function updateIngredient(id: number, formData: FormData) {
   const data = parsed.data;
   
   try {
+    // Get existing ingredient to check if price changed
+    const existingIngredient = await prisma.ingredient.findUnique({
+      where: { id },
+      select: { packPrice: true },
+    });
+    
     // Convert the user-selected unit to a base unit for storage
     const { amount: baseQuantity, base: baseUnit } = toBase(
       data.packQuantity,
       data.packUnit as Unit,
       data.densityGPerMl ?? undefined
     );
+    
+    // Check if price changed
+    const priceChanged = existingIngredient && Number(existingIngredient.packPrice) !== data.packPrice;
     
     await prisma.ingredient.update({
       where: { id },
@@ -135,13 +144,15 @@ export async function updateIngredient(id: number, formData: FormData) {
         densityGPerMl: (data.densityGPerMl as number | null) ?? null,
         allergens: data.allergens,
         notes: data.notes ?? null,
+        // Update lastPriceUpdate timestamp if price changed
+        ...(priceChanged && { lastPriceUpdate: new Date() }),
       },
     });
     revalidatePath("/ingredients");
-    redirect("/ingredients");
+    redirect("/dashboard/ingredients");
   } catch (error) {
     console.error("Error updating ingredient:", error);
-    redirect("/ingredients?error=update_failed");
+    redirect("/dashboard/ingredients?error=update_failed");
   }
 }
 
