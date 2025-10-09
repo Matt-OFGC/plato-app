@@ -102,7 +102,7 @@ export default async function EditRecipePage({ params }: Props) {
         storageOptions={storageOptions}
         initial={{
           name: recipe.name,
-          recipeType: recipe.portionsPerBatch && recipe.portionsPerBatch > 1 ? "batch" : "single",
+          recipeType: (recipe.portionsPerBatch && recipe.portionsPerBatch > 1) ? "batch" : "single",
           servings: recipe.portionsPerBatch || 1,
           method: recipe.method || undefined,
           imageUrl: recipe.imageUrl || undefined,
@@ -111,11 +111,11 @@ export default async function EditRecipePage({ params }: Props) {
           storageId: recipe.storageId || undefined,
           bakeTime: recipe.bakeTime || undefined,
           bakeTemp: recipe.bakeTemp || undefined,
-          items: recipe.items.map(item => ({
+          items: recipe.items?.map(item => ({
             ingredientId: item.ingredientId,
-            quantity: item.quantity.toString(),
+            quantity: item.quantity?.toString() || "0",
             unit: item.unit as any,
-          })),
+          })) || [],
         }}
         onSubmit={action}
       />
@@ -123,10 +123,22 @@ export default async function EditRecipePage({ params }: Props) {
   );
   } catch (error) {
     console.error('Error loading edit recipe page:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      id: id,
+      companyId: companyId
+    });
     return (
       <div className="p-6">
         <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Recipe</h1>
         <p className="text-gray-600 mb-4">There was an error loading the recipe. Please try again.</p>
+        <details className="mb-4 p-4 bg-gray-100 rounded-lg">
+          <summary className="cursor-pointer font-medium">Error Details (for debugging)</summary>
+          <pre className="mt-2 text-xs text-gray-600 overflow-auto">
+            {error instanceof Error ? error.message : 'Unknown error'}
+          </pre>
+        </details>
         <Link href="/dashboard/recipes" className="text-blue-600 hover:text-blue-800">
           ← Back to Recipes
         </Link>

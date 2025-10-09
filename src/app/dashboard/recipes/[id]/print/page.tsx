@@ -4,6 +4,8 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { RecipePrintView } from "@/components/RecipePrintView";
 import { computeRecipeCost, computeIngredientUsageCost } from "@/lib/units";
 
+export const dynamic = 'force-dynamic';
+
 interface Props { 
   params: Promise<{ id: string }> 
 }

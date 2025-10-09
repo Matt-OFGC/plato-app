@@ -4,6 +4,8 @@ import { updateIngredient } from "../actions";
 import { fromBase, Unit } from "@/lib/units";
 import { SupplierSelector } from "@/components/SupplierSelector";
 
+export const dynamic = 'force-dynamic';
+
 interface Props { params: Promise<{ id: string }> }
 
 export default async function EditIngredientPage({ params }: Props) {

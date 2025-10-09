@@ -71,10 +71,22 @@ export async function createSimplifiedRecipe(formData: FormData) {
         where: { recipeId: recipeId }
       });
       
+      // First get the existing recipe to check if we need to handle name conflicts
+      const existingRecipe = await prisma.recipe.findUnique({
+        where: { id: recipeId },
+        select: { name: true }
+      });
+      
+      // Only update name if it's different from the existing name
+      const updateData = { ...recipeData };
+      if (existingRecipe?.name === recipeData.name) {
+        delete updateData.name;
+      }
+      
       recipe = await prisma.recipe.update({
         where: { id: recipeId },
         data: {
-          ...recipeData,
+          ...updateData,
           items: {
             create: itemsData,
           },

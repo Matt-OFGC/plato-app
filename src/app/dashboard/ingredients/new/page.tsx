@@ -4,6 +4,8 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { IngredientForm } from "@/components/IngredientForm";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 interface NewIngredientPageProps {
   searchParams: {
     error?: string;
