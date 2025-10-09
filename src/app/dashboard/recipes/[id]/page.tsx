@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { updateRecipeWithSections } from "../actionsWithSections";
-import { UnifiedRecipeForm } from "@/components/UnifiedRecipeForm";
+import { createSimplifiedRecipe } from "../actionsSimplified";
+import { RecipeFormSimplified } from "@/components/RecipeFormSimplified";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
 interface Props { params: Promise<{ id: string }> }
@@ -12,73 +12,46 @@ export default async function EditRecipePage({ params }: Props) {
   const { companyId } = await getCurrentUserAndCompany();
   const where = companyId ? { companyId } : {};
   
-  const [recipe, ingredients, allRecipes, categories, shelfLifeOptions, storageOptions] = await Promise.all([
+  const [recipe, ingredients, categories, shelfLifeOptions, storageOptions] = await Promise.all([
     prisma.recipe.findUnique({ 
       where: { id }, 
       include: { 
         items: {
           include: {
-            ingredient: true,
-            section: true
-          }
-        },
-        sections: {
-          orderBy: { order: 'asc' }
-        },
-        subRecipes: {
-          include: {
-            subRecipe: true
+            ingredient: true
           }
         }
       } 
     }),
-    prisma.ingredient.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.recipe.findMany({ where, orderBy: { name: "asc" }, include: { items: true } }),
-    prisma.category.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.shelfLifeOption.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.storageOption.findMany({ where, orderBy: { name: "asc" } }),
+    prisma.ingredient.findMany({ 
+      where, 
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        packQuantity: true,
+        packUnit: true,
+        packPrice: true,
+        densityGPerMl: true,
+      }
+    }),
+    prisma.category.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
+    prisma.shelfLifeOption.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
+    prisma.storageOption.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
   ]);
   
   if (!recipe) return <div className="p-6">Recipe not found</div>;
 
   async function action(formData: FormData) {
     "use server";
-    await updateRecipeWithSections(id, formData);
+    // Add the recipe ID to the form data for update
+    formData.append("recipeId", id.toString());
+    await createSimplifiedRecipe(formData);
   }
 
-  // Group items by section
-  const sectionsData = recipe.sections.map(section => {
-    const sectionItems = recipe.items
-      .filter(item => item.sectionId === section.id)
-      .map(item => ({
-        id: String(item.id),
-        ingredientId: item.ingredientId,
-        quantity: Number(item.quantity),
-        unit: item.unit as any,
-        note: item.note || undefined,
-      }));
-    
-    return {
-      id: String(section.id),
-      title: section.title,
-      description: section.description || undefined,
-      method: section.method || undefined,
-      order: section.order,
-      items: sectionItems,
-    };
-  });
-
-  // Handle items without sections (legacy recipes)
-  const unsectionedItems = recipe.items
-    .filter(item => !item.sectionId)
-    .map(item => ({
-      ingredientId: item.ingredientId,
-      quantity: Number(item.quantity),
-      unit: item.unit as any,
-    }));
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Edit Recipe</h1>
@@ -89,54 +62,33 @@ export default async function EditRecipePage({ params }: Props) {
         </Link>
       </div>
 
-      <UnifiedRecipeForm
+      <RecipeFormSimplified
         ingredients={ingredients.map((i) => ({
           id: i.id,
           name: i.name,
-          packQuantity: Number(i.packQuantity),
+          packQuantity: i.packQuantity.toNumber(),
           packUnit: i.packUnit as any,
-          packPrice: Number(i.packPrice),
-          densityGPerMl: i.densityGPerMl == null ? null : Number(i.densityGPerMl),
+          packPrice: i.packPrice.toNumber(),
+          densityGPerMl: i.densityGPerMl?.toNumber() || null,
         }))}
-        allRecipes={allRecipes
-          .filter(r => r.id !== id) // Exclude current recipe from sub-recipes
-          .map((r) => ({
-            id: r.id,
-            name: r.name,
-            yieldQuantity: Number(r.yieldQuantity),
-            yieldUnit: r.yieldUnit as any,
-            items: r.items.map(item => ({
-              ingredientId: item.ingredientId,
-              quantity: Number(item.quantity),
-              unit: item.unit as any,
-            })),
-          }))
-        }
         categories={categories}
         shelfLifeOptions={shelfLifeOptions}
         storageOptions={storageOptions}
         initial={{
           name: recipe.name,
-          description: recipe.description || undefined,
-          yieldQuantity: Number(recipe.yieldQuantity),
-          yieldUnit: recipe.yieldUnit as any,
+          recipeType: recipe.portionsPerBatch ? "batch" : "single",
+          servings: recipe.portionsPerBatch || 1,
           imageUrl: recipe.imageUrl || undefined,
           method: recipe.method || undefined,
-          isSubRecipe: recipe.isSubRecipe || false,
-          bakeTime: recipe.bakeTime ? String(recipe.bakeTime) : undefined,
-          bakeTemp: recipe.bakeTemp ? String(recipe.bakeTemp) : undefined,
-          category: recipe.category || undefined,
-          shelfLife: recipe.shelfLife || undefined,
-          storage: recipe.storage || undefined,
-          sellingPrice: recipe.sellingPrice ? Number(recipe.sellingPrice) : null,
-          portionsPerBatch: recipe.portionsPerBatch || null,
-          sections: sectionsData,
-          subRecipes: recipe.subRecipes.map(sr => ({
-            id: String(sr.id),
-            subRecipeId: sr.subRecipeId,
-            quantity: Number(sr.quantity),
-            unit: sr.unit as any,
-            note: sr.note || undefined,
+          bakeTime: recipe.bakeTime || undefined,
+          bakeTemp: recipe.bakeTemp || undefined,
+          categoryId: recipe.categoryId || undefined,
+          shelfLifeId: recipe.shelfLifeId || undefined,
+          storageId: recipe.storageId || undefined,
+          items: recipe.items.map(item => ({
+            ingredientId: item.ingredientId,
+            quantity: item.quantity.toString(),
+            unit: item.unit as any,
           })),
         }}
         onSubmit={action}
