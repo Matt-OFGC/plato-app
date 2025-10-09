@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { MarginAlerts } from "@/components/MarginAlerts";
+import { DashboardInbox } from "@/components/DashboardInbox";
 import { computeRecipeCost } from "@/lib/units";
+import { checkPriceStatus } from "@/lib/priceTracking";
 
 export default async function DashboardPage() {
   const user = await getUserFromSession();
@@ -43,7 +44,27 @@ export default async function DashboardPage() {
   const targetFoodCost = userPreferences?.targetFoodCost ? Number(userPreferences.targetFoodCost) : 25;
   const maxFoodCost = userPreferences?.maxFoodCost ? Number(userPreferences.maxFoodCost) : 35;
 
-  // Calculate costs and format for Food Cost Alerts component
+  // Get ingredients for stale price checking
+  const ingredients = await prisma.ingredient.findMany({
+    where: companyId ? { companyId } : {},
+    select: {
+      id: true,
+      name: true,
+      lastPriceUpdate: true,
+    },
+    orderBy: { lastPriceUpdate: "asc" },
+  });
+
+  // Check for stale prices
+  const staleIngredients = ingredients
+    .map(ing => ({
+      ...ing,
+      priceStatus: checkPriceStatus(ing.lastPriceUpdate),
+      daysSinceUpdate: Math.floor((new Date().getTime() - ing.lastPriceUpdate.getTime()) / (1000 * 60 * 60 * 24)),
+    }))
+    .filter(ing => ing.priceStatus.status !== 'current');
+
+  // Calculate costs and format for inbox
   const recipesWithCosts = recipes.map(recipe => {
     const cost = computeRecipeCost({ 
       items: recipe.items.map(item => ({
@@ -80,11 +101,11 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Food Cost Alerts Section */}
+      {/* Dashboard Inbox - Compact Notification Center */}
       <div className="mb-12">
-        <MarginAlerts 
-          recipes={recipesWithCosts} 
-          currency="GBP"
+        <DashboardInbox 
+          recipes={recipesWithCosts}
+          staleIngredients={staleIngredients}
           targetFoodCost={targetFoodCost}
           maxFoodCost={maxFoodCost}
         />

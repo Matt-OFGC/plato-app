@@ -8,6 +8,7 @@ import { StorageManager } from "@/components/StorageManager";
 import { SupplierManager } from "@/components/SupplierManager";
 import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
+import { SettingsTabs } from "@/components/SettingsTabs";
 
 export default async function AccountPage() {
   const user = await getUserFromSession();
@@ -116,22 +117,27 @@ export default async function AccountPage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--foreground)]">Account Settings</h1>
-        <p className="text-[var(--muted-foreground)] mt-2">Manage your account preferences and categories</p>
+        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600 mt-2">Manage your account, pricing, and content organization</p>
       </div>
 
       {/* Subscription Status */}
       <SubscriptionStatus />
 
-
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Food Cost Targets */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Food Cost Targets</h2>
-          <p className="text-sm text-gray-600 mb-4">Set your ideal food cost percentages for pricing guidance</p>
-          <form action={updateFoodCostTargets} className="space-y-4">
+      {/* Tabbed Settings */}
+      <SettingsTabs>
+        {{
+          pricing: (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Pricing & Targets</h2>
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Food Cost Targets */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Food Cost Targets</h3>
+                  <p className="text-sm text-gray-600 mb-4">Set your ideal food cost percentages</p>
+                  <form action={updateFoodCostTargets} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
                 Target Food Cost %
@@ -198,44 +204,59 @@ export default async function AccountPage() {
               Save Currency
             </button>
           </form>
-        </div>
-      </div>
+                </div>
+              </div>
+            </div>
+          ),
+          
+          content: (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Content Organization</h2>
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Category Management */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <CategoryManager categories={categories} />
+                </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Category Management */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <CategoryManager categories={categories} />
-        </div>
+                {/* Shelf Life Management */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <ShelfLifeManager shelfLifeOptions={shelfLifeOptions} />
+                </div>
 
-        {/* Shelf Life Management */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <ShelfLifeManager shelfLifeOptions={shelfLifeOptions} />
-        </div>
-      </div>
-      
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Storage Management */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <StorageManager storageOptions={storageOptions} />
-        </div>
-
-        {/* Supplier Management */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <SupplierManager suppliers={suppliers as any} />
-        </div>
-      </div>
-
-      {/* Database Management - Full Width */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <DatabaseManager 
-          ingredients={allIngredients}
-          recipes={allRecipes}
-          suppliers={suppliers}
-          categories={categories}
-          shelfLifeOptions={shelfLifeOptions}
-          storageOptions={storageOptions}
-        />
-      </div>
+                {/* Storage Management */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <StorageManager storageOptions={storageOptions} />
+                </div>
+              </div>
+            </div>
+          ),
+          
+          suppliers: (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Suppliers & Information</h2>
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <SupplierManager suppliers={suppliers as any} />
+              </div>
+            </div>
+          ),
+          
+          database: (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Database Management</h2>
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <DatabaseManager 
+                  ingredients={allIngredients}
+                  recipes={allRecipes}
+                  suppliers={suppliers}
+                  categories={categories}
+                  shelfLifeOptions={shelfLifeOptions}
+                  storageOptions={storageOptions}
+                />
+              </div>
+            </div>
+          ),
+        }}
+      </SettingsTabs>
     </div>
   );
 }
