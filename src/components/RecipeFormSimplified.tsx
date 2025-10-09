@@ -111,8 +111,8 @@ export function RecipeFormSimplified({
   const [sections, setSections] = useState<RecipeSection[]>([
     {
       id: "section-1",
-      title: "Main ingredients",
-      method: "",
+      title: "layer 1",
+      method: "to do this layer you need to add magic",
       items: [{ id: "item-1", ingredientId: 0, quantity: "", unit: "g" as Unit }]
     }
   ]);
@@ -229,9 +229,10 @@ export function RecipeFormSimplified({
 
   // Helper functions for sections
   const addSection = () => {
+    const sectionNames = ["layer 1", "layer 2", "layer 3", "base", "topping", "filling", "glaze", "decoration"];
     const newSection: RecipeSection = {
       id: `section-${Date.now()}`,
-      title: `Section ${sections.length + 1}`,
+      title: sectionNames[sections.length] || `Section ${sections.length + 1}`,
       method: "",
       items: [{ id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit }]
     };
@@ -518,7 +519,7 @@ export function RecipeFormSimplified({
         style={style}
         className="bg-white border border-gray-200 rounded-xl p-6"
       >
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-6">
           {/* Drag handle */}
           <div
             {...attributes}
@@ -530,12 +531,12 @@ export function RecipeFormSimplified({
             </svg>
           </div>
           
-          {/* Section title */}
+          {/* Section title - exactly like the image */}
           <input
             type="text"
             value={section.title}
             onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-            className="flex-1 text-lg font-semibold border-none outline-none bg-transparent"
+            className="flex-1 text-lg font-semibold text-gray-900 border-none outline-none bg-transparent placeholder-gray-500"
             placeholder="Section name"
           />
           
@@ -553,22 +554,22 @@ export function RecipeFormSimplified({
           )}
         </div>
 
-        {/* Section method */}
-        <div className="mb-4">
+        {/* Section method - exactly like the image */}
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Method</label>
           <textarea
             value={section.method || ""}
             onChange={(e) => updateSection(section.id, 'method', e.target.value)}
             placeholder="Instructions for this section..."
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 resize-y"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 resize-y text-sm"
           />
         </div>
 
-        {/* Section items */}
+        {/* Section items - exactly like the image */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-gray-900">Ingredients</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-lg font-semibold text-gray-900">Ingredients</h4>
             <button
               type="button"
               onClick={() => addItemToSection(section.id)}
