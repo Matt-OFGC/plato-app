@@ -5,43 +5,53 @@ import { deleteRecipe } from "../actions";
 import { RecipeFormSimplified } from "@/components/RecipeFormSimplified";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
+export const dynamic = 'force-dynamic';
+
 interface Props { params: Promise<{ id: string }> }
 
 export default async function EditRecipePage({ params }: Props) {
-  const { id: idParam } = await params;
-  const id = Number(idParam);
-  const { companyId } = await getCurrentUserAndCompany();
-  const where = companyId ? { companyId } : {};
-  
-  const [recipe, ingredients, categories, shelfLifeOptions, storageOptions] = await Promise.all([
-    prisma.recipe.findUnique({ 
-      where: { id }, 
-      include: { 
-        items: {
-          include: {
-            ingredient: true
+  try {
+    const { id: idParam } = await params;
+    const id = Number(idParam);
+    
+    if (isNaN(id)) {
+      return <div className="p-6">Invalid recipe ID</div>;
+    }
+    
+    const { companyId } = await getCurrentUserAndCompany();
+    const where = companyId ? { companyId } : {};
+    
+    const [recipe, ingredients, categories, shelfLifeOptions, storageOptions] = await Promise.all([
+      prisma.recipe.findUnique({ 
+        where: { id }, 
+        include: { 
+          items: {
+            include: {
+              ingredient: true
+            }
           }
+        } 
+      }),
+      prisma.ingredient.findMany({ 
+        where, 
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          packQuantity: true,
+          packUnit: true,
+          packPrice: true,
+          densityGPerMl: true,
         }
-      } 
-    }),
-    prisma.ingredient.findMany({ 
-      where, 
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        packQuantity: true,
-        packUnit: true,
-        packPrice: true,
-        densityGPerMl: true,
-      }
-    }),
-    prisma.category.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
-    prisma.shelfLifeOption.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
-    prisma.storageOption.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
-  ]);
-  
-  if (!recipe) return <div className="p-6">Recipe not found</div>;
+      }),
+      prisma.category.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
+      prisma.shelfLifeOption.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
+      prisma.storageOption.findMany({ where, orderBy: { order: "asc" }, select: { id: true, name: true } }),
+    ]);
+    
+    if (!recipe) {
+      return <div className="p-6">Recipe not found</div>;
+    }
 
   async function action(formData: FormData) {
     "use server";
@@ -111,4 +121,16 @@ export default async function EditRecipePage({ params }: Props) {
       />
     </div>
   );
+  } catch (error) {
+    console.error('Error loading edit recipe page:', error);
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Recipe</h1>
+        <p className="text-gray-600 mb-4">There was an error loading the recipe. Please try again.</p>
+        <Link href="/dashboard/recipes" className="text-blue-600 hover:text-blue-800">
+          ← Back to Recipes
+        </Link>
+      </div>
+    );
+  }
 }

@@ -66,7 +66,11 @@ export async function createSimplifiedRecipe(formData: FormData) {
 
     let recipe;
     if (recipeId) {
-      // Update existing recipe
+      // Update existing recipe - delete old items first, then create new ones
+      await prisma.recipeItem.deleteMany({
+        where: { recipeId: recipeId }
+      });
+      
       recipe = await prisma.recipe.update({
         where: { id: recipeId },
         data: {
