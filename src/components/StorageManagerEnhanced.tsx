@@ -50,13 +50,22 @@ export function StorageManagerEnhanced({ storageOptions: initialOptions }: Props
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setOptions((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        
+        // Save new order to database
+        fetch('/api/reorder/storage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderedIds: newOrder.map(item => item.id) }),
+        }).catch(err => console.error('Failed to save order:', err));
+        
+        return newOrder;
       });
     }
   };

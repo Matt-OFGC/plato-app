@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { generateUniqueSlug, getCurrencyFromCountry } from "@/lib/slug";
 
 export async function POST(req: Request) {
   try {
@@ -34,18 +35,38 @@ export async function POST(req: Request) {
   if (existing) return NextResponse.json({ error: "Email in use" }, { status: 400 });
 
   const passwordHash = await bcrypt.hash(password, 10);
+  
+  // Generate unique slug for company
+  const slug = await generateUniqueSlug(company, async (slug) => {
+    const existing = await prisma.company.findUnique({ where: { slug } });
+    return !!existing;
+  });
+  
+  // Auto-detect currency from country
+  const currency = getCurrencyFromCountry(country);
+  
   const created = await prisma.$transaction(async (tx) => {
     const co = await tx.company.upsert({
       where: { name: company },
       create: { 
         name: company,
+        slug,
         businessType,
         country,
         phone
       },
       update: {},
     });
-    const user = await tx.user.create({ data: { email, name, passwordHash, preferences: { create: { currency: "GBP" } } } });
+    const user = await tx.user.create({ 
+      data: { 
+        email, 
+        name, 
+        passwordHash, 
+        preferences: { 
+          create: { currency } 
+        } 
+      } 
+    });
     await tx.membership.create({ data: { userId: user.id, companyId: co.id, role: "ADMIN" } });
     return { user, co };
   });

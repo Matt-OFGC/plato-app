@@ -235,6 +235,7 @@ model Company {
   updatedAt    DateTime  @updatedAt
 
   name         String    @unique
+  slug         String?   @unique // URL-friendly identifier for public profile
   
   // Business information for personalization
   businessType String?   // Restaurant, Café, Bakery, Catering, etc.
@@ -245,7 +246,13 @@ model Company {
   city         String?
   postcode     String?
   country      String    @default("United Kingdom")
-  logoUrl      String?   // URL to company logo (future feature)
+  logoUrl      String?   // URL to company logo
+  
+  // Public profile settings
+  isProfilePublic Boolean  @default(false) // Whether profile is publicly accessible
+  profileBio      String?  // Short description for public profile
+  showTeam        Boolean  @default(false) // Show team members on public profile
+  showContact     Boolean  @default(true)  // Show contact info on public profile
   
   // Team/billing info
   ownerId      Int?      // Primary owner who manages billing
@@ -347,6 +354,7 @@ model Category {
   name         String
   description  String?
   color        String?  // Optional color for UI
+  order        Int      @default(0) // Display order
   
   company      Company? @relation(fields: [companyId], references: [id])
   companyId    Int?
@@ -355,6 +363,7 @@ model Category {
   
   @@unique([name, companyId])
   @@index([companyId])
+  @@index([companyId, order])
 }
 
 model ShelfLifeOption {
@@ -364,6 +373,7 @@ model ShelfLifeOption {
   
   name         String
   description  String?
+  order        Int      @default(0) // Display order
   
   company      Company? @relation(fields: [companyId], references: [id])
   companyId    Int?
@@ -372,6 +382,7 @@ model ShelfLifeOption {
   
   @@unique([name, companyId])
   @@index([companyId])
+  @@index([companyId, order])
 }
 
 model Supplier {
@@ -423,6 +434,7 @@ model StorageOption {
   name         String
   description  String?
   icon         String?  // Optional icon for UI
+  order        Int      @default(0) // Display order
   
   company      Company? @relation(fields: [companyId], references: [id])
   companyId    Int?
@@ -431,6 +443,7 @@ model StorageOption {
   
   @@unique([name, companyId])
   @@index([companyId])
+  @@index([companyId, order])
 }
 
 model TeamInvitation {

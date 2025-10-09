@@ -16,7 +16,7 @@ export default async function AccountPage() {
   
   const { companyId } = await getCurrentUserAndCompany();
   
-  // Get user's categories
+  // Get user's categories (ordered by custom order)
   const categories = await prisma.category.findMany({
     where: { companyId },
     include: {
@@ -24,10 +24,10 @@ export default async function AccountPage() {
         select: { recipes: true }
       }
     },
-    orderBy: { name: "asc" }
+    orderBy: { order: "asc" }
   });
 
-  // Get user's shelf life options
+  // Get user's shelf life options (ordered by custom order)
   const shelfLifeOptions = await prisma.shelfLifeOption.findMany({
     where: { companyId },
     include: {
@@ -35,10 +35,10 @@ export default async function AccountPage() {
         select: { recipes: true }
       }
     },
-    orderBy: { name: "asc" }
+    orderBy: { order: "asc" }
   });
 
-  // Get user's storage options
+  // Get user's storage options (ordered by custom order)
   const storageOptions = await prisma.storageOption.findMany({
     where: { companyId },
     include: {
@@ -46,7 +46,7 @@ export default async function AccountPage() {
         select: { recipes: true }
       }
     },
-    orderBy: { name: "asc" }
+    orderBy: { order: "asc" }
   });
 
   // Get user's suppliers
