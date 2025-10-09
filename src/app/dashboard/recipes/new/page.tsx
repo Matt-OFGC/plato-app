@@ -100,22 +100,6 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
         </div>
       )}
 
-      {/* Helpful Tips */}
-      <div className="mb-6 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-6 border border-emerald-200">
-        <div className="flex items-start gap-3">
-          <svg className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 mb-2">💡 Quick Start Guide</h3>
-            <ul className="text-sm text-gray-700 space-y-1">
-              <li><strong>Making 1 item?</strong> (Sandwich, burger, drink) → Choose "Single Serving"</li>
-              <li><strong>Making a batch?</strong> (Cake tray, soup pot) → Choose "Batch Recipe" and enter servings</li>
-              <li><strong>Need ingredients?</strong> <Link href="/dashboard/ingredients/new" className="text-emerald-600 hover:text-emerald-700 font-semibold underline">Add them here first</Link></li>
-            </ul>
-          </div>
-        </div>
-      </div>
       
       <RecipeFormSimplified 
         ingredients={ingredients}
