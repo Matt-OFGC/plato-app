@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { put } from '@vercel/blob';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +17,12 @@ export async function POST(request: NextRequest) {
     const file = formData.get("logo") as File;
     const companyId = formData.get("companyId") as string;
 
-    if (!file || !companyId) {
-      return NextResponse.json({ error: "Missing file or company ID" }, { status: 400 });
+    if (!file || typeof file === "string") {
+      return NextResponse.json({ error: "Missing file or invalid file type" }, { status: 400 });
+    }
+
+    if (!companyId) {
+      return NextResponse.json({ error: "Missing company ID" }, { status: 400 });
     }
 
     // Check if user has access to this company
@@ -46,34 +51,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 400 });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), "public", "uploads", "logos");
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    // Check if Blob storage is configured
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error("BLOB_READ_WRITE_TOKEN not configured");
+      return NextResponse.json({ 
+        error: "Storage not configured. Please contact support." 
+      }, { status: 500 });
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const extension = file.name.split(".").pop();
-    const filename = `company-${companyId}-${timestamp}.${extension}`;
-    const filepath = join(uploadsDir, filename);
-
-    // Write file to disk
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
-
-    // Update company with logo URL
-    const logoUrl = `/uploads/logos/${filename}`;
-    await prisma.company.update({
-      where: { id: parseInt(companyId) },
-      data: { logoUrl },
+    // Upload to Vercel Blob storage with company-specific naming
+    const blob = await put(`company-logos/${companyId}-${file.name}`, file, {
+      access: 'public',
+      addRandomSuffix: true,
     });
 
-    return NextResponse.json({ success: true, logoUrl });
+    // Update company with logo URL
+    await prisma.company.update({
+      where: { id: parseInt(companyId) },
+      data: { logoUrl: blob.url },
+    });
+
+    return NextResponse.json({ success: true, logoUrl: blob.url });
   } catch (error) {
     console.error("Logo upload error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Error details:", error instanceof Error ? error.message : String(error));
+    return NextResponse.json({ 
+      error: "Upload failed: " + (error instanceof Error ? error.message : "Unknown error")
+    }, { status: 500 });
   }
 }
 
