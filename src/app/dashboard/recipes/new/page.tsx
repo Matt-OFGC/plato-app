@@ -9,6 +9,7 @@ interface NewRecipePageProps {
     error?: string;
     name?: string;
     mode?: string;
+    edit?: string; // Recipe ID to edit
   }>;
 }
 
@@ -17,8 +18,11 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
   const { companyId } = await getCurrentUserAndCompany();
   const where = companyId ? { companyId } : {};
   
+  const isEditMode = params.edit && !isNaN(Number(params.edit));
+  const editRecipeId = isEditMode ? Number(params.edit) : null;
+  
   // Fetch all required data for the form
-  const [ingredientsRaw, categories, shelfLifeOptions, storageOptions] = await Promise.all([
+  const [ingredientsRaw, categories, shelfLifeOptions, storageOptions, existingRecipe] = await Promise.all([
     prisma.ingredient.findMany({ 
       where, 
       orderBy: { name: "asc" },
@@ -46,6 +50,17 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
       orderBy: { order: "asc" },
       select: { id: true, name: true }
     }),
+    // Fetch existing recipe if in edit mode
+    isEditMode ? prisma.recipe.findUnique({
+      where: { id: editRecipeId! },
+      include: {
+        items: {
+          include: {
+            ingredient: true
+          }
+        }
+      }
+    }) : Promise.resolve(null),
   ]);
   
   // Convert Decimal types to numbers
@@ -58,6 +73,10 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
 
   async function action(formData: FormData) {
     "use server";
+    // Add the recipe ID if we're in edit mode
+    if (editRecipeId) {
+      formData.append("recipeId", editRecipeId.toString());
+    }
     await createSimplifiedRecipe(formData);
   }
 
@@ -65,7 +84,9 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
     <div className="w-full">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Recipe</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isEditMode ? `Edit Recipe: ${existingRecipe?.name || ''}` : 'Create New Recipe'}
+          </h1>
           <p className="text-gray-600 mt-2">Quick and easy recipe costing - works for sandwiches to cakes!</p>
         </div>
         <Link href="/dashboard/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
@@ -106,6 +127,23 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
         categories={categories}
         shelfLifeOptions={shelfLifeOptions}
         storageOptions={storageOptions}
+        initial={existingRecipe ? {
+          name: existingRecipe.name,
+          recipeType: (existingRecipe.portionsPerBatch && existingRecipe.portionsPerBatch > 1) ? "batch" : "single",
+          servings: existingRecipe.portionsPerBatch || 1,
+          method: existingRecipe.method || undefined,
+          imageUrl: existingRecipe.imageUrl || undefined,
+          categoryId: existingRecipe.categoryId || undefined,
+          shelfLifeId: existingRecipe.shelfLifeId || undefined,
+          storageId: existingRecipe.storageId || undefined,
+          bakeTime: existingRecipe.bakeTime || undefined,
+          bakeTemp: existingRecipe.bakeTemp || undefined,
+          items: existingRecipe.items?.map(item => ({
+            ingredientId: item.ingredientId,
+            quantity: item.quantity?.toString() || "0",
+            unit: item.unit as any,
+          })) || [],
+        } : undefined}
         onSubmit={action}
       />
     </div>
