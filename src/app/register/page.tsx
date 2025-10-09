@@ -7,6 +7,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
   const [name, setName] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [country, setCountry] = useState("United Kingdom");
+  const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -14,8 +17,16 @@ export default function RegisterPage() {
     setStatus("Creating account...");
     
     try {
-      const formData = new URLSearchParams({ email, password, company, name });
-      console.log("Sending registration data:", { email, company, name, password: "***" });
+      const formData = new URLSearchParams({ 
+        email, 
+        password, 
+        company, 
+        name,
+        businessType,
+        country,
+        phone
+      });
+      console.log("Sending registration data:", { email, company, name, businessType, country, password: "***" });
       
       const res = await fetch("/api/register", { 
         method: "POST", 
@@ -64,50 +75,113 @@ export default function RegisterPage() {
         </div>
         
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-              <input 
-                type="text"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" 
-                value={company} 
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Enter your company name"
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Your Details</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <input 
+                  type="text"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+                <input 
+                  type="email"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input 
+                  type="password"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a password (min. 6 characters)"
+                  required
+                  minLength={6}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-              <input 
-                type="text"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
-              <input 
-                type="email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <input 
-                type="password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
-                required
-              />
+
+            {/* Business Information */}
+            <div className="space-y-4 pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Business Details</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                <input 
+                  type="text"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" 
+                  value={company} 
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="e.g., The Golden Spoon Bakery"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Business Type</label>
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                  required
+                >
+                  <option value="">Select your business type</option>
+                  <option value="Restaurant">Restaurant</option>
+                  <option value="Café">Café</option>
+                  <option value="Bakery">Bakery</option>
+                  <option value="Catering">Catering</option>
+                  <option value="Food Truck">Food Truck</option>
+                  <option value="Hotel">Hotel</option>
+                  <option value="Bar & Pub">Bar & Pub</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    required
+                  >
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="United States">United States</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Ireland">Ireland</option>
+                    <option value="France">France</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Spain">Spain</option>
+                    <option value="Italy">Italy</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input 
+                    type="tel"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" 
+                    value={phone} 
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+44 20 1234 5678"
+                  />
+                </div>
+              </div>
             </div>
             <button 
               type="submit"

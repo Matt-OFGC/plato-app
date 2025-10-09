@@ -2,9 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { CategoryManager } from "@/components/CategoryManager";
-import { ShelfLifeManager } from "@/components/ShelfLifeManager";
-import { StorageManager } from "@/components/StorageManager";
+import { CategoryManagerEnhanced } from "@/components/CategoryManagerEnhanced";
+import { ShelfLifeManagerEnhanced } from "@/components/ShelfLifeManagerEnhanced";
+import { StorageManagerEnhanced } from "@/components/StorageManagerEnhanced";
 import { SupplierManager } from "@/components/SupplierManager";
 import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
@@ -212,20 +212,21 @@ export default async function AccountPage() {
           content: (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Content Organization</h2>
+              <p className="text-sm text-gray-600 mb-6">Organize your recipes with categories and options. Drag items to reorder them.</p>
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Category Management */}
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <CategoryManager categories={categories} />
+                  <CategoryManagerEnhanced categories={categories} />
                 </div>
 
                 {/* Shelf Life Management */}
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <ShelfLifeManager shelfLifeOptions={shelfLifeOptions} />
+                  <ShelfLifeManagerEnhanced shelfLifeOptions={shelfLifeOptions} />
                 </div>
 
                 {/* Storage Management */}
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <StorageManager storageOptions={storageOptions} />
+                  <StorageManagerEnhanced storageOptions={storageOptions} />
                 </div>
               </div>
             </div>

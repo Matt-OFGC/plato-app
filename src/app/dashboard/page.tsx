@@ -4,6 +4,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { DashboardInbox } from "@/components/DashboardInbox";
+import { RecipeIdeasList } from "@/components/RecipeIdeasList";
 import { computeRecipeCost } from "@/lib/units";
 import { checkPriceStatus } from "@/lib/priceTracking";
 
@@ -101,14 +102,22 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Dashboard Inbox - Compact Notification Center */}
-      <div className="mb-12">
-        <DashboardInbox 
-          recipes={recipesWithCosts}
-          staleIngredients={staleIngredients}
-          targetFoodCost={targetFoodCost}
-          maxFoodCost={maxFoodCost}
-        />
+      {/* Dashboard Layout - 2 Columns */}
+      <div className="grid gap-8 lg:grid-cols-3 mb-12">
+        {/* Left Column - Inbox */}
+        <div className="lg:col-span-2">
+          <DashboardInbox 
+            recipes={recipesWithCosts}
+            staleIngredients={staleIngredients}
+            targetFoodCost={targetFoodCost}
+            maxFoodCost={maxFoodCost}
+          />
+        </div>
+
+        {/* Right Column - Recipe Ideas */}
+        <div className="lg:col-span-1">
+          <RecipeIdeasList />
+        </div>
       </div>
 
       {/* Quick Actions */}

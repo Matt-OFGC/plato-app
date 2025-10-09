@@ -10,10 +10,20 @@ interface User {
   name?: string;
 }
 
+interface Company {
+  id: number;
+  name: string;
+  businessType?: string;
+  country?: string;
+  phone?: string;
+  logoUrl?: string;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -22,10 +32,12 @@ export function Sidebar() {
       .then((res) => res.json())
       .then((data) => {
         setUser(data.user);
+        setCompany(data.company);
         setLoading(false);
       })
       .catch(() => {
         setUser(null);
+        setCompany(null);
         setLoading(false);
       });
   }, []);
@@ -129,15 +141,21 @@ export function Sidebar() {
             <Link href="/dashboard" onClick={() => setIsOpen(false)} className="block">
               <div className="flex items-center justify-between group">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+                  {/* Plato Logo - Always shows Plato branding */}
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
                     P
                   </div>
-                  <div>
-                    <h1 className="text-sm font-semibold text-gray-900">Plato Kitchen</h1>
-                    <p className="text-xs text-gray-500">Management</p>
+                  <div className="min-w-0 flex-1">
+                    {/* Business Name - Shows the user's business name */}
+                    <h1 className="text-sm font-semibold text-gray-900 truncate">
+                      {loading ? "Loading..." : company?.name || "Plato Kitchen"}
+                    </h1>
+                    <p className="text-xs text-gray-500 truncate">
+                      {company?.businessType || "Management"}
+                    </p>
                   </div>
                 </div>
-                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>

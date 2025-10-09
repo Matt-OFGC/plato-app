@@ -236,6 +236,17 @@ model Company {
 
   name         String    @unique
   
+  // Business information for personalization
+  businessType String?   // Restaurant, Café, Bakery, Catering, etc.
+  phone        String?
+  email        String?
+  website      String?
+  address      String?
+  city         String?
+  postcode     String?
+  country      String    @default("United Kingdom")
+  logoUrl      String?   // URL to company logo (future feature)
+  
   // Team/billing info
   ownerId      Int?      // Primary owner who manages billing
   maxSeats     Int       @default(5) // Max team members allowed

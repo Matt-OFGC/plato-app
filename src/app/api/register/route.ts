@@ -11,8 +11,19 @@ export async function POST(req: Request) {
     const password = params.get("password");
     const company = params.get("company");
     const name = params.get("name") || undefined;
+    const businessType = params.get("businessType") || undefined;
+    const country = params.get("country") || "United Kingdom";
+    const phone = params.get("phone") || undefined;
     
-    console.log("Registration data:", { email, password: password ? "***" : null, company, name });
+    console.log("Registration data:", { 
+      email, 
+      password: password ? "***" : null, 
+      company, 
+      name,
+      businessType,
+      country,
+      phone 
+    });
     
     if (!email || !password || !company) {
       console.log("Missing fields:", { email: !!email, password: !!password, company: !!company });
@@ -26,11 +37,16 @@ export async function POST(req: Request) {
   const created = await prisma.$transaction(async (tx) => {
     const co = await tx.company.upsert({
       where: { name: company },
-      create: { name: company },
+      create: { 
+        name: company,
+        businessType,
+        country,
+        phone
+      },
       update: {},
     });
     const user = await tx.user.create({ data: { email, name, passwordHash, preferences: { create: { currency: "GBP" } } } });
-    await tx.membership.create({ data: { userId: user.id, companyId: co.id, role: "admin" } });
+    await tx.membership.create({ data: { userId: user.id, companyId: co.id, role: "ADMIN" } });
     return { user, co };
   });
   return NextResponse.json({ ok: true, userId: created.user.id });
