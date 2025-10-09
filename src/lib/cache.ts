@@ -1,35 +1,85 @@
-// Simple in-memory cache for client-side data
-class Cache {
-  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+/**
+ * React Cache utilities for better performance
+ * Uses Next.js 15's built-in caching mechanisms
+ */
 
-  set(key: string, data: any, ttl: number = 5 * 60 * 1000) { // 5 minutes default
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl
-    });
-  }
+import { cache } from 'react';
+import { prisma } from './prisma';
 
-  get(key: string): any | null {
-    const item = this.cache.get(key);
-    if (!item) return null;
+/**
+ * Cached user lookup - prevents duplicate queries in the same render
+ */
+export const getCachedUser = cache(async (userId: number) => {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      preferences: true,
+    },
+  });
+});
 
-    if (Date.now() - item.timestamp > item.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
+/**
+ * Cached company lookup with memberships
+ */
+export const getCachedCompany = cache(async (companyId: number) => {
+  return prisma.company.findUnique({
+    where: { id: companyId },
+    include: {
+      memberships: {
+        where: { isActive: true },
+        select: {
+          id: true,
+          role: true,
+          userId: true,
+        },
+      },
+    },
+  });
+});
 
-    return item.data;
-  }
+/**
+ * Cached ingredients for a company
+ */
+export const getCachedIngredients = cache(async (companyId: number) => {
+  return prisma.ingredient.findMany({
+    where: { companyId },
+    orderBy: { name: 'asc' },
+  });
+});
 
-  clear() {
-    this.cache.clear();
-  }
+/**
+ * Cached recipes for a company (limited to 100 most recent)
+ */
+export const getCachedRecipes = cache(async (companyId: number, limit = 100) => {
+  return prisma.recipe.findMany({
+    where: { companyId },
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+    include: {
+      categoryRef: true,
+      items: {
+        include: {
+          ingredient: {
+            select: {
+              id: true,
+              name: true,
+              packPrice: true,
+              packQuantity: true,
+              packUnit: true,
+              currency: true,
+            },
+          },
+        },
+      },
+    },
+  });
+});
 
-  delete(key: string) {
-    this.cache.delete(key);
-  }
+/**
+ * Helper to create cached queries with custom keys
+ */
+export function createCachedQuery<T extends any[], R>(
+  fn: (...args: T) => Promise<R>
+): (...args: T) => Promise<R> {
+  return cache(fn);
 }
-
-export const cache = new Cache();
-

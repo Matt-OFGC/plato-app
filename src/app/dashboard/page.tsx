@@ -8,53 +8,59 @@ import { RecipeIdeasList } from "@/components/RecipeIdeasList";
 import { computeRecipeCost } from "@/lib/units";
 import { checkPriceStatus } from "@/lib/priceTracking";
 
+// Revalidate this page every 60 seconds for better performance
+export const revalidate = 60;
+
 export default async function DashboardPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard");
 
   const { companyId } = await getCurrentUserAndCompany();
   
-  // Fetch recipes with pricing data and their ingredients
-  const recipes = await prisma.recipe.findMany({
-    where: companyId ? { companyId } : {},
-    include: {
-      items: {
-        include: {
-          ingredient: {
-            select: {
-              id: true,
-              packQuantity: true,
-              packUnit: true,
-              packPrice: true,
-              densityGPerMl: true,
-              currency: true,
+  // OPTIMIZATION: Run all database queries in parallel instead of sequential
+  const [recipes, userPreferences, ingredients] = await Promise.all([
+    // Fetch recipes with pricing data and their ingredients
+    prisma.recipe.findMany({
+      where: companyId ? { companyId } : {},
+      include: {
+        items: {
+          include: {
+            ingredient: {
+              select: {
+                id: true,
+                packQuantity: true,
+                packUnit: true,
+                packPrice: true,
+                densityGPerMl: true,
+                currency: true,
+              }
             }
           }
         }
-      }
-    },
-    orderBy: { name: "asc" },
-    take: 50, // Limit to recent recipes for performance
-  });
-
-  // Get user's food cost preferences
-  const userPreferences = await prisma.userPreference.findUnique({
-    where: { userId: user.id },
-  });
+      },
+      orderBy: { name: "asc" },
+      take: 50, // Limit to recent recipes for performance
+    }),
+    
+    // Get user's food cost preferences
+    prisma.userPreference.findUnique({
+      where: { userId: user.id },
+    }),
+    
+    // Get ingredients for stale price checking
+    prisma.ingredient.findMany({
+      where: companyId ? { companyId } : {},
+      select: {
+        id: true,
+        name: true,
+        lastPriceUpdate: true,
+      },
+      orderBy: { lastPriceUpdate: "asc" },
+    }),
+  ]);
   
   const targetFoodCost = userPreferences?.targetFoodCost ? Number(userPreferences.targetFoodCost) : 25;
   const maxFoodCost = userPreferences?.maxFoodCost ? Number(userPreferences.maxFoodCost) : 35;
-
-  // Get ingredients for stale price checking
-  const ingredients = await prisma.ingredient.findMany({
-    where: companyId ? { companyId } : {},
-    select: {
-      id: true,
-      name: true,
-      lastPriceUpdate: true,
-    },
-    orderBy: { lastPriceUpdate: "asc" },
-  });
 
   // Check for stale prices
   const staleIngredients = ingredients
