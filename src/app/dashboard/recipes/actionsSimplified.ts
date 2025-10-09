@@ -37,7 +37,7 @@ export async function createSimplifiedRecipe(formData: FormData) {
       name,
       // Smart defaults based on recipe type
       yieldQuantity: 1,  // Always 1 for the "thing" being made
-      yieldUnit: "each", // Always "each" (1 sandwich, 1 cake, 1 pot of soup)
+      yieldUnit: "each" as const, // Always "each" (1 sandwich, 1 cake, 1 pot of soup)
       portionsPerBatch: recipeType === "single" ? 1 : servings,
       // Optional fields
       ...(method && { method }),
@@ -78,7 +78,7 @@ export async function createSimplifiedRecipe(formData: FormData) {
       });
       
       // Only update name if it's different from the existing name
-      const updateData = { ...recipeData };
+      const updateData: any = { ...recipeData };
       if (existingRecipe?.name === recipeData.name) {
         delete updateData.name;
       }

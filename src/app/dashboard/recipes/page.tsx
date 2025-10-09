@@ -102,22 +102,24 @@ export default async function RecipesPage({ searchParams }: Props) {
           {recipes.map((r) => (
             <div key={r.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
               {/* Recipe Image Placeholder */}
-              <div className="w-full h-48 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl mb-4 flex items-center justify-center">
-                {r.imageUrl ? (
-                  <img 
-                    src={r.imageUrl} 
-                    alt={r.name}
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                ) : (
-                  <div className="text-center">
-                    <svg className="w-12 h-12 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <p className="text-sm text-gray-500">No image</p>
-                  </div>
-                )}
-              </div>
+              <Link href={`/dashboard/recipes/${r.id}/view`} className="block">
+                <div className="w-full h-48 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl mb-4 flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer">
+                  {r.imageUrl ? (
+                    <img 
+                      src={r.imageUrl} 
+                      alt={r.name}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <svg className="w-12 h-12 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p className="text-sm text-gray-500">No image</p>
+                    </div>
+                  )}
+                </div>
+              </Link>
 
               {/* Recipe Info */}
               <div className="space-y-3">

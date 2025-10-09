@@ -6,7 +6,7 @@ declare global {
 }
 
 // Optimized Prisma configuration for production performance
-export const prisma: PrismaClient = global.prisma ?? new PrismaClient({
+const prismaClient = new PrismaClient({
   log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   datasources: {
     db: {
@@ -34,6 +34,8 @@ export const prisma: PrismaClient = global.prisma ?? new PrismaClient({
     },
   },
 });
+
+export const prisma = global.prisma ?? prismaClient;
 
 if (process.env.NODE_ENV !== "production") {
   global.prisma = prisma;

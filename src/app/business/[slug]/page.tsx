@@ -115,7 +115,7 @@ export default async function BusinessProfilePage({ params }: Props) {
                       )}
                       
                       <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>Yield: {recipe.yieldQuantity} {recipe.yieldUnit}</span>
+                        <span>Yield: {recipe.yieldQuantity.toString()} {recipe.yieldUnit}</span>
                         {recipe.portionsPerBatch && recipe.portionsPerBatch > 1 && (
                           <span>{recipe.portionsPerBatch} servings</span>
                         )}
