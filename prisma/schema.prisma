@@ -58,6 +58,10 @@ model Ingredient {
   originalUnit    Unit?     // Store the original unit the user selected
   packPrice       Decimal
   currency        String    @default("GBP")
+  
+  // Price tracking
+  lastPriceUpdate DateTime  @default(now()) // When price was last updated
+  priceHistory    String?   // JSON array of historical prices (optional)
 
   // Density in g/ml to enable volume↔mass conversions when needed
   densityGPerMl   Decimal?
@@ -87,6 +91,11 @@ model Recipe {
   // Output yield
   yieldQuantity  Decimal
   yieldUnit      BaseUnit
+  
+  // Portions/Servings (e.g., 1 tin = 24 slices)
+  portionsPerBatch Int?      // How many servings/slices from one batch
+  portionSize      Decimal?  // Size of each portion (optional)
+  portionUnit      BaseUnit? // Unit for portion size
 
   // Optional image URL
   imageUrl       String?

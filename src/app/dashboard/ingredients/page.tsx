@@ -5,6 +5,8 @@ import { formatCurrency } from "@/lib/currency";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { fromBase, Unit } from "@/lib/units";
 import { SearchBar } from "@/components/SearchBar";
+import { StalePriceAlerts } from "@/components/StalePriceAlerts";
+import { formatLastUpdate, checkPriceStatus, getPriceStatusColorClass } from "@/lib/priceTracking";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,17 @@ export default async function IngredientsPage({ searchParams }: Props) {
           </svg>
           New Ingredient
         </Link>
+      </div>
+
+      {/* Stale Price Alerts */}
+      <div className="mb-8">
+        <StalePriceAlerts ingredients={ingredients.map(ing => ({
+          id: ing.id,
+          name: ing.name,
+          lastPriceUpdate: ing.lastPriceUpdate,
+          packPrice: Number(ing.packPrice),
+          supplier: ing.supplierRef?.name || ing.supplier || undefined,
+        }))} />
       </div>
 
       <div className="mb-6">
@@ -130,6 +143,20 @@ export default async function IngredientsPage({ searchParams }: Props) {
                     </div>
                   )}
                 </div>
+
+                {/* Last Price Update */}
+                {(() => {
+                  const priceStatus = checkPriceStatus(ing.lastPriceUpdate);
+                  const colorClass = getPriceStatusColorClass(priceStatus.status);
+                  return (
+                    <div className={`text-xs px-3 py-2 rounded-lg border ${colorClass} flex items-center gap-2`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Updated: {formatLastUpdate(ing.lastPriceUpdate)}</span>
+                    </div>
+                  );
+                })()}
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-2">

@@ -120,6 +120,7 @@ export function UnifiedRecipeForm({
     shelfLife?: string;
     category?: string;
     sellingPrice?: number | null;
+    portionsPerBatch?: number | null;
     sections: RecipeSection[];
     subRecipes: RecipeSubRecipe[];
   };
@@ -146,6 +147,7 @@ export function UnifiedRecipeForm({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
   const [sellingPrice, setSellingPrice] = useState(initial?.sellingPrice?.toString() || "");
+  const [portionsPerBatch, setPortionsPerBatch] = useState(initial?.portionsPerBatch?.toString() || "");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -383,7 +385,10 @@ export function UnifiedRecipeForm({
           </div>
           <div className="grid gap-4 md:grid-cols-2 mt-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Yield Quantity</label>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Yield Quantity
+                <span className="text-xs font-normal text-gray-500 ml-1">Total batch output</span>
+              </label>
               <input 
                 type="number" 
                 step="any" 
@@ -391,9 +396,10 @@ export function UnifiedRecipeForm({
                 value={yieldQuantity}
                 onChange={(e) => setYieldQuantity(Number(e.target.value))}
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
-                placeholder="8"
+                placeholder="1"
                 required 
               />
+              <p className="text-xs text-gray-500 mt-1">e.g., 1 tin, 2 loaves, 500g batch</p>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">Yield Unit</label>
@@ -405,10 +411,28 @@ export function UnifiedRecipeForm({
               >
                 <option value="g">Grams (g)</option>
                 <option value="ml">Milliliters (ml)</option>
-                <option value="each">Each</option>
+                <option value="each">Each (whole items)</option>
                 <option value="slices">Slices</option>
               </select>
             </div>
+          </div>
+          <div className="mt-4">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Portions/Servings Per Batch
+              <span className="text-xs font-normal text-gray-500 ml-1">Optional - for cost per serving</span>
+            </label>
+            <input 
+              type="number" 
+              step="1" 
+              name="portionsPerBatch" 
+              value={portionsPerBatch}
+              onChange={(e) => setPortionsPerBatch(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
+              placeholder="e.g., 24 slices from 1 brownie tin"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              e.g., 1 brownie tin = 24 slices, 1 cake = 12 portions, 1 sandwich = 1 serving
+            </p>
           </div>
         </div>
 
@@ -508,9 +532,15 @@ export function UnifiedRecipeForm({
           {/* Food Cost Analysis */}
           {total > 0 && (() => {
             const targetFoodCost = 25; // Default, user can change in settings
-            const suggestedPrice = total / (targetFoodCost / 100);
+            const portions = portionsPerBatch ? parseInt(portionsPerBatch) : null;
+            const costPerPortion = portions && portions > 0 ? total / portions : null;
+            
+            // Calculate based on portion if available, otherwise full batch
+            const costToPrice = costPerPortion || total;
+            const suggestedPrice = costToPrice / (targetFoodCost / 100);
+            
             const price = sellingPrice ? parseFloat(sellingPrice) : null;
-            const actualFoodCost = price && price > 0 ? (total / price) * 100 : null;
+            const actualFoodCost = price && price > 0 ? (costToPrice / price) * 100 : null;
             const status = actualFoodCost === null ? 'no-price' : 
                           actualFoodCost <= targetFoodCost ? 'good' : 
                           actualFoodCost <= 35 ? 'warning' : 'poor';
@@ -518,12 +548,20 @@ export function UnifiedRecipeForm({
             return (
               <div className="mt-4 p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl space-y-3 border border-emerald-100">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Recipe Cost:</span>
+                  <span className="text-sm font-medium text-gray-700">Batch Cost:</span>
                   <span className="text-sm font-bold text-gray-900">{formatCurrency(total)}</span>
                 </div>
+                {costPerPortion && portions && (
+                  <div className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-emerald-200">
+                    <span className="text-sm font-semibold text-emerald-900">Cost Per Portion ({portions}):</span>
+                    <span className="text-base font-bold text-emerald-700">{formatCurrency(costPerPortion)}</span>
+                  </div>
+                )}
                 {actualFoodCost !== null && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">Your Food Cost %:</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      Food Cost % {portions ? `(per portion)` : `(per batch)`}:
+                    </span>
                     <span className={`text-sm font-bold ${
                       status === 'good' ? 'text-emerald-600' : 
                       status === 'warning' ? 'text-amber-600' : 
@@ -534,7 +572,9 @@ export function UnifiedRecipeForm({
                   </div>
                 )}
                 <div className="flex items-center justify-between border-t border-emerald-200 pt-3">
-                  <span className="text-sm font-medium text-emerald-900">Suggested Price ({targetFoodCost}% food cost):</span>
+                  <span className="text-sm font-medium text-emerald-900">
+                    Suggested Price {portions ? `(per portion)` : `(per batch)`} ({targetFoodCost}%):
+                  </span>
                   <span className="text-lg font-bold text-emerald-700">{formatCurrency(suggestedPrice)}</span>
                 </div>
                 {price && price < suggestedPrice && (
@@ -544,12 +584,12 @@ export function UnifiedRecipeForm({
                 )}
                 {!price && (
                   <div className="text-xs text-emerald-800 bg-emerald-100 p-3 rounded-lg border border-emerald-200">
-                    💡 Set selling price to <strong>{formatCurrency(suggestedPrice)}</strong> for {targetFoodCost}% food cost (industry standard)
+                    💡 Set selling price to <strong>{formatCurrency(suggestedPrice)}</strong> {portions ? `per slice/portion` : `per batch`} for {targetFoodCost}% food cost
                   </div>
                 )}
                 {actualFoodCost && actualFoodCost > 35 && (
                   <div className="text-xs text-red-800 bg-red-100 p-3 rounded-lg border border-red-200">
-                    ⚠️ Food cost over 35%! This recipe may not be profitable. Consider reducing portion size or increasing price.
+                    ⚠️ Food cost over 35%! This recipe may not be profitable. Consider {portions ? 'cutting larger portions or' : ''} increasing price.
                   </div>
                 )}
               </div>
@@ -904,17 +944,25 @@ export function UnifiedRecipeForm({
           {/* Summary */}
           <div className="space-y-3 border-t border-gray-200 pt-4">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-600">Subtotal</span>
-              <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-sm text-gray-600">Total Cost</span>
               <span className="font-semibold text-lg text-gray-900">{formatCurrency(total)}</span>
             </div>
-            <div className="flex justify-between items-center py-2">
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-sm text-gray-600">Per {yieldUnit}</span>
-              <span className="font-medium text-emerald-600">{formatCurrency(perOutput)}</span>
+              <span className="font-medium text-gray-900">{formatCurrency(perOutput)}</span>
             </div>
+            {portionsPerBatch && parseInt(portionsPerBatch) > 0 && (() => {
+              const portions = parseInt(portionsPerBatch);
+              const costPerPortion = total / portions;
+              return (
+                <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-lg border border-emerald-200">
+                  <span className="text-sm font-semibold text-emerald-900">
+                    Per Portion ({portions} total)
+                  </span>
+                  <span className="font-bold text-lg text-emerald-700">{formatCurrency(costPerPortion)}</span>
+                </div>
+              );
+            })()}
           </div>
           
           <div className="mt-4 p-3 bg-blue-50 rounded-xl">
