@@ -107,6 +107,13 @@ model Recipe {
   category       String?      // Legacy field - will be replaced by categoryId
   categoryId     Int?         // Reference to Category model
 
+  // Pricing & margin management
+  targetMargin      Decimal?  @default(65.0) // Target profit margin %
+  minMargin         Decimal?  @default(55.0) // Minimum acceptable margin %
+  currentPrice      Decimal?  // What they actually charge customers
+  suggestedPrice    Decimal?  // Auto-calculated from target margin
+  lastPriceUpdate   DateTime? // When price was last changed
+
   company        Company?     @relation(fields: [companyId], references: [id])
   companyId      Int?
   

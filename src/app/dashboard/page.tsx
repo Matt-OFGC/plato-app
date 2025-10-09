@@ -1,10 +1,65 @@
 import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUserAndCompany } from "@/lib/current";
+import { MarginAlerts } from "@/components/MarginAlerts";
+import { computeRecipeCost } from "@/lib/units";
 
 export default async function DashboardPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard");
+
+  const { companyId } = await getCurrentUserAndCompany();
+  
+  // Fetch recipes with pricing data and their ingredients
+  const recipes = await prisma.recipe.findMany({
+    where: companyId ? { companyId } : {},
+    include: {
+      items: {
+        include: {
+          ingredient: {
+            select: {
+              id: true,
+              packQuantity: true,
+              packUnit: true,
+              packPrice: true,
+              densityGPerMl: true,
+              currency: true,
+            }
+          }
+        }
+      }
+    },
+    orderBy: { name: "asc" },
+    take: 50, // Limit to recent recipes for performance
+  });
+
+  // Calculate costs and format for MarginAlerts component
+  const recipesWithCosts = recipes.map(recipe => {
+    const cost = computeRecipeCost({ 
+      items: recipe.items.map(item => ({
+        quantity: Number(item.quantity),
+        unit: item.unit,
+        ingredient: {
+          packQuantity: Number(item.ingredient.packQuantity),
+          packUnit: item.ingredient.packUnit,
+          packPrice: Number(item.ingredient.packPrice),
+          densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
+        }
+      }))
+    });
+    
+    return {
+      id: recipe.id,
+      name: recipe.name,
+      cost,
+      currentPrice: recipe.currentPrice ? Number(recipe.currentPrice) : null,
+      targetMargin: recipe.targetMargin ? Number(recipe.targetMargin) : null,
+      minMargin: recipe.minMargin ? Number(recipe.minMargin) : null,
+      currency: recipe.items[0]?.ingredient.currency || "GBP",
+    };
+  });
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -15,6 +70,11 @@ export default async function DashboardPage() {
         <p className="text-xl text-gray-600">
           Ready to manage your kitchen? Here's your command center.
         </p>
+      </div>
+
+      {/* Margin Alerts Section */}
+      <div className="mb-12">
+        <MarginAlerts recipes={recipesWithCosts} currency="GBP" />
       </div>
 
       {/* Quick Actions */}

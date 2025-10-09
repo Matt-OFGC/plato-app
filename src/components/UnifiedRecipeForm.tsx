@@ -119,6 +119,9 @@ export function UnifiedRecipeForm({
     storage?: string;
     shelfLife?: string;
     category?: string;
+    targetMargin?: number | null;
+    minMargin?: number | null;
+    currentPrice?: number | null;
     sections: RecipeSection[];
     subRecipes: RecipeSubRecipe[];
   };
@@ -144,6 +147,9 @@ export function UnifiedRecipeForm({
   const [subRecipes, setSubRecipes] = useState<RecipeSubRecipe[]>(initial?.subRecipes || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
+  const [targetMargin, setTargetMargin] = useState(initial?.targetMargin?.toString() || "65");
+  const [minMargin, setMinMargin] = useState(initial?.minMargin?.toString() || "55");
+  const [currentPrice, setCurrentPrice] = useState(initial?.currentPrice?.toString() || "");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -478,6 +484,94 @@ export function UnifiedRecipeForm({
               }}
             />
           </div>
+        </div>
+
+        {/* Pricing & Margins Section */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Pricing & Margins</h2>
+            <div className="text-xs text-gray-500">Target profit margins</div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Current Price (£)
+                <span className="text-xs font-normal text-gray-500 ml-1">What you charge</span>
+              </label>
+              <input 
+                type="number" 
+                step="0.01"
+                name="currentPrice" 
+                value={currentPrice}
+                onChange={(e) => setCurrentPrice(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
+                placeholder="e.g., 4.50"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Target Margin (%)
+                <span className="text-xs font-normal text-gray-500 ml-1">Goal</span>
+              </label>
+              <input 
+                type="number" 
+                step="1"
+                name="targetMargin" 
+                value={targetMargin}
+                onChange={(e) => setTargetMargin(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
+                placeholder="e.g., 65"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Min Margin (%)
+                <span className="text-xs font-normal text-gray-500 ml-1">Threshold</span>
+              </label>
+              <input 
+                type="number" 
+                step="1"
+                name="minMargin" 
+                value={minMargin}
+                onChange={(e) => setMinMargin(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
+                placeholder="e.g., 55"
+              />
+            </div>
+          </div>
+          {/* Price Analysis */}
+          {currentPrice && parseFloat(currentPrice) > 0 && total > 0 && (() => {
+            const price = parseFloat(currentPrice);
+            const actualMargin = ((price - total) / price) * 100;
+            const target = parseFloat(targetMargin) || 65;
+            const min = parseFloat(minMargin) || 55;
+            const suggestedPrice = total / (1 - target / 100);
+            const status = actualMargin >= target ? 'good' : actualMargin >= min ? 'warning' : 'poor';
+            
+            return (
+              <div className="mt-4 p-4 bg-gray-50 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Current Margin:</span>
+                  <span className={`text-sm font-bold ${
+                    status === 'good' ? 'text-emerald-600' : 
+                    status === 'warning' ? 'text-amber-600' : 
+                    'text-red-600'
+                  }`}>
+                    {actualMargin.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Suggested Price:</span>
+                  <span className="text-sm font-bold text-emerald-600">{formatCurrency(suggestedPrice)}</span>
+                </div>
+                {actualMargin < target && (
+                  <div className="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg">
+                    💡 Increase price by {formatCurrency(suggestedPrice - price)} to reach {target}% target margin
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 p-6">

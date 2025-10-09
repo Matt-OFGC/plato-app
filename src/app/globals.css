@@ -273,3 +273,113 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
+
+/* Print-specific styles */
+@media print {
+  /* Hide non-print elements */
+  .no-print,
+  header,
+  footer,
+  nav,
+  aside,
+  .sidebar {
+    display: none !important;
+  }
+
+  /* Reset page margins */
+  @page {
+    margin: 0.5in;
+    size: A4;
+  }
+
+  /* Ensure print content shows */
+  .print-content {
+    display: block !important;
+  }
+
+  /* Kitchen Card specific styles */
+  .kitchen-card {
+    page-break-after: always;
+    font-size: 14pt;
+    max-width: 100%;
+    border: 2px solid #000 !important;
+  }
+
+  .kitchen-card h1 {
+    font-size: 28pt;
+    font-weight: bold;
+  }
+
+  .kitchen-card h2 {
+    font-size: 20pt;
+    font-weight: bold;
+  }
+
+  .kitchen-card h3 {
+    font-size: 16pt;
+    font-weight: bold;
+  }
+
+  /* Ensure checkboxes print */
+  .kitchen-card input[type="checkbox"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Cost Sheet specific styles */
+  .cost-sheet {
+    page-break-after: always;
+    font-size: 11pt;
+    max-width: 100%;
+    border: 1px solid #000 !important;
+  }
+
+  .cost-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .cost-sheet th,
+  .cost-sheet td {
+    padding: 6px;
+    border: 1px solid #666;
+  }
+
+  .cost-sheet thead {
+    background-color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure colors print correctly */
+  .bg-amber-50,
+  .bg-amber-200,
+  .bg-blue-50,
+  .bg-blue-200,
+  .bg-emerald-50,
+  .bg-gray-50,
+  .text-amber-700,
+  .text-amber-900,
+  .text-blue-700,
+  .text-blue-900,
+  .text-emerald-700,
+  .text-emerald-600 {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Prevent page breaks inside important elements */
+  table,
+  .ingredient-section,
+  .method-section {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure borders and backgrounds print */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
