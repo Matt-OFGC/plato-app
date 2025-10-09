@@ -107,11 +107,10 @@ model Recipe {
   category       String?      // Legacy field - will be replaced by categoryId
   categoryId     Int?         // Reference to Category model
 
-  // Pricing & margin management
-  targetMargin      Decimal?  @default(65.0) // Target profit margin %
-  minMargin         Decimal?  @default(55.0) // Minimum acceptable margin %
-  currentPrice      Decimal?  // What they actually charge customers
-  suggestedPrice    Decimal?  // Auto-calculated from target margin
+  // Pricing & food cost management
+  sellingPrice      Decimal?  // What they actually charge customers
+  suggestedPrice    Decimal?  // Auto-calculated from target food cost %
+  actualFoodCost    Decimal?  // Calculated food cost % (cost/price * 100)
   lastPriceUpdate   DateTime? // When price was last changed
 
   company        Company?     @relation(fields: [companyId], references: [id])
@@ -280,6 +279,10 @@ model UserPreference {
   user         User     @relation(fields: [userId], references: [id])
   userId       Int      @unique
   currency     String   @default("GBP")
+  
+  // Food cost percentage targets (industry standard: 25-35%)
+  targetFoodCost  Decimal  @default(25.0)  // Target food cost %
+  maxFoodCost     Decimal  @default(35.0)  // Maximum acceptable food cost %
 }
 
 model Subscription {

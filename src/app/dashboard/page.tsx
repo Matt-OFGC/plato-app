@@ -35,7 +35,15 @@ export default async function DashboardPage() {
     take: 50, // Limit to recent recipes for performance
   });
 
-  // Calculate costs and format for MarginAlerts component
+  // Get user's food cost preferences
+  const userPreferences = await prisma.userPreference.findUnique({
+    where: { userId: user.id },
+  });
+  
+  const targetFoodCost = userPreferences?.targetFoodCost ? Number(userPreferences.targetFoodCost) : 25;
+  const maxFoodCost = userPreferences?.maxFoodCost ? Number(userPreferences.maxFoodCost) : 35;
+
+  // Calculate costs and format for Food Cost Alerts component
   const recipesWithCosts = recipes.map(recipe => {
     const cost = computeRecipeCost({ 
       items: recipe.items.map(item => ({
@@ -54,9 +62,9 @@ export default async function DashboardPage() {
       id: recipe.id,
       name: recipe.name,
       cost,
-      currentPrice: recipe.currentPrice ? Number(recipe.currentPrice) : null,
-      targetMargin: recipe.targetMargin ? Number(recipe.targetMargin) : null,
-      minMargin: recipe.minMargin ? Number(recipe.minMargin) : null,
+      sellingPrice: recipe.sellingPrice ? Number(recipe.sellingPrice) : null,
+      targetFoodCost: null, // Use global setting
+      maxFoodCost: null,     // Use global setting
       currency: recipe.items[0]?.ingredient.currency || "GBP",
     };
   });
@@ -72,9 +80,14 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Margin Alerts Section */}
+      {/* Food Cost Alerts Section */}
       <div className="mb-12">
-        <MarginAlerts recipes={recipesWithCosts} currency="GBP" />
+        <MarginAlerts 
+          recipes={recipesWithCosts} 
+          currency="GBP"
+          targetFoodCost={targetFoodCost}
+          maxFoodCost={maxFoodCost}
+        />
       </div>
 
       {/* Quick Actions */}

@@ -3,36 +3,43 @@
 import Link from "next/link";
 import { formatCurrency } from "@/lib/currency";
 import {
-  analyzeRecipeMargin,
-  formatMargin,
-  getMarginColorClass,
-  getMarginStatusLabel,
+  analyzeRecipeFoodCost,
+  formatFoodCost,
+  getFoodCostColorClass,
+  getFoodCostStatusLabel,
 } from "@/lib/pricing";
 
 interface Recipe {
   id: number;
   name: string;
   cost: number;
-  currentPrice: number | null;
-  targetMargin: number | null;
-  minMargin: number | null;
+  sellingPrice: number | null;
+  targetFoodCost: number | null;
+  maxFoodCost: number | null;
   currency: string;
 }
 
-interface MarginAlertsProps {
+interface FoodCostAlertsProps {
   recipes: Recipe[];
   currency?: string;
+  targetFoodCost?: number;
+  maxFoodCost?: number;
 }
 
-export function MarginAlerts({ recipes, currency = "GBP" }: MarginAlertsProps) {
+export function MarginAlerts({ 
+  recipes, 
+  currency = "GBP",
+  targetFoodCost = 25,
+  maxFoodCost = 35
+}: FoodCostAlertsProps) {
   // Analyze all recipes
   const analyzedRecipes = recipes
     .map((recipe) => {
-      const analysis = analyzeRecipeMargin(
+      const analysis = analyzeRecipeFoodCost(
         recipe.cost,
-        recipe.currentPrice,
-        recipe.targetMargin || 65,
-        recipe.minMargin || 55
+        recipe.sellingPrice,
+        recipe.targetFoodCost || targetFoodCost,
+        recipe.maxFoodCost || maxFoodCost
       );
       return { ...recipe, analysis };
     })
@@ -65,7 +72,7 @@ export function MarginAlerts({ recipes, currency = "GBP" }: MarginAlertsProps) {
           <div>
             <h3 className="text-lg font-semibold text-emerald-900">All Recipes On Target!</h3>
             <p className="text-emerald-700">
-              All your recipes are meeting or exceeding their target profit margins.
+              All your recipes are at or below your {targetFoodCost}% food cost target. Great job! 👏
             </p>
           </div>
         </div>
@@ -77,13 +84,13 @@ export function MarginAlerts({ recipes, currency = "GBP" }: MarginAlertsProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Margin Alerts</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Food Cost Alerts</h2>
           <p className="text-gray-600 mt-1">
-            {analyzedRecipes.length} {analyzedRecipes.length === 1 ? "recipe needs" : "recipes need"} attention
+            {analyzedRecipes.length} {analyzedRecipes.length === 1 ? "recipe needs" : "recipes need"} pricing review
           </p>
         </div>
         <div className="text-sm text-gray-500">
-          Target: 65% | Minimum: 55%
+          Target: {targetFoodCost}% | Max: {maxFoodCost}%
         </div>
       </div>
 
@@ -181,11 +188,11 @@ function RecipeMarginCard({
   recipe,
   currency,
 }: {
-  recipe: Recipe & { analysis: ReturnType<typeof analyzeRecipeMargin> };
+  recipe: Recipe & { analysis: ReturnType<typeof analyzeRecipeFoodCost> };
   currency: string;
 }) {
   const { analysis } = recipe;
-  const statusClass = getMarginColorClass(analysis.status);
+  const statusClass = getFoodCostColorClass(analysis.status);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -199,7 +206,7 @@ function RecipeMarginCard({
           </Link>
           <div className="flex items-center gap-2 mt-1">
             <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusClass}`}>
-              {getMarginStatusLabel(analysis.status)}
+              {getFoodCostStatusLabel(analysis.status)}
             </span>
           </div>
         </div>
@@ -207,18 +214,18 @@ function RecipeMarginCard({
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
         <div>
-          <p className="text-gray-500">Cost</p>
+          <p className="text-gray-500">Recipe Cost</p>
           <p className="font-semibold text-gray-900">{formatCurrency(analysis.cost, currency)}</p>
         </div>
         <div>
-          <p className="text-gray-500">Current Price</p>
+          <p className="text-gray-500">Selling Price</p>
           <p className="font-semibold text-gray-900">
-            {analysis.currentPrice ? formatCurrency(analysis.currentPrice, currency) : "—"}
+            {analysis.sellingPrice ? formatCurrency(analysis.sellingPrice, currency) : "—"}
           </p>
         </div>
         <div>
-          <p className="text-gray-500">Current Margin</p>
-          <p className="font-semibold text-gray-900">{formatMargin(analysis.actualMargin)}</p>
+          <p className="text-gray-500">Food Cost %</p>
+          <p className="font-semibold text-gray-900">{formatFoodCost(analysis.actualFoodCost)}</p>
         </div>
         <div>
           <p className="text-gray-500">Suggested Price</p>
@@ -228,14 +235,25 @@ function RecipeMarginCard({
         </div>
       </div>
 
-      {analysis.currentPrice && analysis.suggestedPrice > analysis.currentPrice && (
+      {analysis.sellingPrice && analysis.suggestedPrice > analysis.sellingPrice && (
         <div className="mt-3 pt-3 border-t border-gray-100">
           <p className="text-sm text-gray-600">
             Increase price by{" "}
             <span className="font-semibold text-gray-900">
-              {formatCurrency(analysis.suggestedPrice - analysis.currentPrice, currency)}
+              {formatCurrency(analysis.suggestedPrice - analysis.sellingPrice, currency)}
             </span>{" "}
-            to reach {analysis.targetMargin}% target margin
+            to reach {analysis.targetFoodCost}% food cost target
+          </p>
+        </div>
+      )}
+      {!analysis.sellingPrice && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <p className="text-sm text-gray-600">
+            💡 Set selling price to{" "}
+            <span className="font-semibold text-emerald-700">
+              {formatCurrency(analysis.suggestedPrice, currency)}
+            </span>{" "}
+            for {analysis.targetFoodCost}% food cost
           </p>
         </div>
       )}
@@ -245,7 +263,7 @@ function RecipeMarginCard({
           href={`/dashboard/recipes/${recipe.id}`}
           className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium text-center"
         >
-          Update Price
+          {analysis.sellingPrice ? "Update Price" : "Set Price"}
         </Link>
         <Link
           href={`/dashboard/recipes/${recipe.id}/view`}
