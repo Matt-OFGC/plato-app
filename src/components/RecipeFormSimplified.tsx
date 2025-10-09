@@ -599,138 +599,139 @@ export function RecipeFormSimplified({
 
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-6">
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* LEFT SIDEBAR - ADDITIONAL DETAILS (3 columns) */}
-        <div className="xl:col-span-3">
-          <div className="xl:sticky xl:top-8">
-            {/* Additional Details Section */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Additional Details</h3>
+    <form onSubmit={handleSubmit} className="min-h-screen bg-gray-50">
+      <div className="max-w-none mx-auto px-8 py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
+          {/* LEFT SIDEBAR - ADDITIONAL DETAILS (3 columns) */}
+          <div className="xl:col-span-3">
+            <div className="xl:sticky xl:top-8">
+              {/* Additional Details Section */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+                <h3 className="text-xl font-semibold text-gray-900 mb-8">Additional Details</h3>
 
-              <div className="space-y-6">
-                {/* Category, Shelf Life, Storage */}
-                <div className="space-y-5">
-                  {categories.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                      <select
-                        value={categoryId || ""}
-                        onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="">None</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {shelfLifeOptions.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
-                      <select
-                        value={shelfLifeId || ""}
-                        onChange={(e) => setShelfLifeId(e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="">None</option>
-                        {shelfLifeOptions.map((opt) => (
-                          <option key={opt.id} value={opt.id}>{opt.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {storageOptions.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
-                      <select
-                        value={storageId || ""}
-                        onChange={(e) => setStorageId(e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="">None</option>
-                        {storageOptions.map((opt) => (
-                          <option key={opt.id} value={opt.id}>{opt.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bake Time & Temperature */}
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bake Time (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      value={bakeTime || ""}
-                      onChange={(e) => setBakeTime(e.target.value ? parseInt(e.target.value) : undefined)}
-                      placeholder="e.g., 25"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bake Temperature (°C)
-                    </label>
-                    <input
-                      type="number"
-                      value={bakeTemp || ""}
-                      onChange={(e) => setBakeTemp(e.target.value ? parseInt(e.target.value) : undefined)}
-                      placeholder="e.g., 180"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Method */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Method / Instructions
-                  </label>
-                  <textarea
-                    value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                    placeholder="Step-by-step instructions..."
-                    rows={5}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 resize-y"
-                  />
-                </div>
-
-                {/* Image Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Recipe Image
-                  </label>
-                  <div className="space-y-3">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="w-full"
-                    />
-                    {uploading && <span className="text-sm text-gray-600">Uploading...</span>}
-                    {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
-                    {imageUrl && (
+                <div className="space-y-8">
+                  {/* Category, Shelf Life, Storage */}
+                  <div className="space-y-6">
+                    {categories.length > 0 && (
                       <div>
-                        <img src={imageUrl} alt="Preview" className="h-24 w-24 object-cover rounded-lg border" />
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Category</label>
+                        <select
+                          value={categoryId || ""}
+                          onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : undefined)}
+                          className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-base"
+                        >
+                          <option value="">None</option>
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
                       </div>
                     )}
+
+                    {shelfLifeOptions.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Shelf Life</label>
+                        <select
+                          value={shelfLifeId || ""}
+                          onChange={(e) => setShelfLifeId(e.target.value ? parseInt(e.target.value) : undefined)}
+                          className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-base"
+                        >
+                          <option value="">None</option>
+                          {shelfLifeOptions.map((opt) => (
+                            <option key={opt.id} value={opt.id}>{opt.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {storageOptions.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Storage</label>
+                        <select
+                          value={storageId || ""}
+                          onChange={(e) => setStorageId(e.target.value ? parseInt(e.target.value) : undefined)}
+                          className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-base"
+                        >
+                          <option value="">None</option>
+                          {storageOptions.map((opt) => (
+                            <option key={opt.id} value={opt.id}>{opt.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bake Time & Temperature */}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Bake Time (minutes)
+                      </label>
+                      <input
+                        type="number"
+                        value={bakeTime || ""}
+                        onChange={(e) => setBakeTime(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="e.g., 25"
+                        className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Bake Temperature (°C)
+                      </label>
+                      <input
+                        type="number"
+                        value={bakeTemp || ""}
+                        onChange={(e) => setBakeTemp(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="e.g., 180"
+                        className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-base"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Method */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Method / Instructions
+                    </label>
+                    <textarea
+                      value={method}
+                      onChange={(e) => setMethod(e.target.value)}
+                      placeholder="Step-by-step instructions..."
+                      rows={6}
+                      className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 resize-y text-base"
+                    />
+                  </div>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Recipe Image
+                    </label>
+                    <div className="space-y-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                        className="w-full text-base"
+                      />
+                      {uploading && <span className="text-sm text-gray-600">Uploading...</span>}
+                      {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
+                      {imageUrl && (
+                        <div>
+                          <img src={imageUrl} alt="Preview" className="h-32 w-32 object-cover rounded-xl border" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* CENTER COLUMN - MAIN RECIPE CONTENT (6 columns) */}
-        <div className="xl:col-span-6 space-y-8">
+          {/* CENTER COLUMN - MAIN RECIPE CONTENT (6 columns) */}
+          <div className="xl:col-span-6 space-y-10">
         {/* Recipe Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1010,87 +1011,88 @@ export function RecipeFormSimplified({
           </button>
         </div>
 
-        {/* RIGHT SIDEBAR - COST BREAKDOWN (3 columns) */}
-        <div className="xl:col-span-3">
-          <div className="xl:sticky xl:top-8">
-            {/* Real-time Cost Display */}
-            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-6 border-2 border-emerald-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Live Cost Breakdown
-              </h3>
+          {/* RIGHT SIDEBAR - COST BREAKDOWN (3 columns) */}
+          <div className="xl:col-span-3">
+            <div className="xl:sticky xl:top-8">
+              {/* Real-time Cost Display */}
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-8 border-2 border-emerald-200 shadow-sm">
+                <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Live Cost Breakdown
+                </h3>
 
-              {recipeType === "single" ? (
-                /* Single Serving Display */
-                <div className="space-y-3">
-                  <div className="bg-white rounded-lg p-4 border border-emerald-200">
-                    <p className="text-sm text-gray-600 mb-1">Cost per serving</p>
-                    <p className="text-3xl font-bold text-emerald-600">
-                      {currencySymbol}{totalCost.toFixed(2)}
+                {recipeType === "single" ? (
+                  /* Single Serving Display */
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-xl p-6 border border-emerald-200 shadow-sm">
+                      <p className="text-sm text-gray-600 mb-2">Cost per serving</p>
+                      <p className="text-4xl font-bold text-emerald-600">
+                        {currencySymbol}{totalCost.toFixed(2)}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-600 text-center">
+                      Updates as you add ingredients
                     </p>
                   </div>
-                  <p className="text-xs text-gray-600 text-center">
-                    Updates as you add ingredients
-                  </p>
-                </div>
-              ) : (
-                /* Batch Recipe Display */
-                <div className="space-y-3">
-                  <div className="bg-white rounded-lg p-4 border border-emerald-200">
-                    <p className="text-sm text-gray-600 mb-1">Total batch cost</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {currencySymbol}{totalCost.toFixed(2)}
+                ) : (
+                  /* Batch Recipe Display */
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-xl p-6 border border-emerald-200 shadow-sm">
+                      <p className="text-sm text-gray-600 mb-2">Total batch cost</p>
+                      <p className="text-3xl font-bold text-gray-900">
+                        {currencySymbol}{totalCost.toFixed(2)}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 text-gray-600 text-base">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                      <span>Divided by {servings} servings</span>
+                    </div>
+
+                    <div className="bg-emerald-600 text-white rounded-xl p-6 shadow-lg">
+                      <p className="text-base opacity-90 mb-2">Cost per serving</p>
+                      <p className="text-4xl font-bold">
+                        {currencySymbol}{costPerServing.toFixed(2)}
+                      </p>
+                    </div>
+
+                    <p className="text-sm text-gray-600 text-center">
+                      Updates as you add ingredients
                     </p>
                   </div>
-                  
-                  <div className="flex items-center gap-2 text-gray-600 text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                )}
+              </div>
+
+              {/* Pricing Suggestions */}
+              {totalCost > 0 && (
+                <div className="mt-8 bg-blue-50 rounded-2xl p-8 border border-blue-200 shadow-sm">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-3">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    <span>Divided by {servings} servings</span>
+                    Suggested Pricing
+                  </h4>
+                  <div className="space-y-3 text-base">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Conservative (2x):</span>
+                      <span className="font-semibold">{currencySymbol}{(costPerServing * 2).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between bg-blue-600 text-white px-4 py-2 rounded-xl">
+                      <span>Recommended (3x):</span>
+                      <span className="font-bold">{currencySymbol}{(costPerServing * 3).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Premium (4x):</span>
+                      <span className="font-semibold">{currencySymbol}{(costPerServing * 4).toFixed(2)}</span>
+                    </div>
                   </div>
-
-                  <div className="bg-emerald-600 text-white rounded-lg p-4">
-                    <p className="text-sm opacity-90 mb-1">Cost per serving</p>
-                    <p className="text-3xl font-bold">
-                      {currencySymbol}{costPerServing.toFixed(2)}
-                    </p>
-                  </div>
-
-                  <p className="text-xs text-gray-600 text-center">
-                    Updates as you add ingredients
-                  </p>
                 </div>
               )}
             </div>
-
-            {/* Pricing Suggestions */}
-            {totalCost > 0 && (
-              <div className="mt-6 bg-blue-50 rounded-xl p-6 border border-blue-200">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Suggested Pricing
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Conservative (2x):</span>
-                    <span className="font-semibold">{currencySymbol}{(costPerServing * 2).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between bg-blue-600 text-white px-2 py-1 rounded">
-                    <span>Recommended (3x):</span>
-                    <span className="font-bold">{currencySymbol}{(costPerServing * 3).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Premium (4x):</span>
-                    <span className="font-semibold">{currencySymbol}{(costPerServing * 4).toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
