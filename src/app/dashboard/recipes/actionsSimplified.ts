@@ -12,6 +12,15 @@ export async function createSimplifiedRecipe(formData: FormData) {
     const name = formData.get("name") as string;
     const recipeType = formData.get("recipeType") as "single" | "batch";
     const servings = parseInt(formData.get("servings") as string) || 1;
+    
+    // Optional fields
+    const method = formData.get("method") as string | null;
+    const imageUrl = formData.get("imageUrl") as string | null;
+    const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null;
+    const shelfLifeId = formData.get("shelfLifeId") ? parseInt(formData.get("shelfLifeId") as string) : null;
+    const storageId = formData.get("storageId") ? parseInt(formData.get("storageId") as string) : null;
+    const bakeTime = formData.get("bakeTime") ? parseInt(formData.get("bakeTime") as string) : null;
+    const bakeTemp = formData.get("bakeTemp") ? parseInt(formData.get("bakeTemp") as string) : null;
 
     // Parse ingredients
     const ingredientIds = formData.getAll("ingredientId").map(id => parseInt(id as string));
@@ -31,6 +40,14 @@ export async function createSimplifiedRecipe(formData: FormData) {
         yieldQuantity: 1,  // Always 1 for the "thing" being made
         yieldUnit: "each", // Always "each" (1 sandwich, 1 cake, 1 pot of soup)
         portionsPerBatch: recipeType === "single" ? 1 : servings,
+        // Optional fields
+        ...(method && { method }),
+        ...(imageUrl && { imageUrl }),
+        ...(categoryId && { categoryId }),
+        ...(shelfLifeId && { shelfLifeId }),
+        ...(storageId && { storageId }),
+        ...(bakeTime && { bakeTime }),
+        ...(bakeTemp && { bakeTemp }),
         items: {
           create: ingredientIds
             .map((id, idx) => {
@@ -65,6 +82,15 @@ export async function updateSimplifiedRecipe(id: number, formData: FormData) {
     const name = formData.get("name") as string;
     const recipeType = formData.get("recipeType") as "single" | "batch";
     const servings = parseInt(formData.get("servings") as string) || 1;
+    
+    // Optional fields
+    const method = formData.get("method") as string | null;
+    const imageUrl = formData.get("imageUrl") as string | null;
+    const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null;
+    const shelfLifeId = formData.get("shelfLifeId") ? parseInt(formData.get("shelfLifeId") as string) : null;
+    const storageId = formData.get("storageId") ? parseInt(formData.get("storageId") as string) : null;
+    const bakeTime = formData.get("bakeTime") ? parseInt(formData.get("bakeTime") as string) : null;
+    const bakeTemp = formData.get("bakeTemp") ? parseInt(formData.get("bakeTemp") as string) : null;
 
     // Parse ingredients
     const ingredientIds = formData.getAll("ingredientId").map(id => parseInt(id as string));
@@ -82,6 +108,14 @@ export async function updateSimplifiedRecipe(id: number, formData: FormData) {
       data: {
         name,
         portionsPerBatch: recipeType === "single" ? 1 : servings,
+        // Optional fields
+        ...(method && { method }),
+        ...(imageUrl && { imageUrl }),
+        ...(categoryId && { categoryId }),
+        ...(shelfLifeId && { shelfLifeId }),
+        ...(storageId && { storageId }),
+        ...(bakeTime && { bakeTime }),
+        ...(bakeTemp && { bakeTemp }),
         items: {
           create: ingredientIds
             .map((id, idx) => {

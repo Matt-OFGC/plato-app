@@ -1,27 +1,116 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Unit } from "@/generated/prisma";
+import { computeRecipeCost } from "@/lib/units";
 
 interface Ingredient {
+  id: number;
+  name: string;
+  packQuantity?: number;
+  packUnit?: string;
+  packPrice?: number;
+  densityGPerMl?: number | null;
+}
+
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface ShelfLifeOption {
+  id: number;
+  name: string;
+}
+
+interface StorageOption {
   id: number;
   name: string;
 }
 
 interface RecipeFormSimplifiedProps {
   ingredients: Ingredient[];
+  categories?: Category[];
+  shelfLifeOptions?: ShelfLifeOption[];
+  storageOptions?: StorageOption[];
   onSubmit: (data: any) => void;
+  initial?: {
+    name: string;
+    recipeType?: "single" | "batch";
+    servings?: number;
+    method?: string;
+    imageUrl?: string;
+    categoryId?: number;
+    shelfLifeId?: number;
+    storageId?: number;
+    bakeTime?: number;
+    bakeTemp?: number;
+    items: Array<{
+      ingredientId: number;
+      quantity: string;
+      unit: Unit;
+    }>;
+  };
 }
 
-export function RecipeFormSimplified({ ingredients, onSubmit }: RecipeFormSimplifiedProps) {
-  const [recipeType, setRecipeType] = useState<"single" | "batch">("single");
-  const [name, setName] = useState("");
-  const [servings, setServings] = useState(1);
+export function RecipeFormSimplified({ 
+  ingredients, 
+  categories = [],
+  shelfLifeOptions = [],
+  storageOptions = [],
+  onSubmit,
+  initial 
+}: RecipeFormSimplifiedProps) {
+  const [recipeType, setRecipeType] = useState<"single" | "batch">(initial?.recipeType || "single");
+  const [name, setName] = useState(initial?.name || "");
+  const [servings, setServings] = useState(initial?.servings || 1);
+  const [method, setMethod] = useState(initial?.method || "");
+  const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
+  const [categoryId, setCategoryId] = useState<number | undefined>(initial?.categoryId);
+  const [shelfLifeId, setShelfLifeId] = useState<number | undefined>(initial?.shelfLifeId);
+  const [storageId, setStorageId] = useState<number | undefined>(initial?.storageId);
+  const [bakeTime, setBakeTime] = useState<number | undefined>(initial?.bakeTime);
+  const [bakeTemp, setBakeTemp] = useState<number | undefined>(initial?.bakeTemp);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  
   const [recipeItems, setRecipeItems] = useState<Array<{
     ingredientId: number;
     quantity: string;
     unit: Unit;
-  }>>([{ ingredientId: 0, quantity: "", unit: "g" as Unit }]);
+  }>>(initial?.items || [{ ingredientId: 0, quantity: "", unit: "g" as Unit }]);
+
+  // Calculate real-time cost
+  const totalCost = useMemo(() => {
+    const validItems = recipeItems
+      .filter(item => item.ingredientId && item.quantity)
+      .map(item => {
+        const ing = ingredients.find(i => i.id === item.ingredientId);
+        if (!ing || !ing.packQuantity || !ing.packPrice) return null;
+        
+        return {
+          quantity: parseFloat(item.quantity),
+          unit: item.unit,
+          ingredient: {
+            packQuantity: ing.packQuantity,
+            packUnit: ing.packUnit as any,
+            packPrice: ing.packPrice,
+            densityGPerMl: ing.densityGPerMl || undefined,
+          }
+        };
+      })
+      .filter(Boolean) as any[];
+
+    if (validItems.length === 0) return 0;
+    
+    try {
+      return computeRecipeCost({ items: validItems });
+    } catch {
+      return 0;
+    }
+  }, [recipeItems, ingredients]);
+
+  const costPerServing = totalCost / servings;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +120,14 @@ export function RecipeFormSimplified({ ingredients, onSubmit }: RecipeFormSimpli
     formData.append("name", name);
     formData.append("recipeType", recipeType);
     formData.append("servings", servings.toString());
+    
+    if (method) formData.append("method", method);
+    if (imageUrl) formData.append("imageUrl", imageUrl);
+    if (categoryId) formData.append("categoryId", categoryId.toString());
+    if (shelfLifeId) formData.append("shelfLifeId", shelfLifeId.toString());
+    if (storageId) formData.append("storageId", storageId.toString());
+    if (bakeTime) formData.append("bakeTime", bakeTime.toString());
+    if (bakeTemp) formData.append("bakeTemp", bakeTemp.toString());
     
     // Add each ingredient
     recipeItems
@@ -42,6 +139,38 @@ export function RecipeFormSimplified({ ingredients, onSubmit }: RecipeFormSimpli
       });
     
     onSubmit(formData);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Client-side file size check (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setUploadError("File is too large. Maximum size is 10MB.");
+      return;
+    }
+    
+    setUploading(true);
+    setUploadError("");
+    
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setImageUrl(data.url);
+      } else {
+        setUploadError(data.error || "Upload failed");
+      }
+    } catch (error) {
+      setUploadError("Network error. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const addIngredient = () => {
@@ -58,22 +187,110 @@ export function RecipeFormSimplified({ ingredients, onSubmit }: RecipeFormSimpli
     setRecipeItems(updated);
   };
 
+  const currencySymbol = "£"; // TODO: Get from user preferences
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Recipe Name */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Recipe Name
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Bacon Sandwich, Victoria Sponge Cake"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-          required
-        />
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* LEFT COLUMN - COST BREAKDOWN (STICKY) */}
+      <div className="lg:col-span-1">
+        <div className="lg:sticky lg:top-8 space-y-6">
+          {/* Real-time Cost Display */}
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-6 border-2 border-emerald-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Live Cost Breakdown
+            </h3>
+
+            {recipeType === "single" ? (
+              /* Single Serving Display */
+              <div className="space-y-3">
+                <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                  <p className="text-sm text-gray-600 mb-1">Cost per serving</p>
+                  <p className="text-3xl font-bold text-emerald-600">
+                    {currencySymbol}{totalCost.toFixed(2)}
+                  </p>
+                </div>
+                <p className="text-xs text-gray-600 text-center">
+                  Updates as you add ingredients
+                </p>
+              </div>
+            ) : (
+              /* Batch Recipe Display */
+              <div className="space-y-3">
+                <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                  <p className="text-sm text-gray-600 mb-1">Total batch cost</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {currencySymbol}{totalCost.toFixed(2)}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                  <span>Divided by {servings} servings</span>
+                </div>
+
+                <div className="bg-emerald-600 text-white rounded-lg p-4">
+                  <p className="text-sm opacity-90 mb-1">Cost per serving</p>
+                  <p className="text-3xl font-bold">
+                    {currencySymbol}{costPerServing.toFixed(2)}
+                  </p>
+                </div>
+
+                <p className="text-xs text-gray-600 text-center">
+                  Updates as you add ingredients
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Pricing Suggestions */}
+          {totalCost > 0 && (
+            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Suggested Pricing
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Conservative (2x):</span>
+                  <span className="font-semibold">{currencySymbol}{(costPerServing * 2).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between bg-blue-600 text-white px-2 py-1 rounded">
+                  <span>Recommended (3x):</span>
+                  <span className="font-bold">{currencySymbol}{(costPerServing * 3).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Premium (4x):</span>
+                  <span className="font-semibold">{currencySymbol}{(costPerServing * 4).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* RIGHT COLUMN - FORM FIELDS */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Recipe Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Recipe Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Bacon Sandwich, Victoria Sponge Cake"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            required
+          />
+        </div>
 
       {/* Recipe Type Selector - THIS IS THE KEY! */}
       <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-6 border-2 border-emerald-200">
@@ -250,36 +467,135 @@ export function RecipeFormSimplified({ ingredients, onSubmit }: RecipeFormSimpli
         </button>
       </div>
 
-      {/* Cost Preview - Show what will be calculated */}
-      <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">💰 Cost Breakdown (Preview)</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Total batch cost:</span>
-            <span className="font-semibold">Calculated after save</span>
-          </div>
-          {recipeType === "batch" && (
-            <div className="flex justify-between pt-2 border-t border-gray-300">
-              <span className="text-gray-600">Cost per serving:</span>
-              <span className="font-semibold">Total ÷ {servings} servings</span>
+      {/* Additional Details Section */}
+      <div className="border-t-2 border-gray-200 pt-6 space-y-6">
+        <h3 className="text-lg font-semibold text-gray-900">Additional Details (Optional)</h3>
+
+        {/* Category, Shelf Life, Storage in a grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {categories.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={categoryId || ""}
+                onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : undefined)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">None</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {shelfLifeOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
+              <select
+                value={shelfLifeId || ""}
+                onChange={(e) => setShelfLifeId(e.target.value ? parseInt(e.target.value) : undefined)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">None</option>
+                {shelfLifeOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {storageOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
+              <select
+                value={storageId || ""}
+                onChange={(e) => setStorageId(e.target.value ? parseInt(e.target.value) : undefined)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">None</option>
+                {storageOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
+                ))}
+              </select>
             </div>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-3">
-          {recipeType === "single" 
-            ? "You'll get the exact cost for making 1 serving"
-            : `You'll get the total cost for the batch AND cost per individual serving`
-          }
-        </p>
+
+        {/* Bake Time & Temperature */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Bake Time (minutes)
+            </label>
+            <input
+              type="number"
+              value={bakeTime || ""}
+              onChange={(e) => setBakeTime(e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="e.g., 25"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Bake Temperature (°C)
+            </label>
+            <input
+              type="number"
+              value={bakeTemp || ""}
+              onChange={(e) => setBakeTemp(e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="e.g., 180"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+
+        {/* Method */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Method / Instructions
+          </label>
+          <textarea
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            placeholder="Step-by-step instructions..."
+            rows={6}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 resize-y"
+          />
+        </div>
+
+        {/* Image Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Recipe Image
+          </label>
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={uploading}
+              className="flex-1"
+            />
+            {uploading && <span className="text-sm text-gray-600">Uploading...</span>}
+          </div>
+          {uploadError && <p className="text-sm text-red-600 mt-1">{uploadError}</p>}
+          {imageUrl && (
+            <div className="mt-3">
+              <img src={imageUrl} alt="Preview" className="h-32 w-32 object-cover rounded-lg border" />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Submit Button */}
       <button
         type="submit"
-        className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-lg"
+        className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-lg shadow-lg"
       >
-        Create Recipe & Calculate Cost
+        Save Recipe
       </button>
+      </div>
     </form>
   );
 }

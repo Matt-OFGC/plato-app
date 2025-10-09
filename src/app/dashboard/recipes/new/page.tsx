@@ -17,15 +17,44 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
   const { companyId } = await getCurrentUserAndCompany();
   const where = companyId ? { companyId } : {};
   
-  // Just fetch ingredients - that's all we need for the simplified form!
-  const ingredients = await prisma.ingredient.findMany({ 
-    where, 
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-    }
-  });
+  // Fetch all required data for the form
+  const [ingredientsRaw, categories, shelfLifeOptions, storageOptions] = await Promise.all([
+    prisma.ingredient.findMany({ 
+      where, 
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        packQuantity: true,
+        packUnit: true,
+        packPrice: true,
+        densityGPerMl: true,
+      }
+    }),
+    prisma.category.findMany({ 
+      where, 
+      orderBy: { order: "asc" },
+      select: { id: true, name: true }
+    }),
+    prisma.shelfLifeOption.findMany({ 
+      where, 
+      orderBy: { order: "asc" },
+      select: { id: true, name: true }
+    }),
+    prisma.storageOption.findMany({ 
+      where, 
+      orderBy: { order: "asc" },
+      select: { id: true, name: true }
+    }),
+  ]);
+  
+  // Convert Decimal types to numbers
+  const ingredients = ingredientsRaw.map(ing => ({
+    ...ing,
+    packQuantity: ing.packQuantity.toNumber(),
+    packPrice: ing.packPrice.toNumber(),
+    densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+  }));
 
   async function action(formData: FormData) {
     "use server";
@@ -88,7 +117,13 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
         </div>
       </div>
       
-      <RecipeFormSimplified ingredients={ingredients} onSubmit={action} />
+      <RecipeFormSimplified 
+        ingredients={ingredients}
+        categories={categories}
+        shelfLifeOptions={shelfLifeOptions}
+        storageOptions={storageOptions}
+        onSubmit={action}
+      />
     </div>
   );
 }
