@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { createSimplifiedRecipe } from "../actionsSimplified";
+import { deleteRecipe } from "../actions";
 import { RecipeFormSimplified } from "@/components/RecipeFormSimplified";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
@@ -57,9 +58,24 @@ export default async function EditRecipePage({ params }: Props) {
           <h1 className="text-3xl font-bold text-gray-900">Edit Recipe</h1>
           <p className="text-gray-600 mt-2">Quick and easy recipe costing - works for sandwiches to cakes!</p>
         </div>
-        <Link href="/dashboard/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
-          ← Back
-        </Link>
+        <div className="flex items-center gap-4">
+          <form action={async () => { 'use server'; await deleteRecipe(Number(id)); }} className="inline">
+            <button
+              type="submit"
+              onClick={(e) => {
+                if (!confirm('Are you sure you want to delete this recipe? This action cannot be undone.')) {
+                  e.preventDefault();
+                }
+              }}
+              className="text-red-600 hover:text-red-800 px-4 py-2 rounded-xl hover:bg-red-50 transition-colors font-medium border border-red-200 hover:border-red-300"
+            >
+              Delete Recipe
+            </button>
+          </form>
+          <Link href="/dashboard/recipes" className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium">
+            ← Back
+          </Link>
+        </div>
       </div>
       
       <RecipeFormSimplified 
