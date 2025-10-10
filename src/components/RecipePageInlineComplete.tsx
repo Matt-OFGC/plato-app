@@ -687,7 +687,26 @@ export function RecipePageInlineComplete({
                       <input
                         type="checkbox"
                         checked={useSections}
-                        onChange={(e) => setUseSections(e.target.checked)}
+                        onChange={(e) => {
+                          const newUseSections = e.target.checked;
+                          setUseSections(newUseSections);
+                          
+                          // When enabling sections, move existing items to first section
+                          if (newUseSections && items.length > 0) {
+                            setSections([{
+                              id: "section-0",
+                              title: "Step 1",
+                              description: "",
+                              method: "",
+                              items: [...items], // Preserve existing ingredients
+                            }]);
+                          }
+                          
+                          // When disabling sections, move first section's items back to simple list
+                          if (!newUseSections && sections.length > 0 && sections[0].items.length > 0) {
+                            setItems([...sections[0].items]);
+                          }
+                        }}
                         className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                       />
                       <div>
