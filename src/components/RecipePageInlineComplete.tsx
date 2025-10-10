@@ -932,7 +932,6 @@ export function RecipePageInlineComplete({
               </div>
             </div>
           </div>
-        </div>
 
         {/* Right Sidebar - Cost Breakdown (only in edit mode) */}
         {!isLocked && (
