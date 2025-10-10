@@ -404,58 +404,80 @@ export function RecipePageInlineComplete({
         </div>
       )}
 
-      {/* Recipe Title */}
+      {/* Recipe Title with Image */}
       <div className="mb-8">
-        {!isLocked ? (
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="text-4xl font-bold text-gray-900 mb-4 w-full border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        ) : (
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{name}</h1>
-        )}
-        
-        {!isLocked ? (
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            placeholder="Add a description..."
-            className="text-lg text-gray-600 mb-4 w-full border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        ) : (
-          description && <p className="text-lg text-gray-600 mb-4">{description}</p>
-        )}
+        <div className="flex gap-6 items-start">
+          {/* Title and Description */}
+          <div className="flex-1">
+            {!isLocked ? (
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="text-4xl font-bold text-gray-900 mb-4 w-full border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            ) : (
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">{name}</h1>
+            )}
+            
+            {!isLocked ? (
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                placeholder="Add a description..."
+                className="text-lg text-gray-600 mb-4 w-full border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            ) : (
+              description && <p className="text-lg text-gray-600 mb-4">{description}</p>
+            )}
 
-        <div className="flex items-center gap-6 text-sm text-gray-500">
-          {!isLocked ? (
-            <>
-              <div className="flex items-center gap-2">
-                <span>Yield:</span>
-                <input
-                  type="number"
-                  value={yieldQuantity}
-                  onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 0)}
-                  className="w-20 px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <select
-                  value={yieldUnit}
-                  onChange={(e) => setYieldUnit(e.target.value)}
-                  className="px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="each">servings</option>
-                  <option value="g">grams</option>
-                  <option value="ml">milliliters</option>
-                </select>
+            <div className="flex items-center gap-6 text-sm text-gray-500">
+              {!isLocked ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span>Yield:</span>
+                    <input
+                      type="number"
+                      value={yieldQuantity}
+                      onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 0)}
+                      className="w-20 px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <select
+                      value={yieldUnit}
+                      onChange={(e) => setYieldUnit(e.target.value)}
+                      className="px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="each">servings</option>
+                      <option value="g">grams</option>
+                      <option value="ml">milliliters</option>
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <span>Yield: {servings} {recipe.yieldUnit}</span>
+              )}
+              <span>Total Cost: {formatCurrency(editModeTotalCost * (isLocked ? scaleFactor : 1))}</span>
+              <span>Cost per {isLocked ? "serving" : yieldUnit}: {formatCurrency(editModeCostPerUnit * (isLocked ? scaleFactor : 1))}</span>
+            </div>
+          </div>
+
+          {/* Small Image Preview */}
+          <div className="w-32 h-32 flex-shrink-0">
+            {recipe.imageUrl || imageUrl ? (
+              <img 
+                src={imageUrl || recipe.imageUrl} 
+                alt={recipe.name} 
+                className="w-full h-full object-cover rounded-xl shadow-md"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl shadow-md flex items-center justify-center">
+                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
-            </>
-          ) : (
-            <span>Yield: {servings} {recipe.yieldUnit}</span>
-          )}
-          <span>Total Cost: {formatCurrency(editModeTotalCost * (isLocked ? scaleFactor : 1))}</span>
-          <span>Cost per {isLocked ? "serving" : yieldUnit}: {formatCurrency(editModeCostPerUnit * (isLocked ? scaleFactor : 1))}</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -463,8 +485,8 @@ export function RecipePageInlineComplete({
       <div className="grid xl:grid-cols-12 gap-8">
         {/* Left Sidebar - Additional Details (only in edit mode) */}
         {!isLocked && (
-          <div className="xl:col-span-3 space-y-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-6">
+          <div className="xl:col-span-2 space-y-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h3>
               <div className="space-y-4">
                 <div>
@@ -506,14 +528,14 @@ export function RecipePageInlineComplete({
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (min)</label>
                     <input
                       type="number"
                       value={bakeTime}
                       onChange={(e) => setBakeTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
@@ -522,7 +544,7 @@ export function RecipePageInlineComplete({
                       type="number"
                       value={bakeTemp}
                       onChange={(e) => setBakeTemp(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -541,59 +563,36 @@ export function RecipePageInlineComplete({
           </div>
         )}
 
-        {/* Center - Main Content */}
-        <div className={!isLocked ? "xl:col-span-6" : "xl:col-span-12"}>
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Image Section */}
-            <div className="space-y-6">
-              {recipe.imageUrl || imageUrl ? (
-                <img 
-                  src={imageUrl || recipe.imageUrl} 
-                  alt={recipe.name} 
-                  className="w-full h-96 object-cover rounded-2xl shadow-lg"
-                />
-              ) : (
-                <div className="w-full h-96 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-2xl shadow-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <svg className="w-16 h-16 text-emerald-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-gray-500">No image</p>
+        {/* Main Content - Much larger for ingredients */}
+        <div className={!isLocked ? "xl:col-span-7" : "xl:col-span-12"}>
+          <div className="space-y-6">
+            {/* Servings Control (only in locked mode) */}
+            {isLocked && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Servings</h3>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setServings(Math.max(1, servings - 1))}
+                      className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                      </svg>
+                    </button>
+                    <span className="text-xl font-medium text-gray-900 min-w-[3rem] text-center">{servings}</span>
+                    <button 
+                      onClick={() => setServings(servings + 1)}
+                      className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {/* Servings Control (only in locked mode) */}
-              {isLocked && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">Servings</h3>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => setServings(Math.max(1, servings - 1))}
-                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                        </svg>
-                      </button>
-                      <span className="text-xl font-medium text-gray-900 min-w-[3rem] text-center">{servings}</span>
-                      <button 
-                        onClick={() => setServings(servings + 1)}
-                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Ingredients and Instructions */}
-            <div className="space-y-6">
+              </div>
+            )}
               {/* Ingredients */}
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -623,7 +622,7 @@ export function RecipePageInlineComplete({
 
                 {/* Sections Toggle - Only in Edit Mode */}
                 {!isLocked && (
-                  <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -641,29 +640,29 @@ export function RecipePageInlineComplete({
 
                 {/* Edit Mode - Sections */}
                 {!isLocked && useSections && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {sections.map((section, sectionIdx) => (
-                      <div key={section.id} className="bg-gray-50 rounded-xl border-2 border-blue-200 p-4 space-y-3">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1 space-y-2">
+                      <div key={section.id} className="bg-gray-50 rounded-xl border-2 border-blue-200 p-5 space-y-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1 space-y-3">
                             <input
                               type="text"
                               value={section.title}
                               onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold"
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold text-lg"
                               placeholder="Step title"
                             />
                             <textarea
                               value={section.method}
                               onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, method: e.target.value } : s))}
-                              rows={2}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                              rows={3}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                               placeholder="Instructions for this step..."
                             />
                           </div>
                           <button
                             onClick={() => removeSection(section.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -671,14 +670,14 @@ export function RecipePageInlineComplete({
                           </button>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-medium text-gray-700 uppercase tracking-wide">Ingredients for this step</h4>
+                            <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Ingredients for this step</h4>
                             <button
                               onClick={() => addIngredientToSection(section.id)}
-                              className="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium"
+                              className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
                             >
-                              + Add
+                              + Add Ingredient
                             </button>
                           </div>
                           {section.items.map((item) => {
@@ -695,7 +694,7 @@ export function RecipePageInlineComplete({
                             }) : 0;
                             
                             return (
-                              <div key={item.id} className="grid grid-cols-12 gap-2 items-start p-2 bg-white rounded-lg border border-gray-200">
+                              <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-white rounded-lg border border-gray-200">
                                 <select
                                   value={item.ingredientId}
                                   onChange={(e) => setSections(sections.map(s => {
@@ -704,7 +703,7 @@ export function RecipePageInlineComplete({
                                     }
                                     return s;
                                   }))}
-                                  className="col-span-5 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 >
                                   {ingredients.map(ing => (
                                     <option key={ing.id} value={ing.id}>{ing.name}</option>
@@ -719,7 +718,7 @@ export function RecipePageInlineComplete({
                                     }
                                     return s;
                                   }))}
-                                  className="col-span-2 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                   placeholder="Qty"
                                 />
                                 <select
@@ -730,7 +729,7 @@ export function RecipePageInlineComplete({
                                     }
                                     return s;
                                   }))}
-                                  className="col-span-2 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                  className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 >
                                   <option value="g">g</option>
                                   <option value="kg">kg</option>
@@ -738,14 +737,14 @@ export function RecipePageInlineComplete({
                                   <option value="l">l</option>
                                   <option value="each">each</option>
                                 </select>
-                                <div className="col-span-2 px-2 py-1.5 text-xs text-gray-600 flex items-center">
+                                <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
                                   {formatCurrency(cost)}
                                 </div>
                                 <button
                                   onClick={() => removeIngredientFromSection(section.id, item.id)}
-                                  className="col-span-1 p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                   </svg>
                                 </button>
@@ -760,7 +759,7 @@ export function RecipePageInlineComplete({
 
                 {/* Edit Mode - Simple Ingredients */}
                 {!isLocked && !useSections && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {items.map((item) => {
                       const ingredient = ingredients.find(i => i.id === item.ingredientId);
                       const cost = ingredient ? computeIngredientUsageCost({
@@ -775,11 +774,11 @@ export function RecipePageInlineComplete({
                       }) : 0;
                       
                       return (
-                        <div key={item.id} className="grid grid-cols-12 gap-2 items-start p-2 bg-gray-50 rounded-lg">
+                        <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg">
                           <select
                             value={item.ingredientId}
                             onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, ingredientId: parseInt(e.target.value) } : i))}
-                            className="col-span-5 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                           >
                             {ingredients.map(ing => (
                               <option key={ing.id} value={ing.id}>{ing.name}</option>
@@ -789,13 +788,13 @@ export function RecipePageInlineComplete({
                             type="number"
                             value={item.quantity}
                             onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, quantity: e.target.value } : i))}
-                            className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             placeholder="Qty"
                           />
                           <select
                             value={item.unit}
                             onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unit } : i))}
-                            className="col-span-2 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="g">g</option>
                             <option value="kg">kg</option>
@@ -803,12 +802,12 @@ export function RecipePageInlineComplete({
                             <option value="l">l</option>
                             <option value="each">each</option>
                           </select>
-                          <div className="col-span-2 px-2 py-1.5 text-xs text-gray-600 flex items-center">
+                          <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
                             {formatCurrency(cost)}
                           </div>
                           <button
                             onClick={() => removeIngredient(item.id)}
-                            className="col-span-1 p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
