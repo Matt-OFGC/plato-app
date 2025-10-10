@@ -230,6 +230,11 @@ export function RecipePageInlineComplete({
     formData.append("method", method);
     formData.append("imageUrl", imageUrl);
     
+    // Add recipe type information
+    const recipeType = yieldUnit === "each" && yieldQuantity === 1 ? "single" : "batch";
+    formData.append("recipeType", recipeType);
+    formData.append("servings", yieldQuantity.toString());
+    
     if (categoryId) formData.append("categoryId", categoryId.toString());
     if (shelfLifeId) formData.append("shelfLifeId", shelfLifeId.toString());
     if (storageId) formData.append("storageId", storageId.toString());
@@ -460,6 +465,54 @@ export function RecipePageInlineComplete({
               <span>Total Cost: {formatCurrency(editModeTotalCost * (isLocked ? scaleFactor : 1))}</span>
               <span>Cost per {isLocked ? "serving" : yieldUnit}: {formatCurrency(editModeCostPerUnit * (isLocked ? scaleFactor : 1))}</span>
             </div>
+
+            {/* Recipe Type Selector - Only in Edit Mode */}
+            {!isLocked && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-gray-700">Recipe Type:</span>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="recipeType"
+                        value="single"
+                        checked={yieldUnit === "each" && yieldQuantity === 1}
+                        onChange={() => {
+                          setYieldUnit("each");
+                          setYieldQuantity(1);
+                        }}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Single Serving</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="recipeType"
+                        value="batch"
+                        checked={yieldUnit === "each" && yieldQuantity > 1}
+                        onChange={() => {
+                          setYieldUnit("each");
+                          setYieldQuantity(4);
+                        }}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Batch Recipe</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-600">
+                  {yieldUnit === "each" && yieldQuantity === 1 ? (
+                    "Perfect for single portions - one sandwich, one serving, etc."
+                  ) : yieldUnit === "each" && yieldQuantity > 1 ? (
+                    `Makes ${yieldQuantity} servings - great for meal prep or feeding a group`
+                  ) : (
+                    "Custom yield quantity"
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Small Image Preview */}
