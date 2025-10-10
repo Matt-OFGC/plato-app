@@ -409,23 +409,19 @@ export function RecipePageInlineComplete({
         </div>
       )}
 
-      {/* Recipe Title with Image */}
+      {/* Recipe Title */}
       <div className="mb-8">
-        <div className="flex gap-6 items-start">
-          {/* Title and Description */}
-          <div className="flex-1">
-            {!isLocked ? (
+        {!isLocked ? (
+          <div className="flex gap-6 items-start">
+            {/* Title and Description */}
+            <div className="flex-1">
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="text-4xl font-bold text-gray-900 mb-4 w-full border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            ) : (
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">{name}</h1>
-            )}
-            
-            {!isLocked ? (
+              
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -433,41 +429,31 @@ export function RecipePageInlineComplete({
                 placeholder="Add a description..."
                 className="text-lg text-gray-600 mb-4 w-full border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            ) : (
-              description && <p className="text-lg text-gray-600 mb-4">{description}</p>
-            )}
 
-            <div className="flex items-center gap-6 text-sm text-gray-500">
-              {!isLocked ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <span>Yield:</span>
-                    <input
-                      type="number"
-                      value={yieldQuantity}
-                      onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 0)}
-                      className="w-20 px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <select
-                      value={yieldUnit}
-                      onChange={(e) => setYieldUnit(e.target.value)}
-                      className="px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="each">servings</option>
-                      <option value="g">grams</option>
-                      <option value="ml">milliliters</option>
-                    </select>
-                  </div>
-                </>
-              ) : (
-                <span>Yield: {servings} {recipe.yieldUnit}</span>
-              )}
-              <span>Total Cost: {formatCurrency(editModeTotalCost * (isLocked ? scaleFactor : 1))}</span>
-              <span>Cost per {isLocked ? "serving" : yieldUnit}: {formatCurrency(editModeCostPerUnit * (isLocked ? scaleFactor : 1))}</span>
-            </div>
+              <div className="flex items-center gap-6 text-sm text-gray-500">
+                <div className="flex items-center gap-2">
+                  <span>Yield:</span>
+                  <input
+                    type="number"
+                    value={yieldQuantity}
+                    onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 0)}
+                    className="w-20 px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <select
+                    value={yieldUnit}
+                    onChange={(e) => setYieldUnit(e.target.value)}
+                    className="px-2 py-1 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="each">servings</option>
+                    <option value="g">grams</option>
+                    <option value="ml">milliliters</option>
+                  </select>
+                </div>
+                <span>Total Cost: {formatCurrency(editModeTotalCost)}</span>
+                <span>Cost per {yieldUnit}: {formatCurrency(editModeCostPerUnit)}</span>
+              </div>
 
-            {/* Recipe Type Selector - Only in Edit Mode */}
-            {!isLocked && (
+              {/* Recipe Type Selector - Only in Edit Mode */}
               <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-gray-700">Recipe Type:</span>
@@ -512,27 +498,48 @@ export function RecipePageInlineComplete({
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Small Image Preview */}
-          <div className="w-32 h-32 flex-shrink-0">
-            {recipe.imageUrl || imageUrl ? (
-              <img 
-                src={imageUrl || recipe.imageUrl} 
-                alt={recipe.name} 
-                className="w-full h-full object-cover rounded-xl shadow-md"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl shadow-md flex items-center justify-center">
-                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            )}
+            {/* Small Image Preview in Edit Mode */}
+            <div className="w-32 h-32 flex-shrink-0">
+              {recipe.imageUrl || imageUrl ? (
+                <img 
+                  src={imageUrl || recipe.imageUrl} 
+                  alt={recipe.name} 
+                  className="w-full h-full object-cover rounded-xl shadow-md"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl shadow-md flex items-center justify-center">
+                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">{name}</h1>
+            {description && <p className="text-lg text-gray-600 mb-4">{description}</p>}
+            <div className="flex items-center gap-6 text-sm text-gray-500">
+              <span>Yield: {servings} {recipe.yieldUnit}</span>
+              <span>Total Cost: {formatCurrency(editModeTotalCost * scaleFactor)}</span>
+              <span>Cost per serving: {formatCurrency(editModeCostPerUnit * scaleFactor)}</span>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Large Recipe Image - Only in View Mode */}
+      {isLocked && (recipe.imageUrl || imageUrl) && (
+        <div className="mb-8">
+          <img 
+            src={imageUrl || recipe.imageUrl} 
+            alt={recipe.name} 
+            className="w-full h-96 object-cover rounded-2xl shadow-lg"
+          />
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid xl:grid-cols-12 gap-8">
