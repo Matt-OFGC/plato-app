@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { RecipePageInline } from "@/components/RecipePageInline";
+import { RecipePageInlineComplete } from "@/components/RecipePageInlineComplete";
 import { redirect } from "next/navigation";
 import { updateRecipeUnified } from "../actionsSimplified";
 import { calculateRecipeCost } from "@/lib/recipeCostCalculator";
@@ -161,7 +161,7 @@ export default async function RecipePage({ params }: Props) {
   }));
 
   return (
-    <RecipePageInline
+    <RecipePageInlineComplete
       recipe={transformedRecipe}
       costBreakdown={costBreakdown}
       ingredients={transformedIngredients}

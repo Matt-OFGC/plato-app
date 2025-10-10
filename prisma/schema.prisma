@@ -299,12 +299,17 @@ model Membership {
   invitedAt  DateTime   @default(now())
   acceptedAt DateTime?
   
+  // PIN-based authentication (for device-based login)
+  pin        String?    // 4-6 digit PIN for team member access on company devices
+  pinHash    String?    // Hashed version of PIN for security
+  
   // Status
   isActive   Boolean    @default(true)
 
   @@unique([userId, companyId])
   @@index([companyId])
   @@index([userId])
+  @@index([companyId, pin]) // For PIN lookup within a company
 }
 
 model UserPreference {
