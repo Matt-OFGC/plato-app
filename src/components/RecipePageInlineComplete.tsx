@@ -530,19 +530,20 @@ export function RecipePageInlineComplete({
         )}
       </div>
 
-      {/* Large Recipe Image - Only in View Mode */}
-      {isLocked && (recipe.imageUrl || imageUrl) && (
-        <div className="mb-8">
-          <img 
-            src={imageUrl || recipe.imageUrl} 
-            alt={recipe.name} 
-            className="w-full h-96 object-cover rounded-2xl shadow-lg"
-          />
-        </div>
-      )}
-
       {/* Main Content Grid */}
       <div className="grid xl:grid-cols-12 gap-8">
+        {/* Recipe Image - Only in View Mode - 25% width */}
+        {isLocked && (recipe.imageUrl || imageUrl) && (
+          <div className="xl:col-span-3">
+            <div className="sticky top-6">
+              <img 
+                src={imageUrl || recipe.imageUrl} 
+                alt={recipe.name} 
+                className="w-full h-auto object-cover rounded-2xl shadow-lg"
+              />
+            </div>
+          </div>
+        )}
         {/* Left Sidebar - Additional Details (only in edit mode) */}
         {!isLocked && (
           <div className="xl:col-span-2 space-y-6">
@@ -623,8 +624,8 @@ export function RecipePageInlineComplete({
           </div>
         )}
 
-        {/* Main Content - Much larger for ingredients */}
-        <div className={!isLocked ? "xl:col-span-7" : "xl:col-span-12"}>
+        {/* Main Content - Ingredients and Instructions */}
+        <div className={!isLocked ? "xl:col-span-7" : (recipe.imageUrl || imageUrl) ? "xl:col-span-9" : "xl:col-span-12"}>
           <div className="space-y-6">
             {/* Servings Control (only in locked mode) */}
             {isLocked && (
