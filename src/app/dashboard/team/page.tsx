@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { SeatManager } from "@/components/SeatManager";
-import { TeamManagerFixed } from "@/components/TeamManagerFixed";
+import { TeamManagerWithPins } from "@/components/TeamManagerWithPins";
+import { DeviceModeIndicator } from "@/components/DeviceModeIndicator";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,9 @@ export default async function TeamPage() {
           <p className="text-gray-600 mt-2">Manage your team members, permissions, and billing</p>
         </div>
 
+        {/* Device Mode Indicator */}
+        <DeviceModeIndicator />
+
         {/* Seat Management */}
         <SeatManager 
           companyId={companyId!} 
@@ -40,7 +44,7 @@ export default async function TeamPage() {
 
         {/* Team Management */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <TeamManagerFixed 
+          <TeamManagerWithPins 
             companyId={companyId!} 
             currentUserRole={membership?.role || "VIEWER"} 
           />

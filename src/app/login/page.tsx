@@ -27,6 +27,27 @@ function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
+        // Check if device mode should be offered
+        if (data.canEnableDeviceMode && data.company) {
+          const enableDevice = confirm(
+            `Enable PIN login for this device?\n\n` +
+            `This will allow your team members to access ${data.company.name} using their PINs on this device.\n\n` +
+            `Click OK to enable, or Cancel to continue normally.`
+          );
+
+          if (enableDevice) {
+            // Set up device mode
+            await fetch("/api/device-login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                companyId: data.company.id,
+                companyName: data.company.name,
+              }),
+            });
+          }
+        }
+
         router.push(sp.get("redirect") || "/dashboard");
         router.refresh();
       } else {
@@ -105,13 +126,22 @@ function LoginForm() {
             </button>
           </form>
           
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
               <a href="/register" className="text-emerald-600 hover:text-emerald-700 font-semibold">
                 Create one here
               </a>
             </p>
+            <div className="border-t border-gray-200 pt-3">
+              <p className="text-xs text-gray-500 mb-2">Team member?</p>
+              <a 
+                href="/pin-login" 
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold"
+              >
+                Enter with PIN →
+              </a>
+            </div>
           </div>
         </div>
       </div>
