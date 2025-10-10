@@ -113,4 +113,106 @@ export async function createSimplifiedRecipe(formData: FormData) {
   }
 }
 
+export async function updateRecipeUnified(formData: FormData) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+
+    const recipeId = parseInt(formData.get("recipeId") as string);
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string | null;
+    const yieldQuantity = parseFloat(formData.get("yieldQuantity") as string);
+    const yieldUnit = formData.get("yieldUnit") as string;
+    const method = formData.get("method") as string | null;
+    const imageUrl = formData.get("imageUrl") as string | null;
+    const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null;
+    const shelfLifeId = formData.get("shelfLifeId") ? parseInt(formData.get("shelfLifeId") as string) : null;
+    const storageId = formData.get("storageId") ? parseInt(formData.get("storageId") as string) : null;
+    const bakeTime = formData.get("bakeTime") ? parseInt(formData.get("bakeTime") as string) : null;
+    const bakeTemp = formData.get("bakeTemp") ? parseInt(formData.get("bakeTemp") as string) : null;
+    const useSections = formData.get("useSections") === "true";
+
+    if (!name) {
+      throw new Error("Recipe name required");
+    }
+
+    // Delete all existing items and sections
+    await Promise.all([
+      prisma.recipeItem.deleteMany({ where: { recipeId } }),
+      prisma.recipeSection.deleteMany({ where: { recipeId } }),
+    ]);
+
+    // Get the existing recipe to check name conflicts
+    const existingRecipe = await prisma.recipe.findUnique({
+      where: { id: recipeId },
+      select: { name: true }
+    });
+
+    // Prepare update data
+    const updateData: any = {
+      yieldQuantity,
+      yieldUnit,
+      description: description || null,
+      method: method || null,
+      imageUrl: imageUrl || null,
+      categoryId: categoryId || null,
+      shelfLifeId: shelfLifeId || null,
+      storageId: storageId || null,
+      bakeTime: bakeTime || null,
+      bakeTemp: bakeTemp || null,
+    };
+
+    // Only update name if it's different
+    if (existingRecipe?.name !== name) {
+      updateData.name = name;
+    }
+
+    if (useSections) {
+      const sectionsData = JSON.parse(formData.get("sections") as string);
+      updateData.sections = {
+        create: sectionsData.map((section: any, idx: number) => ({
+          title: section.title,
+          description: section.description || null,
+          method: section.method || null,
+          order: idx,
+          items: {
+            create: section.items
+              .filter((item: any) => item.ingredientId && item.quantity)
+              .map((item: any) => ({
+                ingredientId: item.ingredientId,
+                quantity: parseFloat(item.quantity),
+                unit: item.unit,
+                note: item.note || null,
+              })),
+          },
+        })),
+      };
+    } else {
+      const itemsData = JSON.parse(formData.get("recipeItems") as string);
+      updateData.items = {
+        create: itemsData
+          .filter((item: any) => item.ingredientId && item.quantity)
+          .map((item: any) => ({
+            ingredientId: item.ingredientId,
+            quantity: parseFloat(item.quantity),
+            unit: item.unit,
+            note: item.note || null,
+          })),
+      };
+    }
+
+    // Update the recipe
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: updateData,
+    });
+
+    revalidatePath(`/dashboard/recipes/${recipeId}`);
+    revalidatePath("/dashboard/recipes");
+    
+    // Don't redirect - just revalidate so the component can handle the state
+  } catch (error) {
+    console.error("Error updating recipe:", error);
+    throw error;
+  }
+}
 

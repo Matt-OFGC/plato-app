@@ -102,7 +102,7 @@ export default async function RecipesPage({ searchParams }: Props) {
           {recipes.map((r) => (
             <div key={r.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
               {/* Recipe Image Placeholder */}
-              <Link href={`/dashboard/recipes/${r.id}/view`} className="block">
+              <Link href={`/dashboard/recipes/${r.id}`} className="block">
                 <div className="w-full h-48 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl mb-4 flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer">
                   {r.imageUrl ? (
                     <img 
@@ -124,7 +124,7 @@ export default async function RecipesPage({ searchParams }: Props) {
               {/* Recipe Info */}
               <div className="space-y-3">
                 <div>
-                  <Link href={`/dashboard/recipes/${r.id}/view`} className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
+                  <Link href={`/dashboard/recipes/${r.id}`} className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
                     {r.name}
                   </Link>
                   {r.description && (
