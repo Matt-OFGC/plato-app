@@ -176,19 +176,17 @@ export default async function RecipesPage({ searchParams }: Props) {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-2">
-                  <Link 
-                    href={`/dashboard/recipes/${r.id}/view`}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium text-center"
-                  >
-                    View
-                  </Link>
+                {/* Action Button */}
+                <div className="pt-2">
                   <Link 
                     href={`/dashboard/recipes/${r.id}`}
-                    className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium text-center"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white px-4 py-2.5 rounded-lg hover:shadow-lg transition-all text-sm font-medium text-center flex items-center justify-center gap-2"
                   >
-                    Edit
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Open Recipe
                   </Link>
                 </div>
               </div>
