@@ -567,7 +567,7 @@ export function RecipePageInlineComplete({
                 <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bake Temp</span>
-                    <span className="text-sm font-bold text-purple-600 mt-1">
+                    <span className="text-sm font-bold text-emerald-600 mt-1">
                       {recipe.bakeTemp}°C
                     </span>
                   </div>
@@ -578,7 +578,7 @@ export function RecipePageInlineComplete({
                 <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bake Time</span>
-                    <span className="text-sm font-bold text-purple-600 mt-1">
+                    <span className="text-sm font-bold text-emerald-600 mt-1">
                       {recipe.bakeTime} min
                     </span>
                   </div>
@@ -589,7 +589,7 @@ export function RecipePageInlineComplete({
                 <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</span>
-                    <span className="text-sm font-bold text-purple-600 mt-1">
+                    <span className="text-sm font-bold text-emerald-600 mt-1">
                       {categories.find(c => c.id === recipe.categoryId)?.name}
                     </span>
                   </div>
@@ -600,7 +600,7 @@ export function RecipePageInlineComplete({
                 <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Storage</span>
-                    <span className="text-sm font-bold text-purple-600 mt-1">
+                    <span className="text-sm font-bold text-emerald-600 mt-1">
                       {storageOptions.find(s => s.id === recipe.storageId)?.name}
                     </span>
                   </div>
@@ -611,7 +611,7 @@ export function RecipePageInlineComplete({
                 <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Shelf Life</span>
-                    <span className="text-sm font-bold text-purple-600 mt-1">
+                    <span className="text-sm font-bold text-emerald-600 mt-1">
                       {shelfLifeOptions.find(s => s.id === recipe.shelfLifeId)?.name}
                     </span>
                   </div>
@@ -641,7 +641,7 @@ export function RecipePageInlineComplete({
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => setServings(Math.max(1, servings - 1))}
-                      className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
+                      className="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -650,7 +650,7 @@ export function RecipePageInlineComplete({
                     <span className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">{servings}</span>
                     <button 
                       onClick={() => setServings(servings + 1)}
-                      className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
+                      className="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -666,7 +666,7 @@ export function RecipePageInlineComplete({
                   {/* Total Cost */}
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Cost</span>
-                    <span className="text-lg font-bold text-purple-600 mt-1">{formatCurrency(editModeTotalCost * scaleFactor)}</span>
+                    <span className="text-lg font-bold text-emerald-600 mt-1">{formatCurrency(editModeTotalCost * scaleFactor)}</span>
                   </div>
                   
                   <div className="border-t border-gray-200"></div>
@@ -674,7 +674,7 @@ export function RecipePageInlineComplete({
                   {/* Cost Per Serving */}
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cost Per {recipe.yieldUnit}</span>
-                    <span className="text-lg font-bold text-purple-600 mt-1">{formatCurrency(editModeCostPerUnit * scaleFactor)}</span>
+                    <span className="text-lg font-bold text-emerald-600 mt-1">{formatCurrency(editModeCostPerUnit * scaleFactor)}</span>
                   </div>
                 </div>
               </div>
@@ -773,7 +773,7 @@ export function RecipePageInlineComplete({
                     <div className="flex items-center gap-3">
                       <button 
                         onClick={() => setServings(Math.max(1, servings - 1))}
-                        className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
+                        className="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -782,7 +782,7 @@ export function RecipePageInlineComplete({
                       <span className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">{servings}</span>
                       <button 
                         onClick={() => setServings(servings + 1)}
-                        className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
+                        className="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -798,7 +798,7 @@ export function RecipePageInlineComplete({
                     {/* Total Cost */}
                     <div className="flex flex-col items-center">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Cost</span>
-                      <span className="text-lg font-bold text-purple-600 mt-1">{formatCurrency(editModeTotalCost * scaleFactor)}</span>
+                      <span className="text-lg font-bold text-emerald-600 mt-1">{formatCurrency(editModeTotalCost * scaleFactor)}</span>
                     </div>
                     
                     <div className="border-t border-gray-200"></div>
@@ -806,7 +806,7 @@ export function RecipePageInlineComplete({
                     {/* Cost Per Serving */}
                     <div className="flex flex-col items-center">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cost Per {recipe.yieldUnit}</span>
-                      <span className="text-lg font-bold text-purple-600 mt-1">{formatCurrency(editModeCostPerUnit * scaleFactor)}</span>
+                      <span className="text-lg font-bold text-emerald-600 mt-1">{formatCurrency(editModeCostPerUnit * scaleFactor)}</span>
                     </div>
                   </div>
                 </div>
