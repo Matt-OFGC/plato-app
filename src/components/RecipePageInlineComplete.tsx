@@ -378,6 +378,8 @@ export function RecipePageInlineComplete({
   // Lock/Unlock state
   const [isLocked, setIsLocked] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   
   // Cooking mode state
   const [servings, setServings] = useState(recipe.yieldQuantity);
@@ -800,67 +802,160 @@ export function RecipePageInlineComplete({
                 <span>Cost per {yieldUnit}: {formatCurrency(editModeCostPerUnit)}</span>
               </div>
 
-              {/* Recipe Type Selector - Only in Edit Mode */}
-              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-700">Recipe Type:</span>
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="recipeType"
-                        value="single"
-                        checked={yieldUnit === "each" && yieldQuantity === 1}
-                        onChange={() => {
-                          setYieldUnit("each");
-                          setYieldQuantity(1);
-                        }}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">Single Serving</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="recipeType"
-                        value="batch"
-                        checked={yieldUnit === "each" && yieldQuantity > 1}
-                        onChange={() => {
-                          setYieldUnit("each");
-                          setYieldQuantity(4);
-                        }}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">Batch Recipe</span>
-                    </label>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-600">
-                  {yieldUnit === "each" && yieldQuantity === 1 ? (
-                    "Perfect for single portions - one sandwich, one serving, etc."
-                  ) : yieldUnit === "each" && yieldQuantity > 1 ? (
-                    `Makes ${yieldQuantity} servings - great for meal prep or feeding a group`
-                  ) : (
-                    "Custom yield quantity"
-                  )}
+              {/* Recipe Type Selector - Animated Toggle */}
+              <div className="mt-4 flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-600">Recipe Type:</span>
+                <div className="relative inline-flex bg-gray-100 rounded-lg p-1 shadow-inner">
+                  {/* Sliding background */}
+                  <div
+                    className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] bg-gradient-to-r from-blue-500 to-blue-600 rounded-md shadow-sm transition-all duration-300 ease-out ${
+                      yieldUnit === "each" && yieldQuantity === 1 ? "left-1" : "left-[calc(50%+0.125rem)]"
+                    }`}
+                  ></div>
+                  
+                  {/* Buttons */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setYieldUnit("each");
+                      setYieldQuantity(1);
+                    }}
+                    className={`relative z-10 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      yieldUnit === "each" && yieldQuantity === 1
+                        ? "text-white"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Single Serving
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setYieldUnit("each");
+                      setYieldQuantity(4);
+                    }}
+                    className={`relative z-10 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      yieldUnit === "each" && yieldQuantity > 1
+                        ? "text-white"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Batch Recipe
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Small Image Preview in Edit Mode */}
+            {/* Small Image Preview - Clickable File Upload */}
             <div className="w-32 h-32 flex-shrink-0">
               {recipe.imageUrl || imageUrl ? (
-                <img 
-                  src={imageUrl || recipe.imageUrl} 
-                  alt={recipe.name} 
-                  className="w-full h-full object-cover rounded-xl shadow-md"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl shadow-md flex items-center justify-center">
-                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                <div className="relative group w-full h-full">
+                  <img 
+                    src={imageUrl || recipe.imageUrl} 
+                    alt={recipe.name} 
+                    className="w-full h-full object-cover rounded-xl shadow-md"
+                  />
+                  <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex flex-col items-center justify-center text-white text-xs font-medium cursor-pointer">
+                    <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Change Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        const maxSize = 10 * 1024 * 1024;
+                        if (file.size > maxSize) {
+                          setUploadError("File is too large. Maximum size is 10MB.");
+                          return;
+                        }
+                        
+                        setUploading(true);
+                        setUploadError("");
+                        
+                        try {
+                          const fd = new FormData();
+                          fd.append("file", file);
+                          const res = await fetch("/api/upload", { method: "POST", body: fd });
+                          const data = await res.json();
+                          
+                          if (res.ok) {
+                            setImageUrl(data.url);
+                          } else {
+                            setUploadError(data.error || "Upload failed");
+                          }
+                        } catch (error) {
+                          setUploadError("Network error. Please try again.");
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
+              ) : (
+                <label className="w-full h-full bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl shadow-md hover:shadow-lg transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-dashed border-emerald-300 hover:border-emerald-400">
+                  {uploading ? (
+                    <>
+                      <svg className="w-8 h-8 text-emerald-400 animate-spin mb-1" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="text-xs text-emerald-600 font-semibold">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-8 h-8 text-emerald-400 group-hover:text-emerald-500 transition-colors mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs text-emerald-600 font-semibold">Add Image</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const maxSize = 10 * 1024 * 1024;
+                      if (file.size > maxSize) {
+                        setUploadError("File is too large. Maximum size is 10MB.");
+                        return;
+                      }
+                      
+                      setUploading(true);
+                      setUploadError("");
+                      
+                      try {
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        const res = await fetch("/api/upload", { method: "POST", body: fd });
+                        const data = await res.json();
+                        
+                        if (res.ok) {
+                          setImageUrl(data.url);
+                        } else {
+                          setUploadError(data.error || "Upload failed");
+                        }
+                      } catch (error) {
+                        setUploadError("Network error. Please try again.");
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              {uploadError && (
+                <p className="text-xs text-red-600 mt-1">{uploadError}</p>
               )}
             </div>
           </div>
@@ -1096,80 +1191,112 @@ export function RecipePageInlineComplete({
             </div>
           </div>
         )}
-        {/* Left Sidebar - Additional Details (only in edit mode) */}
+        {/* Left Sidebar - Details (only in edit mode) */}
         {!isLocked && (
           <div className="xl:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h3>
+            <div className="bg-white rounded-xl border border-gray-200 p-5 sticky top-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-gray-200">Details</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">None</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
-                  <select
-                    value={shelfLifeId}
-                    onChange={(e) => setShelfLifeId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">None</option>
-                    {shelfLifeOptions.map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
-                  <select
-                    value={storageId}
-                    onChange={(e) => setStorageId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">None</option>
-                    {storageOptions.map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (min)</label>
-                    <input
-                      type="number"
-                      value={bakeTime}
-                      onChange={(e) => setBakeTime(e.target.value)}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bake Temp (°C)</label>
-                    <input
-                      type="number"
-                      value={bakeTemp}
-                      onChange={(e) => setBakeTemp(e.target.value)}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  <label className="block text-xs font-medium text-gray-500 mb-2">Category</label>
+                  <div className="relative">
+                    <select
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
+                    >
+                      <option value="" className="text-gray-400">None</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id} className="text-gray-900">{cat.name}</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                  <input
-                    type="text"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <label className="block text-xs font-medium text-gray-500 mb-2">Shelf Life</label>
+                  <div className="relative">
+                    <select
+                      value={shelfLifeId}
+                      onChange={(e) => setShelfLifeId(e.target.value)}
+                      className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
+                    >
+                      <option value="" className="text-gray-400">None</option>
+                      {shelfLifeOptions.map(opt => (
+                        <option key={opt.id} value={opt.id} className="text-gray-900">{opt.name}</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-2">Storage</label>
+                  <div className="relative">
+                    <select
+                      value={storageId}
+                      onChange={(e) => setStorageId(e.target.value)}
+                      className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
+                    >
+                      <option value="" className="text-gray-400">None</option>
+                      {storageOptions.map(opt => (
+                        <option key={opt.id} value={opt.id} className="text-gray-900">{opt.name}</option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Baking Section with divider */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                    </svg>
+                    Baking Details
+                  </h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">Bake Temperature</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={bakeTemp}
+                          onChange={(e) => setBakeTemp(e.target.value)}
+                          placeholder="e.g. 180"
+                          className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">°C</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">Bake Time</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={bakeTime}
+                          onChange={(e) => setBakeTime(e.target.value)}
+                          placeholder="e.g. 25"
+                          className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">min</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
