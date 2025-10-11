@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCost } from "@/lib/units";
@@ -218,7 +218,7 @@ export function RecipeCreateForm({
     })
   );
 
-  const calculateCost = () => {
+  const totalCost = useMemo(() => {
     let total = 0;
     const itemsToCalc = useSections 
       ? sections.flatMap(s => s.items)
@@ -241,10 +241,12 @@ export function RecipeCreateForm({
       }
     });
     return total;
-  };
+  }, [useSections, sections, items, ingredients]);
 
-  const totalCost = calculateCost();
-  const costPerUnit = yieldQuantity > 0 ? totalCost / yieldQuantity : 0;
+  const costPerUnit = useMemo(() => 
+    yieldQuantity > 0 ? totalCost / yieldQuantity : 0,
+    [totalCost, yieldQuantity]
+  );
 
   const handleSave = async () => {
     setIsSaving(true);

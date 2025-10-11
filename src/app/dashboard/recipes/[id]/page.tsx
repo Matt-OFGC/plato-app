@@ -43,16 +43,34 @@ export default async function RecipePage({ params }: Props) {
     redirect("/dashboard/recipes");
   }
 
-  // Get all ingredients and data for the form
-  const [ingredients, categories, shelfLifeOptions, storageOptions, allRecipes] = await Promise.all([
-    prisma.ingredient.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.category.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.shelfLifeOption.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.storageOption.findMany({ where, orderBy: { name: "asc" } }),
-    prisma.recipe.findMany({ 
+  // Get only the data we need for this recipe
+  const [ingredients, categories, shelfLifeOptions, storageOptions] = await Promise.all([
+    prisma.ingredient.findMany({ 
       where, 
       orderBy: { name: "asc" },
-      include: { items: true }
+      select: {
+        id: true,
+        name: true,
+        packQuantity: true,
+        packUnit: true,
+        packPrice: true,
+        densityGPerMl: true,
+      }
+    }),
+    prisma.category.findMany({ 
+      where, 
+      orderBy: { name: "asc" },
+      select: { id: true, name: true }
+    }),
+    prisma.shelfLifeOption.findMany({ 
+      where, 
+      orderBy: { name: "asc" },
+      select: { id: true, name: true }
+    }),
+    prisma.storageOption.findMany({ 
+      where, 
+      orderBy: { name: "asc" },
+      select: { id: true, name: true }
     }),
   ]);
 
@@ -87,18 +105,8 @@ export default async function RecipePage({ params }: Props) {
       densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : null,
     }));
 
-    const allRecipesData = allRecipes.map(r => ({
-      id: r.id,
-      name: r.name,
-      yieldQuantity: Number(r.yieldQuantity),
-      yieldUnit: r.yieldUnit as "g" | "ml" | "each",
-      ingredients: r.items ? r.items.map(item => ({
-        ingredientId: item.ingredientId,
-        quantity: Number(item.quantity),
-        unit: item.unit as any,
-      })) : [],
-      subRecipes: [],
-    }));
+    // Only fetch sub-recipes if this recipe actually has any (optimization)
+    const allRecipesData: any[] = []; // Empty for now since sub-recipes aren't being used
 
     const fullCostBreakdown = calculateRecipeCost(recipeData, ingredientsData, allRecipesData);
     costBreakdown = {

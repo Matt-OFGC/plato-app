@@ -156,24 +156,25 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                 currentRemaining--;
                 
                 if (currentRemaining <= 0) {
-                  // Start looping alarm
-                  const alarmInterval = startLoopingAlarm(settings.ringtone, settings.volume);
-                  
-                  // Show browser notification
-                  if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Timer Complete! ⏰', {
-                      body: `${savedTimer.recipeName} - ${savedTimer.stepTitle}`,
-                      icon: '/favicon.ico',
-                    });
-                  }
-                  
                   clearInterval(interval);
                   
-                  // Keep timer visible with 0 remaining and store alarm interval
-                  setTimers(prev => ({
-                    ...prev,
-                    [id]: { ...prev[id], remaining: 0, interval: null, alarmInterval }
-                  }));
+                  // Use a callback to ensure we have the latest settings
+                  setTimers(prev => {
+                    const alarmInterval = startLoopingAlarm(settings.ringtone, settings.volume);
+                    
+                    // Show browser notification
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                      new Notification('Timer Complete! ⏰', {
+                        body: `${savedTimer.recipeName} - ${savedTimer.stepTitle}`,
+                        icon: '/favicon.ico',
+                      });
+                    }
+                    
+                    return {
+                      ...prev,
+                      [id]: { ...prev[id], remaining: 0, interval: null, alarmInterval }
+                    };
+                  });
                 } else {
                   setTimers(prev => ({
                     ...prev,
@@ -199,11 +200,11 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         setHasLoadedTimers(true);
       }
     }
-  }, [userId, hasLoadedTimers]);
+  }, [userId, hasLoadedTimers, settings]);
 
-  // Save timers to localStorage whenever they change
+  // Save timers to localStorage whenever they change (but only after initial load)
   useEffect(() => {
-    if (typeof window !== 'undefined' && userId) {
+    if (typeof window !== 'undefined' && userId && hasLoadedTimers) {
       const timersToSave = Object.entries(timers).reduce((acc, [id, timer]) => {
         // Don't save the interval, just the data
         acc[id] = {
@@ -223,9 +224,15 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }, [timers, userId, hasLoadedTimers]);
 
   const startTimer = (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number, timerUserId?: number) => {
-    // Clear existing timer if any
-    if (timers[id]?.interval) {
-      clearInterval(timers[id].interval);
+    // Clear existing timer and alarm if any
+    const existingTimer = timers[id];
+    if (existingTimer) {
+      if (existingTimer.interval) {
+        clearInterval(existingTimer.interval);
+      }
+      if (existingTimer.alarmInterval) {
+        clearInterval(existingTimer.alarmInterval);
+      }
     }
 
     const totalSeconds = minutes * 60;
@@ -308,16 +315,19 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Cleanup on unmount
+  // Cleanup on unmount - properly clean up all intervals
   useEffect(() => {
     return () => {
       Object.values(timers).forEach(timer => {
         if (timer.interval) {
           clearInterval(timer.interval);
         }
+        if (timer.alarmInterval) {
+          clearInterval(timer.alarmInterval);
+        }
       });
     };
-  }, []);
+  }, [timers]);
 
   // Request notification permission on mount
   useEffect(() => {

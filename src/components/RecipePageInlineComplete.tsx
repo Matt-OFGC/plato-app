@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCost } from "@/lib/units";
@@ -442,34 +442,42 @@ export function RecipePageInlineComplete({
     })
   );
   
-  // Calculate scaled ingredients for view mode
-  const scaleFactor = servings / recipe.yieldQuantity;
+  // Calculate scaled ingredients for view mode - memoized for performance
+  const scaleFactor = useMemo(() => servings / recipe.yieldQuantity, [servings, recipe.yieldQuantity]);
   
-  const scaledIngredients = recipe.items.map(item => ({
+  const scaledIngredients = useMemo(() => 
+    recipe.items.map(item => ({
     ...item,
     scaledQuantity: item.quantity * scaleFactor,
-  }));
+    })),
+    [recipe.items, scaleFactor]
+  );
 
-  const scaledSections = recipe.sections.map(section => ({
+  const scaledSections = useMemo(() =>
+    recipe.sections.map(section => ({
     ...section,
     items: section.items.map(item => ({
       ...item,
       scaledQuantity: item.quantity * scaleFactor,
     })),
-  }));
+    })),
+    [recipe.sections, scaleFactor]
+  );
 
-  const toggleItem = (itemId: number) => {
-    const newChecked = new Set(checkedItems);
+  const toggleItem = useCallback((itemId: number) => {
+    setCheckedItems(prev => {
+      const newChecked = new Set(prev);
     if (newChecked.has(itemId)) {
       newChecked.delete(itemId);
     } else {
       newChecked.add(itemId);
     }
-    setCheckedItems(newChecked);
-  };
+      return newChecked;
+    });
+  }, []);
 
-  // Calculate edit mode cost
-  const calculateEditCost = () => {
+  // Calculate edit mode cost - memoized for performance
+  const calculateEditCost = useMemo(() => {
     let total = 0;
     const itemsToCalc = useSections 
       ? sections.flatMap(s => s.items)
@@ -492,7 +500,7 @@ export function RecipePageInlineComplete({
       }
     });
     return total;
-  };
+  }, [useSections, sections, items, ingredients]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -522,36 +530,36 @@ export function RecipePageInlineComplete({
         return;
       }
 
-      const formData = new FormData();
-      formData.append("recipeId", recipe.id.toString());
+    const formData = new FormData();
+    formData.append("recipeId", recipe.id.toString());
       formData.append("name", name.trim());
-      formData.append("description", description);
-      formData.append("yieldQuantity", yieldQuantity.toString());
-      formData.append("yieldUnit", yieldUnit);
-      formData.append("method", method);
-      formData.append("imageUrl", imageUrl);
-      
-      // Add recipe type information
-      const recipeType = yieldUnit === "each" && yieldQuantity === 1 ? "single" : "batch";
-      formData.append("recipeType", recipeType);
-      formData.append("servings", yieldQuantity.toString());
-      
-      if (categoryId) formData.append("categoryId", categoryId.toString());
-      if (shelfLifeId) formData.append("shelfLifeId", shelfLifeId.toString());
-      if (storageId) formData.append("storageId", storageId.toString());
-      if (bakeTime) formData.append("bakeTime", bakeTime.toString());
-      if (bakeTemp) formData.append("bakeTemp", bakeTemp.toString());
+    formData.append("description", description);
+    formData.append("yieldQuantity", yieldQuantity.toString());
+    formData.append("yieldUnit", yieldUnit);
+    formData.append("method", method);
+    formData.append("imageUrl", imageUrl);
+    
+    // Add recipe type information
+    const recipeType = yieldUnit === "each" && yieldQuantity === 1 ? "single" : "batch";
+    formData.append("recipeType", recipeType);
+    formData.append("servings", yieldQuantity.toString());
+    
+    if (categoryId) formData.append("categoryId", categoryId.toString());
+    if (shelfLifeId) formData.append("shelfLifeId", shelfLifeId.toString());
+    if (storageId) formData.append("storageId", storageId.toString());
+    if (bakeTime) formData.append("bakeTime", bakeTime.toString());
+    if (bakeTemp) formData.append("bakeTemp", bakeTemp.toString());
 
-      formData.append("useSections", useSections.toString());
+    formData.append("useSections", useSections.toString());
 
-      if (useSections) {
-        formData.append("sections", JSON.stringify(sections));
-      } else {
-        formData.append("recipeItems", JSON.stringify(items));
-      }
+    if (useSections) {
+      formData.append("sections", JSON.stringify(sections));
+    } else {
+      formData.append("recipeItems", JSON.stringify(items));
+    }
 
-      await onSave(formData);
-      setIsLocked(true);
+    await onSave(formData);
+    setIsLocked(true);
     } catch (error) {
       console.error("Error saving recipe:", error);
       alert("Failed to save recipe. Please check the console for details and try again.");
@@ -661,12 +669,22 @@ export function RecipePageInlineComplete({
     }
   };
 
-  const allIngredients = recipe.sections.length > 0 
+  const allIngredients = useMemo(() => 
+    recipe.sections.length > 0 
     ? scaledSections.flatMap(section => section.items)
-    : scaledIngredients;
+      : scaledIngredients,
+    [recipe.sections.length, scaledSections, scaledIngredients]
+  );
 
-  const editModeTotalCost = isLocked ? costBreakdown.totalCost : calculateEditCost();
-  const editModeCostPerUnit = isLocked ? costBreakdown.costPerOutputUnit : (yieldQuantity > 0 ? editModeTotalCost / yieldQuantity : 0);
+  const editModeTotalCost = useMemo(() => 
+    isLocked ? costBreakdown.totalCost : calculateEditCost,
+    [isLocked, costBreakdown.totalCost, calculateEditCost]
+  );
+  
+  const editModeCostPerUnit = useMemo(() => 
+    isLocked ? costBreakdown.costPerOutputUnit : (yieldQuantity > 0 ? editModeTotalCost / yieldQuantity : 0),
+    [isLocked, costBreakdown.costPerOutputUnit, yieldQuantity, editModeTotalCost]
+  );
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -817,9 +835,9 @@ export function RecipePageInlineComplete({
                   <button
                     type="button"
                     onClick={() => {
-                      setYieldUnit("each");
-                      setYieldQuantity(1);
-                    }}
+                          setYieldUnit("each");
+                          setYieldQuantity(1);
+                        }}
                     className={`relative z-10 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                       yieldUnit === "each" && yieldQuantity === 1
                         ? "text-white"
@@ -831,9 +849,9 @@ export function RecipePageInlineComplete({
                   <button
                     type="button"
                     onClick={() => {
-                      setYieldUnit("each");
-                      setYieldQuantity(4);
-                    }}
+                          setYieldUnit("each");
+                          setYieldQuantity(4);
+                        }}
                     className={`relative z-10 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                       yieldUnit === "each" && yieldQuantity > 1
                         ? "text-white"
@@ -850,11 +868,11 @@ export function RecipePageInlineComplete({
             <div className="w-32 h-32 flex-shrink-0">
               {recipe.imageUrl || imageUrl ? (
                 <div className="relative group w-full h-full">
-                  <img 
-                    src={imageUrl || recipe.imageUrl} 
-                    alt={recipe.name} 
-                    className="w-full h-full object-cover rounded-xl shadow-md"
-                  />
+                <img 
+                  src={imageUrl || recipe.imageUrl} 
+                  alt={recipe.name} 
+                  className="w-full h-full object-cover rounded-xl shadow-md"
+                />
                   <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex flex-col items-center justify-center text-white text-xs font-medium cursor-pointer">
                     <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -911,8 +929,8 @@ export function RecipePageInlineComplete({
                   ) : (
                     <>
                       <svg className="w-8 h-8 text-emerald-400 group-hover:text-emerald-500 transition-colors mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
                       <span className="text-xs text-emerald-600 font-semibold">Add Image</span>
                     </>
                   )}
@@ -1129,11 +1147,12 @@ export function RecipePageInlineComplete({
             <div className="sticky top-6 space-y-4">
               {/* Image or Placeholder */}
               {(recipe.imageUrl || imageUrl) ? (
-                <img 
-                  src={imageUrl || recipe.imageUrl} 
-                  alt={recipe.name} 
-                  className="w-full h-auto object-cover rounded-2xl shadow-lg"
-                />
+              <img 
+                src={imageUrl || recipe.imageUrl} 
+                alt={recipe.name} 
+                  loading="lazy"
+                className="w-full h-auto object-cover rounded-2xl shadow-lg"
+              />
               ) : (
                 <div className="w-full aspect-square bg-gradient-to-br from-emerald-100 via-blue-50 to-emerald-50 rounded-2xl shadow-lg flex flex-col items-center justify-center border-2 border-dashed border-emerald-200">
                   <svg className="w-16 h-16 text-emerald-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1200,63 +1219,63 @@ export function RecipePageInlineComplete({
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-2">Category</label>
                   <div className="relative">
-                    <select
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
                       className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
-                    >
+                  >
                       <option value="" className="text-gray-400">None</option>
-                      {categories.map(cat => (
+                    {categories.map(cat => (
                         <option key={cat.id} value={cat.id} className="text-gray-900">{cat.name}</option>
-                      ))}
-                    </select>
+                    ))}
+                  </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </div>
+                </div>
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-2">Shelf Life</label>
                   <div className="relative">
-                    <select
-                      value={shelfLifeId}
-                      onChange={(e) => setShelfLifeId(e.target.value)}
+                  <select
+                    value={shelfLifeId}
+                    onChange={(e) => setShelfLifeId(e.target.value)}
                       className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
-                    >
+                  >
                       <option value="" className="text-gray-400">None</option>
-                      {shelfLifeOptions.map(opt => (
+                    {shelfLifeOptions.map(opt => (
                         <option key={opt.id} value={opt.id} className="text-gray-900">{opt.name}</option>
-                      ))}
-                    </select>
+                    ))}
+                  </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </div>
+                </div>
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-2">Storage</label>
                   <div className="relative">
-                    <select
-                      value={storageId}
-                      onChange={(e) => setStorageId(e.target.value)}
+                  <select
+                    value={storageId}
+                    onChange={(e) => setStorageId(e.target.value)}
                       className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
-                    >
+                  >
                       <option value="" className="text-gray-400">None</option>
-                      {storageOptions.map(opt => (
+                    {storageOptions.map(opt => (
                         <option key={opt.id} value={opt.id} className="text-gray-900">{opt.name}</option>
-                      ))}
-                    </select>
+                    ))}
+                  </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </div>
+                </div>
                   </div>
                 </div>
                 
@@ -1270,23 +1289,23 @@ export function RecipePageInlineComplete({
                     Baking Details
                   </h4>
                   <div className="space-y-4">
-                    <div>
+                  <div>
                       <label className="block text-xs font-medium text-gray-600 mb-2">Bake Temperature</label>
                       <div className="relative">
-                        <input
-                          type="number"
-                          value={bakeTemp}
-                          onChange={(e) => setBakeTemp(e.target.value)}
+                    <input
+                      type="number"
+                      value={bakeTemp}
+                      onChange={(e) => setBakeTemp(e.target.value)}
                           placeholder="e.g. 180"
                           className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        />
+                    />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">°C</span>
-                      </div>
-                    </div>
-                    <div>
+                  </div>
+                </div>
+                <div>
                       <label className="block text-xs font-medium text-gray-600 mb-2">Bake Time</label>
                       <div className="relative">
-                        <input
+                  <input
                           type="number"
                           value={bakeTime}
                           onChange={(e) => setBakeTime(e.target.value)}
@@ -1312,24 +1331,24 @@ export function RecipePageInlineComplete({
                 <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                   <div className="flex flex-col items-center gap-3">
                     <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Servings</h3>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => setServings(Math.max(1, servings - 1))}
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setServings(Math.max(1, servings - 1))}
                         className="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700"
-                      >
+                    >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                        </svg>
-                      </button>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                      </svg>
+                    </button>
                       <span className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">{servings}</span>
-                      <button 
-                        onClick={() => setServings(servings + 1)}
+                    <button 
+                      onClick={() => setServings(servings + 1)}
                         className="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700"
-                      >
+                    >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </button>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
                     </div>
                   </div>
                 </div>
@@ -1466,90 +1485,90 @@ export function RecipePageInlineComplete({
                 </div>
               ) : (
                 <>
-                  {/* Ingredients */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold text-gray-900">Ingredients</h2>
-                      {isLocked && (
-                        <span className="text-sm text-gray-500">
-                          {checkedItems.size} of {allIngredients.length} checked
-                        </span>
-                      )}
-                      {!isLocked && !useSections && (
-                        <button
-                          onClick={addIngredient}
-                          className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                          + Add
-                        </button>
-                      )}
-                      {!isLocked && useSections && (
-                        <button
-                          onClick={addSection}
-                          className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                          + Add Step
-                        </button>
-                      )}
-                    </div>
+              {/* Ingredients */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">Ingredients</h2>
+                  {isLocked && (
+                    <span className="text-sm text-gray-500">
+                      {checkedItems.size} of {allIngredients.length} checked
+                    </span>
+                  )}
+                  {!isLocked && !useSections && (
+                    <button
+                      onClick={addIngredient}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      + Add
+                    </button>
+                  )}
+                  {!isLocked && useSections && (
+                    <button
+                      onClick={addSection}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      + Add Step
+                    </button>
+                  )}
+                </div>
 
-                    {/* Sections Toggle - Only in Edit Mode */}
-                    {!isLocked && (
-                      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={useSections}
-                            onChange={(e) => {
-                              const newUseSections = e.target.checked;
-                              setUseSections(newUseSections);
-                              
-                              // When enabling sections, move existing items to first section
-                              if (newUseSections && items.length > 0) {
-                                setSections([{
-                                  id: "section-0",
-                                  title: "Step 1",
-                                  description: "",
-                                  method: "",
-                                  items: [...items], // Preserve existing ingredients
-                                }]);
-                              }
-                              
-                              // When disabling sections, move first section's items back to simple list
-                              if (!newUseSections && sections.length > 0 && sections[0].items.length > 0) {
-                                setItems([...sections[0].items]);
-                              }
-                            }}
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                          />
-                          <div>
-                            <div className="font-medium text-gray-900 text-sm">Use Sections (Multi-Step Recipe)</div>
-                            <div className="text-xs text-gray-600">Organize ingredients and instructions into separate steps</div>
-                          </div>
-                        </label>
+                {/* Sections Toggle - Only in Edit Mode */}
+                {!isLocked && (
+                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useSections}
+                        onChange={(e) => {
+                          const newUseSections = e.target.checked;
+                          setUseSections(newUseSections);
+                          
+                          // When enabling sections, move existing items to first section
+                          if (newUseSections && items.length > 0) {
+                            setSections([{
+                              id: "section-0",
+                              title: "Step 1",
+                              description: "",
+                              method: "",
+                              items: [...items], // Preserve existing ingredients
+                            }]);
+                          }
+                          
+                          // When disabling sections, move first section's items back to simple list
+                          if (!newUseSections && sections.length > 0 && sections[0].items.length > 0) {
+                            setItems([...sections[0].items]);
+                          }
+                        }}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900 text-sm">Use Sections (Multi-Step Recipe)</div>
+                        <div className="text-xs text-gray-600">Organize ingredients and instructions into separate steps</div>
                       </div>
-                    )}
+                    </label>
+                  </div>
+                )}
 
-                    {/* Edit Mode - Sections */}
-                    {!isLocked && useSections && (
-                      <div className="space-y-6">
-                        {sections.map((section, sectionIdx) => (
-                          <div key={section.id} className="bg-gray-50 rounded-xl border-2 border-blue-200 p-5 space-y-4">
-                            <div className="flex items-start gap-4">
-                              <div className="flex-1 space-y-3">
-                                <input
-                                  type="text"
-                                  value={section.title}
-                                  onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold text-lg"
-                                  placeholder="Step title"
-                                />
-                                <textarea
-                                  value={section.method}
-                                  onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, method: e.target.value } : s))}
-                                  rows={3}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                                  placeholder="Instructions for this step..."
+                {/* Edit Mode - Sections */}
+                {!isLocked && useSections && (
+                  <div className="space-y-6">
+                    {sections.map((section, sectionIdx) => (
+                      <div key={section.id} className="bg-gray-50 rounded-xl border-2 border-blue-200 p-5 space-y-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1 space-y-3">
+                            <input
+                              type="text"
+                              value={section.title}
+                              onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold text-lg"
+                              placeholder="Step title"
+                            />
+                            <textarea
+                              value={section.method}
+                              onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, method: e.target.value } : s))}
+                              rows={3}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                              placeholder="Instructions for this step..."
                                 />
                                 <div className="grid grid-cols-2 gap-3">
                                   <div>
@@ -1573,27 +1592,27 @@ export function RecipePageInlineComplete({
                                     />
                                   </div>
                                 </div>
-                              </div>
-                              <button
-                                onClick={() => removeSection(section.id)}
-                                className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeSection(section.id)}
+                            className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
 
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Ingredients for this step</h4>
-                                <button
-                                  onClick={() => addIngredientToSection(section.id)}
-                                  className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
-                                >
-                                  + Add Ingredient
-                                </button>
-                              </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Ingredients for this step</h4>
+                            <button
+                              onClick={() => addIngredientToSection(section.id)}
+                              className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                            >
+                              + Add Ingredient
+                            </button>
+                          </div>
                               <DndContext
                                 sensors={sensors}
                                 collisionDetection={closestCenter}
@@ -1610,10 +1629,10 @@ export function RecipePageInlineComplete({
                                       ingredients={ingredients}
                                       onUpdate={(id, field, value) => {
                                         setSections(sections.map(s => {
-                                          if (s.id === section.id) {
+                                    if (s.id === section.id) {
                                             return { ...s, items: s.items.map(i => i.id === id ? { ...i, [field]: value } : i) };
-                                          }
-                                          return s;
+                                    }
+                                    return s;
                                         }));
                                       }}
                                       onRemove={(id) => removeIngredientFromSection(section.id, id)}
@@ -1621,14 +1640,14 @@ export function RecipePageInlineComplete({
                                   ))}
                                 </SortableContext>
                               </DndContext>
-                            </div>
-                          </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
+                    ))}
+                  </div>
+                )}
 
-                    {/* Edit Mode - Simple Ingredients */}
-                    {!isLocked && !useSections && (
+                {/* Edit Mode - Simple Ingredients */}
+                {!isLocked && !useSections && (
                       <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -1656,61 +1675,61 @@ export function RecipePageInlineComplete({
                     )}
                     
                     {/* View Mode - Simple Ingredients (no sections) */}
-                    {isLocked && (
-                      <div className="space-y-3">
+                {isLocked && (
+                  <div className="space-y-3">
                         {scaledIngredients.map((item) => (
-                          <div 
-                            key={item.id} 
-                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                              checkedItems.has(item.id) 
-                                ? 'bg-green-50 border-green-200' 
-                                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                            }`}
-                          >
-                            <input 
-                              type="checkbox" 
-                              checked={checkedItems.has(item.id)}
-                              onChange={() => toggleItem(item.id)}
-                              className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                            />
-                            <div className="flex-1">
-                              <span className="font-medium text-gray-900">
-                                {item.scaledQuantity.toFixed(1)} {item.unit}
-                              </span>
-                              <span className="text-gray-600 ml-2">{item.ingredient.name}</span>
-                            </div>
-                            <span className="text-sm text-gray-500">
-                              {formatCurrency((item.ingredient.packPrice / item.ingredient.packQuantity) * item.scaledQuantity)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                                <div 
+                                  key={item.id} 
+                                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                                    checkedItems.has(item.id) 
+                                      ? 'bg-green-50 border-green-200' 
+                                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  <input 
+                                    type="checkbox" 
+                                    checked={checkedItems.has(item.id)}
+                                    onChange={() => toggleItem(item.id)}
+                                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="font-medium text-gray-900">
+                                      {item.scaledQuantity.toFixed(1)} {item.unit}
+                                    </span>
+                                    <span className="text-gray-600 ml-2">{item.ingredient.name}</span>
+                                  </div>
+                                  <span className="text-sm text-gray-500">
+                                    {formatCurrency((item.ingredient.packPrice / item.ingredient.packQuantity) * item.scaledQuantity)}
+                                  </span>
+                                </div>
+                              ))}
                   </div>
+                )}
+              </div>
 
                   {/* Instructions - Only for simple recipes without sections */}
-                  <div className="bg-white rounded-xl border border-gray-200 p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Instructions</h2>
-                    {!isLocked && !useSections ? (
-                      <textarea
-                        value={method}
-                        onChange={(e) => setMethod(e.target.value)}
-                        rows={8}
-                        placeholder="Write your cooking instructions here..."
-                        className="w-full border-2 border-blue-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    ) : !isLocked && useSections ? (
-                      <div className="text-sm text-gray-500 italic text-center py-6 bg-blue-50 rounded-lg">
-                        Instructions are managed within each section above
-                      </div>
-                    ) : recipe.method ? (
-                      <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                        {recipe.method}
-                      </div>
-                    ) : (
-                      <p className="text-gray-400 italic">No instructions provided</p>
-                    )}
-                  </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Instructions</h2>
+                {!isLocked && !useSections ? (
+                  <textarea
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                    rows={8}
+                    placeholder="Write your cooking instructions here..."
+                    className="w-full border-2 border-blue-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ) : !isLocked && useSections ? (
+                  <div className="text-sm text-gray-500 italic text-center py-6 bg-blue-50 rounded-lg">
+                    Instructions are managed within each section above
+                    </div>
+                  ) : recipe.method ? (
+                    <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                      {recipe.method}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 italic">No instructions provided</p>
+                )}
+              </div>
                 </>
               )}
             </div>

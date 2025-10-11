@@ -40,23 +40,29 @@ export default async function RecipesPage({ searchParams }: Props) {
     
   const recipes = await prisma.recipe.findMany({ 
     where, 
-    orderBy: { name: "asc" }, 
-    include: { 
-      items: {
-        include: {
-          ingredient: {
-            select: {
-              id: true,
-              name: true,
-              packPrice: true,
-              packQuantity: true,
-              packUnit: true
-            }
-          }
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      yieldQuantity: true,
+      yieldUnit: true,
+      imageUrl: true,
+      bakeTime: true,
+      bakeTemp: true,
+      storage: true,
+      categoryRef: {
+        select: {
+          name: true,
+          color: true,
         }
       },
-      categoryRef: true 
-    } 
+      items: {
+        select: {
+          id: true,
+        }
+      },
+    }
   });
   
   // Get categories from the already fetched recipes (no extra query needed)
@@ -108,6 +114,7 @@ export default async function RecipesPage({ searchParams }: Props) {
                     <img 
                       src={r.imageUrl} 
                       alt={r.name}
+                      loading="lazy"
                       className="w-full h-full object-cover rounded-xl"
                     />
                   ) : (
