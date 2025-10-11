@@ -536,11 +536,12 @@ export function RecipeCreateForm({
             <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-gray-200">Additional Details</h3>
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Category</label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white hover:border-gray-300 cursor-pointer"
+                  style={{ minHeight: '42px' }}
                 >
                   <option value="">Select category...</option>
                   {categories.map(cat => (
@@ -550,11 +551,12 @@ export function RecipeCreateForm({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Shelf Life</label>
                 <select
                   value={shelfLifeId}
                   onChange={(e) => setShelfLifeId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white hover:border-gray-300 cursor-pointer"
+                  style={{ minHeight: '42px' }}
                 >
                   <option value="">Select shelf life...</option>
                   {shelfLifeOptions.map(opt => (
@@ -564,11 +566,12 @@ export function RecipeCreateForm({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Storage</label>
                 <select
                   value={storageId}
                   onChange={(e) => setStorageId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white hover:border-gray-300 cursor-pointer"
+                  style={{ minHeight: '42px' }}
                 >
                   <option value="">Select storage...</option>
                   {storageOptions.map(opt => (
