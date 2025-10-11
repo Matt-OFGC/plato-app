@@ -60,6 +60,8 @@ interface RecipeSection {
   title: string;
   description?: string;
   method?: string;
+  bakeTemp?: string;
+  bakeTime?: string;
   items: RecipeItem[];
 }
 
@@ -82,6 +84,8 @@ interface RecipePageInlineCompleteProps {
       title: string;
       description?: string;
       method?: string;
+      bakeTemp?: number | null;
+      bakeTime?: number | null;
       order: number;
       items: Array<{
         id: number;
@@ -401,6 +405,8 @@ export function RecipePageInlineComplete({
           title: s.title,
           description: s.description || "",
           method: s.method || "",
+          bakeTemp: s.bakeTemp?.toString() || "",
+          bakeTime: s.bakeTime?.toString() || "",
           items: s.items.map((item, itemIdx) => ({
             id: `section-${idx}-item-${itemIdx}`,
             ingredientId: item.ingredient.id,
@@ -409,7 +415,7 @@ export function RecipePageInlineComplete({
             note: item.note || "",
           })),
         }))
-      : [{ id: "section-0", title: "Step 1", description: "", method: "", items: [] }]
+      : [{ id: "section-0", title: "Step 1", description: "", method: "", bakeTemp: "", bakeTime: "", items: [] }]
   );
   
   const [items, setItems] = useState<RecipeItem[]>(
@@ -572,6 +578,8 @@ export function RecipePageInlineComplete({
       title: `Step ${sections.length + 1}`,
       description: "",
       method: "",
+      bakeTemp: "",
+      bakeTime: "",
       items: [],
     }]);
   };
@@ -1210,12 +1218,35 @@ export function RecipePageInlineComplete({
                 <div className="space-y-6">
                   {scaledSections.map((section, idx) => (
                     <div key={section.id} className="bg-white rounded-xl border border-gray-200 p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
-                        {section.items.length > 0 && (
-                          <span className="text-sm text-gray-500">
-                            {section.items.filter(item => checkedItems.has(item.id)).length} of {section.items.length} checked
-                          </span>
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
+                          {section.items.length > 0 && (
+                            <span className="text-sm text-gray-500">
+                              {section.items.filter(item => checkedItems.has(item.id)).length} of {section.items.length} checked
+                            </span>
+                          )}
+                        </div>
+                        {/* Bake Info Badges for this step */}
+                        {(section.bakeTemp || section.bakeTime) && (
+                          <div className="flex gap-2 flex-wrap">
+                            {section.bakeTemp && (
+                              <div className="bg-emerald-50 rounded-lg border border-emerald-200 px-3 py-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-gray-600">Temp:</span>
+                                  <span className="text-xs font-bold text-emerald-700">{section.bakeTemp}°C</span>
+                                </div>
+                              </div>
+                            )}
+                            {section.bakeTime && (
+                              <div className="bg-emerald-50 rounded-lg border border-emerald-200 px-3 py-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-gray-600">Time:</span>
+                                  <span className="text-xs font-bold text-emerald-700">{section.bakeTime} min</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                       
@@ -1353,6 +1384,28 @@ export function RecipePageInlineComplete({
                                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                                   placeholder="Instructions for this step..."
                                 />
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Bake Temp (°C)</label>
+                                    <input
+                                      type="number"
+                                      value={section.bakeTemp}
+                                      onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, bakeTemp: e.target.value } : s))}
+                                      placeholder="e.g. 180"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Bake Time (min)</label>
+                                    <input
+                                      type="number"
+                                      value={section.bakeTime}
+                                      onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, bakeTime: e.target.value } : s))}
+                                      placeholder="e.g. 20"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                    />
+                                  </div>
+                                </div>
                               </div>
                               <button
                                 onClick={() => removeSection(section.id)}

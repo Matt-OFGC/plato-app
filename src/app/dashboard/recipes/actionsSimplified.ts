@@ -184,6 +184,8 @@ export async function updateRecipeUnified(formData: FormData) {
             title: section.title,
             description: section.description || null,
             method: section.method || null,
+            bakeTemp: section.bakeTemp ? parseInt(section.bakeTemp) : null,
+            bakeTime: section.bakeTime ? parseInt(section.bakeTime) : null,
             order: idx,
           },
         });
