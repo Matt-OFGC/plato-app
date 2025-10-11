@@ -486,20 +486,43 @@ export function RecipeCreateForm({
             </div>
           </div>
 
-          {/* Small Image Preview */}
+          {/* Small Image Preview - Clickable */}
           <div className="w-32 h-32 flex-shrink-0">
             {imageUrl ? (
-              <img 
-                src={imageUrl} 
-                alt="Recipe preview" 
-                className="w-full h-full object-cover rounded-xl shadow-md"
-              />
+              <div className="relative group w-full h-full">
+                <img 
+                  src={imageUrl} 
+                  alt="Recipe preview" 
+                  className="w-full h-full object-cover rounded-xl shadow-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = prompt("Enter image URL:", imageUrl);
+                    if (url !== null) setImageUrl(url);
+                  }}
+                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex flex-col items-center justify-center text-white text-xs font-medium"
+                >
+                  <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Change Image
+                </button>
+              </div>
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl shadow-md flex items-center justify-center">
-                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button
+                type="button"
+                onClick={() => {
+                  const url = prompt("Enter image URL:");
+                  if (url) setImageUrl(url);
+                }}
+                className="w-full h-full bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl shadow-md hover:shadow-lg transition-all flex flex-col items-center justify-center group cursor-pointer border-2 border-dashed border-emerald-300 hover:border-emerald-400"
+              >
+                <svg className="w-8 h-8 text-emerald-400 group-hover:text-emerald-500 transition-colors mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-              </div>
+                <span className="text-xs text-emerald-600 font-semibold">Add Image</span>
+              </button>
             )}
           </div>
         </div>
@@ -591,24 +614,6 @@ export function RecipeCreateForm({
                     </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Image Section with divider */}
-              <div className="pt-4 border-t border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Recipe Image
-                </label>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                />
-                <p className="text-xs text-gray-500 mt-2">Paste an image URL to add a photo</p>
               </div>
             </div>
           </div>
