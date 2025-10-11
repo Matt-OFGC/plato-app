@@ -445,7 +445,7 @@ export function RecipeCreateForm({
                 </select>
               </div>
               <span>Total Cost: {formatCurrency(totalCost)}</span>
-              <span>Cost per {yieldUnit}: {formatCurrency(costPerUnit)}</span>
+              <span>Cost per: {formatCurrency(costPerUnit)}</span>
             </div>
 
             {/* Recipe Type Selector */}
@@ -865,7 +865,7 @@ export function RecipeCreateForm({
                 <span className="text-2xl font-bold text-emerald-700">{formatCurrency(totalCost)}</span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-gray-700">Cost per {yieldUnit}:</span>
+                <span className="text-gray-700">Cost per:</span>
                 <span className="text-xl font-semibold text-emerald-600">{formatCurrency(costPerUnit)}</span>
               </div>
             </div>
