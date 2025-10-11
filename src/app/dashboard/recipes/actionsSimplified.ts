@@ -166,45 +166,64 @@ export async function updateRecipeUnified(formData: FormData) {
       updateData.name = name;
     }
 
+    // Update the recipe first without items/sections
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: updateData,
+    });
+
+    // Now create sections and items
     if (useSections) {
       const sectionsData = JSON.parse(formData.get("sections") as string);
-      updateData.sections = {
-        create: sectionsData.map((section: any, idx: number) => ({
-          title: section.title,
-          description: section.description || null,
-          method: section.method || null,
-          order: idx,
-          items: {
-            create: section.items
-              .filter((item: any) => item.ingredientId && item.quantity)
-              .map((item: any) => ({
-                ingredientId: item.ingredientId,
-                quantity: parseFloat(item.quantity),
-                unit: item.unit,
-                note: item.note || null,
-              })),
+      
+      for (let idx = 0; idx < sectionsData.length; idx++) {
+        const section = sectionsData[idx];
+        const createdSection = await prisma.recipeSection.create({
+          data: {
+            recipeId: recipeId,
+            title: section.title,
+            description: section.description || null,
+            method: section.method || null,
+            order: idx,
           },
-        })),
-      };
+        });
+
+        // Create items for this section
+        const validItems = section.items.filter(
+          (item: any) => item.ingredientId && parseFloat(item.quantity) > 0
+        );
+
+        if (validItems.length > 0) {
+          await prisma.recipeItem.createMany({
+            data: validItems.map((item: any) => ({
+              recipeId: recipeId,
+              sectionId: createdSection.id,
+              ingredientId: item.ingredientId,
+              quantity: parseFloat(item.quantity),
+              unit: item.unit,
+              note: item.note || null,
+            })),
+          });
+        }
+      }
     } else {
       const itemsData = JSON.parse(formData.get("recipeItems") as string);
-      updateData.items = {
-        create: itemsData
-          .filter((item: any) => item.ingredientId && item.quantity)
-          .map((item: any) => ({
+      const validItems = itemsData.filter(
+        (item: any) => item.ingredientId && parseFloat(item.quantity) > 0
+      );
+
+      if (validItems.length > 0) {
+        await prisma.recipeItem.createMany({
+          data: validItems.map((item: any) => ({
+            recipeId: recipeId,
             ingredientId: item.ingredientId,
             quantity: parseFloat(item.quantity),
             unit: item.unit,
             note: item.note || null,
           })),
-      };
+        });
+      }
     }
-
-    // Update the recipe
-    await prisma.recipe.update({
-      where: { id: recipeId },
-      data: updateData,
-    });
 
     revalidatePath(`/dashboard/recipes/${recipeId}`);
     revalidatePath("/dashboard/recipes");
