@@ -605,14 +605,6 @@ export function RecipePageInlineComplete({
               {/* Recipe Info Card */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                 <div className="space-y-3">
-                  {/* Yield */}
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Yield</span>
-                    <span className="text-lg font-bold text-gray-900 mt-1">{servings} {recipe.yieldUnit}</span>
-                  </div>
-                  
-                  <div className="border-t border-gray-200"></div>
-                  
                   {/* Total Cost */}
                   <div className="flex flex-col items-center">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Cost</span>
@@ -745,14 +737,6 @@ export function RecipePageInlineComplete({
                 {/* Recipe Info Card */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                   <div className="space-y-3">
-                    {/* Yield */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Yield</span>
-                      <span className="text-lg font-bold text-gray-900 mt-1">{servings} {recipe.yieldUnit}</span>
-                    </div>
-                    
-                    <div className="border-t border-gray-200"></div>
-                    
                     {/* Total Cost */}
                     <div className="flex flex-col items-center">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Cost</span>
