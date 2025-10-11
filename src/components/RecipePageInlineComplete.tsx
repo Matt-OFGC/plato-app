@@ -693,362 +693,372 @@ export function RecipePageInlineComplete({
                 </div>
               </div>
             )}
-              {/* Ingredients */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">Ingredients</h2>
-                  {isLocked && (
-                    <span className="text-sm text-gray-500">
-                      {checkedItems.size} of {allIngredients.length} checked
-                    </span>
-                  )}
-                  {!isLocked && !useSections && (
-                    <button
-                      onClick={addIngredient}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
-                      + Add
-                    </button>
-                  )}
-                  {!isLocked && useSections && (
-                    <button
-                      onClick={addSection}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
-                      + Add Step
-                    </button>
-                  )}
-                </div>
-
-                {/* Sections Toggle - Only in Edit Mode */}
-                {!isLocked && (
-                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={useSections}
-                        onChange={(e) => {
-                          const newUseSections = e.target.checked;
-                          setUseSections(newUseSections);
-                          
-                          // When enabling sections, move existing items to first section
-                          if (newUseSections && items.length > 0) {
-                            setSections([{
-                              id: "section-0",
-                              title: "Step 1",
-                              description: "",
-                              method: "",
-                              items: [...items], // Preserve existing ingredients
-                            }]);
-                          }
-                          
-                          // When disabling sections, move first section's items back to simple list
-                          if (!newUseSections && sections.length > 0 && sections[0].items.length > 0) {
-                            setItems([...sections[0].items]);
-                          }
-                        }}
-                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="font-medium text-gray-900 text-sm">Use Sections (Multi-Step Recipe)</div>
-                        <div className="text-xs text-gray-600">Organize ingredients and instructions into separate steps</div>
+              {/* Recipe Steps - Combined View for Sections */}
+              {isLocked && recipe.sections.length > 0 ? (
+                <div className="space-y-6">
+                  {scaledSections.map((section, idx) => (
+                    <div key={section.id} className="bg-white rounded-xl border border-gray-200 p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
+                        {section.items.length > 0 && (
+                          <span className="text-sm text-gray-500">
+                            {section.items.filter(item => checkedItems.has(item.id)).length} of {section.items.length} checked
+                          </span>
+                        )}
                       </div>
-                    </label>
-                  </div>
-                )}
-
-                {/* Edit Mode - Sections */}
-                {!isLocked && useSections && (
-                  <div className="space-y-6">
-                    {sections.map((section, sectionIdx) => (
-                      <div key={section.id} className="bg-gray-50 rounded-xl border-2 border-blue-200 p-5 space-y-4">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1 space-y-3">
-                            <input
-                              type="text"
-                              value={section.title}
-                              onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold text-lg"
-                              placeholder="Step title"
-                            />
-                            <textarea
-                              value={section.method}
-                              onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, method: e.target.value } : s))}
-                              rows={3}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                              placeholder="Instructions for this step..."
-                            />
-                          </div>
-                          <button
-                            onClick={() => removeSection(section.id)}
-                            className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Ingredients for this step</h4>
-                            <button
-                              onClick={() => addIngredientToSection(section.id)}
-                              className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
-                            >
-                              + Add Ingredient
-                            </button>
-                          </div>
-                          {section.items.map((item) => {
-                            const ingredient = ingredients.find(i => i.id === item.ingredientId);
-                            const cost = ingredient ? computeIngredientUsageCost({
-                              usageQuantity: parseFloat(item.quantity) || 0,
-                              usageUnit: item.unit,
-                              ingredient: {
-                                packQuantity: ingredient.packQuantity,
-                                packUnit: ingredient.packUnit as any,
-                                packPrice: ingredient.packPrice,
-                                densityGPerMl: ingredient.densityGPerMl || undefined,
-                              }
-                            }) : 0;
-                            
-                            return (
-                              <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-white rounded-lg border border-gray-200">
-                                <select
-                                  value={item.ingredientId}
-                                  onChange={(e) => setSections(sections.map(s => {
-                                    if (s.id === section.id) {
-                                      return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, ingredientId: parseInt(e.target.value) } : i) };
-                                    }
-                                    return s;
-                                  }))}
-                                  className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                >
-                                  {ingredients.map(ing => (
-                                    <option key={ing.id} value={ing.id}>{ing.name}</option>
-                                  ))}
-                                </select>
-                                <input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) => setSections(sections.map(s => {
-                                    if (s.id === section.id) {
-                                      return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, quantity: e.target.value } : i) };
-                                    }
-                                    return s;
-                                  }))}
-                                  className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                  placeholder="Qty"
+                      
+                      {/* Ingredients for this step */}
+                      {section.items.length > 0 && (
+                        <div className="mb-6">
+                          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Ingredients</h3>
+                          <div className="space-y-2">
+                            {section.items.map((item) => (
+                              <div 
+                                key={item.id} 
+                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                                  checkedItems.has(item.id) 
+                                    ? 'bg-green-50 border-green-200' 
+                                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                }`}
+                              >
+                                <input 
+                                  type="checkbox" 
+                                  checked={checkedItems.has(item.id)}
+                                  onChange={() => toggleItem(item.id)}
+                                  className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
                                 />
-                                <select
-                                  value={item.unit}
-                                  onChange={(e) => setSections(sections.map(s => {
-                                    if (s.id === section.id) {
-                                      return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unit } : i) };
-                                    }
-                                    return s;
-                                  }))}
-                                  className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="g">g</option>
-                                  <option value="kg">kg</option>
-                                  <option value="ml">ml</option>
-                                  <option value="l">l</option>
-                                  <option value="each">each</option>
-                                </select>
-                                <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
-                                  {formatCurrency(cost)}
+                                <div className="flex-1">
+                                  <span className="font-medium text-gray-900">
+                                    {item.scaledQuantity.toFixed(1)} {item.unit}
+                                  </span>
+                                  <span className="text-gray-600 ml-2">{item.ingredient.name}</span>
                                 </div>
+                                <span className="text-sm text-gray-500">
+                                  {formatCurrency((item.ingredient.packPrice / item.ingredient.packQuantity) * item.scaledQuantity)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Instructions for this step */}
+                      {section.method && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Instructions</h3>
+                          <div className="whitespace-pre-wrap text-gray-700 leading-relaxed bg-blue-50 p-4 rounded-lg">
+                            {section.method}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {/* Ingredients */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-semibold text-gray-900">Ingredients</h2>
+                      {isLocked && (
+                        <span className="text-sm text-gray-500">
+                          {checkedItems.size} of {allIngredients.length} checked
+                        </span>
+                      )}
+                      {!isLocked && !useSections && (
+                        <button
+                          onClick={addIngredient}
+                          className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          + Add
+                        </button>
+                      )}
+                      {!isLocked && useSections && (
+                        <button
+                          onClick={addSection}
+                          className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          + Add Step
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Sections Toggle - Only in Edit Mode */}
+                    {!isLocked && (
+                      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={useSections}
+                            onChange={(e) => {
+                              const newUseSections = e.target.checked;
+                              setUseSections(newUseSections);
+                              
+                              // When enabling sections, move existing items to first section
+                              if (newUseSections && items.length > 0) {
+                                setSections([{
+                                  id: "section-0",
+                                  title: "Step 1",
+                                  description: "",
+                                  method: "",
+                                  items: [...items], // Preserve existing ingredients
+                                }]);
+                              }
+                              
+                              // When disabling sections, move first section's items back to simple list
+                              if (!newUseSections && sections.length > 0 && sections[0].items.length > 0) {
+                                setItems([...sections[0].items]);
+                              }
+                            }}
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900 text-sm">Use Sections (Multi-Step Recipe)</div>
+                            <div className="text-xs text-gray-600">Organize ingredients and instructions into separate steps</div>
+                          </div>
+                        </label>
+                      </div>
+                    )}
+
+                    {/* Edit Mode - Sections */}
+                    {!isLocked && useSections && (
+                      <div className="space-y-6">
+                        {sections.map((section, sectionIdx) => (
+                          <div key={section.id} className="bg-gray-50 rounded-xl border-2 border-blue-200 p-5 space-y-4">
+                            <div className="flex items-start gap-4">
+                              <div className="flex-1 space-y-3">
+                                <input
+                                  type="text"
+                                  value={section.title}
+                                  onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
+                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold text-lg"
+                                  placeholder="Step title"
+                                />
+                                <textarea
+                                  value={section.method}
+                                  onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, method: e.target.value } : s))}
+                                  rows={3}
+                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                  placeholder="Instructions for this step..."
+                                />
+                              </div>
+                              <button
+                                onClick={() => removeSection(section.id)}
+                                className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wide">Ingredients for this step</h4>
                                 <button
-                                  onClick={() => removeIngredientFromSection(section.id, item.id)}
-                                  className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  onClick={() => addIngredientToSection(section.id)}
+                                  className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
+                                  + Add Ingredient
                                 </button>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Edit Mode - Simple Ingredients */}
-                {!isLocked && !useSections && (
-                  <div className="space-y-3">
-                    {items.map((item) => {
-                      const ingredient = ingredients.find(i => i.id === item.ingredientId);
-                      const cost = ingredient ? computeIngredientUsageCost({
-                        usageQuantity: parseFloat(item.quantity) || 0,
-                        usageUnit: item.unit,
-                        ingredient: {
-                          packQuantity: ingredient.packQuantity,
-                          packUnit: ingredient.packUnit as any,
-                          packPrice: ingredient.packPrice,
-                          densityGPerMl: ingredient.densityGPerMl || undefined,
-                        }
-                      }) : 0;
-                      
-                      return (
-                        <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg">
-                          <select
-                            value={item.ingredientId}
-                            onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, ingredientId: parseInt(e.target.value) } : i))}
-                            className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          >
-                            {ingredients.map(ing => (
-                              <option key={ing.id} value={ing.id}>{ing.name}</option>
-                            ))}
-                          </select>
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, quantity: e.target.value } : i))}
-                            className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="Qty"
-                          />
-                          <select
-                            value={item.unit}
-                            onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unit } : i))}
-                            className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="g">g</option>
-                            <option value="kg">kg</option>
-                            <option value="ml">ml</option>
-                            <option value="l">l</option>
-                            <option value="each">each</option>
-                          </select>
-                          <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
-                            {formatCurrency(cost)}
-                          </div>
-                          <button
-                            onClick={() => removeIngredient(item.id)}
-                            className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                {/* View Mode - Ingredients */}
-                {isLocked && (
-                  <div className="space-y-3">
-                    {recipe.sections.length > 0 ? (
-                      scaledSections.map((section) => (
-                        <div key={section.id} className="space-y-3">
-                          {section.items.length > 0 && (
-                            <>
-                              <h3 className="font-medium text-gray-700 text-sm uppercase tracking-wide">
-                                {section.title}
-                              </h3>
-                              {section.items.map((item) => (
-                                <div 
-                                  key={item.id} 
-                                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                                    checkedItems.has(item.id) 
-                                      ? 'bg-green-50 border-green-200' 
-                                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                                  }`}
-                                >
-                                  <input 
-                                    type="checkbox" 
-                                    checked={checkedItems.has(item.id)}
-                                    onChange={() => toggleItem(item.id)}
-                                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                                  />
-                                  <div className="flex-1">
-                                    <span className="font-medium text-gray-900">
-                                      {item.scaledQuantity.toFixed(1)} {item.unit}
-                                    </span>
-                                    <span className="text-gray-600 ml-2">{item.ingredient.name}</span>
+                              {section.items.map((item) => {
+                                const ingredient = ingredients.find(i => i.id === item.ingredientId);
+                                const cost = ingredient ? computeIngredientUsageCost({
+                                  usageQuantity: parseFloat(item.quantity) || 0,
+                                  usageUnit: item.unit,
+                                  ingredient: {
+                                    packQuantity: ingredient.packQuantity,
+                                    packUnit: ingredient.packUnit as any,
+                                    packPrice: ingredient.packPrice,
+                                    densityGPerMl: ingredient.densityGPerMl || undefined,
+                                  }
+                                }) : 0;
+                                
+                                return (
+                                  <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-white rounded-lg border border-gray-200">
+                                    <select
+                                      value={item.ingredientId}
+                                      onChange={(e) => setSections(sections.map(s => {
+                                        if (s.id === section.id) {
+                                          return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, ingredientId: parseInt(e.target.value) } : i) };
+                                        }
+                                        return s;
+                                      }))}
+                                      className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    >
+                                      {ingredients.map(ing => (
+                                        <option key={ing.id} value={ing.id}>{ing.name}</option>
+                                      ))}
+                                    </select>
+                                    <input
+                                      type="number"
+                                      value={item.quantity}
+                                      onChange={(e) => setSections(sections.map(s => {
+                                        if (s.id === section.id) {
+                                          return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, quantity: e.target.value } : i) };
+                                        }
+                                        return s;
+                                      }))}
+                                      className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Qty"
+                                    />
+                                    <select
+                                      value={item.unit}
+                                      onChange={(e) => setSections(sections.map(s => {
+                                        if (s.id === section.id) {
+                                          return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unit } : i) };
+                                        }
+                                        return s;
+                                      }))}
+                                      className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    >
+                                      <option value="g">g</option>
+                                      <option value="kg">kg</option>
+                                      <option value="ml">ml</option>
+                                      <option value="l">l</option>
+                                      <option value="each">each</option>
+                                    </select>
+                                    <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
+                                      {formatCurrency(cost)}
+                                    </div>
+                                    <button
+                                      onClick={() => removeIngredientFromSection(section.id, item.id)}
+                                      className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
                                   </div>
-                                  <span className="text-sm text-gray-500">
-                                    {formatCurrency((item.ingredient.packPrice / item.ingredient.packQuantity) * item.scaledQuantity)}
-                                  </span>
-                                </div>
-                              ))}
-                            </>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      scaledIngredients.map((item) => (
-                        <div 
-                          key={item.id} 
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                            checkedItems.has(item.id) 
-                              ? 'bg-green-50 border-green-200' 
-                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                          }`}
-                        >
-                          <input 
-                            type="checkbox" 
-                            checked={checkedItems.has(item.id)}
-                            onChange={() => toggleItem(item.id)}
-                            className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                          />
-                          <div className="flex-1">
-                            <span className="font-medium text-gray-900">
-                              {item.scaledQuantity.toFixed(1)} {item.unit}
-                            </span>
-                            <span className="text-gray-600 ml-2">{item.ingredient.name}</span>
+                                );
+                              })}
+                            </div>
                           </div>
-                          <span className="text-sm text-gray-500">
-                            {formatCurrency((item.ingredient.packPrice / item.ingredient.packQuantity) * item.scaledQuantity)}
-                          </span>
-                        </div>
-                      ))
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Edit Mode - Simple Ingredients */}
+                    {!isLocked && !useSections && (
+                      <div className="space-y-3">
+                        {items.map((item) => {
+                          const ingredient = ingredients.find(i => i.id === item.ingredientId);
+                          const cost = ingredient ? computeIngredientUsageCost({
+                            usageQuantity: parseFloat(item.quantity) || 0,
+                            usageUnit: item.unit,
+                            ingredient: {
+                              packQuantity: ingredient.packQuantity,
+                              packUnit: ingredient.packUnit as any,
+                              packPrice: ingredient.packPrice,
+                              densityGPerMl: ingredient.densityGPerMl || undefined,
+                            }
+                          }) : 0;
+                          
+                          return (
+                            <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg">
+                              <select
+                                value={item.ingredientId}
+                                onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, ingredientId: parseInt(e.target.value) } : i))}
+                                className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              >
+                                {ingredients.map(ing => (
+                                  <option key={ing.id} value={ing.id}>{ing.name}</option>
+                                ))}
+                              </select>
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, quantity: e.target.value } : i))}
+                                className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="Qty"
+                              />
+                              <select
+                                value={item.unit}
+                                onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unit } : i))}
+                                className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="g">g</option>
+                                <option value="kg">kg</option>
+                                <option value="ml">ml</option>
+                                <option value="l">l</option>
+                                <option value="each">each</option>
+                              </select>
+                              <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
+                                {formatCurrency(cost)}
+                              </div>
+                              <button
+                                onClick={() => removeIngredient(item.id)}
+                                className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* View Mode - Simple Ingredients (no sections) */}
+                    {isLocked && (
+                      <div className="space-y-3">
+                        {scaledIngredients.map((item) => (
+                          <div 
+                            key={item.id} 
+                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                              checkedItems.has(item.id) 
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                            }`}
+                          >
+                            <input 
+                              type="checkbox" 
+                              checked={checkedItems.has(item.id)}
+                              onChange={() => toggleItem(item.id)}
+                              className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                            />
+                            <div className="flex-1">
+                              <span className="font-medium text-gray-900">
+                                {item.scaledQuantity.toFixed(1)} {item.unit}
+                              </span>
+                              <span className="text-gray-600 ml-2">{item.ingredient.name}</span>
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              {formatCurrency((item.ingredient.packPrice / item.ingredient.packQuantity) * item.scaledQuantity)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Instructions */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Instructions</h2>
-                {!isLocked && !useSections ? (
-                  <textarea
-                    value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                    rows={8}
-                    placeholder="Write your cooking instructions here..."
-                    className="w-full border-2 border-blue-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                ) : !isLocked && useSections ? (
-                  <div className="text-sm text-gray-500 italic text-center py-6 bg-blue-50 rounded-lg">
-                    Instructions are managed within each section above
+                  {/* Instructions - Only for simple recipes without sections */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Instructions</h2>
+                    {!isLocked && !useSections ? (
+                      <textarea
+                        value={method}
+                        onChange={(e) => setMethod(e.target.value)}
+                        rows={8}
+                        placeholder="Write your cooking instructions here..."
+                        className="w-full border-2 border-blue-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    ) : !isLocked && useSections ? (
+                      <div className="text-sm text-gray-500 italic text-center py-6 bg-blue-50 rounded-lg">
+                        Instructions are managed within each section above
+                      </div>
+                    ) : recipe.method ? (
+                      <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                        {recipe.method}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 italic">No instructions provided</p>
+                    )}
                   </div>
-                ) : (
-                  recipe.sections.length > 0 ? (
-                    <div className="space-y-6">
-                      {scaledSections.map((section) => (
-                        <div key={section.id}>
-                          <h3 className="text-lg font-medium text-gray-900 mb-3">{section.title}</h3>
-                          {section.method && (
-                            <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                              {section.method}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : recipe.method ? (
-                    <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                      {recipe.method}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 italic">No instructions provided</p>
-                  )
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
 
