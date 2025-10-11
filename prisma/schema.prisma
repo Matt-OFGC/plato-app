@@ -178,6 +178,8 @@ model RecipeSection {
   title         String
   description   String?
   method        String?
+  bakeTemp      Int?       // Bake temperature in Celsius for this step
+  bakeTime      Int?       // Bake time in minutes for this step
   order         Int        @default(0)
 
   items         RecipeItem[]
