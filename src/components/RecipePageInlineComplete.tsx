@@ -1029,14 +1029,25 @@ export function RecipePageInlineComplete({
       {/* Main Content Grid */}
       <div className="grid xl:grid-cols-12 gap-8">
         {/* Recipe Image - Only in View Mode - 25% width */}
-        {isLocked && (recipe.imageUrl || imageUrl) && (
+        {isLocked && (
           <div className="xl:col-span-3">
             <div className="sticky top-6 space-y-4">
-              <img 
-                src={imageUrl || recipe.imageUrl} 
-                alt={recipe.name} 
-                className="w-full h-auto object-cover rounded-2xl shadow-lg"
-              />
+              {/* Image or Placeholder */}
+              {(recipe.imageUrl || imageUrl) ? (
+                <img 
+                  src={imageUrl || recipe.imageUrl} 
+                  alt={recipe.name} 
+                  className="w-full h-auto object-cover rounded-2xl shadow-lg"
+                />
+              ) : (
+                <div className="w-full aspect-square bg-gradient-to-br from-emerald-100 via-blue-50 to-emerald-50 rounded-2xl shadow-lg flex flex-col items-center justify-center border-2 border-dashed border-emerald-200">
+                  <svg className="w-16 h-16 text-emerald-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm font-medium text-emerald-600">No Image</p>
+                  <p className="text-xs text-gray-500 mt-1">Click Edit to add one</p>
+                </div>
+              )}
               
               {/* Servings Control Under Image */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
