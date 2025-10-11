@@ -574,12 +574,38 @@ export function RecipePageInlineComplete({
         {/* Recipe Image - Only in View Mode - 25% width */}
         {isLocked && (recipe.imageUrl || imageUrl) && (
           <div className="xl:col-span-3">
-            <div className="sticky top-6">
+            <div className="sticky top-6 space-y-4">
               <img 
                 src={imageUrl || recipe.imageUrl} 
                 alt={recipe.name} 
                 className="w-full h-auto object-cover rounded-2xl shadow-lg"
               />
+              
+              {/* Servings Control Under Image */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                <div className="flex flex-col items-center gap-3">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Servings</h3>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setServings(Math.max(1, servings - 1))}
+                      className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                      </svg>
+                    </button>
+                    <span className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">{servings}</span>
+                    <button 
+                      onClick={() => setServings(servings + 1)}
+                      className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -666,26 +692,26 @@ export function RecipePageInlineComplete({
         {/* Main Content - Ingredients and Instructions */}
         <div className={!isLocked ? "xl:col-span-7" : (recipe.imageUrl || imageUrl) ? "xl:col-span-9" : "xl:col-span-12"}>
           <div className="space-y-6">
-            {/* Servings Control (only in locked mode) */}
-            {isLocked && (
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Servings</h3>
+            {/* Servings Control - Only show here if no image */}
+            {isLocked && !(recipe.imageUrl || imageUrl) && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm max-w-xs">
+                <div className="flex flex-col items-center gap-3">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Servings</h3>
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => setServings(Math.max(1, servings - 1))}
-                      className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                       </svg>
                     </button>
-                    <span className="text-xl font-medium text-gray-900 min-w-[3rem] text-center">{servings}</span>
+                    <span className="text-2xl font-bold text-gray-900 min-w-[3rem] text-center">{servings}</span>
                     <button 
                       onClick={() => setServings(servings + 1)}
-                      className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition-colors text-purple-700"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
                     </button>
@@ -693,7 +719,8 @@ export function RecipePageInlineComplete({
                 </div>
               </div>
             )}
-              {/* Recipe Steps - Combined View for Sections */}
+
+            {/* Recipe Steps - Combined View for Sections */}
               {isLocked && recipe.sections.length > 0 ? (
                 <div className="space-y-6">
                   {scaledSections.map((section, idx) => (
