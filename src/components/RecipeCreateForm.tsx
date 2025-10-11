@@ -450,40 +450,46 @@ export function RecipeCreateForm({
               <span>Cost per: {formatCurrency(costPerUnit)}</span>
             </div>
 
-            {/* Recipe Type Selector */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-gray-700">Recipe Type:</span>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="recipeType"
-                      value="single"
-                      checked={yieldUnit === "each" && yieldQuantity === 1}
-                      onChange={() => {
-                        setYieldUnit("each");
-                        setYieldQuantity(1);
-                      }}
-                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="text-sm text-gray-700">Single Serving</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="recipeType"
-                      value="batch"
-                      checked={yieldUnit === "each" && yieldQuantity > 1}
-                      onChange={() => {
-                        setYieldUnit("each");
-                        setYieldQuantity(4);
-                      }}
-                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="text-sm text-gray-700">Batch Recipe</span>
-                  </label>
-                </div>
+            {/* Recipe Type Selector - Animated Toggle */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-600">Recipe Type:</span>
+              <div className="relative inline-flex bg-gray-100 rounded-lg p-1 shadow-inner">
+                {/* Sliding background */}
+                <div
+                  className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-md shadow-sm transition-all duration-300 ease-out ${
+                    yieldUnit === "each" && yieldQuantity === 1 ? "left-1" : "left-[calc(50%+0.125rem)]"
+                  }`}
+                ></div>
+                
+                {/* Buttons */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setYieldUnit("each");
+                    setYieldQuantity(1);
+                  }}
+                  className={`relative z-10 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                    yieldUnit === "each" && yieldQuantity === 1
+                      ? "text-white"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Single Serving
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setYieldUnit("each");
+                    setYieldQuantity(4);
+                  }}
+                  className={`relative z-10 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                    yieldUnit === "each" && yieldQuantity > 1
+                      ? "text-white"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Batch Recipe
+                </button>
               </div>
             </div>
           </div>
