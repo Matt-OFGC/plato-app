@@ -563,6 +563,28 @@ export function RecipePageInlineComplete({
             
             {/* Recipe Metadata Cards */}
             <div className="flex gap-3 flex-wrap">
+              {recipe.bakeTemp && (
+                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bake Temp</span>
+                    <span className="text-sm font-bold text-purple-600 mt-1">
+                      {recipe.bakeTemp}°C
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {recipe.bakeTime && (
+                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bake Time</span>
+                    <span className="text-sm font-bold text-purple-600 mt-1">
+                      {recipe.bakeTime} min
+                    </span>
+                  </div>
+                </div>
+              )}
+              
               {recipe.categoryId && categories.find(c => c.id === recipe.categoryId) && (
                 <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
                   <div className="flex flex-col items-center">
@@ -591,28 +613,6 @@ export function RecipePageInlineComplete({
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Shelf Life</span>
                     <span className="text-sm font-bold text-purple-600 mt-1">
                       {shelfLifeOptions.find(s => s.id === recipe.shelfLifeId)?.name}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {recipe.bakeTemp && (
-                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bake Temp</span>
-                    <span className="text-sm font-bold text-purple-600 mt-1">
-                      {recipe.bakeTemp}°C
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {recipe.bakeTime && (
-                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bake Time</span>
-                    <span className="text-sm font-bold text-purple-600 mt-1">
-                      {recipe.bakeTime} min
                     </span>
                   </div>
                 </div>
