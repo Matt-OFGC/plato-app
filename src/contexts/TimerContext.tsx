@@ -31,46 +31,50 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
 
     const totalSeconds = minutes * 60;
+    let currentRemaining = totalSeconds;
     
     const interval = setInterval(() => {
-      setTimers(prev => {
-        const current = prev[id];
-        if (!current || current.remaining <= 1) {
-          // Timer complete - play notification
-          if (typeof window !== 'undefined') {
-            try {
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-              const oscillator = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              oscillator.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              oscillator.frequency.value = 800;
-              oscillator.type = 'sine';
-              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-              oscillator.start(audioContext.currentTime);
-              oscillator.stop(audioContext.currentTime + 0.2);
-              
-              // Show browser notification
-              if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('Timer Complete! ⏰', {
-                  body: `${recipeName} - ${stepTitle}`,
-                  icon: '/favicon.ico',
-                });
-              }
-            } catch (e) {
-              console.log('Notification not available');
+      currentRemaining--;
+      
+      if (currentRemaining <= 0) {
+        // Timer complete - play notification
+        if (typeof window !== 'undefined') {
+          try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+            
+            // Show browser notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Timer Complete! ⏰', {
+                body: `${recipeName} - ${stepTitle}`,
+                icon: '/favicon.ico',
+              });
             }
+          } catch (e) {
+            console.log('Notification not available');
           }
-          clearInterval(interval);
+        }
+        
+        clearInterval(interval);
+        setTimers(prev => {
           const newState = { ...prev };
           delete newState[id];
           return newState;
-        }
-        return {
+        });
+      } else {
+        setTimers(prev => ({
           ...prev,
-          [id]: { ...current, remaining: current.remaining - 1 }
-        };
-      });
+          [id]: { ...prev[id], remaining: currentRemaining }
+        }));
+      }
     }, 1000);
 
     setTimers(prev => ({
