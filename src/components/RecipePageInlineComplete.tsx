@@ -1304,10 +1304,10 @@ export function RecipePageInlineComplete({
         )}
 
         {/* Main Content - Ingredients and Instructions */}
-        <div className={!isLocked ? "xl:col-span-7" : (recipe.imageUrl || imageUrl) ? "xl:col-span-9" : "xl:col-span-12"}>
+        <div className={!isLocked ? "xl:col-span-7" : "xl:col-span-9"}>
           <div className="space-y-6">
-            {/* Servings Control & Info - Only show here if no image */}
-            {isLocked && !(recipe.imageUrl || imageUrl) && (
+            {/* Servings Control & Info - Only show here if no image (HIDDEN NOW - we always show left sidebar) */}
+            {false && isLocked && !(recipe.imageUrl || imageUrl) && (
               <div className="flex gap-4 flex-wrap">
                 <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                   <div className="flex flex-col items-center gap-3">
