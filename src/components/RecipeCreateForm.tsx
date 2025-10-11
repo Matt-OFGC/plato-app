@@ -605,10 +605,10 @@ export function RecipeCreateForm({
 
       {/* Main Grid */}
       <div className="grid xl:grid-cols-12 gap-8">
-        {/* Left Sidebar - Additional Details */}
+        {/* Left Sidebar - Details */}
         <div className="xl:col-span-2 space-y-6">
           <div className="bg-white rounded-xl border border-gray-200 p-5 sticky top-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-gray-200">Additional Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-gray-200">Details</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-2">Category</label>

@@ -113,6 +113,111 @@ export async function createSimplifiedRecipe(formData: FormData) {
   }
 }
 
+export async function createRecipeUnified(formData: FormData) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string | null;
+    const yieldQuantity = parseFloat(formData.get("yieldQuantity") as string);
+    const yieldUnit = formData.get("yieldUnit") as string;
+    const method = formData.get("method") as string | null;
+    const imageUrl = formData.get("imageUrl") as string | null;
+    const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null;
+    const shelfLifeId = formData.get("shelfLifeId") ? parseInt(formData.get("shelfLifeId") as string) : null;
+    const storageId = formData.get("storageId") ? parseInt(formData.get("storageId") as string) : null;
+    const bakeTime = formData.get("bakeTime") ? parseInt(formData.get("bakeTime") as string) : null;
+    const bakeTemp = formData.get("bakeTemp") ? parseInt(formData.get("bakeTemp") as string) : null;
+    const useSections = formData.get("useSections") === "true";
+
+    if (!name) {
+      throw new Error("Recipe name required");
+    }
+
+    // Create the recipe data
+    const recipeData: any = {
+      name,
+      yieldQuantity,
+      yieldUnit,
+      description: description || null,
+      method: method || null,
+      imageUrl: imageUrl || null,
+      categoryId: categoryId || null,
+      shelfLifeId: shelfLifeId || null,
+      storageId: storageId || null,
+      bakeTime: bakeTime || null,
+      bakeTemp: bakeTemp || null,
+      companyId,
+    };
+
+    // Create the recipe first
+    const recipe = await prisma.recipe.create({
+      data: recipeData,
+    });
+
+    // Now create sections and items
+    if (useSections) {
+      const sectionsData = JSON.parse(formData.get("sections") as string);
+      
+      for (let idx = 0; idx < sectionsData.length; idx++) {
+        const section = sectionsData[idx];
+        const createdSection = await prisma.recipeSection.create({
+          data: {
+            recipeId: recipe.id,
+            title: section.title,
+            description: section.description || null,
+            method: section.method || null,
+            bakeTemp: section.bakeTemp ? parseInt(section.bakeTemp) : null,
+            bakeTime: section.bakeTime ? parseInt(section.bakeTime) : null,
+            order: idx,
+          },
+        });
+
+        // Create items for this section
+        const validItems = section.items.filter(
+          (item: any) => item.ingredientId && parseFloat(item.quantity) > 0
+        );
+
+        if (validItems.length > 0) {
+          await prisma.recipeItem.createMany({
+            data: validItems.map((item: any) => ({
+              recipeId: recipe.id,
+              sectionId: createdSection.id,
+              ingredientId: item.ingredientId,
+              quantity: parseFloat(item.quantity),
+              unit: item.unit,
+              note: item.note || null,
+            })),
+          });
+        }
+      }
+    } else {
+      const itemsData = JSON.parse(formData.get("recipeItems") as string);
+      const validItems = itemsData.filter(
+        (item: any) => item.ingredientId && parseFloat(item.quantity) > 0
+      );
+
+      if (validItems.length > 0) {
+        await prisma.recipeItem.createMany({
+          data: validItems.map((item: any) => ({
+            recipeId: recipe.id,
+            ingredientId: item.ingredientId,
+            quantity: parseFloat(item.quantity),
+            unit: item.unit,
+            note: item.note || null,
+          })),
+        });
+      }
+    }
+
+    revalidatePath("/dashboard/recipes");
+    redirect(`/dashboard/recipes/${recipe.id}`);
+  } catch (error) {
+    console.error("Error creating recipe:", error);
+    throw error;
+  }
+}
+
 export async function updateRecipeUnified(formData: FormData) {
   try {
     const { companyId } = await getCurrentUserAndCompany();
