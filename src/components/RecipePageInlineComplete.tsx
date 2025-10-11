@@ -938,6 +938,7 @@ export function RecipePageInlineComplete({
                             className="w-16 text-sm font-bold text-emerald-600 text-center border-b border-gray-300 focus:border-emerald-500 focus:outline-none"
                           />
                         </div>
+                        <div className="h-6 w-px bg-gray-300"></div>
                         <div className="flex items-center gap-1">
                           <span className={`text-xs font-semibold ${isGoodCogs ? 'text-emerald-600' : 'text-amber-600'}`}>
                             {cogsPercentage.toFixed(0)}% COGS
