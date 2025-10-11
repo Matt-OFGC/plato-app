@@ -925,27 +925,29 @@ export function RecipePageInlineComplete({
                   <div className="bg-white rounded-lg border border-gray-200 px-6 py-2 shadow-sm">
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sell Price</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-500">£</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={sellPrice || ''}
-                          onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
-                          placeholder={recommendedPrice.toFixed(2)}
-                          className="w-24 text-sm font-bold text-emerald-600 text-center border-b border-gray-300 focus:border-emerald-500 focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className={`text-xs font-semibold ${isGoodCogs ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {cogsPercentage.toFixed(0)}% COGS
-                        </span>
-                        {!isGoodCogs && (
-                          <svg className="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500">£</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={sellPrice || ''}
+                            onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
+                            placeholder={recommendedPrice.toFixed(2)}
+                            className="w-16 text-sm font-bold text-emerald-600 text-center border-b border-gray-300 focus:border-emerald-500 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs font-semibold ${isGoodCogs ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {cogsPercentage.toFixed(0)}% COGS
+                          </span>
+                          {!isGoodCogs && (
+                            <svg className="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
