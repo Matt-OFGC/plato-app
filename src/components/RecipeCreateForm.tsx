@@ -509,77 +509,106 @@ export function RecipeCreateForm({
       <div className="grid xl:grid-cols-12 gap-8">
         {/* Left Sidebar - Additional Details */}
         <div className="xl:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h3>
-            <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 sticky top-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-gray-200">Additional Details</h3>
+            <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 >
-                  <option value="">None</option>
+                  <option value="">Select category...</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
                 <select
                   value={shelfLifeId}
                   onChange={(e) => setShelfLifeId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 >
-                  <option value="">None</option>
+                  <option value="">Select shelf life...</option>
                   {shelfLifeOptions.map(opt => (
                     <option key={opt.id} value={opt.id}>{opt.name}</option>
                   ))}
                 </select>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
                 <select
                   value={storageId}
                   onChange={(e) => setStorageId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 >
-                  <option value="">None</option>
+                  <option value="">Select storage...</option>
                   {storageOptions.map(opt => (
                     <option key={opt.id} value={opt.id}>{opt.name}</option>
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (min)</label>
-                  <input
-                    type="number"
-                    value={bakeTime}
-                    onChange={(e) => setBakeTime(e.target.value)}
-                    className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bake Temp (°C)</label>
-                  <input
-                    type="number"
-                    value={bakeTemp}
-                    onChange={(e) => setBakeTemp(e.target.value)}
-                    className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+              
+              {/* Baking Section with divider */}
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                  </svg>
+                  Baking Details
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">Bake Temperature</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={bakeTemp}
+                        onChange={(e) => setBakeTemp(e.target.value)}
+                        placeholder="e.g. 180"
+                        className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">°C</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">Bake Time</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={bakeTime}
+                        onChange={(e) => setBakeTime(e.target.value)}
+                        placeholder="e.g. 25"
+                        className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">min</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+              
+              {/* Image Section with divider */}
+              <div className="pt-4 border-t border-gray-200">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Recipe Image
+                </label>
                 <input
                   type="text"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 />
+                <p className="text-xs text-gray-500 mt-2">Paste an image URL to add a photo</p>
               </div>
             </div>
           </div>

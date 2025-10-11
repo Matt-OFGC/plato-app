@@ -105,3 +105,4 @@ Ask your manager to reset it in Team Management
 2. Review the full guide: `PIN_AUTHENTICATION_GUIDE.md`
 3. Contact support with any questions
 
+

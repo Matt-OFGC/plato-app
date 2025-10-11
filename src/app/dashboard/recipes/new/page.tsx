@@ -61,7 +61,7 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
   }
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 py-8">
+    <div className="w-full min-h-screen bg-white py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">

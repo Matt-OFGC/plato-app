@@ -10,6 +10,7 @@ interface Timer {
   totalMinutes: number;
   remaining: number;
   interval: NodeJS.Timeout | null;
+  alarmInterval?: NodeJS.Timeout | null; // For looping alarm sound
   userId?: number; // Track which user owns this timer
 }
 
@@ -86,6 +87,24 @@ const playTimerSound = (ringtone: string, volume: number) => {
   }
 };
 
+// Start looping alarm that plays for 2 minutes
+const startLoopingAlarm = (ringtone: string, volume: number): NodeJS.Timeout => {
+  // Play immediately
+  playTimerSound(ringtone, volume);
+  
+  // Set up interval to repeat every 2 seconds
+  const alarmInterval = setInterval(() => {
+    playTimerSound(ringtone, volume);
+  }, 2000); // Play every 2 seconds
+  
+  // Auto-stop after 2 minutes
+  setTimeout(() => {
+    clearInterval(alarmInterval);
+  }, 120000); // 2 minutes = 120,000ms
+  
+  return alarmInterval;
+};
+
 export function TimerProvider({ children }: { children: ReactNode }) {
   const [timers, setTimers] = useState<{ [key: string]: Timer }>({});
   const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
@@ -137,8 +156,10 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                 currentRemaining--;
                 
                 if (currentRemaining <= 0) {
-                  playTimerSound(settings.ringtone, settings.volume);
+                  // Start looping alarm
+                  const alarmInterval = startLoopingAlarm(settings.ringtone, settings.volume);
                   
+                  // Show browser notification
                   if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification('Timer Complete! ⏰', {
                       body: `${savedTimer.recipeName} - ${savedTimer.stepTitle}`,
@@ -147,11 +168,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                   }
                   
                   clearInterval(interval);
-                  setTimers(prev => {
-                    const newState = { ...prev };
-                    delete newState[id];
-                    return newState;
-                  });
+                  
+                  // Keep timer visible with 0 remaining and store alarm interval
+                  setTimers(prev => ({
+                    ...prev,
+                    [id]: { ...prev[id], remaining: 0, interval: null, alarmInterval }
+                  }));
                 } else {
                   setTimers(prev => ({
                     ...prev,
@@ -214,8 +236,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       currentRemaining--;
       
       if (currentRemaining <= 0) {
-        // Timer complete - play notification
-        playTimerSound(settings.ringtone, settings.volume);
+        // Timer complete - start looping alarm
+        const alarmInterval = startLoopingAlarm(settings.ringtone, settings.volume);
         
         // Show browser notification
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
@@ -226,11 +248,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         }
         
         clearInterval(interval);
-        setTimers(prev => {
-          const newState = { ...prev };
-          delete newState[id];
-          return newState;
-        });
+        
+        // Keep timer visible with 0 remaining and store alarm interval
+        setTimers(prev => ({
+          ...prev,
+          [id]: { ...prev[id], remaining: 0, interval: null, alarmInterval }
+        }));
       } else {
         setTimers(prev => ({
           ...prev,
@@ -255,8 +278,16 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   };
 
   const stopTimer = (id: string) => {
-    if (timers[id]?.interval) {
-      clearInterval(timers[id].interval);
+    const timer = timers[id];
+    if (timer) {
+      // Clear countdown interval if running
+      if (timer.interval) {
+        clearInterval(timer.interval);
+      }
+      // Clear alarm interval if playing
+      if (timer.alarmInterval) {
+        clearInterval(timer.alarmInterval);
+      }
     }
     setTimers(prev => {
       const newState = { ...prev };
