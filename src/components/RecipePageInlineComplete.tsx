@@ -390,6 +390,7 @@ export function RecipePageInlineComplete({
   
   // Pricing calculator
   const [sellPrice, setSellPrice] = useState<number>(0);
+  const [showCogsInfo, setShowCogsInfo] = useState(false);
   
   // Sections vs simple items
   const [useSections, setUseSections] = useState(recipe.sections.length > 0);
@@ -922,9 +923,20 @@ export function RecipePageInlineComplete({
                 const isGoodCogs = cogsPercentage <= 25; // Good if COGS is 25% or less
                 
                 return (
-                  <div className="bg-white rounded-lg border border-gray-200 px-6 py-2 shadow-sm">
+                  <div className="relative bg-white rounded-lg border border-gray-200 px-6 py-2 shadow-sm">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sell Price</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sell Price</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowCogsInfo(!showCogsInfo)}
+                          className="text-gray-400 hover:text-emerald-600 transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-gray-500">£</span>
@@ -951,6 +963,49 @@ export function RecipePageInlineComplete({
                         </div>
                       </div>
                     </div>
+                    
+                    {/* COGS Info Popup */}
+                    {showCogsInfo && (
+                      <div className="absolute z-10 top-full mt-2 left-1/2 -translate-x-1/2 w-80 bg-white rounded-lg border-2 border-emerald-200 shadow-lg p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-semibold text-gray-900 text-sm">What is COGS?</h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowCogsInfo(false)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="space-y-3 text-xs text-gray-700">
+                          <p>
+                            <strong className="text-emerald-700">COGS</strong> (Cost of Goods Sold) is the percentage of your selling price that goes toward ingredient costs.
+                          </p>
+                          <p className="font-medium text-gray-900">Target Guidelines:</p>
+                          <ul className="space-y-1 ml-4">
+                            <li className="flex items-start gap-2">
+                              <span className="text-emerald-600 font-bold">✓</span>
+                              <span><strong className="text-emerald-700">25% or less</strong> - Ideal food cost ratio for profitability</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-amber-600 font-bold">⚠</span>
+                              <span><strong className="text-amber-700">26-35%</strong> - Acceptable but watch your margins</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="text-red-600 font-bold">✗</span>
+                              <span><strong className="text-red-700">Above 35%</strong> - Too high, hard to be profitable</span>
+                            </li>
+                          </ul>
+                          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mt-3">
+                            <p className="font-medium text-emerald-900 text-xs">
+                              💡 <strong>Example:</strong> If ingredients cost £1, sell for £4 to achieve 25% COGS and maintain healthy profit margins.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
