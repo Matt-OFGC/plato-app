@@ -5,6 +5,23 @@ import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCost } from "@/lib/units";
 import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Ingredient {
   id: number;
@@ -107,6 +124,240 @@ interface RecipePageInlineCompleteProps {
   onSave: (data: FormData) => Promise<void>;
 }
 
+// Sortable Item Component for section ingredients
+function SortableSectionIngredientItem({
+  item,
+  ingredients,
+  onUpdate,
+  onRemove,
+}: {
+  item: RecipeItem;
+  ingredients: Ingredient[];
+  onUpdate: (id: string, field: string, value: any) => void;
+  onRemove: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const ingredient = ingredients.find((i) => i.id === item.ingredientId);
+  const cost = ingredient
+    ? computeIngredientUsageCost({
+        usageQuantity: parseFloat(item.quantity) || 0,
+        usageUnit: item.unit,
+        ingredient: {
+          packQuantity: ingredient.packQuantity,
+          packUnit: ingredient.packUnit as any,
+          packPrice: ingredient.packPrice,
+          densityGPerMl: ingredient.densityGPerMl || undefined,
+        },
+      })
+    : 0;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="grid grid-cols-12 gap-3 items-center p-3 bg-white rounded-lg border border-gray-200"
+    >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="col-span-1 cursor-grab active:cursor-grabbing flex items-center justify-center text-gray-400 hover:text-gray-600"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 8h16M4 16h16"
+          />
+        </svg>
+      </div>
+
+      <select
+        value={item.ingredientId}
+        onChange={(e) => onUpdate(item.id, "ingredientId", parseInt(e.target.value))}
+        className="col-span-4 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+      >
+        {ingredients.map((ing) => (
+          <option key={ing.id} value={ing.id}>
+            {ing.name}
+          </option>
+        ))}
+      </select>
+      <input
+        type="number"
+        value={item.quantity}
+        onChange={(e) => onUpdate(item.id, "quantity", e.target.value)}
+        className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        placeholder="Qty"
+      />
+      <select
+        value={item.unit}
+        onChange={(e) => onUpdate(item.id, "unit", e.target.value)}
+        className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+      >
+        <option value="g">g</option>
+        <option value="kg">kg</option>
+        <option value="ml">ml</option>
+        <option value="l">l</option>
+        <option value="each">each</option>
+      </select>
+      <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
+        {formatCurrency(cost)}
+      </div>
+      <button
+        onClick={() => onRemove(item.id)}
+        className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// Sortable Item Component for simple ingredients
+function SortableIngredientItem({
+  item,
+  ingredients,
+  onUpdate,
+  onRemove,
+}: {
+  item: RecipeItem;
+  ingredients: Ingredient[];
+  onUpdate: (id: string, field: string, value: any) => void;
+  onRemove: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const ingredient = ingredients.find((i) => i.id === item.ingredientId);
+  const cost = ingredient
+    ? computeIngredientUsageCost({
+        usageQuantity: parseFloat(item.quantity) || 0,
+        usageUnit: item.unit,
+        ingredient: {
+          packQuantity: ingredient.packQuantity,
+          packUnit: ingredient.packUnit as any,
+          packPrice: ingredient.packPrice,
+          densityGPerMl: ingredient.densityGPerMl || undefined,
+        },
+      })
+    : 0;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg"
+    >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="col-span-1 cursor-grab active:cursor-grabbing flex items-center justify-center text-gray-400 hover:text-gray-600"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 8h16M4 16h16"
+          />
+        </svg>
+      </div>
+
+      <select
+        value={item.ingredientId}
+        onChange={(e) => onUpdate(item.id, "ingredientId", parseInt(e.target.value))}
+        className="col-span-4 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+      >
+        {ingredients.map((ing) => (
+          <option key={ing.id} value={ing.id}>
+            {ing.name}
+          </option>
+        ))}
+      </select>
+      <input
+        type="number"
+        value={item.quantity}
+        onChange={(e) => onUpdate(item.id, "quantity", e.target.value)}
+        className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        placeholder="Qty"
+      />
+      <select
+        value={item.unit}
+        onChange={(e) => onUpdate(item.id, "unit", e.target.value)}
+        className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+      >
+        <option value="g">g</option>
+        <option value="kg">kg</option>
+        <option value="ml">ml</option>
+        <option value="l">l</option>
+        <option value="each">each</option>
+      </select>
+      <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
+        {formatCurrency(cost)}
+      </div>
+      <button
+        onClick={() => onRemove(item.id)}
+        className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export function RecipePageInlineComplete({
   recipe,
   costBreakdown,
@@ -165,6 +416,14 @@ export function RecipePageInlineComplete({
       unit: item.unit as Unit,
       note: item.note || "",
     }))
+  );
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
   
   // Calculate scaled ingredients for view mode
@@ -349,6 +608,39 @@ export function RecipePageInlineComplete({
       }
       return section;
     }));
+  };
+
+  // Drag handlers
+  const handleDragEndItems = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setItems((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleDragEndSectionItems = (sectionId: string) => (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setSections((sections) =>
+        sections.map((section) => {
+          if (section.id === sectionId) {
+            const oldIndex = section.items.findIndex((item) => item.id === active.id);
+            const newIndex = section.items.findIndex((item) => item.id === over.id);
+            return {
+              ...section,
+              items: arrayMove(section.items, oldIndex, newIndex),
+            };
+          }
+          return section;
+        })
+      );
+    }
   };
 
   const allIngredients = recipe.sections.length > 0 
@@ -982,77 +1274,33 @@ export function RecipePageInlineComplete({
                                   + Add Ingredient
                                 </button>
                               </div>
-                              {section.items.map((item) => {
-                                const ingredient = ingredients.find(i => i.id === item.ingredientId);
-                                const cost = ingredient ? computeIngredientUsageCost({
-                                  usageQuantity: parseFloat(item.quantity) || 0,
-                                  usageUnit: item.unit,
-                                  ingredient: {
-                                    packQuantity: ingredient.packQuantity,
-                                    packUnit: ingredient.packUnit as any,
-                                    packPrice: ingredient.packPrice,
-                                    densityGPerMl: ingredient.densityGPerMl || undefined,
-                                  }
-                                }) : 0;
-                                
-                                return (
-                                  <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-white rounded-lg border border-gray-200">
-                                    <select
-                                      value={item.ingredientId}
-                                      onChange={(e) => setSections(sections.map(s => {
-                                        if (s.id === section.id) {
-                                          return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, ingredientId: parseInt(e.target.value) } : i) };
-                                        }
-                                        return s;
-                                      }))}
-                                      className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    >
-                                      {ingredients.map(ing => (
-                                        <option key={ing.id} value={ing.id}>{ing.name}</option>
-                                      ))}
-                                    </select>
-                                    <input
-                                      type="number"
-                                      value={item.quantity}
-                                      onChange={(e) => setSections(sections.map(s => {
-                                        if (s.id === section.id) {
-                                          return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, quantity: e.target.value } : i) };
-                                        }
-                                        return s;
-                                      }))}
-                                      className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Qty"
+                              <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEndSectionItems(section.id)}
+                              >
+                                <SortableContext
+                                  items={section.items.map((item) => item.id)}
+                                  strategy={verticalListSortingStrategy}
+                                >
+                                  {section.items.map((item) => (
+                                    <SortableSectionIngredientItem
+                                      key={item.id}
+                                      item={item}
+                                      ingredients={ingredients}
+                                      onUpdate={(id, field, value) => {
+                                        setSections(sections.map(s => {
+                                          if (s.id === section.id) {
+                                            return { ...s, items: s.items.map(i => i.id === id ? { ...i, [field]: value } : i) };
+                                          }
+                                          return s;
+                                        }));
+                                      }}
+                                      onRemove={(id) => removeIngredientFromSection(section.id, id)}
                                     />
-                                    <select
-                                      value={item.unit}
-                                      onChange={(e) => setSections(sections.map(s => {
-                                        if (s.id === section.id) {
-                                          return { ...s, items: s.items.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unit } : i) };
-                                        }
-                                        return s;
-                                      }))}
-                                      className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    >
-                                      <option value="g">g</option>
-                                      <option value="kg">kg</option>
-                                      <option value="ml">ml</option>
-                                      <option value="l">l</option>
-                                      <option value="each">each</option>
-                                    </select>
-                                    <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
-                                      {formatCurrency(cost)}
-                                    </div>
-                                    <button
-                                      onClick={() => removeIngredientFromSection(section.id, item.id)}
-                                      className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                );
-                              })}
+                                  ))}
+                                </SortableContext>
+                              </DndContext>
                             </div>
                           </div>
                         ))}
@@ -1061,64 +1309,30 @@ export function RecipePageInlineComplete({
 
                     {/* Edit Mode - Simple Ingredients */}
                     {!isLocked && !useSections && (
-                      <div className="space-y-3">
-                        {items.map((item) => {
-                          const ingredient = ingredients.find(i => i.id === item.ingredientId);
-                          const cost = ingredient ? computeIngredientUsageCost({
-                            usageQuantity: parseFloat(item.quantity) || 0,
-                            usageUnit: item.unit,
-                            ingredient: {
-                              packQuantity: ingredient.packQuantity,
-                              packUnit: ingredient.packUnit as any,
-                              packPrice: ingredient.packPrice,
-                              densityGPerMl: ingredient.densityGPerMl || undefined,
-                            }
-                          }) : 0;
-                          
-                          return (
-                            <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg">
-                              <select
-                                value={item.ingredientId}
-                                onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, ingredientId: parseInt(e.target.value) } : i))}
-                                className="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                              >
-                                {ingredients.map(ing => (
-                                  <option key={ing.id} value={ing.id}>{ing.name}</option>
-                                ))}
-                              </select>
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, quantity: e.target.value } : i))}
-                                className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                placeholder="Qty"
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEndItems}
+                      >
+                        <SortableContext
+                          items={items.map((item) => item.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-3">
+                            {items.map((item) => (
+                              <SortableIngredientItem
+                                key={item.id}
+                                item={item}
+                                ingredients={ingredients}
+                                onUpdate={(id, field, value) => {
+                                  setItems(items.map(i => i.id === id ? { ...i, [field]: value } : i));
+                                }}
+                                onRemove={removeIngredient}
                               />
-                              <select
-                                value={item.unit}
-                                onChange={(e) => setItems(items.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unit } : i))}
-                                className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                              >
-                                <option value="g">g</option>
-                                <option value="kg">kg</option>
-                                <option value="ml">ml</option>
-                                <option value="l">l</option>
-                                <option value="each">each</option>
-                              </select>
-                              <div className="col-span-2 px-3 py-2 text-sm text-gray-600 flex items-center">
-                                {formatCurrency(cost)}
-                              </div>
-                              <button
-                                onClick={() => removeIngredient(item.id)}
-                                className="col-span-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
                     )}
                     
                     {/* View Mode - Simple Ingredients (no sections) */}
