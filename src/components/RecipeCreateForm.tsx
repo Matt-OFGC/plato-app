@@ -609,50 +609,68 @@ export function RecipeCreateForm({
         <div className="xl:col-span-2 space-y-6">
           <div className="bg-white rounded-xl border border-gray-200 p-5 sticky top-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-3 border-b border-gray-200">Additional Details</h3>
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Category</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white hover:border-gray-300 cursor-pointer"
-                  style={{ minHeight: '42px' }}
-                >
-                  <option value="">Select category...</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-medium text-gray-500 mb-2">Category</label>
+                <div className="relative">
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
+                  >
+                    <option value="" className="text-gray-400">None</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id} className="text-gray-900">{cat.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Shelf Life</label>
-                <select
-                  value={shelfLifeId}
-                  onChange={(e) => setShelfLifeId(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white hover:border-gray-300 cursor-pointer"
-                  style={{ minHeight: '42px' }}
-                >
-                  <option value="">Select shelf life...</option>
-                  {shelfLifeOptions.map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-medium text-gray-500 mb-2">Shelf Life</label>
+                <div className="relative">
+                  <select
+                    value={shelfLifeId}
+                    onChange={(e) => setShelfLifeId(e.target.value)}
+                    className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
+                  >
+                    <option value="" className="text-gray-400">None</option>
+                    {shelfLifeOptions.map(opt => (
+                      <option key={opt.id} value={opt.id} className="text-gray-900">{opt.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Storage</label>
-                <select
-                  value={storageId}
-                  onChange={(e) => setStorageId(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white hover:border-gray-300 cursor-pointer"
-                  style={{ minHeight: '42px' }}
-                >
-                  <option value="">Select storage...</option>
-                  {storageOptions.map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-medium text-gray-500 mb-2">Storage</label>
+                <div className="relative">
+                  <select
+                    value={storageId}
+                    onChange={(e) => setStorageId(e.target.value)}
+                    className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white hover:bg-white transition-all cursor-pointer appearance-none"
+                  >
+                    <option value="" className="text-gray-400">None</option>
+                    {storageOptions.map(opt => (
+                      <option key={opt.id} value={opt.id} className="text-gray-900">{opt.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               {/* Baking Section with divider */}
