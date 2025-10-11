@@ -922,7 +922,7 @@ export function RecipePageInlineComplete({
                 const isGoodMargin = currentMargin >= 75; // 75% margin = 25% COGS
                 
                 return (
-                  <div className="bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm">
+                  <div className="bg-white rounded-lg border border-gray-200 px-5 py-2 shadow-sm">
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sell Price</span>
                       <div className="flex items-center gap-1">
@@ -934,7 +934,7 @@ export function RecipePageInlineComplete({
                           value={sellPrice || ''}
                           onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
                           placeholder={recommendedPrice.toFixed(2)}
-                          className="w-16 text-sm font-bold text-emerald-600 text-center border-b border-gray-300 focus:border-emerald-500 focus:outline-none"
+                          className="w-20 text-sm font-bold text-emerald-600 text-center border-b border-gray-300 focus:border-emerald-500 focus:outline-none"
                         />
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
