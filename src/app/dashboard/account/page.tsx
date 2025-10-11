@@ -9,6 +9,7 @@ import { SupplierManager } from "@/components/SupplierManager";
 import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 import { SettingsTabs } from "@/components/SettingsTabs";
+import { TimerSettings } from "@/components/TimerSettings";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';
@@ -257,6 +258,14 @@ export default async function AccountPage() {
                   storageOptions={storageOptions}
                 />
               </div>
+            </div>
+          ),
+          
+          timers: (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Timer Settings</h2>
+              <p className="text-sm text-gray-600 mb-6">Customize how recipe timers alert you when they complete</p>
+              <TimerSettings />
             </div>
           ),
         }}

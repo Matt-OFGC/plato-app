@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type Tab = 'pricing' | 'content' | 'suppliers' | 'database';
+type Tab = 'pricing' | 'content' | 'suppliers' | 'database' | 'timers';
 
 interface SettingsTabsProps {
   children: {
@@ -10,6 +10,7 @@ interface SettingsTabsProps {
     content: React.ReactNode;
     suppliers: React.ReactNode;
     database: React.ReactNode;
+    timers: React.ReactNode;
   };
 }
 
@@ -20,6 +21,7 @@ export function SettingsTabs({ children }: SettingsTabsProps) {
     { id: 'pricing' as Tab, label: 'Pricing & Targets', icon: '💰' },
     { id: 'content' as Tab, label: 'Content Organization', icon: '📁' },
     { id: 'suppliers' as Tab, label: 'Suppliers & Info', icon: '🚚' },
+    { id: 'timers' as Tab, label: 'Timers', icon: '⏱️' },
     { id: 'database' as Tab, label: 'Database', icon: '🗄️' },
   ];
 
@@ -52,6 +54,7 @@ export function SettingsTabs({ children }: SettingsTabsProps) {
         {activeTab === 'pricing' && children.pricing}
         {activeTab === 'content' && children.content}
         {activeTab === 'suppliers' && children.suppliers}
+        {activeTab === 'timers' && children.timers}
         {activeTab === 'database' && children.database}
       </div>
     </div>
