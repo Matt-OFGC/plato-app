@@ -29,7 +29,8 @@ export function Sidebar() {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [timersExpanded, setTimersExpanded] = useState(true);
-  const { timers, stopTimer } = useTimers();
+  const [showTimerSettings, setShowTimerSettings] = useState(false);
+  const { timers, stopTimer, settings, updateSettings } = useTimers();
 
   useEffect(() => {
     fetch("/api/session")
@@ -231,28 +232,147 @@ export function Sidebar() {
           <div className="p-3 space-y-2">
             {/* Active Timers */}
             {Object.keys(timers).length > 0 && (
-              <div className="bg-white rounded-lg border border-amber-300 shadow-sm overflow-hidden">
-                <button
-                  onClick={() => setTimersExpanded(!timersExpanded)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
+              <div className="bg-white rounded-lg border border-amber-300 shadow-sm overflow-hidden relative">
+                <div className="flex items-center px-3 py-2 bg-amber-50">
+                  <button
+                    onClick={() => setTimersExpanded(!timersExpanded)}
+                    className="flex-1 flex items-center gap-2 hover:bg-amber-100 -mx-3 -my-2 px-3 py-2 transition-colors"
+                  >
                     <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className="text-sm font-semibold text-amber-900">
                       Active Timers ({Object.keys(timers).length})
                     </span>
-                  </div>
-                  <svg
-                    className={`w-4 h-4 text-amber-600 transition-transform ${timersExpanded ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    <svg
+                      className={`ml-auto w-4 h-4 text-amber-600 transition-transform ${timersExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setShowTimerSettings(!showTimerSettings)}
+                    className="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded transition-colors"
+                    title="Timer settings"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* Timer Settings Popup */}
+                {showTimerSettings && (
+                  <div className="absolute bottom-full mb-2 left-0 right-0 mx-3 bg-white rounded-lg border-2 border-amber-300 shadow-lg p-4 z-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-900">Timer Settings</h4>
+                      <button
+                        onClick={() => setShowTimerSettings(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {/* Volume Control */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">
+                          Volume: {Math.round(settings.volume * 100)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={settings.volume * 100}
+                          onChange={(e) => updateSettings({ volume: parseInt(e.target.value) / 100 })}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                        />
+                      </div>
+                      
+                      {/* Ringtone Selection */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 mb-2 block">Ringtone</label>
+                        <div className="space-y-2">
+                          {(['beep', 'chime', 'bell'] as const).map((tone) => (
+                            <label key={tone} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="ringtone"
+                                value={tone}
+                                checked={settings.ringtone === tone}
+                                onChange={(e) => updateSettings({ ringtone: e.target.value as any })}
+                                className="w-4 h-4 text-amber-600 focus:ring-amber-500"
+                              />
+                              <span className="text-sm text-gray-700 capitalize">{tone}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Test Sound Button */}
+                      <button
+                        onClick={() => {
+                          // Import and use the playTimerSound from context
+                          try {
+                            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            
+                            switch (settings.ringtone) {
+                              case 'beep':
+                                oscillator.frequency.value = 800;
+                                oscillator.type = 'sine';
+                                gainNode.gain.setValueAtTime(settings.volume * 0.3, audioContext.currentTime);
+                                oscillator.start();
+                                oscillator.stop(audioContext.currentTime + 0.2);
+                                break;
+                              case 'chime':
+                                oscillator.frequency.value = 523;
+                                oscillator.type = 'sine';
+                                gainNode.gain.setValueAtTime(settings.volume * 0.3, audioContext.currentTime);
+                                oscillator.start();
+                                oscillator.stop(audioContext.currentTime + 0.2);
+                                setTimeout(() => {
+                                  const osc2 = audioContext.createOscillator();
+                                  const gain2 = audioContext.createGain();
+                                  osc2.connect(gain2);
+                                  gain2.connect(audioContext.destination);
+                                  osc2.frequency.value = 659;
+                                  osc2.type = 'sine';
+                                  gain2.gain.setValueAtTime(settings.volume * 0.3, audioContext.currentTime);
+                                  osc2.start();
+                                  osc2.stop(audioContext.currentTime + 0.3);
+                                }, 200);
+                                break;
+                              case 'bell':
+                                oscillator.frequency.value = 1000;
+                                oscillator.type = 'triangle';
+                                gainNode.gain.setValueAtTime(settings.volume * 0.4, audioContext.currentTime);
+                                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                                oscillator.start();
+                                oscillator.stop(audioContext.currentTime + 0.5);
+                                break;
+                            }
+                          } catch (e) {
+                            console.error('Audio test failed');
+                          }
+                        }}
+                        className="w-full px-3 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors text-xs font-medium"
+                      >
+                        🔊 Test Sound
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 {timersExpanded && (
                   <div className="max-h-64 overflow-y-auto">

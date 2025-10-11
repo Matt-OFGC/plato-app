@@ -10,21 +10,197 @@ interface Timer {
   totalMinutes: number;
   remaining: number;
   interval: NodeJS.Timeout | null;
+  userId?: number; // Track which user owns this timer
+}
+
+interface TimerSettings {
+  volume: number; // 0-1
+  ringtone: 'beep' | 'chime' | 'bell';
 }
 
 interface TimerContextType {
   timers: { [key: string]: Timer };
-  startTimer: (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number) => void;
+  settings: TimerSettings;
+  startTimer: (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number, userId?: number) => void;
   stopTimer: (id: string) => void;
   getTimer: (id: string) => Timer | undefined;
+  updateSettings: (newSettings: Partial<TimerSettings>) => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
+const DEFAULT_SETTINGS: TimerSettings = {
+  volume: 0.5,
+  ringtone: 'beep',
+};
+
+// Play sound function (defined outside to be reusable)
+const playTimerSound = (ringtone: string, volume: number) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Different sounds based on ringtone
+    switch (ringtone) {
+      case 'beep':
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(volume * 0.3, audioContext.currentTime);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+        break;
+      case 'chime':
+        oscillator.frequency.value = 523;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(volume * 0.3, audioContext.currentTime);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+        setTimeout(() => {
+          const osc2 = audioContext.createOscillator();
+          const gain2 = audioContext.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioContext.destination);
+          osc2.frequency.value = 659;
+          osc2.type = 'sine';
+          gain2.gain.setValueAtTime(volume * 0.3, audioContext.currentTime);
+          osc2.start(audioContext.currentTime);
+          osc2.stop(audioContext.currentTime + 0.3);
+        }, 200);
+        break;
+      case 'bell':
+        oscillator.frequency.value = 1000;
+        oscillator.type = 'triangle';
+        gainNode.gain.setValueAtTime(volume * 0.4, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+        break;
+    }
+  } catch (e) {
+    console.log('Audio not available');
+  }
+};
+
 export function TimerProvider({ children }: { children: ReactNode }) {
   const [timers, setTimers] = useState<{ [key: string]: Timer }>({});
+  const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [hasLoadedTimers, setHasLoadedTimers] = useState(false);
 
-  const startTimer = (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number) => {
+  // Load user ID on mount
+  useEffect(() => {
+    fetch('/api/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.user?.id) {
+          setUserId(data.user.id);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load settings from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('timerSettings');
+      if (saved) {
+        try {
+          setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
+        } catch (e) {
+          console.error('Failed to load timer settings');
+        }
+      }
+    }
+  }, []);
+
+  // Load timers from localStorage on mount (only once)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && userId && !hasLoadedTimers) {
+      const savedTimers = localStorage.getItem(`timers-user-${userId}`);
+      if (savedTimers) {
+        try {
+          const parsed = JSON.parse(savedTimers);
+          
+          // Reconstruct timers with new intervals
+          const reconstructedTimers: { [key: string]: Timer } = {};
+          
+          Object.entries(parsed).forEach(([id, savedTimer]: [string, any]) => {
+            if (savedTimer.remaining > 0) {
+              let currentRemaining = savedTimer.remaining;
+              
+              const interval = setInterval(() => {
+                currentRemaining--;
+                
+                if (currentRemaining <= 0) {
+                  playTimerSound(settings.ringtone, settings.volume);
+                  
+                  if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('Timer Complete! ⏰', {
+                      body: `${savedTimer.recipeName} - ${savedTimer.stepTitle}`,
+                      icon: '/favicon.ico',
+                    });
+                  }
+                  
+                  clearInterval(interval);
+                  setTimers(prev => {
+                    const newState = { ...prev };
+                    delete newState[id];
+                    return newState;
+                  });
+                } else {
+                  setTimers(prev => ({
+                    ...prev,
+                    [id]: { ...prev[id], remaining: currentRemaining }
+                  }));
+                }
+              }, 1000);
+              
+              reconstructedTimers[id] = {
+                ...savedTimer,
+                interval,
+              };
+            }
+          });
+          
+          setTimers(reconstructedTimers);
+          setHasLoadedTimers(true);
+        } catch (e) {
+          console.error('Failed to load timers');
+          setHasLoadedTimers(true);
+        }
+      } else {
+        setHasLoadedTimers(true);
+      }
+    }
+  }, [userId, hasLoadedTimers]);
+
+  // Save timers to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && userId) {
+      const timersToSave = Object.entries(timers).reduce((acc, [id, timer]) => {
+        // Don't save the interval, just the data
+        acc[id] = {
+          id: timer.id,
+          recipeId: timer.recipeId,
+          recipeName: timer.recipeName,
+          stepTitle: timer.stepTitle,
+          totalMinutes: timer.totalMinutes,
+          remaining: timer.remaining,
+          userId: timer.userId,
+        };
+        return acc;
+      }, {} as any);
+      
+      localStorage.setItem(`timers-user-${userId}`, JSON.stringify(timersToSave));
+    }
+  }, [timers, userId, hasLoadedTimers]);
+
+  const startTimer = (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number, timerUserId?: number) => {
     // Clear existing timer if any
     if (timers[id]?.interval) {
       clearInterval(timers[id].interval);
@@ -32,35 +208,21 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
     const totalSeconds = minutes * 60;
     let currentRemaining = totalSeconds;
+    const ownerUserId = timerUserId || userId || undefined;
     
     const interval = setInterval(() => {
       currentRemaining--;
       
       if (currentRemaining <= 0) {
         // Timer complete - play notification
-        if (typeof window !== 'undefined') {
-          try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.2);
-            
-            // Show browser notification
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Timer Complete! ⏰', {
-                body: `${recipeName} - ${stepTitle}`,
-                icon: '/favicon.ico',
-              });
-            }
-          } catch (e) {
-            console.log('Notification not available');
-          }
+        playTimerSound(settings.ringtone, settings.volume);
+        
+        // Show browser notification
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification('Timer Complete! ⏰', {
+            body: `${recipeName} - ${stepTitle}`,
+            icon: '/favicon.ico',
+          });
         }
         
         clearInterval(interval);
@@ -86,7 +248,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         stepTitle,
         totalMinutes: minutes,
         remaining: totalSeconds,
-        interval
+        interval,
+        userId: ownerUserId
       }
     }));
   };
@@ -103,6 +266,16 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   };
 
   const getTimer = (id: string) => timers[id];
+
+  const updateSettings = (newSettings: Partial<TimerSettings>) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('timerSettings', JSON.stringify(updated));
+    }
+  };
 
   // Cleanup on unmount
   useEffect(() => {
@@ -123,7 +296,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TimerContext.Provider value={{ timers, startTimer, stopTimer, getTimer }}>
+    <TimerContext.Provider value={{ timers, settings, startTimer, stopTimer, getTimer, updateSettings }}>
       {children}
     </TimerContext.Provider>
   );
