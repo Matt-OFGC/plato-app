@@ -22,6 +22,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTimers } from "@/contexts/TimerContext";
 
 interface Ingredient {
   id: number;
@@ -371,6 +372,9 @@ export function RecipePageInlineComplete({
   storageOptions,
   onSave,
 }: RecipePageInlineCompleteProps) {
+  // Global timer context
+  const { timers, startTimer, stopTimer, getTimer } = useTimers();
+  
   // Lock/Unlock state
   const [isLocked, setIsLocked] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -395,9 +399,6 @@ export function RecipePageInlineComplete({
   // Pricing calculator
   const [sellPrice, setSellPrice] = useState<number>(0);
   const [showCogsInfo, setShowCogsInfo] = useState(false);
-  
-  // Step timers - track active timers and remaining time for each section
-  const [activeTimers, setActiveTimers] = useState<{ [sectionId: number]: { remaining: number; interval: NodeJS.Timeout | null } }>({});
   
   // Sections vs simple items
   const [useSections, setUseSections] = useState(recipe.sections.length > 0);
@@ -664,87 +665,6 @@ export function RecipePageInlineComplete({
 
   const editModeTotalCost = isLocked ? costBreakdown.totalCost : calculateEditCost();
   const editModeCostPerUnit = isLocked ? costBreakdown.costPerOutputUnit : (yieldQuantity > 0 ? editModeTotalCost / yieldQuantity : 0);
-
-  // Timer functions
-  const startTimer = (sectionId: number, minutes: number) => {
-    // Clear any existing timer for this section
-    if (activeTimers[sectionId]?.interval) {
-      clearInterval(activeTimers[sectionId].interval);
-    }
-
-    const totalSeconds = minutes * 60;
-    setActiveTimers(prev => ({
-      ...prev,
-      [sectionId]: { remaining: totalSeconds, interval: null }
-    }));
-
-    const interval = setInterval(() => {
-      setActiveTimers(prev => {
-        const current = prev[sectionId];
-        if (!current || current.remaining <= 1) {
-          // Timer complete - play notification sound and clear
-          if (typeof window !== 'undefined') {
-            // Simple beep using AudioContext
-            try {
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-              const oscillator = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              oscillator.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              oscillator.frequency.value = 800;
-              oscillator.type = 'sine';
-              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-              oscillator.start(audioContext.currentTime);
-              oscillator.stop(audioContext.currentTime + 0.2);
-            } catch (e) {
-              console.log('Audio not available');
-            }
-          }
-          clearInterval(interval);
-          const newState = { ...prev };
-          delete newState[sectionId];
-          return newState;
-        }
-        return {
-          ...prev,
-          [sectionId]: { ...current, remaining: current.remaining - 1 }
-        };
-      });
-    }, 1000);
-
-    setActiveTimers(prev => ({
-      ...prev,
-      [sectionId]: { remaining: totalSeconds, interval }
-    }));
-  };
-
-  const stopTimer = (sectionId: number) => {
-    if (activeTimers[sectionId]?.interval) {
-      clearInterval(activeTimers[sectionId].interval);
-    }
-    setActiveTimers(prev => {
-      const newState = { ...prev };
-      delete newState[sectionId];
-      return newState;
-    });
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(activeTimers).forEach(timer => {
-        if (timer.interval) {
-          clearInterval(timer.interval);
-        }
-      });
-    };
-  }, [activeTimers]);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -1331,32 +1251,28 @@ export function RecipePageInlineComplete({
                                   </div>
                                 </div>
                                 {/* Timer Button */}
-                                {activeTimers[section.id] ? (
-                                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-lg px-3 py-1">
-                                    <span className="text-sm font-bold text-amber-700 font-mono">
-                                      {formatTime(activeTimers[section.id].remaining)}
-                                    </span>
+                                {(() => {
+                                  const timerId = `recipe-${recipe.id}-section-${section.id}`;
+                                  const activeTimer = getTimer(timerId);
+                                  
+                                  return activeTimer ? (
+                                    <div className="bg-emerald-100 hover:bg-emerald-200 rounded-lg border border-emerald-300 px-2 py-1 transition-colors cursor-pointer" title="Timer running (see bottom right)">
+                                      <svg className="w-4 h-4 text-emerald-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                    </div>
+                                  ) : (
                                     <button
-                                      onClick={() => stopTimer(section.id)}
-                                      className="text-amber-600 hover:text-amber-800 transition-colors"
-                                      title="Stop timer"
+                                      onClick={() => startTimer(timerId, recipe.id, recipe.name, section.title, section.bakeTime!)}
+                                      className="bg-emerald-100 hover:bg-emerald-200 rounded-lg border border-emerald-300 px-2 py-1 transition-colors group"
+                                      title="Start timer"
                                     >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      <svg className="w-4 h-4 text-emerald-600 group-hover:text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
                                     </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => startTimer(section.id, section.bakeTime!)}
-                                    className="bg-emerald-100 hover:bg-emerald-200 rounded-lg border border-emerald-300 px-2 py-1 transition-colors group"
-                                    title="Start timer"
-                                  >
-                                    <svg className="w-4 h-4 text-emerald-600 group-hover:text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                  </button>
-                                )}
+                                  );
+                                })()}
                               </div>
                             )}
                           </div>
