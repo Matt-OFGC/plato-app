@@ -43,6 +43,7 @@ interface Timer {
   stepTitle: string;
   totalMinutes: number;
   remaining: number;
+  alarmInterval?: NodeJS.Timeout | null;
 }
 
 // Sortable Timer Item Component
@@ -51,12 +52,14 @@ function SortableTimerItem({
   isExpanded,
   onExpand,
   onStop,
+  onStopAlarm,
   onNavigate,
 }: {
   timer: Timer;
   isExpanded: boolean;
   onExpand: () => void;
   onStop: () => void;
+  onStopAlarm: () => void;
   onNavigate: () => void;
 }) {
   const {
@@ -80,13 +83,15 @@ function SortableTimerItem({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const isAlarmPlaying = timer.remaining === 0 && timer.alarmInterval;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className="border-t border-amber-200"
     >
-      <div className={`p-3 hover:bg-amber-50 transition-all ${isExpanded ? 'bg-amber-50 py-5' : ''}`}>
+      <div className={`p-3 hover:bg-amber-50 transition-all ${isExpanded ? 'bg-amber-50 py-5' : ''} ${isAlarmPlaying ? 'bg-red-50' : ''}`}>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {/* Drag Handle */}
@@ -124,16 +129,35 @@ function SortableTimerItem({
           </button>
         </div>
         
+        {/* Alarm Playing Warning */}
+        {isAlarmPlaying && (
+          <div className="mb-2 flex items-center gap-2 bg-red-100 border border-red-300 rounded-lg px-3 py-2">
+            <svg className="w-4 h-4 text-red-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span className="text-xs font-semibold text-red-700 flex-1">Timer Complete!</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStopAlarm();
+              }}
+              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium transition-colors"
+            >
+              Stop Alarm
+            </button>
+          </div>
+        )}
+        
         <button
           onClick={onExpand}
           className="w-full flex items-center gap-3 group"
         >
-          <span className={`font-bold font-mono text-amber-700 transition-all ${isExpanded ? 'text-4xl' : 'text-lg'}`}>
+          <span className={`font-bold font-mono transition-all ${isExpanded ? 'text-4xl' : 'text-lg'} ${isAlarmPlaying ? 'text-red-600 animate-pulse' : 'text-amber-700'}`}>
             {formatTime(timer.remaining)}
           </span>
           <div className={`flex-1 ${isExpanded ? 'h-3' : 'h-1.5'} bg-gray-200 rounded-full overflow-hidden transition-all`}>
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-amber-500 transition-all duration-1000"
+              className={`h-full transition-all duration-1000 ${isAlarmPlaying ? 'bg-red-500' : 'bg-gradient-to-r from-emerald-500 to-amber-500'}`}
               style={{ width: `${(timer.remaining / (timer.totalMinutes * 60)) * 100}%` }}
             ></div>
           </div>
@@ -158,7 +182,7 @@ export function Sidebar() {
   const [timersExpanded, setTimersExpanded] = useState(true);
   const [expandedTimerId, setExpandedTimerId] = useState<string | null>(null);
   const [timerOrder, setTimerOrder] = useState<string[]>([]);
-  const { timers, stopTimer } = useTimers();
+  const { timers, stopTimer, stopAlarm } = useTimers();
   
   // Drag and drop sensor
   const sensors = useSensors(
@@ -436,7 +460,7 @@ export function Sidebar() {
                     }}
                   >
                     <SortableContext items={displayOrder} strategy={verticalListSortingStrategy}>
-                      <div className="max-h-64 overflow-y-auto">
+                      <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 400px)' }}>
                         {displayOrder.map((timerId) => {
                           const timer = timers[timerId];
                           if (!timer) return null;
@@ -452,6 +476,7 @@ export function Sidebar() {
                                 // Remove from custom order
                                 setTimerOrder(order => order.filter(id => id !== timer.id));
                               }}
+                              onStopAlarm={() => stopAlarm(timer.id)}
                               onNavigate={() => {
                                 router.push(`/dashboard/recipes/${timer.recipeId}`);
                                 setIsOpen(false);

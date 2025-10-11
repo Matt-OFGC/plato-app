@@ -24,6 +24,7 @@ interface TimerContextType {
   settings: TimerSettings;
   startTimer: (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number, userId?: number) => void;
   stopTimer: (id: string) => void;
+  stopAlarm: (id: string) => void;
   getTimer: (id: string) => Timer | undefined;
   updateSettings: (newSettings: Partial<TimerSettings>) => void;
 }
@@ -304,6 +305,17 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const stopAlarm = (id: string) => {
+    const timer = timers[id];
+    if (timer && timer.alarmInterval) {
+      clearInterval(timer.alarmInterval);
+      setTimers(prev => ({
+        ...prev,
+        [id]: { ...prev[id], alarmInterval: null }
+      }));
+    }
+  };
+
   const getTimer = (id: string) => timers[id];
 
   const updateSettings = (newSettings: Partial<TimerSettings>) => {
@@ -342,7 +354,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TimerContext.Provider value={{ timers, settings, startTimer, stopTimer, getTimer, updateSettings }}>
+    <TimerContext.Provider value={{ timers, settings, startTimer, stopTimer, stopAlarm, getTimer, updateSettings }}>
       {children}
     </TimerContext.Provider>
   );
