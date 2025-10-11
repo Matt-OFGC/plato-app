@@ -560,6 +560,74 @@ export function RecipePageInlineComplete({
           <>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">{name}</h1>
             {description && <p className="text-lg text-gray-600 mb-4">{description}</p>}
+            
+            {/* Recipe Metadata Cards */}
+            <div className="flex gap-3 flex-wrap">
+              {recipe.categoryId && categories.find(c => c.id === recipe.categoryId) && (
+                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">
+                      {categories.find(c => c.id === recipe.categoryId)?.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {recipe.storageId && storageOptions.find(s => s.id === recipe.storageId) && (
+                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">
+                      {storageOptions.find(s => s.id === recipe.storageId)?.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {recipe.shelfLifeId && shelfLifeOptions.find(s => s.id === recipe.shelfLifeId) && (
+                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">
+                      {shelfLifeOptions.find(s => s.id === recipe.shelfLifeId)?.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {recipe.bakeTemp && (
+                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">
+                      {recipe.bakeTemp}°C
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {recipe.bakeTime && (
+                <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">
+                      {recipe.bakeTime} min
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
