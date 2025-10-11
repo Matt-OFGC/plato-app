@@ -200,7 +200,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         setHasLoadedTimers(true);
       }
     }
-  }, [userId, hasLoadedTimers, settings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, hasLoadedTimers]);
 
   // Save timers to localStorage whenever they change (but only after initial load)
   useEffect(() => {
@@ -318,16 +319,20 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   // Cleanup on unmount - properly clean up all intervals
   useEffect(() => {
     return () => {
-      Object.values(timers).forEach(timer => {
-        if (timer.interval) {
-          clearInterval(timer.interval);
-        }
-        if (timer.alarmInterval) {
-          clearInterval(timer.alarmInterval);
-        }
+      // Get current timers from state at unmount time
+      setTimers(currentTimers => {
+        Object.values(currentTimers).forEach(timer => {
+          if (timer.interval) {
+            clearInterval(timer.interval);
+          }
+          if (timer.alarmInterval) {
+            clearInterval(timer.alarmInterval);
+          }
+        });
+        return currentTimers;
       });
     };
-  }, [timers]);
+  }, []); // Only run on unmount
 
   // Request notification permission on mount
   useEffect(() => {
