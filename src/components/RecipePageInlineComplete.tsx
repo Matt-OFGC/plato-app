@@ -918,11 +918,11 @@ export function RecipePageInlineComplete({
                 const costPerUnit = editModeCostPerUnit * scaleFactor;
                 const recommendedPrice = costPerUnit / 0.25; // 25% COGS
                 const currentSellPrice = sellPrice || recommendedPrice;
-                const currentMargin = currentSellPrice > 0 ? ((currentSellPrice - costPerUnit) / currentSellPrice) * 100 : 0;
-                const isGoodMargin = currentMargin >= 75; // 75% margin = 25% COGS
+                const cogsPercentage = currentSellPrice > 0 ? (costPerUnit / currentSellPrice) * 100 : 0;
+                const isGoodCogs = cogsPercentage <= 25; // Good if COGS is 25% or less
                 
                 return (
-                  <div className="bg-white rounded-lg border border-gray-200 px-5 py-2 shadow-sm">
+                  <div className="bg-white rounded-lg border border-gray-200 px-6 py-2 shadow-sm">
                     <div className="flex flex-col items-center gap-1">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sell Price</span>
                       <div className="flex items-center gap-1">
@@ -934,14 +934,14 @@ export function RecipePageInlineComplete({
                           value={sellPrice || ''}
                           onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
                           placeholder={recommendedPrice.toFixed(2)}
-                          className="w-20 text-sm font-bold text-emerald-600 text-center border-b border-gray-300 focus:border-emerald-500 focus:outline-none"
+                          className="w-24 text-sm font-bold text-emerald-600 text-center border-b border-gray-300 focus:border-emerald-500 focus:outline-none"
                         />
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className={`text-xs font-semibold ${isGoodMargin ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {currentMargin.toFixed(0)}% margin
+                        <span className={`text-xs font-semibold ${isGoodCogs ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {cogsPercentage.toFixed(0)}% COGS
                         </span>
-                        {!isGoodMargin && (
+                        {!isGoodCogs && (
                           <svg className="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                           </svg>
