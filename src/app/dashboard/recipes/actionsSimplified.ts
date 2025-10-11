@@ -130,8 +130,17 @@ export async function createRecipeUnified(formData: FormData) {
     const bakeTemp = formData.get("bakeTemp") ? parseInt(formData.get("bakeTemp") as string) : null;
     const useSections = formData.get("useSections") === "true";
 
-    if (!name) {
-      throw new Error("Recipe name required");
+    // Server-side validation
+    if (!name || name.trim() === "") {
+      throw new Error("Recipe name is required");
+    }
+    
+    if (!yieldQuantity || yieldQuantity <= 0 || isNaN(yieldQuantity)) {
+      throw new Error("Valid yield quantity is required");
+    }
+    
+    if (!companyId) {
+      throw new Error("No company associated with your account");
     }
 
     // Create the recipe data
@@ -236,8 +245,17 @@ export async function updateRecipeUnified(formData: FormData) {
     const bakeTemp = formData.get("bakeTemp") ? parseInt(formData.get("bakeTemp") as string) : null;
     const useSections = formData.get("useSections") === "true";
 
-    if (!name) {
-      throw new Error("Recipe name required");
+    // Server-side validation
+    if (!recipeId || isNaN(recipeId)) {
+      throw new Error("Invalid recipe ID");
+    }
+    
+    if (!name || name.trim() === "") {
+      throw new Error("Recipe name is required");
+    }
+    
+    if (!yieldQuantity || yieldQuantity <= 0 || isNaN(yieldQuantity)) {
+      throw new Error("Valid yield quantity is required");
     }
 
     // Delete all existing items and sections
