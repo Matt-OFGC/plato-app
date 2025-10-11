@@ -799,7 +799,7 @@ export function RecipePageInlineComplete({
                   </select>
                 </div>
                 <span>Total Cost: {formatCurrency(editModeTotalCost)}</span>
-                <span>Cost per {yieldUnit}: {formatCurrency(editModeCostPerUnit)}</span>
+                <span>Cost per: {formatCurrency(editModeCostPerUnit)}</span>
               </div>
 
               {/* Recipe Type Selector - Animated Toggle */}
@@ -1727,7 +1727,7 @@ export function RecipePageInlineComplete({
                   <span className="text-2xl font-bold text-emerald-700">{formatCurrency(editModeTotalCost)}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">Cost per {yieldUnit}:</span>
+                  <span className="text-gray-700">Cost per:</span>
                   <span className="text-xl font-semibold text-emerald-600">{formatCurrency(editModeCostPerUnit)}</span>
                 </div>
               </div>
