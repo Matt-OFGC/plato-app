@@ -221,43 +221,78 @@ export function RecipePageInlineComplete({
 
   const handleSave = async () => {
     setIsSaving(true);
-    const formData = new FormData();
-    formData.append("recipeId", recipe.id.toString());
-    formData.append("name", name);
-    formData.append("description", description);
-    formData.append("yieldQuantity", yieldQuantity.toString());
-    formData.append("yieldUnit", yieldUnit);
-    formData.append("method", method);
-    formData.append("imageUrl", imageUrl);
-    
-    // Add recipe type information
-    const recipeType = yieldUnit === "each" && yieldQuantity === 1 ? "single" : "batch";
-    formData.append("recipeType", recipeType);
-    formData.append("servings", yieldQuantity.toString());
-    
-    if (categoryId) formData.append("categoryId", categoryId.toString());
-    if (shelfLifeId) formData.append("shelfLifeId", shelfLifeId.toString());
-    if (storageId) formData.append("storageId", storageId.toString());
-    if (bakeTime) formData.append("bakeTime", bakeTime.toString());
-    if (bakeTemp) formData.append("bakeTemp", bakeTemp.toString());
+    try {
+      // Validation: Check if recipe has a name
+      if (!name || name.trim() === "") {
+        alert("Please enter a recipe name.");
+        setIsSaving(false);
+        return;
+      }
 
-    formData.append("useSections", useSections.toString());
+      // Validation: Check yield quantity
+      if (!yieldQuantity || yieldQuantity <= 0) {
+        alert("Please enter a valid yield quantity greater than 0.");
+        setIsSaving(false);
+        return;
+      }
 
-    if (useSections) {
-      formData.append("sections", JSON.stringify(sections));
-    } else {
-      formData.append("recipeItems", JSON.stringify(items));
+      // Validation: Check that we have at least one ingredient
+      const hasIngredients = useSections 
+        ? sections.some(s => s.items.length > 0 && s.items.some(item => item.ingredientId && parseFloat(item.quantity) > 0))
+        : items.length > 0 && items.some(item => item.ingredientId && parseFloat(item.quantity) > 0);
+
+      if (!hasIngredients) {
+        alert("Please add at least one ingredient with a valid quantity.");
+        setIsSaving(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("recipeId", recipe.id.toString());
+      formData.append("name", name.trim());
+      formData.append("description", description);
+      formData.append("yieldQuantity", yieldQuantity.toString());
+      formData.append("yieldUnit", yieldUnit);
+      formData.append("method", method);
+      formData.append("imageUrl", imageUrl);
+      
+      // Add recipe type information
+      const recipeType = yieldUnit === "each" && yieldQuantity === 1 ? "single" : "batch";
+      formData.append("recipeType", recipeType);
+      formData.append("servings", yieldQuantity.toString());
+      
+      if (categoryId) formData.append("categoryId", categoryId.toString());
+      if (shelfLifeId) formData.append("shelfLifeId", shelfLifeId.toString());
+      if (storageId) formData.append("storageId", storageId.toString());
+      if (bakeTime) formData.append("bakeTime", bakeTime.toString());
+      if (bakeTemp) formData.append("bakeTemp", bakeTemp.toString());
+
+      formData.append("useSections", useSections.toString());
+
+      if (useSections) {
+        formData.append("sections", JSON.stringify(sections));
+      } else {
+        formData.append("recipeItems", JSON.stringify(items));
+      }
+
+      await onSave(formData);
+      setIsLocked(true);
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      alert("Failed to save recipe. Please check the console for details and try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    await onSave(formData);
-    setIsSaving(false);
-    setIsLocked(true);
   };
 
   const addIngredient = () => {
+    if (ingredients.length === 0) {
+      alert("No ingredients available. Please add ingredients first.");
+      return;
+    }
     setItems([...items, {
       id: `item-${Date.now()}`,
-      ingredientId: ingredients[0]?.id || 0,
+      ingredientId: ingredients[0].id,
       quantity: "0",
       unit: "g" as Unit,
       note: "",
@@ -283,13 +318,17 @@ export function RecipePageInlineComplete({
   };
 
   const addIngredientToSection = (sectionId: string) => {
+    if (ingredients.length === 0) {
+      alert("No ingredients available. Please add ingredients first.");
+      return;
+    }
     setSections(sections.map(section => {
       if (section.id === sectionId) {
         return {
           ...section,
           items: [...section.items, {
             id: `${sectionId}-item-${Date.now()}`,
-            ingredientId: ingredients[0]?.id || 0,
+            ingredientId: ingredients[0].id,
             quantity: "0",
             unit: "g" as Unit,
             note: "",
