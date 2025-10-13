@@ -1,11 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function FileUpload() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
+  const [logoPath, setLogoPath] = useState("/images/plato-logo.svg");
+
+  useEffect(() => {
+    // Check which logo file exists
+    const checkLogo = async () => {
+      const extensions = ['.svg', '.png', '.jpg', '.jpeg'];
+      for (const ext of extensions) {
+        try {
+          const response = await fetch(`/images/plato-logo${ext}`, { method: 'HEAD' });
+          if (response.ok) {
+            setLogoPath(`/images/plato-logo${ext}`);
+            break;
+          }
+        } catch (e) {
+          // Continue checking
+        }
+      }
+    };
+    checkLogo();
+  }, [message]); // Re-check when message changes (after upload)
 
   const handleFileUpload = async (file: File, type: string) => {
     setUploading(true);
@@ -20,6 +40,7 @@ export function FileUpload() {
       const response = await fetch("/api/admin/upload", {
         method: "POST",
         body: formData,
+        credentials: "include", // Include cookies for admin auth
       });
 
       const data = await response.json();
@@ -109,7 +130,7 @@ export function FileUpload() {
           <h4 className="font-semibold text-blue-900 mb-2">Current Logo</h4>
           <div className="flex items-center gap-4">
             <img 
-              src="/images/plato-logo.svg" 
+              src={logoPath} 
               alt="Current Logo" 
               className="h-12 w-auto border border-gray-200 rounded"
               onError={(e) => {
@@ -117,7 +138,7 @@ export function FileUpload() {
               }}
             />
             <div className="text-sm text-blue-800">
-              <p>Path: /images/plato-logo.svg</p>
+              <p>Path: {logoPath}</p>
               <p>Upload a new file to replace this logo</p>
             </div>
           </div>

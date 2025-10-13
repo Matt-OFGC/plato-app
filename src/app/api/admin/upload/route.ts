@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check if user is authenticated as admin
     const session = await getAdminSession();
+    console.log("Admin upload - Session:", session ? "✓ Valid" : "✗ None");
     if (!session) {
       return NextResponse.json({ error: "Admin access required" }, { status: 401 });
     }
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     switch (type) {
       case "logo":
-        fileName = "plato-logo.svg";
+        fileName = "plato-logo" + fileExtension;
         filePath = join(process.cwd(), "public", "images", fileName);
         break;
       case "favicon":
@@ -70,6 +71,8 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
+
+    console.log(`✓ File uploaded successfully: ${fileName} (${type})`);
 
     return NextResponse.json({ 
       success: true,
