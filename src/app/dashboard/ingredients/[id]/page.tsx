@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { updateIngredient } from "../actions";
 import { fromBase, Unit } from "@/lib/units";
 import { SupplierSelector } from "@/components/SupplierSelector";
+import { getCurrentUserAndCompany } from "@/lib/current";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +12,23 @@ interface Props { params: Promise<{ id: string }> }
 export default async function EditIngredientPage({ params }: Props) {
   const { id: idParam } = await params;
   const id = Number(idParam);
+  const { companyId } = await getCurrentUserAndCompany();
+  
   const ing = await prisma.ingredient.findUnique({ 
     where: { id },
     include: { supplierRef: true }
   });
+  
   if (!ing) return <div className="p-6">Not found</div>;
+  
+  // Security check: Verify ingredient belongs to user's company
+  if (ing.companyId !== companyId) {
+    return <div className="p-6">Unauthorized</div>;
+  }
 
-  // Get suppliers for the dropdown
+  // Get suppliers for the dropdown (company-scoped)
   const suppliers = await prisma.supplier.findMany({
+    where: companyId ? { companyId } : {},
     orderBy: { name: "asc" }
   });
 

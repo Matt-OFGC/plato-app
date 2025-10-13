@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileUpload } from "./FileUpload";
-import { ContentManager } from "./ContentManager";
-import { SystemStatus } from "./SystemStatus";
+import { FileUpload } from "@/components/FileUpload";
+import { ContentManager } from "@/components/ContentManager";
+import { SystemStatus } from "@/components/SystemStatus";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("files");

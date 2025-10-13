@@ -142,6 +142,19 @@ export async function updateAdvancedRecipe(id: number, formData: FormData) {
   }
   
   const data = parsed.data;
+  
+  // Verify the recipe belongs to the user's company
+  const { companyId } = await getCurrentUserAndCompany();
+  
+  const existingRecipe = await prisma.recipe.findUnique({
+    where: { id },
+    select: { companyId: true },
+  });
+  
+  // Security check: Verify recipe belongs to user's company
+  if (!existingRecipe || existingRecipe.companyId !== companyId) {
+    redirect("/recipes?error=unauthorized");
+  }
 
   await prisma.$transaction(async (tx) => {
     // Update the main recipe
@@ -208,6 +221,19 @@ export async function updateAdvancedRecipe(id: number, formData: FormData) {
 }
 
 export async function deleteAdvancedRecipe(id: number) {
+  // Verify the recipe belongs to the user's company
+  const { companyId } = await getCurrentUserAndCompany();
+  
+  const existingRecipe = await prisma.recipe.findUnique({
+    where: { id },
+    select: { companyId: true },
+  });
+  
+  // Security check: Verify recipe belongs to user's company
+  if (!existingRecipe || existingRecipe.companyId !== companyId) {
+    throw new Error("Unauthorized: Cannot delete recipe from another company");
+  }
+  
   await prisma.recipe.delete({ where: { id } });
   revalidatePath("/recipes");
 }

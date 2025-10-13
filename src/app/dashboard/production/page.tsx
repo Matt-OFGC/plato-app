@@ -2,7 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { ProductionPlanner } from "@/components/ProductionPlanner";
+import { ProductionPlannerEnhanced } from "@/components/ProductionPlannerEnhanced";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +11,9 @@ export default async function ProductionPage() {
   if (!user) redirect("/login");
 
   const { companyId } = await getCurrentUserAndCompany();
+  if (!companyId) redirect("/dashboard");
 
-  // Get all recipes for the company
+  // Get all recipes for the company with sections
   const recipesRaw = await prisma.recipe.findMany({
     where: { companyId },
     select: {
@@ -23,6 +24,15 @@ export default async function ProductionPage() {
       categoryId: true,
       category: true,
       imageUrl: true,
+      sections: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          order: true,
+        },
+        orderBy: { order: 'asc' },
+      },
     },
     orderBy: { name: "asc" },
   });
@@ -84,6 +94,15 @@ export default async function ProductionPage() {
     },
   });
 
+  // Get wholesale customers
+  const wholesaleCustomers = await prisma.wholesaleCustomer.findMany({
+    where: {
+      companyId,
+      isActive: true,
+    },
+    orderBy: { name: "asc" },
+  });
+
   return (
     <div>
       <div className="mb-8">
@@ -91,14 +110,15 @@ export default async function ProductionPage() {
           Production Planning
         </h1>
         <p className="text-gray-600">
-          Plan your weekly bake schedule and assign tasks to your team
+          Plan your weekly bake schedule and organize multi-day production
         </p>
       </div>
 
-      <ProductionPlanner
+      <ProductionPlannerEnhanced
         recipes={recipes}
         productionPlans={productionPlans}
         teamMembers={teamMembers}
+        wholesaleCustomers={wholesaleCustomers}
         companyId={companyId!}
       />
     </div>

@@ -114,11 +114,26 @@ export async function updateIngredient(id: number, formData: FormData) {
   const data = parsed.data;
   
   try {
-    // Get existing ingredient to check if price changed
+    // Verify the ingredient belongs to the user's company
+    const { companyId } = await getCurrentUserAndCompany();
+    
+    // Get existing ingredient to check ownership and if price changed
     const existingIngredient = await prisma.ingredient.findUnique({
       where: { id },
-      select: { packPrice: true },
+      select: { 
+        packPrice: true,
+        companyId: true,
+      },
     });
+    
+    // Security check: Verify ingredient belongs to user's company
+    if (!existingIngredient) {
+      redirect("/dashboard/ingredients?error=not_found");
+    }
+    
+    if (existingIngredient.companyId !== companyId) {
+      redirect("/dashboard/ingredients?error=unauthorized");
+    }
     
     // Convert the user-selected unit to a base unit for storage
     const { amount: baseQuantity, base: baseUnit } = toBase(
@@ -157,7 +172,27 @@ export async function updateIngredient(id: number, formData: FormData) {
 }
 
 export async function deleteIngredient(id: number) {
+  // Verify the ingredient belongs to the user's company
+  const { companyId, user } = await getCurrentUserAndCompany();
+  
+  const existingIngredient = await prisma.ingredient.findUnique({
+    where: { id },
+    select: { companyId: true, name: true },
+  });
+  
+  // Security check: Verify ingredient belongs to user's company
+  if (!existingIngredient || existingIngredient.companyId !== companyId) {
+    throw new Error("Unauthorized: Cannot delete ingredient from another company");
+  }
+  
   await prisma.ingredient.delete({ where: { id } });
+  
+  // Audit deletion
+  if (user && companyId) {
+    const { auditLog } = await import("@/lib/audit-log");
+    await auditLog.ingredientDeleted(user.id, id, existingIngredient.name, companyId);
+  }
+  
   revalidatePath("/ingredients");
 }
 

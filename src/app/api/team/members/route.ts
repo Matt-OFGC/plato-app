@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
 import { updateSubscriptionSeats } from "@/lib/stripe";
+import { auditLog } from "@/lib/audit-log";
 
 // Get team members
 export async function GET(request: NextRequest) {
@@ -90,30 +91,45 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "No permission to manage team" }, { status: 403 });
     }
 
+    // Get existing membership for validation and audit
+    const membership = await prisma.membership.findUnique({
+      where: { id: membershipId },
+    });
+
+    if (!membership) {
+      return NextResponse.json({ error: "Membership not found" }, { status: 404 });
+    }
+
     // Don't allow removing the last owner
-    if (role !== 'OWNER') {
-      const membership = await prisma.membership.findUnique({
-        where: { id: membershipId },
+    if (role !== 'OWNER' && membership.role === 'OWNER') {
+      const ownerCount = await prisma.membership.count({
+        where: { companyId, role: 'OWNER', isActive: true },
       });
       
-      if (membership?.role === 'OWNER') {
-        const ownerCount = await prisma.membership.count({
-          where: { companyId, role: 'OWNER', isActive: true },
-        });
-        
-        if (ownerCount <= 1) {
-          return NextResponse.json({ 
-            error: "Cannot change role of the last owner" 
-          }, { status: 400 });
-        }
+      if (ownerCount <= 1) {
+        return NextResponse.json({ 
+          error: "Cannot change role of the last owner" 
+        }, { status: 400 });
       }
     }
+
+    // Get old role for audit
+    const oldRole = membership.role;
 
     // Update role
     const updated = await prisma.membership.update({
       where: { id: membershipId },
       data: { role },
     });
+
+    // Audit role change
+    await auditLog.roleChanged(
+      session.id,
+      updated.userId,
+      oldRole,
+      role,
+      companyId
+    );
 
     return NextResponse.json({ success: true, membership: updated });
   } catch (error) {
@@ -202,6 +218,12 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
+    // Get member info for audit
+    const memberToRemove = await prisma.membership.findUnique({
+      where: { id: membershipId },
+      include: { user: { select: { email: true } } },
+    });
+
     // Soft delete (set isActive to false)
     await prisma.membership.update({
       where: { id: membershipId },
@@ -213,6 +235,16 @@ export async function DELETE(request: NextRequest) {
       where: { id: companyId },
       data: { seatsUsed: { decrement: 1 } },
     });
+
+    // Audit member removal
+    if (memberToRemove) {
+      await auditLog.memberRemoved(
+        session.id,
+        memberToRemove.userId,
+        memberToRemove.user.email,
+        companyId
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

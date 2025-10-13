@@ -2,42 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { createSession } from "@/lib/auth-simple";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { auditLog } from "@/lib/audit-log";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password, rememberMe = true, userId, pinAuth } = body;
-
-    // Handle PIN-based authentication (for device login)
-    if (pinAuth && userId) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { error: "User not found" },
-          { status: 404 }
-        );
-      }
-
-      // Create session for PIN login (always remember for device-based login)
-      await createSession({
-        id: user.id,
-        email: user.email,
-        name: user.name || undefined,
-        isAdmin: user.isAdmin,
-      }, true);
-
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
-      });
+    // Apply rate limiting
+    const rateLimitResult = rateLimit(request, RATE_LIMITS.LOGIN);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: `Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.` },
+        { 
+          status: 429,
+          headers: { "Retry-After": String(rateLimitResult.retryAfter) }
+        }
+      );
     }
+
+    const body = await request.json();
+    const { email, password, rememberMe = true } = body;
 
     // Regular email/password authentication
     if (!email || !password) {
@@ -52,6 +35,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user || !user.passwordHash) {
+      // Audit failed login
+      await auditLog.loginFailed(email, request, "User not found or no password");
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -61,6 +46,8 @@ export async function POST(request: NextRequest) {
     const isValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValid) {
+      // Audit failed login
+      await auditLog.loginFailed(email, request, "Invalid password");
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -80,6 +67,9 @@ export async function POST(request: NextRequest) {
       name: user.name || undefined,
       isAdmin: user.isAdmin,
     }, rememberMe);
+
+    // Audit successful login
+    await auditLog.loginSuccess(user.id, request);
 
     // Check if user is an owner/admin to enable device mode
     const membership = await prisma.membership.findFirst({

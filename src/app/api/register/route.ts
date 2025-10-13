@@ -1,11 +1,28 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { generateUniqueSlug, getCurrencyFromCountry } from "@/lib/slug";
 import { sendWelcomeEmail } from "@/lib/email";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { auditLog } from "@/lib/audit-log";
 
-export async function POST(req: Request) {
+// Password validation regex
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+export async function POST(req: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResult = rateLimit(req, RATE_LIMITS.REGISTER);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: `Too many registration attempts. Please try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.` },
+        { 
+          status: 429,
+          headers: { "Retry-After": String(rateLimitResult.retryAfter) }
+        }
+      );
+    }
+
     const body = await req.text();
     console.log("Registration request body:", body);
     const params = new URLSearchParams(body);
@@ -30,6 +47,13 @@ export async function POST(req: Request) {
     if (!email || !password || !company) {
       console.log("Missing fields:", { email: !!email, password: !!password, company: !!company });
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    // Validate password strength
+    if (!PASSWORD_REGEX.test(password)) {
+      return NextResponse.json({ 
+        error: "Password must be at least 8 characters long and contain uppercase, lowercase, and numbers" 
+      }, { status: 400 });
     }
 
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -72,6 +96,9 @@ export async function POST(req: Request) {
     return { user, co };
   });
   
+  // Audit successful registration
+  await auditLog.register(created.user.id, created.co.id, req);
+
   // Send welcome email
   try {
     await sendWelcomeEmail(email, {

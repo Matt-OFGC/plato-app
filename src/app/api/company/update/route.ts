@@ -4,10 +4,18 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 
 export async function POST(request: NextRequest) {
   try {
-    const { companyId } = await getCurrentUserAndCompany();
+    const { companyId, user } = await getCurrentUserAndCompany();
     
-    if (!companyId) {
+    if (!companyId || !user) {
       return NextResponse.json({ error: "No company found" }, { status: 404 });
+    }
+
+    // Check if user has permission to manage company settings
+    const { checkPermission } = await import("@/lib/permissions");
+    const canManage = await checkPermission(user.id, companyId, "manage:company");
+    
+    if (!canManage) {
+      return NextResponse.json({ error: "No permission to manage company settings" }, { status: 403 });
     }
 
     const body = await request.json();

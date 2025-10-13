@@ -216,6 +216,19 @@ export async function updateRecipeWithSections(id: number, formData: FormData) {
   }
 
   const data = parsed.data;
+  
+  // Verify the recipe belongs to the user's company
+  const { companyId } = await getCurrentUserAndCompany();
+  
+  const existingRecipe = await prisma.recipe.findUnique({
+    where: { id },
+    select: { companyId: true },
+  });
+  
+  // Security check: Verify recipe belongs to user's company
+  if (!existingRecipe || existingRecipe.companyId !== companyId) {
+    redirect("/recipes?error=unauthorized");
+  }
 
   try {
     // Update the recipe

@@ -69,10 +69,12 @@ export function ProductionPlanner({
   companyId,
 }: ProductionPlannerProps) {
   const [showCreatePlan, setShowCreatePlan] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<ProductionPlan | null>(null);
   const [planName, setPlanName] = useState("");
   const [startDate, setStartDate] = useState(format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 6), "yyyy-MM-dd"));
   const [selectedRecipes, setSelectedRecipes] = useState<{ [key: number]: number }>({});
+  const [customYields, setCustomYields] = useState<{ [key: number]: number }>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [plans, setPlans] = useState(initialPlans);
   const [creating, setCreating] = useState(false);
@@ -84,15 +86,57 @@ export function ProductionPlanner({
     recipe.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  function openEditPlan(plan: ProductionPlan) {
+    setEditingPlan(plan);
+    setPlanName(plan.name);
+    setStartDate(format(new Date(plan.startDate), "yyyy-MM-dd"));
+    setEndDate(format(new Date(plan.endDate), "yyyy-MM-dd"));
+    
+    // Populate selected recipes and custom yields from existing items
+    const recipes: { [key: number]: number } = {};
+    const yields: { [key: number]: number } = {};
+    
+    plan.items.forEach((item) => {
+      recipes[item.recipeId] = 1; // Mark as selected
+      const recipeYield = parseFloat(item.recipe.yieldQuantity);
+      yields[item.recipeId] = item.quantity * recipeYield;
+    });
+    
+    setSelectedRecipes(recipes);
+    setCustomYields(yields);
+    setShowCreatePlan(true);
+  }
+
+  function closeModal() {
+    setShowCreatePlan(false);
+    setEditingPlan(null);
+    setPlanName("");
+    setSelectedRecipes({});
+    setCustomYields({});
+    setSearchTerm("");
+  }
+
   async function createProductionPlan() {
     if (!planName) return;
 
     const items = Object.entries(selectedRecipes)
       .filter(([_, qty]) => qty > 0)
-      .map(([recipeId, quantity]) => ({
-        recipeId: parseInt(recipeId),
-        quantity,
-      }));
+      .map(([recipeId, quantity]) => {
+        const recipe = recipes.find(r => r.id === parseInt(recipeId));
+        const customYield = customYields[parseInt(recipeId)];
+        
+        // If custom yield is specified, calculate the number of batches needed
+        let finalQuantity = quantity;
+        if (customYield && recipe) {
+          const recipeYield = parseFloat(recipe.yieldQuantity);
+          finalQuantity = customYield / recipeYield;
+        }
+        
+        return {
+          recipeId: parseInt(recipeId),
+          quantity: finalQuantity,
+        };
+      });
 
     if (items.length === 0) {
       alert("Please select at least one recipe");
@@ -102,8 +146,14 @@ export function ProductionPlanner({
     setCreating(true);
 
     try {
-      const res = await fetch("/api/production/plans", {
-        method: "POST",
+      const url = editingPlan 
+        ? `/api/production/plans/${editingPlan.id}`
+        : "/api/production/plans";
+      
+      const method = editingPlan ? "PATCH" : "POST";
+      
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: planName,
@@ -115,15 +165,20 @@ export function ProductionPlanner({
       });
 
       if (res.ok) {
-        const newPlan = await res.json();
-        setPlans([newPlan, ...plans]);
-        setShowCreatePlan(false);
-        setPlanName("");
-        setSelectedRecipes({});
-        setSearchTerm("");
+        const updatedPlan = await res.json();
+        
+        if (editingPlan) {
+          // Update existing plan
+          setPlans(plans.map(p => p.id === editingPlan.id ? updatedPlan : p));
+        } else {
+          // Add new plan
+          setPlans([updatedPlan, ...plans]);
+        }
+        
+        closeModal();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to create plan");
+        alert(data.error || `Failed to ${editingPlan ? "update" : "create"} plan`);
       }
     } catch (error) {
       alert("Network error");
@@ -195,7 +250,7 @@ export function ProductionPlanner({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowCreatePlan(false)}
+            onClick={closeModal}
           >
             <motion.div
               initial={{ scale: 0.95 }}
@@ -205,7 +260,9 @@ export function ProductionPlanner({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b">
-                <h2 className="text-2xl font-bold text-gray-900">Create Production Plan</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingPlan ? "Edit Production Plan" : "Create Production Plan"}
+                </h2>
                 <p className="text-gray-600 mt-1">Select recipes and quantities for your bake schedule</p>
               </div>
 
@@ -266,42 +323,70 @@ export function ProductionPlanner({
                 <div>
                   <h3 className="font-medium text-gray-900 mb-3">Select Recipes & Quantities</h3>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {filteredRecipes.map((recipe) => (
-                      <div
-                        key={recipe.id}
-                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{recipe.name}</h4>
-                          <p className="text-sm text-gray-500">
-                            Yields: {recipe.yieldQuantity} {recipe.yieldUnit}
-                            {recipe.category && ` • ${recipe.category}`}
-                          </p>
+                    {filteredRecipes.map((recipe) => {
+                      const customYield = customYields[recipe.id];
+                      const recipeYield = parseFloat(recipe.yieldQuantity);
+                      const batches = customYield ? customYield / recipeYield : (selectedRecipes[recipe.id] || 0);
+                      
+                      return (
+                        <div
+                          key={recipe.id}
+                          className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                        >
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{recipe.name}</h4>
+                            <p className="text-sm text-gray-500">
+                              Yields: {recipe.yieldQuantity} {recipe.yieldUnit} per batch
+                              {recipe.category && ` • ${recipe.category}`}
+                            </p>
+                            {customYield && batches > 0 && (
+                              <p className="text-xs text-green-600 mt-1">
+                                = {batches % 1 === 0 ? batches : batches.toFixed(2)} batch{batches !== 1 ? "es" : ""}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2 ml-4">
+                            <div className="flex items-center gap-2">
+                              <label className="text-sm text-gray-600 whitespace-nowrap">
+                                Total {recipe.yieldUnit}:
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                step={recipeYield}
+                                value={customYield || ""}
+                                placeholder={`e.g., ${recipeYield * 2}`}
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value) || 0;
+                                  setCustomYields({
+                                    ...customYields,
+                                    [recipe.id]: value,
+                                  });
+                                  // Also update selectedRecipes to mark this as selected
+                                  if (value > 0) {
+                                    setSelectedRecipes({
+                                      ...selectedRecipes,
+                                      [recipe.id]: 1, // Just to mark as selected
+                                    });
+                                  } else {
+                                    const { [recipe.id]: _, ...rest } = selectedRecipes;
+                                    setSelectedRecipes(rest);
+                                  }
+                                }}
+                                className="w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm text-gray-600">Qty:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={selectedRecipes[recipe.id] || 0}
-                            onChange={(e) =>
-                              setSelectedRecipes({
-                                ...selectedRecipes,
-                                [recipe.id]: parseInt(e.target.value) || 0,
-                              })
-                            }
-                            className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
                 <button
-                  onClick={() => setShowCreatePlan(false)}
+                  onClick={closeModal}
                   className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Cancel
@@ -311,7 +396,7 @@ export function ProductionPlanner({
                   disabled={creating || !planName}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
                 >
-                  {creating ? "Creating..." : "Create Plan"}
+                  {creating ? (editingPlan ? "Updating..." : "Creating...") : (editingPlan ? "Update Plan" : "Create Plan")}
                 </button>
               </div>
             </motion.div>
@@ -338,6 +423,15 @@ export function ProductionPlanner({
                 </div>
                 <div className="flex items-center gap-3">
                   <button
+                    onClick={() => openEditPlan(plan)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </button>
+                  <button
                     onClick={() => generateShoppingList(plan.id)}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
@@ -353,27 +447,35 @@ export function ProductionPlanner({
               </div>
 
               <div className="space-y-2">
-                {plan.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={item.completed}
-                        onChange={() => toggleItemComplete(plan.id, item.id, item.completed)}
-                        className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                      />
-                      <div className={item.completed ? "line-through text-gray-500" : ""}>
-                        <p className="font-medium">{item.recipe.name}</p>
-                        <p className="text-sm text-gray-600">
-                          {item.quantity} batch{item.quantity !== 1 ? "es" : ""}
-                        </p>
+                {plan.items.map((item) => {
+                  const recipeYield = parseFloat(item.recipe.yieldQuantity);
+                  const totalYield = item.quantity * recipeYield;
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={item.completed}
+                          onChange={() => toggleItemComplete(plan.id, item.id, item.completed)}
+                          className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <div className={item.completed ? "line-through text-gray-500" : ""}>
+                          <p className="font-medium">{item.recipe.name}</p>
+                          <p className="text-sm text-gray-600">
+                            {totalYield % 1 === 0 ? totalYield : totalYield.toFixed(2)} {item.recipe.yieldUnit}
+                            <span className="text-gray-400 ml-1">
+                              ({item.quantity % 1 === 0 ? item.quantity : item.quantity.toFixed(2)} batch{item.quantity !== 1 ? "es" : ""})
+                            </span>
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))

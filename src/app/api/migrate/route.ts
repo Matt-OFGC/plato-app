@@ -4,7 +4,12 @@ export async function POST(request: NextRequest) {
   try {
     // Only allow this in development or with a secret key
     const authHeader = request.headers.get('authorization');
-    const secret = process.env.MIGRATION_SECRET || 'dev-only';
+    const secret = process.env.MIGRATION_SECRET;
+    
+    // In production, MIGRATION_SECRET must be set
+    if (!secret) {
+      return NextResponse.json({ error: 'Migration not configured' }, { status: 500 });
+    }
     
     if (authHeader !== `Bearer ${secret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

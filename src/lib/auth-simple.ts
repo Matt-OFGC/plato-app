@@ -2,9 +2,12 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key-change-in-production"
-);
+// JWT_SECRET must be set in environment variables
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export interface SessionUser {
   id: number;
@@ -27,7 +30,7 @@ export async function createSession(user: SessionUser, rememberMe: boolean = tru
   cookieStore.set("session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict", // Changed from "lax" to "strict" for better CSRF protection
     maxAge: expirationSeconds,
     path: "/",
   });

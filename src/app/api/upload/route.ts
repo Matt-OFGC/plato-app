@@ -1,5 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { put } from '@vercel/blob';
+import { getSession } from "@/lib/auth-simple";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { auditLog } from "@/lib/audit-log";
+import { getCurrentUserAndCompany } from "@/lib/current";
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -9,8 +13,26 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30; // 30 seconds max
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // Check authentication
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Apply rate limiting
+    const rateLimitResult = rateLimit(req, RATE_LIMITS.UPLOAD);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: `Too many upload attempts. Please try again in ${rateLimitResult.retryAfter} seconds.` },
+        { 
+          status: 429,
+          headers: { "Retry-After": String(rateLimitResult.retryAfter) }
+        }
+      );
+    }
+    
     console.log("Upload request received");
     
     const form = await req.formData();
@@ -57,6 +79,12 @@ export async function POST(req: Request) {
     });
     
     console.log("File uploaded successfully to:", blob.url);
+
+    // Audit file upload
+    const { companyId } = await getCurrentUserAndCompany();
+    if (companyId) {
+      await auditLog.fileUploaded(session.id, companyId, fileObj.name, fileObj.size);
+    }
     
     return NextResponse.json({ url: blob.url });
   } catch (error) {

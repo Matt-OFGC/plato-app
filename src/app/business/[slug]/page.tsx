@@ -23,7 +23,7 @@ export default async function BusinessProfilePage({ params }: Props) {
           user: {
             select: {
               name: true,
-              email: true,
+              // Don't expose email publicly - privacy concern
             }
           }
         }
@@ -35,28 +35,24 @@ export default async function BusinessProfilePage({ params }: Props) {
     notFound();
   }
 
-  // Get some sample recipes (public ones if any)
+  // Get only basic recipe info (no pricing/ingredients - that's proprietary)
   const recipes = await prisma.recipe.findMany({
     where: {
       companyId: company.id,
+      // TODO: Add isPublic field to Recipe model to explicitly control visibility
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      yieldQuantity: true,
+      yieldUnit: true,
+      imageUrl: true,
+      portionsPerBatch: true,
+      category: true,
+      // Don't include items/ingredients - that's proprietary pricing info
     },
     take: 6,
-    include: {
-      items: {
-        include: {
-          ingredient: {
-            select: {
-              id: true,
-              name: true,
-              packPrice: true,
-              packQuantity: true,
-              packUnit: true,
-              densityGPerMl: true,
-            }
-          }
-        }
-      }
-    },
     orderBy: {
       updatedAt: 'desc'
     }
@@ -205,12 +201,12 @@ export default async function BusinessProfilePage({ params }: Props) {
                     <div key={membership.id} className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
                         <span className="text-sm font-medium text-emerald-700">
-                          {membership.user.name?.charAt(0) || membership.user.email.charAt(0).toUpperCase()}
+                          {membership.user.name?.charAt(0)?.toUpperCase() || "T"}
                         </span>
                       </div>
                       <div>
                         <div className="font-medium text-gray-900">
-                          {membership.user.name || membership.user.email}
+                          {membership.user.name || "Team Member"}
                         </div>
                         <div className="text-sm text-gray-500 capitalize">
                           {membership.role.toLowerCase()}

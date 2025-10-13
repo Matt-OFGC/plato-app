@@ -139,6 +139,9 @@ model Recipe {
   productionItems ProductionItem[]
   collections    RecipeCollection[]
   versions       RecipeVersion[]
+  wholesaleOrderItems WholesaleOrderItem[]
+  shopifyOrderItems   ShopifyOrderItem[]
+  shopifyProductMappings ShopifyProductMapping[]
 
   @@index([companyId])
   @@index([category])
@@ -275,6 +278,14 @@ model Company {
   maxSeats     Int       @default(5) // Max team members allowed
   seatsUsed    Int       @default(1) // Current team member count
   pricePerSeat Decimal   @default(5.00) // Additional cost per extra user
+  
+  // Shopify Integration
+  shopifyStoreUrl      String?  // e.g., "mybakery.myshopify.com"
+  shopifyAccessToken   String?  // Encrypted API access token
+  shopifyApiKey        String?  // API Key
+  shopifyWebhookSecret String?  // For verifying webhook authenticity
+  shopifyIsConnected   Boolean  @default(false)
+  shopifyLastSync      DateTime? // Last time orders were synced
 
   ingredients  Ingredient[]
   recipes      Recipe[]
@@ -287,6 +298,10 @@ model Company {
   productionPlans  ProductionPlan[]
   activityLogs ActivityLog[]
   collections  Collection[]
+  wholesaleCustomers WholesaleCustomer[]
+  wholesaleOrders    WholesaleOrder[]
+  shopifyOrders      ShopifyOrder[]
+  shopifyProductMappings ShopifyProductMapping[]
 }
 
 enum MemberRole {
@@ -525,6 +540,9 @@ model ProductionItem {
   recipe      Recipe   @relation(fields: [recipeId], references: [id])
   recipeId    Int
   
+  customer    WholesaleCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId  Int?     // Optional: which wholesale customer this is for
+  
   quantity    Int      // How many batches/units to make
   priority    Int      @default(0) // For ordering
   completed   Boolean  @default(false)
@@ -532,6 +550,7 @@ model ProductionItem {
   
   @@index([planId])
   @@index([recipeId])
+  @@index([customerId])
 }
 
 model ProductionTask {
@@ -551,6 +570,174 @@ model ProductionTask {
   
   @@index([planId])
   @@index([assignedTo])
+}
+
+// Wholesale Customer Management
+model WholesaleCustomer {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  name        String   // Customer/Business name
+  contactName String?  // Contact person name
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  postcode    String?
+  country     String?
+  
+  notes       String?  // Internal notes about this customer
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  productionItems ProductionItem[]
+  orders          WholesaleOrder[]
+  
+  @@index([companyId])
+  @@index([isActive])
+}
+
+// Wholesale Orders (for future enhancement)
+model WholesaleOrder {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  customer    WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  Int
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  orderNumber String?  // Optional order reference
+  deliveryDate DateTime?
+  status      String   @default("pending") // "pending", "confirmed", "in_production", "ready", "delivered", "cancelled"
+  notes       String?
+  
+  items       WholesaleOrderItem[]
+  
+  @@index([customerId])
+  @@index([companyId])
+  @@index([status])
+  @@index([deliveryDate])
+}
+
+model WholesaleOrderItem {
+  id          Int      @id @default(autoincrement())
+  
+  order       WholesaleOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     Int
+  
+  recipe      Recipe   @relation(fields: [recipeId], references: [id])
+  recipeId    Int
+  
+  quantity    Int      // How many units ordered
+  notes       String?  // Special instructions for this item
+  
+  @@index([orderId])
+  @@index([recipeId])
+}
+
+// Shopify Integration
+model ShopifyOrder {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  // Shopify order details
+  shopifyOrderId     String   @unique // Shopify's order ID
+  shopifyOrderNumber String   // Human-readable order number (e.g., "#1001")
+  customerName       String
+  customerEmail      String?
+  customerPhone      String?
+  
+  // Order info
+  totalPrice         Decimal
+  currency           String   @default("GBP")
+  orderDate          DateTime
+  fulfillmentStatus  String?  // "fulfilled", "unfulfilled", "partially_fulfilled"
+  financialStatus    String?  // "paid", "pending", "refunded", etc.
+  
+  // Delivery info
+  shippingAddress    Json?    // Full address object from Shopify
+  deliveryDate       DateTime?
+  
+  // Processing
+  status             String   @default("pending") // "pending", "processing", "completed", "cancelled"
+  processedAt        DateTime?
+  notes              String?
+  
+  // Raw Shopify data for reference
+  shopifyData        Json     // Full order JSON from Shopify
+  
+  items              ShopifyOrderItem[]
+  
+  @@index([companyId])
+  @@index([shopifyOrderId])
+  @@index([status])
+  @@index([orderDate])
+}
+
+model ShopifyOrderItem {
+  id          Int      @id @default(autoincrement())
+  
+  order       ShopifyOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     Int
+  
+  recipe      Recipe?  @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  recipeId    Int?     // Null if not yet mapped to a recipe
+  
+  // Shopify product details
+  shopifyProductId   String
+  shopifyVariantId   String?
+  productTitle       String
+  variantTitle       String?
+  sku                String?
+  quantity           Int
+  price              Decimal
+  
+  // Production tracking
+  addedToProduction  Boolean  @default(false)
+  productionItemId   Int?     // Link to ProductionItem if added
+  
+  @@index([orderId])
+  @@index([recipeId])
+  @@index([shopifyProductId])
+}
+
+model ShopifyProductMapping {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  recipe      Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId    Int
+  
+  // Shopify product details
+  shopifyProductId   String
+  shopifyVariantId   String?
+  productTitle       String
+  variantTitle       String?
+  sku                String?
+  
+  // Mapping configuration
+  quantityMultiplier Decimal  @default(1.0) // If 1 Shopify order = multiple recipe batches
+  isActive           Boolean  @default(true)
+  
+  @@unique([companyId, shopifyProductId, shopifyVariantId])
+  @@index([companyId])
+  @@index([recipeId])
+  @@index([shopifyProductId])
 }
 
 // Notifications System

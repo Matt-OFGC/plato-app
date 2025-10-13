@@ -12,6 +12,9 @@ export default async function AnalyticsPage() {
   if (!user) redirect("/login");
 
   const { companyId } = await getCurrentUserAndCompany();
+  if (!companyId) {
+    redirect("/dashboard");
+  }
 
   // Get recipes with cost data
   const recipes = await prisma.recipe.findMany({
@@ -53,12 +56,39 @@ export default async function AnalyticsPage() {
 
   // Calculate costs for each recipe
   const recipesWithCosts = recipes.map(recipe => {
-    const cost = computeRecipeCost(recipe);
+    // Collect all items from both direct items and section items
+    const allItems = [
+      ...recipe.items.map(item => ({
+        quantity: Number(item.quantity),
+        unit: item.unit,
+        ingredient: {
+          packQuantity: Number(item.ingredient.packQuantity),
+          packUnit: item.ingredient.packUnit,
+          packPrice: Number(item.ingredient.packPrice),
+          densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
+        }
+      })),
+      ...recipe.sections.flatMap(section => 
+        section.items.map(item => ({
+          quantity: Number(item.quantity),
+          unit: item.unit,
+          ingredient: {
+            packQuantity: Number(item.ingredient.packQuantity),
+            packUnit: item.ingredient.packUnit,
+            packPrice: Number(item.ingredient.packPrice),
+            densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
+          }
+        }))
+      )
+    ];
+
+    const cost = computeRecipeCost({ items: allItems });
+    
     return {
       id: recipe.id,
       name: recipe.name,
       category: recipe.categoryRef?.name || recipe.category || "Uncategorized",
-      cost: cost.totalCost.toString(),
+      cost: cost.toString(),
       sellingPrice: recipe.sellingPrice?.toString() || null,
       actualFoodCost: recipe.actualFoodCost?.toString() || null,
       yieldQuantity: recipe.yieldQuantity.toString(),

@@ -42,6 +42,11 @@ export default async function RecipePage({ params }: Props) {
   if (!recipe) {
     redirect("/dashboard/recipes");
   }
+  
+  // Security check: Verify recipe belongs to user's company
+  if (recipe.companyId !== companyId) {
+    redirect("/dashboard/recipes");
+  }
 
   // Get only the data we need for this recipe
   const [ingredients, categories, shelfLifeOptions, storageOptions] = await Promise.all([

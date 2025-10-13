@@ -131,10 +131,16 @@ export async function POST(request: NextRequest) {
     // Note: We don't update Stripe subscription here because the user hasn't accepted yet
     // The subscription will be updated when they accept the invitation
 
+    // Don't expose the full invitation object or token in response
     return NextResponse.json({ 
       success: true,
-      invitation,
-      inviteUrl,
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt,
+      },
+      // Note: inviteUrl is sent via email, not returned in API response for security
     });
   } catch (error) {
     console.error("Invite error:", error);

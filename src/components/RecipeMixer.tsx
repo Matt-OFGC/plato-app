@@ -52,6 +52,7 @@ interface SelectedSection {
   section?: RecipeSection;
   items: RecipeItem[]; // For whole recipe or section items
   title: string;
+  multiplier: number; // How many times to make this section
 }
 
 export function RecipeMixer({ recipes }: RecipeMixerProps) {
@@ -75,6 +76,7 @@ export function RecipeMixer({ recipes }: RecipeMixerProps) {
       section: section || undefined,
       items: wholeRecipe ? recipe.items : section?.items || [],
       title: wholeRecipe ? `${recipeName} (Whole Recipe)` : section?.title || "",
+      multiplier: 1, // Default to 1x
     };
 
     setSelectedSections([...selectedSections, newSection]);
@@ -84,6 +86,12 @@ export function RecipeMixer({ recipes }: RecipeMixerProps) {
     setSelectedSections(selectedSections.filter((_, i) => i !== index));
   }
 
+  function updateMultiplier(index: number, multiplier: number) {
+    const newSections = [...selectedSections];
+    newSections[index] = { ...newSections[index], multiplier };
+    setSelectedSections(newSections);
+  }
+
   // Combine all ingredients from selected sections
   function getCombinedIngredients() {
     const ingredientMap = new Map<number, { ingredient: Ingredient; totalQuantity: Decimal; unit: string; notes: string[] }>();
@@ -91,7 +99,8 @@ export function RecipeMixer({ recipes }: RecipeMixerProps) {
     selectedSections.forEach((section) => {
       section.items.forEach((item) => {
         const existing = ingredientMap.get(item.ingredient.id);
-        const quantity = new Decimal(item.quantity.toString());
+        // Multiply quantity by the section's multiplier
+        const quantity = new Decimal(item.quantity.toString()).times(section.multiplier);
 
         if (existing) {
           // Same ingredient - add quantities (assuming same unit)
@@ -227,20 +236,65 @@ export function RecipeMixer({ recipes }: RecipeMixerProps) {
                   key={index}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+                  className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3"
                 >
-                  <div>
-                    <p className="font-medium text-gray-900">{section.title}</p>
-                    <p className="text-sm text-gray-600">from {section.recipeName}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{section.title}</p>
+                      <p className="text-sm text-gray-600">from {section.recipeName}</p>
+                    </div>
+                    <button
+                      onClick={() => removeSection(index)}
+                      className="text-red-600 hover:text-red-700 ml-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeSection(index)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  
+                  {/* Multiplier Controls */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-gray-700">Multiply by:</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((mult) => (
+                        <button
+                          key={mult}
+                          onClick={() => updateMultiplier(index, mult)}
+                          className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                            section.multiplier === mult
+                              ? "bg-green-600 text-white"
+                              : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          x{mult}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-600">or</span>
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={section.multiplier}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val > 0) {
+                            updateMultiplier(index, val);
+                          }
+                        }}
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                      <span className="text-sm text-gray-600">x</span>
+                    </div>
+                  </div>
+                  
+                  {section.multiplier !== 1 && (
+                    <p className="text-xs text-green-700 font-medium">
+                      Making {section.multiplier}x of this section
+                    </p>
+                  )}
                 </motion.div>
               ))}
             </div>

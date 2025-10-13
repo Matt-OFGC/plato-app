@@ -1,12 +1,9 @@
 import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { DashboardInbox } from "@/components/DashboardInbox";
-import { RecipeIdeasList } from "@/components/RecipeIdeasList";
 import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
-import { computeRecipeCost } from "@/lib/units";
+import { OperationalDashboard } from "@/components/OperationalDashboard";
 import { checkPriceStatus } from "@/lib/priceTracking";
 
 // Force dynamic rendering since this page uses cookies
@@ -20,39 +17,114 @@ export default async function DashboardPage() {
 
   const { companyId, company } = await getCurrentUserAndCompany();
   
-  // OPTIMIZATION: Run all database queries in parallel instead of sequential
-  const [recipes, userPreferences, ingredients] = await Promise.all([
-    // Fetch recipes with pricing data and their ingredients
-    prisma.recipe.findMany({
-      where: companyId ? { companyId } : {},
+  // If no company, show empty state
+  if (!companyId) {
+    return (
+      <DashboardWithOnboarding
+        showOnboarding={!user.hasCompletedOnboarding}
+        userName={user.name || undefined}
+        companyName={company?.name || "Your Company"}
+      >
+        <OperationalDashboard
+          todayProduction={[]}
+          weekProduction={[]}
+          tasks={[]}
+          staleIngredients={[]}
+          userName={user.name || undefined}
+        />
+      </DashboardWithOnboarding>
+    );
+  }
+
+  // Get today's date range
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Get week range (today to 7 days from now)
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  // OPTIMIZATION: Run all database queries in parallel
+  const [todayProductionPlansRaw, weekProductionPlansRaw, tasksRaw, ingredients] = await Promise.all([
+    // Today's production plans
+    prisma.productionPlan.findMany({
+      where: {
+        companyId,
+        startDate: { lte: tomorrow },
+        endDate: { gte: today },
+      },
       include: {
         items: {
           include: {
-            ingredient: {
+            recipe: {
               select: {
                 id: true,
-                packQuantity: true,
-                packUnit: true,
-                packPrice: true,
-                densityGPerMl: true,
-                currency: true,
-              }
-            }
-          }
-        }
+                name: true,
+                yieldQuantity: true,
+                yieldUnit: true,
+              },
+            },
+          },
+          orderBy: { priority: 'desc' },
+        },
       },
-      orderBy: { name: "asc" },
-      take: 50, // Limit to recent recipes for performance
+      orderBy: { startDate: 'asc' },
     }),
-    
-    // Get user's food cost preferences
-    prisma.userPreference.findUnique({
-      where: { userId: user.id },
+
+    // This week's production plans
+    prisma.productionPlan.findMany({
+      where: {
+        companyId,
+        startDate: { lte: weekEnd },
+        endDate: { gte: today },
+      },
+      include: {
+        items: {
+          include: {
+            recipe: {
+              select: {
+                id: true,
+                name: true,
+                yieldQuantity: true,
+                yieldUnit: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { startDate: 'asc' },
+      take: 10,
     }),
-    
+
+    // Tasks for this week
+    prisma.productionTask.findMany({
+      where: {
+        plan: { companyId },
+        OR: [
+          { dueDate: null },
+          { dueDate: { lte: weekEnd } },
+        ],
+      },
+      include: {
+        plan: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: [
+        { completed: 'asc' },
+        { priority: 'desc' },
+        { dueDate: 'asc' },
+      ],
+      take: 20,
+    }),
+
     // Get ingredients for stale price checking
     prisma.ingredient.findMany({
-      where: companyId ? { companyId } : {},
+      where: { companyId },
       select: {
         id: true,
         name: true,
@@ -61,9 +133,58 @@ export default async function DashboardPage() {
       orderBy: { lastPriceUpdate: "asc" },
     }),
   ]);
-  
-  const targetFoodCost = userPreferences?.targetFoodCost ? Number(userPreferences.targetFoodCost) : 25;
-  const maxFoodCost = userPreferences?.maxFoodCost ? Number(userPreferences.maxFoodCost) : 35;
+
+  // Serialize for client components
+  const todayProduction = todayProductionPlansRaw.map(plan => ({
+    ...plan,
+    startDate: plan.startDate.toISOString(),
+    endDate: plan.endDate.toISOString(),
+    items: plan.items.map(item => ({
+      ...item,
+      recipe: {
+        ...item.recipe,
+        yieldQuantity: item.recipe.yieldQuantity.toString(),
+      },
+    })),
+  }));
+
+  const weekProduction = weekProductionPlansRaw.map(plan => ({
+    ...plan,
+    startDate: plan.startDate.toISOString(),
+    endDate: plan.endDate.toISOString(),
+    items: plan.items.map(item => ({
+      ...item,
+      recipe: {
+        ...item.recipe,
+        yieldQuantity: item.recipe.yieldQuantity.toString(),
+      },
+    })),
+  }));
+
+  // Get team member names for tasks
+  const tasks = await Promise.all(
+    tasksRaw.map(async (task) => {
+      let assignedToName = null;
+      if (task.assignedTo) {
+        const membership = await prisma.membership.findUnique({
+          where: { id: task.assignedTo },
+          include: {
+            user: {
+              select: { name: true },
+            },
+          },
+        });
+        assignedToName = membership?.user.name || null;
+      }
+
+      return {
+        ...task,
+        dueDate: task.dueDate?.toISOString() || null,
+        planName: task.plan.name,
+        assignedToName,
+      };
+    })
+  );
 
   // Check for stale prices
   const staleIngredients = ingredients
@@ -74,158 +195,19 @@ export default async function DashboardPage() {
     }))
     .filter(ing => ing.priceStatus.status !== 'current');
 
-  // Calculate costs and format for inbox
-  const recipesWithCosts = recipes.map(recipe => {
-    const cost = computeRecipeCost({ 
-      items: recipe.items.map(item => ({
-        quantity: Number(item.quantity),
-        unit: item.unit,
-        ingredient: {
-          packQuantity: Number(item.ingredient.packQuantity),
-          packUnit: item.ingredient.packUnit,
-          packPrice: Number(item.ingredient.packPrice),
-          densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
-        }
-      }))
-    });
-    
-    return {
-      id: recipe.id,
-      name: recipe.name,
-      cost,
-      sellingPrice: recipe.sellingPrice ? Number(recipe.sellingPrice) : null,
-      targetFoodCost: null, // Use global setting
-      maxFoodCost: null,     // Use global setting
-      currency: recipe.items[0]?.ingredient.currency || "GBP",
-    };
-  });
-
   return (
     <DashboardWithOnboarding
       showOnboarding={!user.hasCompletedOnboarding}
       userName={user.name || undefined}
       companyName={company?.name || "Your Company"}
     >
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Welcome back{user.name ? `, ${user.name}` : ""}! 👋
-          </h1>
-          <p className="text-xl text-gray-600">
-            Ready to manage your kitchen? Here's your command center.
-          </p>
-        </div>
-
-      {/* Dashboard Layout - 2 Columns */}
-      <div className="grid gap-8 lg:grid-cols-3 mb-12">
-        {/* Left Column - Inbox */}
-        <div className="lg:col-span-2">
-          <DashboardInbox 
-            recipes={recipesWithCosts}
-            staleIngredients={staleIngredients}
-            targetFoodCost={targetFoodCost}
-            maxFoodCost={maxFoodCost}
-          />
-        </div>
-
-        {/* Right Column - Recipe Ideas */}
-        <div className="lg:col-span-1">
-          <RecipeIdeasList />
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
-        <Link href="/dashboard/ingredients/new" className="group">
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-indigo-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Add Ingredient</h3>
-            <p className="text-gray-600">Track a new ingredient purchase</p>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/recipes/new" className="group">
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-amber-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Create Recipe</h3>
-            <p className="text-gray-600">Build a new recipe with costing</p>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/team" className="group">
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-emerald-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Team Management</h3>
-            <p className="text-gray-600">Manage team members and permissions</p>
-          </div>
-        </Link>
-      </div>
-
-      {/* Main Navigation Cards */}
-      <div className="grid gap-8 md:grid-cols-3">
-        <Link href="/dashboard/account" className="group">
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-gray-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Settings</h3>
-            <p className="text-gray-600">Manage your account and preferences</p>
-          </div>
-        </Link>
-        <Link href="/dashboard/ingredients" className="group">
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-indigo-500 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <svg className="w-6 h-6 text-gray-400 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-semibold text-gray-900 mb-3">Ingredients</h3>
-            <p className="text-gray-600 leading-relaxed">
-              View and manage all your ingredients. Track costs, suppliers, and inventory.
-            </p>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/recipes" className="group">
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 hover:border-amber-500 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <svg className="w-6 h-6 text-gray-400 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-semibold text-gray-900 mb-3">Recipes</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Browse your recipe collection. Create, edit, and calculate costs automatically.
-            </p>
-          </div>
-        </Link>
-      </div>
-    </div>
+      <OperationalDashboard
+        todayProduction={todayProduction}
+        weekProduction={weekProduction}
+        tasks={tasks}
+        staleIngredients={staleIngredients}
+        userName={user.name || undefined}
+      />
     </DashboardWithOnboarding>
   );
 }
