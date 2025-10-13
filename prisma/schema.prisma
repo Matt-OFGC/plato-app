@@ -137,6 +137,8 @@ model Recipe {
   subRecipes     RecipeSubRecipe[]
   parentRecipes  RecipeSubRecipe[] @relation("ParentRecipe")
   productionItems ProductionItem[]
+  collections    RecipeCollection[]
+  versions       RecipeVersion[]
 
   @@index([companyId])
   @@index([category])
@@ -220,6 +222,8 @@ model User {
 
   memberships  Membership[]
   preferences  UserPreference?
+  notifications Notification[]
+  activityLogs ActivityLog[]
   
   // Subscription management
   subscription  Subscription?
@@ -281,6 +285,8 @@ model Company {
   suppliers        Supplier[]
   invitations  TeamInvitation[]
   productionPlans  ProductionPlan[]
+  activityLogs ActivityLog[]
+  collections  Collection[]
 }
 
 enum MemberRole {
@@ -545,4 +551,119 @@ model ProductionTask {
   
   @@index([planId])
   @@index([assignedTo])
+}
+
+// Notifications System
+model Notification {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  
+  type      String   // "price_alert", "team_invite", "mention", "task_assigned", "subscription"
+  title     String
+  message   String
+  link      String?  // Optional link to relevant page
+  
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  
+  // Optional metadata
+  metadata  Json?
+  
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+// Activity/Audit Log
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId Int
+  
+  action    String   // "created", "updated", "deleted", "viewed"
+  entity    String   // "Recipe", "Ingredient", "User", etc.
+  entityId  Int?     // ID of the affected entity
+  entityName String? // Name for easier reading
+  
+  details   Json?    // Additional context (old/new values, etc.)
+  ipAddress String?
+  userAgent String?
+  
+  @@index([companyId])
+  @@index([userId])
+  @@index([companyId, createdAt])
+  @@index([entity, entityId])
+}
+
+// Recipe Collections / Tags
+model Collection {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  name        String
+  description String?
+  color       String?  // Hex color for UI
+  icon        String?  // Optional emoji or icon
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  createdBy   Int      // User ID who created
+  isPublic    Boolean  @default(false) // For public business profile
+  
+  recipes     RecipeCollection[]
+  
+  @@unique([name, companyId])
+  @@index([companyId])
+}
+
+model RecipeCollection {
+  id           Int        @id @default(autoincrement())
+  createdAt    DateTime   @default(now())
+  
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId     Int
+  
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  collectionId Int
+  
+  order        Int        @default(0) // For custom ordering within collection
+  
+  @@unique([recipeId, collectionId])
+  @@index([collectionId])
+  @@index([recipeId])
+}
+
+// Recipe Version History
+model RecipeVersion {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  recipe      Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId    Int
+  
+  version     Int      // Version number
+  snapshot    Json     // Complete recipe data snapshot
+  
+  changedBy   Int      // User ID who made the change
+  changeNote  String?  // Optional note about what changed
+  
+  // Cost tracking at this version
+  totalCost   Decimal?
+  sellingPrice Decimal?
+  foodCostPct  Decimal?
+  
+  @@index([recipeId])
+  @@index([recipeId, version])
+  @@unique([recipeId, version])
 }

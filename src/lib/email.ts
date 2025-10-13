@@ -3,7 +3,8 @@ import { Resend } from "resend";
 import { WelcomeEmail } from "@/emails/WelcomeEmail";
 import { TeamInviteEmail } from "@/emails/TeamInviteEmail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Use a dummy key during build, real key at runtime
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build");
 
 const FROM_EMAIL = process.env.EMAIL_FROM || "Plato <onboarding@plato.app>";
 
@@ -11,8 +12,13 @@ export async function sendWelcomeEmail(
   to: string,
   data: { name?: string; companyName: string }
 ) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("⚠️ RESEND_API_KEY not configured, skipping welcome email");
+    return;
+  }
+
   try {
-    const emailHtml = render(WelcomeEmail(data));
+    const emailHtml = await render(WelcomeEmail(data));
 
     const result = await resend.emails.send({
       from: FROM_EMAIL,
@@ -38,8 +44,13 @@ export async function sendTeamInviteEmail(
     role: string;
   }
 ) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("⚠️ RESEND_API_KEY not configured, skipping team invite email");
+    return;
+  }
+
   try {
-    const emailHtml = render(TeamInviteEmail(data));
+    const emailHtml = await render(TeamInviteEmail(data));
 
     const result = await resend.emails.send({
       from: FROM_EMAIL,
@@ -64,6 +75,11 @@ export async function sendSubscriptionEmail(
     tier: string;
   }
 ) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("⚠️ RESEND_API_KEY not configured, skipping subscription email");
+    return;
+  }
+
   try {
     let subject = "";
     let message = "";

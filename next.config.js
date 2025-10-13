@@ -38,8 +38,6 @@ const nextConfig = {
   },
   // Enable compression
   compress: true,
-  // Optimize production bundle
-  swcMinify: true,
   // Reduce bundle size by removing unused code
   modularizeImports: {
     '@heroicons/react/24/outline': {
