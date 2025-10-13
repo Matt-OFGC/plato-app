@@ -1,21 +1,21 @@
-<svg width="140" height="40" viewBox="0 0 140 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Organic blob-style letters in sage green -->
+<svg width="160" height="45" viewBox="0 0 160 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Organic, blob-style "plato." logo in sage green -->
   
-  <!-- p -->
-  <path d="M8 12c0-3 2-5 5-5h6c3 0 5 2 5 5v10c0 3-2 5-5 5h-3v6h-8V12zm5 0v10h3c2 0 3-1 3-3v-4c0-2-1-3-3-3h-3z" fill="#6B7C6B" stroke="#6B7C6B" stroke-width="0.5"/>
+  <!-- p - organic blob shape -->
+  <path d="M8 15c0-4 3-7 7-7h8c4 0 7 3 7 7v12c0 4-3 7-7 7h-4v8h-8V15zm7 0v12h4c2 0 4-2 4-4v-4c0-2-2-4-4-4h-4V15z" fill="#6B7C6B"/>
   
-  <!-- l -->
-  <path d="M30 8h8v24h-8V8z" fill="#6B7C6B" stroke="#6B7C6B" stroke-width="0.5"/>
+  <!-- l - organic blob shape -->
+  <path d="M38 10h10v28h-10V10z" fill="#6B7C6B"/>
   
-  <!-- a -->
-  <path d="M46 12c0-3 2-5 5-5h6c3 0 5 2 5 5v10c0 3-2 5-5 5h-3v6h-8V12zm5 0v10h3c2 0 3-1 3-3v-4c0-2-1-3-3-3h-3z" fill="#6B7C6B" stroke="#6B7C6B" stroke-width="0.5"/>
+  <!-- a - organic blob shape -->
+  <path d="M56 15c0-4 3-7 7-7h8c4 0 7 3 7 7v12c0 4-3 7-7 7h-4v8h-8V15zm7 0v12h4c2 0 4-2 4-4v-4c0-2-2-4-4-4h-4V15z" fill="#6B7C6B"/>
   
-  <!-- t -->
-  <path d="M68 8h10v6h-6v18h-8V14h-6V8z" fill="#6B7C6B" stroke="#6B7C6B" stroke-width="0.5"/>
+  <!-- t - organic blob shape -->
+  <path d="M86 10h12v8h-8v20h-8V18h-8V10z" fill="#6B7C6C"/>
   
-  <!-- o -->
-  <path d="M90 12c0-3 2-5 5-5h6c3 0 5 2 5 5v10c0 3-2 5-5 5h-6c-3 0-5-2-5-5V12zm5 0v10h6V12h-6z" fill="#6B7C6B" stroke="#6B7C6B" stroke-width="0.5"/>
+  <!-- o - organic blob shape -->
+  <path d="M110 15c0-4 3-7 7-7h8c4 0 7 3 7 7v12c0 4-3 7-7 7h-8c-4 0-7-3-7-7V15zm7 0v12h8V15h-8z" fill="#6B7C6B"/>
   
-  <!-- period (organic dot) -->
-  <ellipse cx="115" cy="28" rx="4" ry="3.5" fill="#6B7C6B"/>
+  <!-- period - organic dot -->
+  <ellipse cx="145" cy="32" rx="5" ry="4" fill="#6B7C6B"/>
 </svg>
