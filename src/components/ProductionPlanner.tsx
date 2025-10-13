@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Recipe {
   id: number;
   name: string;
-  yieldQuantity: any;
+  yieldQuantity: string;
   yieldUnit: string;
   category: string | null;
   categoryId: number | null;
@@ -22,7 +22,7 @@ interface ProductionItem {
   recipe: {
     id: number;
     name: string;
-    yieldQuantity: any;
+    yieldQuantity: string;
     yieldUnit: string;
   };
 }
@@ -76,6 +76,8 @@ export function ProductionPlanner({
   const [searchTerm, setSearchTerm] = useState("");
   const [plans, setPlans] = useState(initialPlans);
   const [creating, setCreating] = useState(false);
+  const [shoppingList, setShoppingList] = useState<any>(null);
+  const [showShoppingList, setShowShoppingList] = useState(false);
 
   const filteredRecipes = recipes.filter(recipe =>
     recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -153,6 +155,22 @@ export function ProductionPlanner({
       }
     } catch (error) {
       console.error("Failed to toggle item:", error);
+    }
+  }
+
+  async function generateShoppingList(planId: number) {
+    try {
+      const res = await fetch(`/api/production/shopping-list/${planId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setShoppingList(data);
+        setShowShoppingList(true);
+      } else {
+        alert("Failed to generate shopping list");
+      }
+    } catch (error) {
+      console.error("Failed to generate shopping list:", error);
+      alert("Network error");
     }
   }
 
@@ -256,7 +274,7 @@ export function ProductionPlanner({
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{recipe.name}</h4>
                           <p className="text-sm text-gray-500">
-                            Yields: {recipe.yieldQuantity.toString()} {recipe.yieldUnit}
+                            Yields: {recipe.yieldQuantity} {recipe.yieldUnit}
                             {recipe.category && ` • ${recipe.category}`}
                           </p>
                         </div>
@@ -312,14 +330,25 @@ export function ProductionPlanner({
           plans.map((plan) => (
             <div key={plan.id} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-start justify-between mb-4">
-                <div>
+                <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
                   <p className="text-sm text-gray-600">
                     {format(new Date(plan.startDate), "MMM d, yyyy")} - {format(new Date(plan.endDate), "MMM d, yyyy")}
                   </p>
                 </div>
-                <div className="text-sm text-gray-500">
-                  {plan.items.filter(i => i.completed).length} / {plan.items.length} completed
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => generateShoppingList(plan.id)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Shopping List
+                  </button>
+                  <div className="text-sm text-gray-500">
+                    {plan.items.filter(i => i.completed).length} / {plan.items.length}
+                  </div>
                 </div>
               </div>
 
@@ -350,6 +379,95 @@ export function ProductionPlanner({
           ))
         )}
       </div>
+
+      {/* Shopping List Modal */}
+      <AnimatePresence>
+        {showShoppingList && shoppingList && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowShoppingList(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b bg-blue-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Shopping List</h2>
+                    <p className="text-gray-600 mt-1">{shoppingList.plan.name}</p>
+                  </div>
+                  <button
+                    onClick={() => setShowShoppingList(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <div className="space-y-3">
+                  {shoppingList.shoppingList.map((item: any, index: number) => (
+                    <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{item.ingredient.name}</h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Need: <span className="font-medium">{parseFloat(item.totalQuantity).toFixed(2)} {item.unit}</span>
+                          </p>
+                          <p className="text-sm text-blue-600 mt-1">
+                            Order: <span className="font-medium">{item.packsNeeded} pack{item.packsNeeded !== 1 ? 's' : ''}</span>
+                            {' '}({item.ingredient.packQuantity} {item.ingredient.packUnit} each)
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Used in: {item.recipes.join(", ")}
+                          </p>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="text-lg font-bold text-gray-900">
+                            {item.ingredient.currency === "GBP" ? "£" : "$"}
+                            {(parseFloat(item.ingredient.packPrice) * item.packsNeeded).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {item.ingredient.currency}{item.ingredient.packPrice}/pack
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print
+                </button>
+                <button
+                  onClick={() => setShowShoppingList(false)}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

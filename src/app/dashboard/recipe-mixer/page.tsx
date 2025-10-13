@@ -13,7 +13,7 @@ export default async function RecipeMixerPage() {
   const { companyId } = await getCurrentUserAndCompany();
 
   // Get all recipes with sections for the company
-  const recipes = await prisma.recipe.findMany({
+  const recipesRaw = await prisma.recipe.findMany({
     where: { companyId },
     include: {
       sections: {
@@ -54,6 +54,39 @@ export default async function RecipeMixerPage() {
     },
     orderBy: { name: "asc" },
   });
+
+  // Serialize Decimal objects to strings for client components
+  const recipes = recipesRaw.map(recipe => ({
+    ...recipe,
+    yieldQuantity: recipe.yieldQuantity.toString(),
+    portionSize: recipe.portionSize?.toString() || null,
+    sellingPrice: recipe.sellingPrice?.toString() || null,
+    suggestedPrice: recipe.suggestedPrice?.toString() || null,
+    actualFoodCost: recipe.actualFoodCost?.toString() || null,
+    sections: recipe.sections.map(section => ({
+      ...section,
+      items: section.items.map(item => ({
+        ...item,
+        quantity: item.quantity.toString(),
+        ingredient: {
+          ...item.ingredient,
+          packQuantity: item.ingredient.packQuantity.toString(),
+          packPrice: item.ingredient.packPrice.toString(),
+          densityGPerMl: item.ingredient.densityGPerMl?.toString() || null,
+        },
+      })),
+    })),
+    items: recipe.items.map(item => ({
+      ...item,
+      quantity: item.quantity.toString(),
+      ingredient: {
+        ...item.ingredient,
+        packQuantity: item.ingredient.packQuantity.toString(),
+        packPrice: item.ingredient.packPrice.toString(),
+        densityGPerMl: item.ingredient.densityGPerMl?.toString() || null,
+      },
+    })),
+  }));
 
   return (
     <div>

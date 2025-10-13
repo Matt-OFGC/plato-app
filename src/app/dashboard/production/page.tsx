@@ -13,7 +13,7 @@ export default async function ProductionPage() {
   const { companyId } = await getCurrentUserAndCompany();
 
   // Get all recipes for the company
-  const recipes = await prisma.recipe.findMany({
+  const recipesRaw = await prisma.recipe.findMany({
     where: { companyId },
     select: {
       id: true,
@@ -27,8 +27,14 @@ export default async function ProductionPage() {
     orderBy: { name: "asc" },
   });
 
+  // Serialize Decimal objects to strings for client components
+  const recipes = recipesRaw.map(recipe => ({
+    ...recipe,
+    yieldQuantity: recipe.yieldQuantity.toString(),
+  }));
+
   // Get current production plans
-  const productionPlans = await prisma.productionPlan.findMany({
+  const productionPlansRaw = await prisma.productionPlan.findMany({
     where: { companyId },
     include: {
       items: {
@@ -48,6 +54,18 @@ export default async function ProductionPage() {
     orderBy: { startDate: "desc" },
     take: 10,
   });
+
+  // Serialize Decimal objects to strings for client components
+  const productionPlans = productionPlansRaw.map(plan => ({
+    ...plan,
+    items: plan.items.map(item => ({
+      ...item,
+      recipe: {
+        ...item.recipe,
+        yieldQuantity: item.recipe.yieldQuantity.toString(),
+      },
+    })),
+  }));
 
   // Get team members for task assignment
   const teamMembers = await prisma.membership.findMany({

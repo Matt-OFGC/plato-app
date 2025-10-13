@@ -7,16 +7,16 @@ import Decimal from "decimal.js";
 interface Ingredient {
   id: number;
   name: string;
-  packQuantity: any;
+  packQuantity: string;
   packUnit: string;
-  packPrice: any;
-  densityGPerMl: any | null;
+  packPrice: string;
+  densityGPerMl: string | null;
   currency: string;
 }
 
 interface RecipeItem {
   id: number;
-  quantity: any;
+  quantity: string;
   unit: string;
   note: string | null;
   ingredient: Ingredient;
@@ -36,7 +36,7 @@ interface RecipeSection {
 interface Recipe {
   id: number;
   name: string;
-  yieldQuantity: any;
+  yieldQuantity: string;
   yieldUnit: string;
   sections: RecipeSection[];
   items: RecipeItem[]; // For recipes without sections

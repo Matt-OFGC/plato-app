@@ -186,12 +186,24 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
 
   async function handleComplete() {
     try {
-      await fetch("/api/user/complete-onboarding", { method: "POST" });
-      router.push("/dashboard");
-      router.refresh();
+      const res = await fetch("/api/user/complete-onboarding", { 
+        method: "POST",
+        credentials: "include",
+      });
+      
+      if (res.ok) {
+        console.log("✅ Onboarding completed successfully");
+        // Force a hard refresh to get updated user data
+        window.location.href = "/dashboard";
+      } else {
+        console.error("Failed to complete onboarding");
+        router.push("/dashboard");
+        router.refresh();
+      }
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
       router.push("/dashboard");
+      router.refresh();
     }
   }
 
