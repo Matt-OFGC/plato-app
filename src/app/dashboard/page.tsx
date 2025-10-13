@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { DashboardInbox } from "@/components/DashboardInbox";
 import { RecipeIdeasList } from "@/components/RecipeIdeasList";
+import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
 import { computeRecipeCost } from "@/lib/units";
 import { checkPriceStatus } from "@/lib/priceTracking";
 
@@ -17,7 +18,7 @@ export default async function DashboardPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard");
 
-  const { companyId } = await getCurrentUserAndCompany();
+  const { companyId, company } = await getCurrentUserAndCompany();
   
   // OPTIMIZATION: Run all database queries in parallel instead of sequential
   const [recipes, userPreferences, ingredients] = await Promise.all([
@@ -100,15 +101,20 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">
-          Welcome back{user.name ? `, ${user.name}` : ""}! 👋
-        </h1>
-        <p className="text-xl text-gray-600">
-          Ready to manage your kitchen? Here's your command center.
-        </p>
-      </div>
+    <DashboardWithOnboarding
+      showOnboarding={!user.hasCompletedOnboarding}
+      userName={user.name || undefined}
+      companyName={company?.name || "Your Company"}
+    >
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+            Welcome back{user.name ? `, ${user.name}` : ""}! 👋
+          </h1>
+          <p className="text-xl text-gray-600">
+            Ready to manage your kitchen? Here's your command center.
+          </p>
+        </div>
 
       {/* Dashboard Layout - 2 Columns */}
       <div className="grid gap-8 lg:grid-cols-3 mb-12">
@@ -220,6 +226,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
     </div>
+    </DashboardWithOnboarding>
   );
 }
 

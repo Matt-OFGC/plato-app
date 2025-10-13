@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
 import { MemberRole } from "@/generated/prisma";
 import { updateSubscriptionSeats } from "@/lib/stripe";
+import { sendTeamInviteEmail } from "@/lib/email";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -106,9 +107,26 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Send invitation email
+    // Get inviter info for email
+    const inviter = await prisma.user.findUnique({
+      where: { id: session.id },
+    });
+
     const inviteUrl = `${request.nextUrl.origin}/invite/${token}`;
-    console.log(`Invitation URL: ${inviteUrl}`);
+    
+    // Send invitation email
+    try {
+      await sendTeamInviteEmail(email, {
+        inviterName: inviter?.name || inviter?.email || "Someone",
+        companyName: company.name,
+        inviteLink: inviteUrl,
+        role,
+      });
+      console.log(`✅ Invitation email sent to ${email}`);
+    } catch (emailError) {
+      console.error("❌ Failed to send invitation email:", emailError);
+      // Don't fail the invitation if email fails - they still have the URL
+    }
 
     // Note: We don't update Stripe subscription here because the user hasn't accepted yet
     // The subscription will be updated when they accept the invitation
@@ -116,7 +134,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       invitation,
-      inviteUrl, // For now, return the URL (later send via email)
+      inviteUrl,
     });
   } catch (error) {
     console.error("Invite error:", error);

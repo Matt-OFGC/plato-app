@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/Sidebar";
+import { CommandBarProvider } from "@/components/CommandBarProvider";
 
 export const metadata: Metadata = {
   title: "Dashboard - Plato",
@@ -12,17 +13,19 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar Navigation */}
-      <Sidebar />
-      
-      {/* Main Content Area */}
-      <main className="flex-1 lg:ml-64 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 py-8 lg:px-8">
-          {children}
-        </div>
-      </main>
-    </div>
+    <CommandBarProvider>
+      <div className="flex min-h-screen">
+        {/* Sidebar Navigation */}
+        <Sidebar />
+        
+        {/* Main Content Area */}
+        <main className="flex-1 lg:ml-64 transition-all duration-300">
+          <div className="max-w-7xl mx-auto px-4 py-8 lg:px-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </CommandBarProvider>
   );
 }
 

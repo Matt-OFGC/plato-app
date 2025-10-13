@@ -1,828 +1,434 @@
-# 🎯 Plato Feature Roadmap
-**Focus:** Best-in-class Recipe & Ingredient Management
+# Plato Feature Roadmap
+## Inspired by Zero to Shipped Analysis
+
+Based on analysis of [Zero to Shipped](https://www.zerotoshipped.com/), here are recommended features to implement:
 
 ---
 
-## ✅ What You Already Have (Excellent Foundation)
+## ✅ Already Implemented (Your Current Features)
 
-**Recipe Management:**
-- ✅ Recipe sections & methods
-- ✅ Sub-recipes (recipes within recipes)
-- ✅ Automatic cost calculation
-- ✅ Yield management
-- ✅ Recipe images
-- ✅ Bake time/temp tracking
-- ✅ Categories, shelf life, storage options
-
-**Ingredient Management:**
-- ✅ Supplier relationships
-- ✅ Multi-unit support (weight, volume, each)
-- ✅ Automatic unit conversion
-- ✅ Density tracking (g/ml)
-- ✅ Allergen tracking
-- ✅ Pack pricing
-
-**Team & Business:**
-- ✅ Multi-user teams with roles
-- ✅ Subscription management
-- ✅ Team billing with seat-based pricing
+### Core Platform
+- ✅ **Authentication** - JWT-based auth system
+- ✅ **Admin Panel** - Secure system admin dashboard  
+- ✅ **Role-based Access** - OWNER, ADMIN, EDITOR, VIEWER roles
+- ✅ **Multi-tenant** - Company/workspace support
+- ✅ **User Profiles** - Basic user management
+- ✅ **Databases** - Prisma + PostgreSQL
+- ✅ **Payments** - Stripe integration for subscriptions
+- ✅ **Server Rendering** - Next.js 15 with Turbopack
+- ✅ **Type Safety** - Full TypeScript implementation
+- ✅ **Responsive Design** - Mobile-friendly layouts
+- ✅ **Image Uploads** - File management system
 
 ---
 
-## 🚀 HIGH-IMPACT Features (Should Add Soon)
+## 🚀 High Priority Features to Add
 
-These are the "no-brainer" features that will make users love you and solve real daily pain points.
+### 1. **User Onboarding Wizard** 
+**Why:** Reduces friction for new users, increases activation rate
+
+**Implementation:**
+- Multi-step guided tour for first-time users
+- Business profile setup (name, type, country)
+- Initial ingredient/recipe creation walkthrough
+- Team invitation prompts
+- Preference configuration
+
+**Files to Create:**
+- `src/components/OnboardingWizard.tsx`
+- `src/app/onboarding/page.tsx`
+- Add `hasCompletedOnboarding` flag to User model
 
 ---
 
-### 1. **📊 Price Change Alerts & History**
-**Problem:** Ingredient prices change constantly. Users don't know which recipes are now unprofitable.
+### 2. **Command Bar / Quick Search** ⌘K
+**Why:** Power users can navigate faster, improves UX
 
-**Solution:**
-```
-When user updates ingredient price:
-- Show "Price changed by 23% - This affects 12 recipes"
-- Highlight recipes that are now below target margin
-- Track price history with dates
-- "Undo" button if it was a mistake
-```
+**Implementation:**
+- Global keyboard shortcut (Cmd/Ctrl + K)
+- Quick search for recipes, ingredients, companies
+- Quick actions (create recipe, add ingredient)
+- Navigation shortcuts
 
-**User Value:** 🔥🔥🔥🔥🔥  
-**Implementation:** Medium (2-3 days)
+**Libraries to Add:**
+- `cmdk` or `kbar` for command palette
+- Implement global keyboard listener
 
-**Database Addition:**
+**Files to Create:**
+- `src/components/CommandBar.tsx`
+- `src/hooks/useCommandBar.ts`
+
+---
+
+### 3. **Email System** 📧
+**Why:** User notifications, team invitations, subscription updates
+
+**Implementation:**
+- Welcome emails for new users
+- Team invitation emails (already have DB schema)
+- Subscription renewal reminders
+- Password reset emails
+- Weekly/monthly recipe summaries
+
+**Libraries to Add:**
+- `@react-email/components` for templates
+- `resend` or `sendgrid` for sending
+- `nodemailer` as alternative
+
+**Files to Create:**
+- `src/emails/` directory with templates
+- `src/lib/email.ts` for sending logic
+- Email templates: Welcome, Invite, Receipt, Reset
+
+---
+
+### 4. **Activity Feed / Audit Log**
+**Why:** Team transparency, compliance, debugging
+
+**Implementation:**
+- Track user actions (recipe created, ingredient updated)
+- Company-level activity feed
+- Filter by user, action type, date
+- Export capabilities for admins
+
+**Database Changes:**
 ```prisma
-model IngredientPriceHistory {
-  id            Int        @id @default(autoincrement())
-  createdAt     DateTime   @default(now())
-  
-  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
-  ingredientId  Int
-  
-  oldPrice      Decimal
-  newPrice      Decimal
-  packQuantity  Decimal
-  packUnit      BaseUnit
-  
-  changedBy     Int        // User ID
-  reason        String?    // "Supplier increase", "Sale", etc.
-  
-  @@index([ingredientId, createdAt])
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  companyId Int
+  action    String   // "created_recipe", "updated_ingredient"
+  entity    String   // "Recipe", "Ingredient"
+  entityId  Int
+  metadata  Json?    // Additional context
+  createdAt DateTime @default(now())
 }
 ```
 
-**UI Mock:**
-```
-┌─────────────────────────────────────┐
-│ 🔔 Price Alert                      │
-│                                     │
-│ Flour (Strong White) changed:       │
-│ £12.50 → £15.20 (+21.6%)           │
-│                                     │
-│ This affects 8 recipes:             │
-│ • Sourdough Loaf (margin: 42% → 38%)│
-│ • White Bloomer (margin: 38% → 34%) │
-│ • Ciabatta (margin: 40% → 36%)     │
-│                                     │
-│ [View All Recipes]  [Update Prices] │
-└─────────────────────────────────────┘
-```
+---
+
+### 5. **Advanced Search & Filters**
+**Why:** As data grows, users need better discovery
+
+**Implementation:**
+- Full-text search for recipes/ingredients
+- Filter by multiple criteria (category, allergens, cost range)
+- Save search filters as presets
+- Recent searches history
+
+**Consider:**
+- Algolia or Meilisearch for advanced search
+- Or PostgreSQL full-text search
 
 ---
 
-### 2. **🔄 Bulk Price Update**
-**Problem:** Supplier sends new price list with 50 items. Updating one-by-one takes forever.
+### 6. **Recipe Versioning / History**
+**Why:** Track changes, revert mistakes, compare costs over time
 
-**Solution:**
-```
-CSV/Excel Import for Price Updates:
-- Upload supplier price list
-- Auto-match by ingredient name
-- Review changes before applying
-- Apply all or select specific items
-- Track who made the bulk update
-```
+**Implementation:**
+- Save recipe snapshots on significant changes
+- Price history tracking (already have field)
+- Diff view to compare versions
+- Revert to previous version
 
-**User Value:** 🔥🔥🔥🔥🔥  
-**Implementation:** Medium (3-4 days)
-
-**UI Flow:**
-```
-Step 1: Upload CSV
-Step 2: Match Columns
-  ┌────────────────────────┐
-  │ CSV Column → Plato     │
-  │ "Product"  → Name      │
-  │ "Price"    → Pack Price│
-  │ "Size"     → Pack Qty  │
-  └────────────────────────┘
-
-Step 3: Review Changes (show side-by-side)
-  Ingredient       Current    New      Change
-  ─────────────────────────────────────────
-  Butter           £4.20   → £4.95    +17.9%
-  Flour (Strong)   £12.50  → £15.20   +21.6%
-  Sugar (Caster)   £1.80   → £1.85    +2.8%
-
-Step 4: Confirm & Apply
-  [✓] Update 23 ingredients
-  [ ] Send email notification to team
-  [ ] Flag recipes with margin drops >5%
-```
-
----
-
-### 3. **📱 Quick Recipe Cost Check (Mobile-Optimized)**
-**Problem:** User is at supplier, sees an ingredient on sale, wants to know if they should buy it.
-
-**Solution:**
-```
-Simple mobile view:
-"What if this ingredient cost £X?"
-
-Shows:
-- Current recipe costs
-- New recipe costs
-- Potential savings
-- Which recipes use it most
-```
-
-**User Value:** 🔥🔥🔥🔥  
-**Implementation:** Easy (1-2 days)
-
-**UI Mock:**
-```
-┌─────────────────────────┐
-│ Quick Cost Check        │
-│                         │
-│ Ingredient: Butter      │
-│ Current: £4.20 / 500g   │
-│                         │
-│ New Price: £3.50 / 500g │
-│           (17% cheaper) │
-│                         │
-│ Impact:                 │
-│ ━━━━━━━━━━━━━━━━━━━━━━ │
-│ Croissants              │
-│ £0.45 → £0.39 (-13%)   │
-│                         │
-│ Shortbread              │
-│ £0.32 → £0.28 (-12%)   │
-│                         │
-│ Potential Monthly Save: │
-│ £87.50                  │
-│                         │
-│ [Update Price Now]      │
-└─────────────────────────┘
-```
-
----
-
-### 4. **📦 Ingredient Low Stock Warnings**
-**Problem:** Users run out of ingredients before ordering, disrupting production.
-
-**Solution:**
-```
-Add to Ingredient model:
-- currentStockLevel (optional)
-- minStockLevel (alert threshold)
-- reorderQuantity (suggested order amount)
-- lastOrderedDate
-
-Features:
-- Weekly production planner
-- "Will I have enough?" calculator
-- Automatic reorder suggestions
-```
-
-**User Value:** 🔥🔥🔥🔥  
-**Implementation:** Medium (2-3 days)
-
-**Database Addition:**
+**Database Changes:**
 ```prisma
-model Ingredient {
-  // ... existing fields
-  
-  // Stock management (optional, but powerful)
-  currentStock      Decimal?  // Current amount in inventory
-  minStockLevel     Decimal?  // Alert when below this
-  maxStockLevel     Decimal?  // For warehouse management
-  reorderPoint      Decimal?  // Auto-suggest reorder
-  reorderQuantity   Decimal?  // How much to order
-  stockUnit         BaseUnit? // Unit for stock tracking
-  lastOrderedDate   DateTime?
-  lastStockUpdate   DateTime?
-  
-  stockHistory      StockTransaction[]
-}
-
-model StockTransaction {
-  id            Int        @id @default(autoincrement())
-  createdAt     DateTime   @default(now())
-  
-  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
-  ingredientId  Int
-  
-  type          String     // "purchase", "usage", "waste", "adjustment"
-  quantity      Decimal    // Positive or negative
-  unit          BaseUnit
-  
-  reason        String?
-  reference     String?    // Recipe ID or PO number
-  updatedBy     Int        // User ID
-  
-  @@index([ingredientId, createdAt])
-}
-```
-
-**UI Mock:**
-```
-┌─────────────────────────────────────┐
-│ 🚨 Low Stock Alerts (3)             │
-│                                     │
-│ Flour (Strong White)                │
-│ Current: 5kg | Min: 10kg            │
-│ Used in 12 recipes this week        │
-│ [Order 25kg from Premium Flour Co.] │
-│                                     │
-│ Butter (Salted)                     │
-│ Current: 2kg | Min: 5kg             │
-│ Next delivery: Monday               │
-│ [Skip - Delivery coming]            │
-│                                     │
-│ Sugar (Caster)                      │
-│ Current: 1kg | Min: 3kg             │
-│ [Add to Shopping List]              │
-└─────────────────────────────────────┘
-```
-
----
-
-### 5. **📅 Production Planner**
-**Problem:** "How much of each ingredient do I need to make this week's menu?"
-
-**Solution:**
-```
-Weekly Production View:
-- Select recipes + quantities
-- Shows total ingredient needs
-- Compares to current stock
-- Generates shopping list
-- Calculates total cost
-```
-
-**User Value:** 🔥🔥🔥🔥🔥  
-**Implementation:** Medium-High (4-5 days)
-
-**UI Mock:**
-```
-┌─────────────────────────────────────────────┐
-│ This Week's Production Plan                 │
-│                                             │
-│ Monday:                                     │
-│  50x Croissants                             │
-│  30x Pain au Chocolat                       │
-│  20x Almond Croissants                      │
-│                                             │
-│ Tuesday:                                    │
-│  60x Sourdough Loaves                       │
-│  40x Ciabatta                               │
-│                                             │
-│ Total Ingredients Needed:                   │
-│ ─────────────────────────────────────────── │
-│ Flour (Strong)    45kg   [✓ In Stock]      │
-│ Butter           12kg   [⚠️ Need 7kg more] │
-│ Eggs             15 dozen [✓ In Stock]      │
-│ Chocolate        3kg    [❌ Out of stock]   │
-│                                             │
-│ Total Cost: £287.50                         │
-│                                             │
-│ [Generate Shopping List] [Add to Calendar]  │
-└─────────────────────────────────────────────┘
-```
-
-**Database Addition:**
-```prisma
-model ProductionPlan {
-  id            Int        @id @default(autoincrement())
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  
-  name          String     // "Week 23 Production"
-  startDate     DateTime
-  endDate       DateTime
-  
-  company       Company    @relation(fields: [companyId], references: [id])
-  companyId     Int
-  
-  items         ProductionPlanItem[]
-  status        String     @default("draft") // draft, confirmed, completed
-  
-  @@index([companyId, startDate])
-}
-
-model ProductionPlanItem {
-  id            Int              @id @default(autoincrement())
-  
-  plan          ProductionPlan   @relation(fields: [planId], references: [id])
-  planId        Int
-  
-  recipe        Recipe           @relation(fields: [recipeId], references: [id])
-  recipeId      Int
-  
-  quantity      Int              // How many to make
-  scheduledDate DateTime
-  notes         String?
-  
-  @@index([planId])
-}
-```
-
----
-
-### 6. **🏷️ Recipe Labels & Smart Filters**
-**Problem:** Users have 200+ recipes. Finding "gluten-free breakfast items" is painful.
-
-**Solution:**
-```
-Add Tags to Recipes:
-- Dietary: Vegan, Gluten-Free, Dairy-Free, etc.
-- Meal Type: Breakfast, Lunch, Dinner, Snack
-- Complexity: Easy, Medium, Advanced
-- Season: Summer, Winter, Christmas, Easter
-- Custom tags
-
-Smart Filters:
-- Multi-tag selection
-- Profit margin ranges
-- Cost per serving ranges
-- Prep time ranges
-```
-
-**User Value:** 🔥🔥🔉  
-**Implementation:** Medium (2-3 days)
-
-**Database Addition:**
-```prisma
-model RecipeTag {
+model RecipeVersion {
   id          Int      @id @default(autoincrement())
+  recipeId    Int
+  version     Int
+  snapshot    Json     // Full recipe data
+  changedBy   Int
+  changeNote  String?
   createdAt   DateTime @default(now())
-  
+}
+```
+
+---
+
+### 7. **Bulk Operations**
+**Why:** Efficiency for users with large inventories
+
+**Implementation:**
+- Bulk edit ingredients (update supplier, adjust prices)
+- Bulk import from CSV/Excel
+- Bulk delete with confirmation
+- Batch price updates (e.g., 10% increase)
+
+**Files to Create:**
+- `src/components/BulkEditor.tsx`
+- `src/app/api/bulk/ingredients/route.ts`
+- CSV import/export utilities
+
+---
+
+### 8. **Smart Notifications System**
+**Why:** Keep users engaged and informed
+
+**Implementation:**
+- In-app notification center
+- Stale price alerts (ingredients not updated in 30+ days)
+- Team mentions
+- Subscription reminders
+- Low stock alerts (future feature)
+
+**Database:**
+```prisma
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   // "price_alert", "mention", "subscription"
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+```
+
+---
+
+### 9. **Recipe Collections / Tags**
+**Why:** Better organization beyond categories
+
+**Implementation:**
+- Create custom collections (e.g., "Summer Menu", "Gluten Free")
+- Tag-based system for cross-cutting concerns
+- Share collections with team
+- Public collections for business profile page
+
+**Database:**
+```prisma
+model Collection {
+  id          Int      @id @default(autoincrement())
   name        String
-  type        String   // "dietary", "meal", "season", "custom"
-  color       String?
-  icon        String?
-  
-  company     Company? @relation(fields: [companyId], references: [id])
-  companyId   Int?
-  
+  description String?
+  companyId   Int
+  createdBy   Int
+  isPublic    Boolean  @default(false)
   recipes     Recipe[]
-  
-  @@unique([name, companyId, type])
-  @@index([companyId])
-}
-```
-
-**UI Mock:**
-```
-┌─────────────────────────────────────┐
-│ Recipes (89)                        │
-│                                     │
-│ Filters:                            │
-│ [✓] Vegan  [✓] Breakfast  [ ] Easy │
-│ [ ] Gluten-Free  [ ] High Profit   │
-│                                     │
-│ Sort by: [Profit Margin ▼]         │
-│                                     │
-│ Results: 12 recipes                 │
-│ ─────────────────────────────────── │
-│ Vegan Banana Bread  🌱 🍞          │
-│ Cost: £0.45 | Margin: 68%          │
-│                                     │
-│ Overnight Oats  🌱 ☀️              │
-│ Cost: £0.32 | Margin: 72%          │
-└─────────────────────────────────────┘
-```
-
----
-
-### 7. **💰 Target Margin Alerts**
-**Problem:** Users don't know which recipes are profitable until they check manually.
-
-**Solution:**
-```
-Add to Recipe:
-- targetMargin (e.g., 65%)
-- minMargin (e.g., 55%)
-- suggestedPrice (auto-calculated)
-- currentPrice (what they actually charge)
-
-Features:
-- Dashboard showing "below target" recipes
-- Automatic price suggestions
-- Margin tracking over time
-```
-
-**User Value:** 🔥🔥🔥🔥🔥  
-**Implementation:** Easy (1-2 days)
-
-**Database Addition:**
-```prisma
-model Recipe {
-  // ... existing fields
-  
-  // Pricing & margins
-  targetMargin      Decimal?  @default(65.0) // Target profit margin %
-  minMargin         Decimal?  @default(55.0) // Minimum acceptable margin
-  currentPrice      Decimal?  // What they actually charge
-  suggestedPrice    Decimal?  // Auto-calculated from target margin
-  lastPriceUpdate   DateTime?
-  
-  // Profitability tracking
-  profitabilityStatus String? @default("unknown") // "good", "warning", "poor", "unknown"
-}
-```
-
-**UI Mock:**
-```
-┌─────────────────────────────────────┐
-│ ⚠️ Margin Alerts (5 recipes)        │
-│                                     │
-│ Sourdough Loaf                      │
-│ Cost: £1.45 | Selling: £3.50       │
-│ Margin: 58.6% (Target: 65%)        │
-│ Suggested: £4.14                    │
-│ [Update Price]                      │
-│                                     │
-│ Almond Croissant                    │
-│ Cost: £0.82 | Selling: £2.20       │
-│ Margin: 62.7% (Target: 65%)        │
-│ Suggested: £2.34                    │
-│ [Update Price]                      │
-└─────────────────────────────────────┘
-```
-
----
-
-### 8. **🔍 Ingredient Substitution Suggestions**
-**Problem:** "We're out of butter. What can we use instead? How will it affect cost?"
-
-**Solution:**
-```
-Add Substitution Groups:
-- Fats: Butter, Margarine, Oil
-- Sugars: Caster, Granulated, Brown
-- Flours: Plain, Self-Raising, Bread
-
-Features:
-- "Find substitute" button on ingredients
-- Shows cost impact
-- Notes about quality/taste differences
-```
-
-**User Value:** 🔥🔥🔥  
-**Implementation:** Medium (2-3 days)
-
-**Database Addition:**
-```prisma
-model IngredientSubstitution {
-  id                Int        @id @default(autoincrement())
-  createdAt         DateTime   @default(now())
-  
-  ingredient        Ingredient @relation("Original", fields: [ingredientId], references: [id])
-  ingredientId      Int
-  
-  substitute        Ingredient @relation("Substitute", fields: [substituteId], references: [id])
-  substituteId      Int
-  
-  ratio             Decimal    @default(1.0) // 1:1 ratio, or adjust (e.g., 0.8 for oil vs butter)
-  notes             String?    // "Slightly different texture"
-  qualityImpact     String?    // "minimal", "moderate", "significant"
-  
-  company           Company?   @relation(fields: [companyId], references: [id])
-  companyId         Int?
-  
-  @@unique([ingredientId, substituteId])
-  @@index([companyId])
 }
 ```
 
 ---
 
-### 9. **📊 Recipe Performance Dashboard**
-**Problem:** "Which recipes are actually making us money?"
+### 10. **Analytics Dashboard** 📊
+**Why:** Data-driven decisions for business
 
-**Solution:**
-```
-Analytics Dashboard showing:
-- Most profitable recipes (by margin %)
-- Highest revenue recipes (by total value)
-- Most expensive recipes
-- Recipes using expensive ingredients
-- Trend over time (as prices change)
-```
+**Implementation:**
+- Cost trends over time
+- Most expensive/profitable recipes
+- Ingredient usage analytics
+- Team activity metrics
+- Food cost percentage trends
 
-**User Value:** 🔥🔥🔥🔥  
-**Implementation:** Medium (3-4 days)
+**Libraries:**
+- `recharts` or `chart.js` for visualizations
+- `date-fns` for date handling
 
-**UI Mock:**
-```
-┌─────────────────────────────────────────────┐
-│ Recipe Performance (Last 30 Days)           │
-│                                             │
-│ 📊 Top 5 by Profit Margin:                  │
-│  1. Overnight Oats        72.3%  (↑2.1%)   │
-│  2. Granola Bars          68.9%  (↓1.2%)   │
-│  3. Victoria Sponge       67.5%  (→)       │
-│  4. Brownies              65.2%  (↑0.8%)   │
-│  5. Scones                63.1%  (↓0.5%)   │
-│                                             │
-│ 💰 Top 5 by Revenue Impact:                 │
-│  1. Sourdough Loaf        £2,340  (↑12%)   │
-│  2. Croissants            £1,890  (↑8%)    │
-│  3. Almond Croissant      £1,560  (↑5%)    │
-│                                             │
-│ ⚠️ Needs Attention:                         │
-│  • Pain au Chocolat (margin dropped 8%)    │
-│  • Ciabatta (cost increased 15%)           │
-└─────────────────────────────────────────────┘
-```
+**Files to Create:**
+- `src/app/dashboard/analytics/page.tsx`
+- `src/components/charts/` directory
 
 ---
 
-### 10. **🖨️ Print-Friendly Recipe Cards**
-**Problem:** Kitchen staff need physical recipe cards, not a laptop in the kitchen.
+## 🎨 UI/UX Enhancements
 
-**Solution:**
-```
-Print View Options:
-- Kitchen format (large text, ingredient list)
-- Cost sheet (for pricing/ordering)
-- Allergen label (for display)
-- Batch scaling (make 2x, 5x, 10x)
-```
+### 11. **Improved Animations**
+**Why:** Polish, professional feel
 
-**User Value:** 🔥🔥🔥🔥  
-**Implementation:** Easy (1-2 days)
-
-**Print Formats:**
-```
-KITCHEN CARD (A5):
-┌─────────────────────────────────┐
-│ SOURDOUGH LOAF                  │
-│ Yield: 2 loaves (800g each)     │
-│                                 │
-│ INGREDIENTS:                    │
-│ □ Strong White Flour    1000g   │
-│ □ Water                  650ml  │
-│ □ Sourdough Starter      200g   │
-│ □ Sea Salt               20g    │
-│                                 │
-│ METHOD:                         │
-│ 1. Autolyse 30 mins             │
-│ 2. Add starter & salt...        │
-│                                 │
-│ BAKE: 230°C | 45 mins          │
-│ STORAGE: Room temp | 3 days     │
-└─────────────────────────────────┘
-
-COST SHEET (A4):
-┌─────────────────────────────────┐
-│ SOURDOUGH LOAF - Costing        │
-│                                 │
-│ Ingredient        Qty    Cost   │
-│ ─────────────────────────────── │
-│ Strong Flour     1000g  £1.20   │
-│ Water             650ml  £0.00  │
-│ Starter           200g   £0.18  │
-│ Salt              20g    £0.02  │
-│                          ─────  │
-│ TOTAL COST:              £1.40  │
-│ Cost per loaf:           £0.70  │
-│                                 │
-│ Suggested Price: £4.20 (67%)    │
-│ Target Margin: 65%              │
-└─────────────────────────────────┘
-```
+**Implementation:**
+- `framer-motion` for page transitions
+- Skeleton loaders for better perceived performance
+- Smooth list reordering animations
+- Microinteractions on buttons/cards
 
 ---
 
-## 🎯 MEDIUM-PRIORITY Features
+### 12. **Dark Mode**
+**Why:** User preference, accessibility
 
-These are nice-to-have features that add polish but aren't critical for core functionality.
-
----
-
-### 11. **📸 Ingredient Photo Gallery**
-Allow users to upload photos of ingredients/packaging for easy team reference.
-
-**User Value:** 🔥🔥  
-**Implementation:** Easy (1 day)
+**Implementation:**
+- `next-themes` for theme switching
+- Update all components for dark mode support
+- Persist preference per user
+- System preference detection
 
 ---
 
-### 12. **🔔 Expiry Date Tracking**
-Track expiry dates for perishable ingredients and get alerts.
+### 13. **Keyboard Shortcuts**
+**Why:** Power user efficiency
 
-**User Value:** 🔥🔥🔥  
-**Implementation:** Medium (2 days)
-
----
-
-### 13. **📝 Shopping List Generator**
-One-click shopping list from production plan or selected recipes.
-
-**User Value:** 🔥🔥🔥🔥  
-**Implementation:** Easy (1-2 days)
+**Implementation:**
+- Global shortcuts (N for new recipe, / for search)
+- Context-specific shortcuts
+- Shortcut help modal (?)
+- Customizable shortcuts
 
 ---
 
-### 14. **💱 Multi-Currency Support**
-For businesses buying from international suppliers.
+### 14. **Mobile App Experience**
+**Why:** On-the-go access for kitchen staff
 
-**User Value:** 🔥🔥  
-**Implementation:** Medium (2-3 days)
-
----
-
-### 15. **🌡️ Seasonal Pricing**
-Track ingredient prices by season (e.g., strawberries in summer vs winter).
-
-**User Value:** 🔥🔥  
-**Implementation:** Medium (2 days)
+**Implementation:**
+- PWA configuration (manifest.json, service worker)
+- Offline support for recipes
+- Install prompt
+- Touch-optimized UI
+- Camera integration for photos
 
 ---
 
-### 16. **📧 Email Reports**
-Weekly email with cost changes, margin alerts, and performance summary.
+## 🔧 Developer Experience
 
-**User Value:** 🔥🔥🔥  
-**Implementation:** Medium (3 days)
+### 15. **API Documentation**
+**Why:** Future integrations, third-party developers
 
----
-
-### 17. **🔗 Supplier Portal Link**
-Quick links to supplier ordering portals from ingredient page.
-
-**User Value:** 🔥🔥  
-**Implementation:** Easy (1 day)
+**Implementation:**
+- Auto-generated API docs
+- Swagger/OpenAPI spec
+- Code examples
+- Webhook documentation
 
 ---
 
-### 18. **📱 Mobile App (PWA)**
-Progressive Web App for offline access and better mobile experience.
+### 16. **Testing Suite**
+**Why:** Reliability, confidence in deployments
 
-**User Value:** 🔥🔥🔥🔥  
-**Implementation:** High (2-3 weeks)
-
----
-
-### 19. **🔄 Recipe Versioning**
-Track changes to recipes over time. "View version history" and rollback.
-
-**User Value:** 🔥🔥🔥  
-**Implementation:** Medium-High (4-5 days)
+**Implementation:**
+- Jest for unit tests
+- Playwright for E2E tests
+- API route testing
+- CI/CD with GitHub Actions
 
 ---
 
-### 20. **🎨 Custom Branding**
-Let Pro users add their logo/colors for printed materials.
+### 17. **Error Tracking**
+**Why:** Proactive bug fixing
 
-**User Value:** 🔥  
-**Implementation:** Easy (1-2 days)
-
----
-
-## ❌ Features to AVOID (Stay Focused!)
-
-These are tempting but would dilute your core value proposition:
-
-1. **❌ Inventory Management** - Too complex, many dedicated tools exist
-2. **❌ POS Integration** - Different problem space
-3. **❌ Staff Scheduling** - Not recipe/ingredient related
-4. **❌ Social Media Scheduler** - Totally different product
-5. **❌ Customer CRM** - Out of scope
-6. **❌ Accounting/Invoicing** - Use QuickBooks/Xero
-7. **❌ Online Ordering** - Too complex, many solutions
-8. **❌ Table Reservations** - Different problem
+**Implementation:**
+- Sentry integration
+- Error boundaries in React
+- User-friendly error pages
+- Automatic error reporting
 
 ---
 
-## 📋 Recommended Implementation Order
+## 🤖 Advanced Features (Future)
 
-### **Phase 1: Quick Wins (Month 1-2)**
-These add huge value with minimal complexity:
+### 18. **AI-Powered Features**
+- Recipe cost optimization suggestions
+- Ingredient substitution recommendations
+- Menu planning assistant
+- Automated recipe scaling
+- Smart allergen detection
 
-1. **Target Margin Alerts** (1-2 days) - Immediate value
-2. **Print-Friendly Recipe Cards** (1-2 days) - Kitchen essential
-3. **Recipe Labels & Filters** (2-3 days) - Usability boost
-4. **Quick Cost Check** (1-2 days) - Mobile-friendly win
+### 19. **Supplier Integration**
+- Direct ordering from suppliers
+- Automated price updates
+- Delivery tracking
+- Invoice management
 
-**Total:** ~2 weeks of development
-**Impact:** 🔥🔥🔥🔥🔥
+### 20. **Inventory Management**
+- Stock level tracking
+- Automatic reorder points
+- Waste tracking
+- FIFO/LIFO cost tracking
 
----
+### 21. **Nutrition Calculator**
+- Automatic nutrition facts
+- Allergen tracking (already have basic)
+- Dietary compliance checking
+- Label generation
 
-### **Phase 2: Game-Changers (Month 3-4)**
-These are your competitive advantages:
-
-1. **Price Change Alerts & History** (2-3 days) - Unique feature
-2. **Bulk Price Update** (3-4 days) - Massive time saver
-3. **Production Planner** (4-5 days) - High-value workflow
-4. **Recipe Performance Dashboard** (3-4 days) - Business insights
-
-**Total:** ~3 weeks of development
-**Impact:** 🔥🔥🔥🔥🔥
-
----
-
-### **Phase 3: Professional Polish (Month 5-6)**
-These make you look enterprise-ready:
-
-1. **Ingredient Stock Warnings** (2-3 days) - Professional feature
-2. **Shopping List Generator** (1-2 days) - Practical tool
-3. **Email Reports** (3 days) - Automated insights
-4. **Ingredient Substitutions** (2-3 days) - Smart feature
-
-**Total:** ~2 weeks of development
-**Impact:** 🔥🔥🔥🔥
+### 22. **Multi-location Support**
+- Central recipe library
+- Location-specific pricing
+- Kitchen display system
+- Cross-location reporting
 
 ---
 
-## 💡 Feature Validation Strategy
+## 📋 Implementation Priority
 
-**Before building ANY feature, ask:**
+### Phase 1 (Next 2-4 weeks)
+1. ✅ User Onboarding Wizard
+2. ✅ Email System (invitations, notifications)
+3. ✅ Command Bar / Quick Search
 
-1. **Does it make recipe costing faster/easier?** ✅
-2. **Does it make ingredient management simpler?** ✅
-3. **Would Matt use this daily in his cafés?** ✅
-4. **Can we build it in <1 week?** ✅
-5. **Will users pay for this?** ✅
+### Phase 2 (1-2 months)
+4. ✅ Activity Feed / Audit Log
+5. ✅ Bulk Operations
+6. ✅ Recipe Versioning
+7. ✅ Dark Mode
 
-If not all YES, deprioritize or cut it.
+### Phase 3 (2-3 months)
+8. ✅ Analytics Dashboard
+9. ✅ Advanced Search
+10. ✅ Notifications System
+11. ✅ Recipe Collections
 
----
-
-## 🎯 The Golden Rule
-
-> **"We're the best recipe costing tool for food businesses, not a generic restaurant management system."**
-
-Stay focused. Do one thing exceptionally well. Add features that make that one thing even better.
-
----
-
-## 📊 Success Metrics
-
-Track these to know if features are working:
-
-**User Engagement:**
-- % of users who set target margins
-- % of users who use production planner
-- % of users who upload price lists
-- Average recipes per user
-
-**Business Impact:**
-- Free to Pro conversion rate
-- Feature usage in Pro vs Free
-- User retention after 30/60/90 days
-- Support tickets per feature
-
-**User Feedback:**
-- "What feature saved you the most time?"
-- "What's missing that would make you upgrade?"
-- NPS score after each major feature
+### Phase 4 (3-6 months)
+12. ✅ Mobile PWA
+13. ✅ AI Features (basic)
+14. ✅ Testing Suite
+15. ✅ Error Tracking
 
 ---
 
-## 🚀 Next Steps
+## 💰 Monetization Opportunities
 
-**This Week:**
-1. Review this roadmap
-2. Pick 1-2 Phase 1 features
-3. Create detailed specs
-4. Build & ship!
+Based on Zero to Shipped model:
 
-**This Month:**
-1. Ship all Phase 1 features
-2. Get user feedback
-3. Validate with real customers
-4. Adjust Phase 2 priorities
+1. **Tiered Pricing:**
+   - Free: 10 recipes, 50 ingredients
+   - Pro: Unlimited + advanced features
+   - Enterprise: Multi-location, API access, white-label
 
-**This Quarter:**
-1. Complete Phase 1 & 2
-2. Achieve product-market fit
-3. Build case studies
-4. Prepare for scaling
+2. **Add-on Features:**
+   - AI Recipe Optimizer: $10/mo
+   - Supplier Integration: $25/mo
+   - Inventory Management: $50/mo
+   - Nutrition Calculator: $15/mo
+
+3. **Per-seat Pricing:** (Already implemented!)
+   - $5 per additional team member
 
 ---
 
-**Remember:** Every feature should make someone say:
+## 🛠 Tech Stack Recommendations
 
-> "Oh my god, this saves me SO much time!"
+### To Add:
+- **Emails:** `resend` + `@react-email/components`
+- **Search:** Algolia or PostgreSQL full-text
+- **Animations:** `framer-motion`
+- **Charts:** `recharts`
+- **Command Bar:** `cmdk`
+- **Error Tracking:** Sentry
+- **Testing:** Jest + Playwright
+- **Cron Jobs:** Vercel Cron or node-cron
 
-That's how you build a product people love AND pay for. 🎯
+### Already Using:
+- ✅ Next.js 15
+- ✅ TypeScript
+- ✅ Prisma + PostgreSQL
+- ✅ Tailwind CSS
+- ✅ Stripe
+- ✅ JWT Auth
 
 ---
 
-**Questions? Priorities to discuss? Let me know!**
+## Key Takeaways from Zero to Shipped
 
+1. **Polish Matters:** Animations, loading states, error handling
+2. **Onboarding is Critical:** First impression = retention
+3. **Power User Features:** Keyboard shortcuts, command bar
+4. **Communication:** Email system is essential
+5. **Analytics:** Users want to see their data visualized
+6. **Mobile Experience:** PWA for accessibility
+7. **Extensibility:** API access for power users
+
+---
+
+**Next Steps:**
+Review this roadmap, prioritize based on user feedback, and start with Phase 1 features!

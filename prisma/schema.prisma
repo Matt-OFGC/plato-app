@@ -136,6 +136,7 @@ model Recipe {
   sections       RecipeSection[]
   subRecipes     RecipeSubRecipe[]
   parentRecipes  RecipeSubRecipe[] @relation("ParentRecipe")
+  productionItems ProductionItem[]
 
   @@index([companyId])
   @@index([category])
@@ -235,6 +236,9 @@ model User {
   isAdmin Boolean @default(false)
   isActive Boolean @default(true)
   lastLoginAt DateTime?
+  
+  // Onboarding
+  hasCompletedOnboarding Boolean @default(false)
 }
 
 model Company {
@@ -276,6 +280,7 @@ model Company {
   storageOptions   StorageOption[]
   suppliers        Supplier[]
   invitations  TeamInvitation[]
+  productionPlans  ProductionPlan[]
 }
 
 enum MemberRole {
@@ -479,4 +484,65 @@ model TeamInvitation {
   @@index([companyId])
   @@index([email])
   @@unique([companyId, email])
+}
+
+// Production Planning / Weekly Bake List
+model ProductionPlan {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  name        String   // e.g., "Week 42 Production" or "Monday Bake"
+  startDate   DateTime
+  endDate     DateTime
+  notes       String?
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  createdBy   Int      // User ID who created the plan
+  
+  items       ProductionItem[]
+  tasks       ProductionTask[]
+  
+  @@index([companyId])
+  @@index([startDate])
+}
+
+model ProductionItem {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  plan        ProductionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId      Int
+  
+  recipe      Recipe   @relation(fields: [recipeId], references: [id])
+  recipeId    Int
+  
+  quantity    Int      // How many batches/units to make
+  priority    Int      @default(0) // For ordering
+  completed   Boolean  @default(false)
+  notes       String?
+  
+  @@index([planId])
+  @@index([recipeId])
+}
+
+model ProductionTask {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  plan        ProductionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId      Int
+  
+  title       String
+  description String?
+  assignedTo  Int?     // User ID (Membership)
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  priority    Int      @default(0)
+  
+  @@index([planId])
+  @@index([assignedTo])
 }

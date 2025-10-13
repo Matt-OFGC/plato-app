@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { generateUniqueSlug, getCurrencyFromCountry } from "@/lib/slug";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -70,6 +71,19 @@ export async function POST(req: Request) {
     await tx.membership.create({ data: { userId: user.id, companyId: co.id, role: "ADMIN" } });
     return { user, co };
   });
+  
+  // Send welcome email
+  try {
+    await sendWelcomeEmail(email, {
+      name: name || undefined,
+      companyName: company,
+    });
+    console.log(`✅ Welcome email sent to ${email}`);
+  } catch (emailError) {
+    console.error("❌ Failed to send welcome email:", emailError);
+    // Don't fail registration if email fails
+  }
+  
   return NextResponse.json({ ok: true, userId: created.user.id });
   } catch (error) {
     console.error("Registration error:", error);
