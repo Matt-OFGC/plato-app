@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name || undefined,
+        isAdmin: user.isAdmin,
       }, true);
 
       return NextResponse.json({
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
       id: user.id,
       email: user.email,
       name: user.name || undefined,
+      isAdmin: user.isAdmin,
     }, rememberMe);
 
     // Check if user is an owner/admin to enable device mode

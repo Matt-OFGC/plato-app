@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth-simple";
+import { getAdminSession } from "@/lib/admin-auth";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if user is authenticated and is admin
-    const session = await getSession();
+    // Check if user is authenticated as admin
+    const session = await getAdminSession();
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user is admin
-    if (!session.isAdmin) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+      return NextResponse.json({ error: "Admin access required" }, { status: 401 });
     }
 
     const formData = await request.formData();

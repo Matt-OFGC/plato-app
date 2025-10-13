@@ -10,6 +10,7 @@ export interface SessionUser {
   id: number;
   email: string;
   name?: string;
+  isAdmin?: boolean;
 }
 
 export async function createSession(user: SessionUser, rememberMe: boolean = true) {
