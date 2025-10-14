@@ -23,6 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useTimers } from "@/contexts/TimerContext";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 interface Ingredient {
   id: number;
@@ -203,24 +204,21 @@ function SortableSectionIngredientItem({
         </svg>
       </div>
 
-      <select
-        value={item.ingredientId}
-        onChange={(e) => {
-          const ingredientId = parseInt(e.target.value);
-          const selectedIngredient = ingredients.find(i => i.id === ingredientId);
-          onUpdate(item.id, "ingredientId", ingredientId);
-          if (selectedIngredient?.originalUnit) {
-            onUpdate(item.id, "unit", selectedIngredient.originalUnit);
-          }
-        }}
-        className="col-span-4 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-      >
-        {ingredients.map((ing) => (
-          <option key={ing.id} value={ing.id}>
-            {ing.name}
-          </option>
-        ))}
-      </select>
+      <div className="col-span-4">
+        <SearchableSelect
+          options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
+          value={item.ingredientId}
+          onChange={(ingredientId) => {
+            const selectedIngredient = ingredients.find(i => i.id === ingredientId);
+            onUpdate(item.id, "ingredientId", ingredientId);
+            if (selectedIngredient?.originalUnit) {
+              onUpdate(item.id, "unit", selectedIngredient.originalUnit);
+            }
+          }}
+          placeholder="Select ingredient..."
+          className="text-sm"
+        />
+      </div>
       <input
         type="number"
         value={item.quantity}
@@ -327,24 +325,21 @@ function SortableIngredientItem({
         </svg>
       </div>
 
-      <select
-        value={item.ingredientId}
-        onChange={(e) => {
-          const ingredientId = parseInt(e.target.value);
-          const selectedIngredient = ingredients.find(i => i.id === ingredientId);
-          onUpdate(item.id, "ingredientId", ingredientId);
-          if (selectedIngredient?.originalUnit) {
-            onUpdate(item.id, "unit", selectedIngredient.originalUnit);
-          }
-        }}
-        className="col-span-4 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-      >
-        {ingredients.map((ing) => (
-          <option key={ing.id} value={ing.id}>
-            {ing.name}
-          </option>
-        ))}
-      </select>
+      <div className="col-span-4">
+        <SearchableSelect
+          options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
+          value={item.ingredientId}
+          onChange={(ingredientId) => {
+            const selectedIngredient = ingredients.find(i => i.id === ingredientId);
+            onUpdate(item.id, "ingredientId", ingredientId);
+            if (selectedIngredient?.originalUnit) {
+              onUpdate(item.id, "unit", selectedIngredient.originalUnit);
+            }
+          }}
+          placeholder="Select ingredient..."
+          className="text-sm"
+        />
+      </div>
       <input
         type="number"
         value={item.quantity}
