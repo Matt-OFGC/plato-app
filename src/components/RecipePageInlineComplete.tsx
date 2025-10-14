@@ -1258,32 +1258,43 @@ export function RecipePageInlineComplete({
                     Baking Details
                   </h4>
                   <div className="space-y-4">
-                  <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-2">Bake Temperature</label>
-                      <div className="relative">
-                    <input
-                      type="number"
-                      value={bakeTemp}
-                      onChange={(e) => setBakeTemp(e.target.value)}
-                          placeholder="e.g. 180"
-                          className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">°C</span>
-                  </div>
-                </div>
-                <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-2">Bake Time</label>
-                      <div className="relative">
-                  <input
-                          type="number"
-                          value={bakeTime}
-                          onChange={(e) => setBakeTime(e.target.value)}
-                          placeholder="e.g. 25"
-                          className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">min</span>
+                  {!useSections && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-2">Bake Temperature</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={bakeTemp}
+                            onChange={(e) => setBakeTemp(e.target.value)}
+                            placeholder="e.g. 180"
+                            className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">°C</span>
+                        </div>
                       </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-2">Bake Time</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={bakeTime}
+                            onChange={(e) => setBakeTime(e.target.value)}
+                            placeholder="e.g. 25"
+                            className="w-full px-3 py-2 pr-12 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">min</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {useSections && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-800">
+                        <strong>💡 Using Sections:</strong> Add bake times to individual sections below. The total cooking time will be calculated automatically.
+                      </p>
                     </div>
+                  )}
                   </div>
                 </div>
               </div>
