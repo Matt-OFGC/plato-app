@@ -3,6 +3,9 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
+import { InvoiceScanner } from "./InvoiceScanner";
+import { MenuScanner } from "./MenuScanner";
+import { useRouter } from "next/navigation";
 
 type ImportType = 'ingredients' | 'recipes';
 
@@ -28,7 +31,7 @@ interface SmartImporterProps {
   onComplete?: () => void;
 }
 
-type Step = 'upload' | 'selectSheet' | 'mapping' | 'preview' | 'importing' | 'complete';
+type Step = 'method' | 'upload' | 'scanner' | 'selectSheet' | 'mapping' | 'preview' | 'importing' | 'complete';
 
 const INGREDIENT_FIELDS = [
   { key: 'name', label: 'Name', required: true, description: 'Ingredient name' },
@@ -57,8 +60,9 @@ const RECIPE_FIELDS = [
 
 export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [step, setStep] = useState<Step>('upload');
+  const [step, setStep] = useState<Step>('method');
   const [importType, setImportType] = useState<ImportType | null>(type || null);
+  const [importMethod, setImportMethod] = useState<'file' | 'scanner' | null>(null);
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [importOptions, setImportOptions] = useState({
@@ -213,7 +217,8 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   };
 
   const reset = () => {
-    setStep('upload');
+    setStep('method');
+    setImportMethod(null);
     setParsedData(null);
     setColumnMapping({});
     setImportResult(null);
@@ -262,7 +267,9 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                 <div>
                   <h2 className="text-2xl font-bold text-white">Smart Data Importer</h2>
                   <p className="text-blue-100 text-sm mt-1">
+                    {step === 'method' && 'Choose your import method'}
                     {step === 'upload' && 'Upload your file to get started'}
+                    {step === 'scanner' && 'Use AI to scan your documents'}
                     {step === 'selectSheet' && 'Choose which sheet to import'}
                     {step === 'mapping' && 'Map your columns to our fields'}
                     {step === 'preview' && 'Review and confirm your import'}
@@ -286,7 +293,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                   className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
                   initial={{ width: '0%' }}
                   animate={{
-                    width: step === 'upload' ? '0%' : step === 'selectSheet' ? '20%' : step === 'mapping' ? '40%' : step === 'preview' ? '70%' : '100%'
+                    width: step === 'method' ? '0%' : step === 'upload' || step === 'scanner' ? '10%' : step === 'selectSheet' ? '30%' : step === 'mapping' ? '50%' : step === 'preview' ? '70%' : '100%'
                   }}
                   transition={{ duration: 0.3 }}
                 />
@@ -294,8 +301,8 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
 
               {/* Content */}
               <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
-                {/* Step 1: Upload */}
-                {step === 'upload' && (
+                {/* Step 0: Method Selection */}
+                {step === 'method' && (
                   <div className="space-y-6">
                     {!type && (
                       <div>
@@ -317,7 +324,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                               </svg>
                             </div>
                             <h3 className="font-semibold text-gray-900">Ingredients</h3>
-                            <p className="text-sm text-gray-500 mt-1">Import ingredient data with pricing</p>
+                            <p className="text-sm text-gray-500 mt-1">Import ingredient data</p>
                           </button>
 
                           <button
@@ -340,6 +347,119 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                       </div>
                     )}
 
+                    {(importType || type) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                          How would you like to import?
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <button
+                            onClick={() => {
+                              setImportMethod('file');
+                              setStep('upload');
+                            }}
+                            className="p-6 rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                          >
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                            </div>
+                            <h3 className="font-semibold text-gray-900">Upload File</h3>
+                            <p className="text-sm text-gray-500 mt-1">CSV or Excel spreadsheet</p>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setImportMethod('scanner');
+                              setStep('scanner');
+                            }}
+                            className="p-6 rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-all group"
+                          >
+                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                            <h3 className="font-semibold text-gray-900">AI Scanner</h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {importType === 'ingredients' ? 'Scan invoices' : 'Scan menus'}
+                            </p>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Step: AI Scanner */}
+                {step === 'scanner' && importType && (
+                  <div className="relative">
+                    {importType === 'ingredients' ? (
+                      <InvoiceScanner
+                        onIngredientsExtracted={async (ingredients) => {
+                          // Handle the scanned ingredients
+                          try {
+                            const response = await fetch("/api/ingredients/bulk", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ ingredients }),
+                            });
+
+                            if (!response.ok) throw new Error("Failed to create ingredients");
+
+                            setStep('complete');
+                            setImportResult({
+                              success: true,
+                              imported: ingredients.length,
+                              failed: 0,
+                              skipped: 0,
+                              errors: [],
+                            });
+                            
+                            if (onComplete) onComplete();
+                          } catch (error) {
+                            alert("Failed to import ingredients");
+                          }
+                        }}
+                        onClose={() => setStep('method')}
+                      />
+                    ) : (
+                      <MenuScanner
+                        onRecipesExtracted={async (recipes) => {
+                          // Handle the scanned recipes
+                          try {
+                            const response = await fetch("/api/recipes/bulk", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ recipes }),
+                            });
+
+                            if (!response.ok) throw new Error("Failed to create recipes");
+
+                            setStep('complete');
+                            setImportResult({
+                              success: true,
+                              imported: recipes.length,
+                              failed: 0,
+                              skipped: 0,
+                              errors: [],
+                            });
+                            
+                            if (onComplete) onComplete();
+                          } catch (error) {
+                            alert("Failed to import recipes");
+                          }
+                        }}
+                        onClose={() => setStep('method')}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Step 1: Upload */}
+                {step === 'upload' && (
+                  <div className="space-y-6">
                     {(importType || type) && (
                       <>
                         <div
@@ -419,8 +539,10 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                     onBack={() => {
                       if (availableSheets.length > 0) {
                         setStep('selectSheet');
-                      } else {
+                      } else if (importMethod === 'file') {
                         setStep('upload');
+                      } else {
+                        setStep('method');
                       }
                     }}
                   />
