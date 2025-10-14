@@ -15,6 +15,8 @@ const recipeSectionSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   method: z.string().optional(),
+  bakeTime: z.string().optional().transform((v) => v === "" ? null : (v ? parseInt(v) : null)),
+  bakeTemp: z.string().optional().transform((v) => v === "" ? null : (v ? parseInt(v) : null)),
   order: z.number(),
   items: z.array(z.object({
     id: z.string(),
@@ -93,6 +95,18 @@ export async function createRecipeWithSections(formData: FormData) {
       redirect(`/recipes/new?error=duplicate_name&name=${encodeURIComponent(data.name)}`);
     }
 
+    // Calculate total bakeTime from sections if sections exist and have bake times
+    let totalBakeTime = data.bakeTime;
+    if (data.sections.length > 0) {
+      const sectionBakeTimes = data.sections
+        .map(s => s.bakeTime)
+        .filter((time): time is number => time !== null && time !== undefined);
+      
+      if (sectionBakeTimes.length > 0) {
+        totalBakeTime = sectionBakeTimes.reduce((sum, time) => sum + time, 0);
+      }
+    }
+
     // Create the recipe
     const recipe = await prisma.recipe.create({
       data: {
@@ -103,7 +117,7 @@ export async function createRecipeWithSections(formData: FormData) {
         imageUrl: data.imageUrl,
         method: data.method,
         isSubRecipe: data.isSubRecipe,
-        bakeTime: data.bakeTime,
+        bakeTime: totalBakeTime,
         bakeTemp: data.bakeTemp,
       storage: data.storage,
       shelfLife: data.shelfLife,
@@ -125,6 +139,8 @@ export async function createRecipeWithSections(formData: FormData) {
             title: sectionData.title,
             description: sectionData.description,
             method: sectionData.method,
+            bakeTime: sectionData.bakeTime,
+            bakeTemp: sectionData.bakeTemp,
             order: sectionData.order,
           },
         });
@@ -214,6 +230,18 @@ export async function updateRecipeWithSections(id: number, formData: FormData) {
   const data = parsed.data;
 
   try {
+    // Calculate total bakeTime from sections if sections exist and have bake times
+    let totalBakeTime = data.bakeTime;
+    if (data.sections.length > 0) {
+      const sectionBakeTimes = data.sections
+        .map(s => s.bakeTime)
+        .filter((time): time is number => time !== null && time !== undefined);
+      
+      if (sectionBakeTimes.length > 0) {
+        totalBakeTime = sectionBakeTimes.reduce((sum, time) => sum + time, 0);
+      }
+    }
+
     // Update the recipe
     await prisma.recipe.update({
       where: { id },
@@ -224,6 +252,8 @@ export async function updateRecipeWithSections(id: number, formData: FormData) {
         yieldUnit: data.yieldUnit,
         imageUrl: data.imageUrl,
         method: data.method,
+        bakeTime: totalBakeTime,
+        bakeTemp: data.bakeTemp,
       },
     });
 
@@ -240,6 +270,8 @@ export async function updateRecipeWithSections(id: number, formData: FormData) {
           title: sectionData.title,
           description: sectionData.description,
           method: sectionData.method,
+          bakeTime: sectionData.bakeTime,
+          bakeTemp: sectionData.bakeTemp,
           order: sectionData.order,
         },
       });
