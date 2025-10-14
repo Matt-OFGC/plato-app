@@ -29,6 +29,7 @@ interface Ingredient {
   name: string;
   packQuantity: number;
   packUnit: string;
+  originalUnit?: string | null;
   packPrice: number;
   densityGPerMl?: number | null;
 }
@@ -204,7 +205,14 @@ function SortableSectionIngredientItem({
 
       <select
         value={item.ingredientId}
-        onChange={(e) => onUpdate(item.id, "ingredientId", parseInt(e.target.value))}
+        onChange={(e) => {
+          const ingredientId = parseInt(e.target.value);
+          const selectedIngredient = ingredients.find(i => i.id === ingredientId);
+          onUpdate(item.id, "ingredientId", ingredientId);
+          if (selectedIngredient?.originalUnit) {
+            onUpdate(item.id, "unit", selectedIngredient.originalUnit);
+          }
+        }}
         className="col-span-4 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
       >
         {ingredients.map((ing) => (
@@ -321,7 +329,14 @@ function SortableIngredientItem({
 
       <select
         value={item.ingredientId}
-        onChange={(e) => onUpdate(item.id, "ingredientId", parseInt(e.target.value))}
+        onChange={(e) => {
+          const ingredientId = parseInt(e.target.value);
+          const selectedIngredient = ingredients.find(i => i.id === ingredientId);
+          onUpdate(item.id, "ingredientId", ingredientId);
+          if (selectedIngredient?.originalUnit) {
+            onUpdate(item.id, "unit", selectedIngredient.originalUnit);
+          }
+        }}
         className="col-span-4 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
       >
         {ingredients.map((ing) => (
@@ -589,11 +604,13 @@ export function RecipePageInlineComplete({
       alert("No ingredients available. Please add ingredients first.");
       return;
     }
+    const defaultIngredient = ingredients[0];
+    const defaultUnit = (defaultIngredient.originalUnit || "g") as Unit;
     setItems([...items, {
       id: `item-${Date.now()}`,
-      ingredientId: ingredients[0].id,
+      ingredientId: defaultIngredient.id,
       quantity: "0",
-      unit: "g" as Unit,
+      unit: defaultUnit,
       note: "",
     }]);
   };
@@ -623,15 +640,17 @@ export function RecipePageInlineComplete({
       alert("No ingredients available. Please add ingredients first.");
       return;
     }
+    const defaultIngredient = ingredients[0];
+    const defaultUnit = (defaultIngredient.originalUnit || "g") as Unit;
     setSections(sections.map(section => {
       if (section.id === sectionId) {
         return {
           ...section,
           items: [...section.items, {
             id: `${sectionId}-item-${Date.now()}`,
-            ingredientId: ingredients[0].id,
+            ingredientId: defaultIngredient.id,
             quantity: "0",
-            unit: "g" as Unit,
+            unit: defaultUnit,
             note: "",
           }],
         };
