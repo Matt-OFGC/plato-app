@@ -54,7 +54,11 @@ export function InvoiceScanner({ onIngredientsExtracted, onClose }: InvoiceScann
       setSelectedIngredients(new Set(highConfidenceIndices));
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to scan invoice");
+      if (err instanceof Error && err.message.includes("401")) {
+        setError("OpenAI API key not configured. Please add OPENAI_API_KEY to your environment variables.");
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to scan invoice");
+      }
     } finally {
       setIsScanning(false);
     }
