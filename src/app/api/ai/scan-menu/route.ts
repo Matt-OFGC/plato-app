@@ -97,7 +97,15 @@ Rules:
     });
 
     if (!aiResponse.ok) {
-      throw new Error(`AI service error: ${aiResponse.status}`);
+      const errorData = await aiResponse.json().catch(() => ({}));
+      
+      if (aiResponse.status === 429) {
+        throw new Error("Rate limit reached. Please wait a moment and try again, or check your OpenAI account has credits/billing set up.");
+      } else if (aiResponse.status === 401) {
+        throw new Error("OpenAI API key is invalid. Please check your OPENAI_API_KEY environment variable.");
+      } else {
+        throw new Error(`AI service error: ${aiResponse.status} - ${errorData.error?.message || 'Unknown error'}`);
+      }
     }
 
     const aiData = await aiResponse.json();
