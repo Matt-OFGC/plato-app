@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Company {
   id: number;
@@ -26,6 +27,7 @@ interface BusinessSettingsClientProps {
 }
 
 export function BusinessSettingsClient({ company }: BusinessSettingsClientProps) {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: company.name,
     businessType: company.businessType || "",
@@ -84,12 +86,15 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
         const { url } = await response.json();
         setLogoPreview(url);
         setLogoFile(null);
+        alert('Logo uploaded successfully!');
+        router.refresh();
       } else {
-        throw new Error('Failed to upload logo');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload logo');
       }
     } catch (error) {
       console.error('Error uploading logo:', error);
-      alert('Failed to upload logo. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to upload logo. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -99,15 +104,22 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
     if (!confirm('Are you sure you want to delete your logo?')) return;
 
     try {
-      await fetch('/api/company/logo', {
+      const response = await fetch('/api/company/logo', {
         method: 'DELETE',
       });
       
-      setLogoPreview(null);
-      setLogoFile(null);
+      if (response.ok) {
+        setLogoPreview(null);
+        setLogoFile(null);
+        alert('Logo deleted successfully!');
+        router.refresh();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete logo');
+      }
     } catch (error) {
       console.error('Error deleting logo:', error);
-      alert('Failed to delete logo. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to delete logo. Please try again.');
     }
   };
 
@@ -129,12 +141,14 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
 
       if (response.ok) {
         alert('Business settings updated successfully!');
+        router.refresh();
       } else {
-        throw new Error('Failed to update settings');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update settings');
       }
     } catch (error) {
       console.error('Error updating settings:', error);
-      alert('Failed to update settings. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to update settings. Please try again.');
     } finally {
       setIsSaving(false);
     }

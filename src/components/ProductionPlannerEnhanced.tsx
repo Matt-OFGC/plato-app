@@ -114,6 +114,31 @@ interface WholesaleCustomer {
   email: string | null;
 }
 
+interface WholesaleOrderItem {
+  id: number;
+  recipeId: number;
+  quantity: number;
+  recipe: {
+    id: number;
+    name: string;
+    yieldQuantity: string;
+    yieldUnit: string;
+  };
+}
+
+interface WholesaleOrder {
+  id: number;
+  deliveryDate: Date | null;
+  status: string;
+  customer: {
+    id: number;
+    name: string;
+  };
+  items: WholesaleOrderItem[];
+  isPlanned?: boolean;
+  linkedPlans?: Array<{ id: number; name: string }>;
+}
+
 interface ProductionPlannerEnhancedProps {
   recipes: Recipe[];
   productionPlans: ProductionPlan[];
@@ -143,6 +168,9 @@ export function ProductionPlannerEnhanced({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showAllocations, setShowAllocations] = useState<number | null>(null);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [unplannedOrders, setUnplannedOrders] = useState<WholesaleOrder[]>([]);
+  const [showOrdersSidebar, setShowOrdersSidebar] = useState(true);
+  const [loadingUnplannedOrders, setLoadingUnplannedOrders] = useState(false);
   
   // Check if we should load orders from URL params
   useEffect(() => {
@@ -153,6 +181,30 @@ export function ProductionPlannerEnhanced({
       loadOrdersIntoProduction(orderIds);
     }
   }, [searchParams]);
+  
+  // Fetch unplanned orders when dates change
+  useEffect(() => {
+    if (startDate && endDate) {
+      fetchUnplannedOrders();
+    }
+  }, [startDate, endDate]);
+  
+  async function fetchUnplannedOrders() {
+    setLoadingUnplannedOrders(true);
+    try {
+      const res = await fetch(
+        `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`
+      );
+      if (res.ok) {
+        const orders = await res.json();
+        setUnplannedOrders(orders);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unplanned orders:', error);
+    } finally {
+      setLoadingUnplannedOrders(false);
+    }
+  }
   
   async function loadOrdersIntoProduction(orderIdsParam: string) {
     setLoadingOrders(true);
@@ -166,7 +218,7 @@ export function ProductionPlannerEnhanced({
       
       const orders = await Promise.all(promises);
       
-      // Aggregate items by recipe
+      // Aggregate items by recipe with customer allocations
       const recipeMap = new Map<number, { quantity: number; customerId: number; customerName: string }[]>();
       
       orders.forEach((order: any) => {
@@ -181,43 +233,56 @@ export function ProductionPlannerEnhanced({
         });
       });
       
-      // Pre-populate selected recipes with allocations
+      // Pre-populate selected recipes with allocations (customer splits)
       const newSelectedRecipes = new Map<number, SelectedRecipe>();
       
       recipeMap.forEach((orderItems, recipeId) => {
         const recipe = recipes.find(r => r.id === recipeId);
         if (!recipe) return;
         
-        const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
         const allocations: Allocation[] = [];
         
-        // Group by customer
-        const customerGroups = new Map<number, number>();
+        // Group by customer and create allocations
+        const customerGroups = new Map<number, { name: string; quantity: number }>();
         orderItems.forEach(item => {
-          const current = customerGroups.get(item.customerId) || 0;
-          customerGroups.set(item.customerId, current + item.quantity);
+          const current = customerGroups.get(item.customerId);
+          if (current) {
+            current.quantity += item.quantity;
+          } else {
+            customerGroups.set(item.customerId, {
+              name: item.customerName,
+              quantity: item.quantity,
+            });
+          }
         });
         
-        customerGroups.forEach((qty, customerId) => {
-          const customerName = orderItems.find(i => i.customerId === customerId)?.customerName || '';
+        // Create allocation for each customer
+        customerGroups.forEach((data, customerId) => {
           allocations.push({
-            destination: customerName,
+            destination: data.name,
             customerId,
-            quantity: qty * parseFloat(recipe.yieldQuantity),
+            quantity: data.quantity,
             notes: '',
           });
         });
         
+        // Calculate total quantity from allocations
+        const totalQuantity = allocations.reduce((sum, alloc) => sum + alloc.quantity, 0);
+        
+        // Calculate how many batches we need
+        const recipeYield = parseFloat(recipe.yieldQuantity);
+        const batchesNeeded = Math.ceil(totalQuantity / recipeYield);
+        
         newSelectedRecipes.set(recipeId, {
           recipe,
-          quantity: totalQuantity,
-          customYield: totalQuantity * parseFloat(recipe.yieldQuantity),
+          quantity: batchesNeeded,
+          customYield: totalQuantity,
           allocations,
         });
       });
       
       setSelectedRecipes(newSelectedRecipes);
-      setPlanName(`Orders Production - ${format(new Date(), "MMM d, yyyy")}`);
+      setPlanName(`Production Week - ${format(new Date(startDate), "MMM d, yyyy")}`);
       setShowCreatePlan(true);
       
     } catch (error) {
@@ -226,6 +291,88 @@ export function ProductionPlannerEnhanced({
     } finally {
       setLoadingOrders(false);
     }
+  }
+  
+  function importOrdersIntoCurrentPlan(orderIds: number[]) {
+    const orderIdsString = orderIds.join(',');
+    loadOrdersIntoProduction(orderIdsString);
+  }
+  
+  function quickAddOrderToCurrentPlan(order: WholesaleOrder) {
+    // If not currently creating a plan, open the creation modal first
+    if (!showCreatePlan) {
+      setShowCreatePlan(true);
+      // Give the modal time to open, then add the order
+      setTimeout(() => {
+        addOrderToSelectedRecipes(order);
+      }, 100);
+      return;
+    }
+    
+    // Otherwise, add to current plan
+    addOrderToSelectedRecipes(order);
+  }
+  
+  function addOrderToSelectedRecipes(order: WholesaleOrder) {
+    const currentRecipes = new Map(selectedRecipes);
+    
+    order.items.forEach(item => {
+      const recipe = recipes.find(r => r.id === item.recipeId);
+      if (!recipe) return;
+      
+      const existing = currentRecipes.get(item.recipeId);
+      const recipeYield = parseFloat(recipe.yieldQuantity);
+      
+      if (existing) {
+        // Add to existing allocations
+        const newAllocations = [...(existing.allocations || [])];
+        const existingAlloc = newAllocations.find(a => a.customerId === order.customer.id);
+        
+        if (existingAlloc) {
+          existingAlloc.quantity += item.quantity;
+        } else {
+          newAllocations.push({
+            destination: order.customer.name,
+            customerId: order.customer.id,
+            quantity: item.quantity,
+            notes: '',
+          });
+        }
+        
+        const totalAllocated = newAllocations.reduce((sum, a) => sum + a.quantity, 0);
+        const batchesNeeded = Math.ceil(totalAllocated / recipeYield);
+        
+        currentRecipes.set(item.recipeId, {
+          ...existing,
+          quantity: batchesNeeded,
+          customYield: totalAllocated,
+          allocations: newAllocations,
+        });
+      } else {
+        // Add new recipe with allocation
+        const batchesNeeded = Math.ceil(item.quantity / recipeYield);
+        currentRecipes.set(item.recipeId, {
+          recipe,
+          quantity: batchesNeeded,
+          customYield: item.quantity,
+          allocations: [{
+            destination: order.customer.name,
+            customerId: order.customer.id,
+            quantity: item.quantity,
+            notes: '',
+          }],
+        });
+      }
+    });
+    
+    setSelectedRecipes(currentRecipes);
+    
+    // Set plan name if not already set
+    if (!planName) {
+      setPlanName(`Production Week - ${format(new Date(startDate), "MMM d, yyyy")}`);
+    }
+    
+    fetchUnplannedOrders(); // Refresh the sidebar
   }
 
   const sensors = useSensors(
@@ -466,12 +613,18 @@ export function ProductionPlannerEnhanced({
       });
 
       if (res.ok) {
+        const updatedItem = await res.json();
         setPlans(plans.map(plan => {
           if (plan.id === planId) {
             return {
               ...plan,
               items: plan.items.map(item =>
-                item.id === itemId ? { ...item, completed: !completed } : item
+                item.id === itemId ? { 
+                  ...item, 
+                  completed: !completed,
+                  completedByUser: updatedItem.completedByUser,
+                  completedAt: updatedItem.completedAt,
+                } : item
               ),
             };
           }
@@ -557,17 +710,31 @@ export function ProductionPlannerEnhanced({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Create New Plan Button */}
-      <button
-        onClick={() => setShowCreatePlan(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        New Production Plan
-      </button>
+    <div className="flex gap-6">
+      {/* Main Content */}
+      <div className="flex-1 space-y-6">
+        {/* Create New Plan Button */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowCreatePlan(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Production Plan
+          </button>
+          
+          <button
+            onClick={() => setShowOrdersSidebar(!showOrdersSidebar)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            {showOrdersSidebar ? 'Hide' : 'Show'} Orders
+          </button>
+        </div>
 
       {/* Create Plan Modal */}
       <AnimatePresence>
@@ -787,31 +954,34 @@ export function ProductionPlannerEnhanced({
                                     </button>
                                   </div>
                                   <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <label className="text-xs text-gray-600 whitespace-nowrap">Total {item.recipe.yieldUnit}:</label>
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        step={parseFloat(item.recipe.yieldQuantity)}
-                                        value={item.customYield || ""}
-                                        placeholder={`e.g., ${parseFloat(item.recipe.yieldQuantity) * 2}`}
-                                        onChange={(e) => {
-                                          const value = parseFloat(e.target.value) || 0;
-                                          updateCustomYield(item.recipe.id, value);
-                                          // Auto-calculate batches
-                                          if (value > 0) {
-                                            const batches = value / parseFloat(item.recipe.yieldQuantity);
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <label className="text-xs text-gray-600 whitespace-nowrap">Batches:</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="0.1"
+                                          value={item.quantity || ""}
+                                          onChange={(e) => {
+                                            const batches = parseFloat(e.target.value) || 0;
                                             updateQuantity(item.recipe.id, batches);
-                                          }
-                                        }}
-                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
-                                      />
+                                            updateCustomYield(item.recipe.id, batches * parseFloat(item.recipe.yieldQuantity));
+                                          }}
+                                          className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                                        />
+                                        <span className="text-xs text-gray-500">
+                                          = {(item.quantity * parseFloat(item.recipe.yieldQuantity)).toFixed(1)} {item.recipe.yieldUnit}
+                                        </span>
+                                      </div>
+                                      {item.allocations && item.allocations.length > 0 && (
+                                        <div className="text-xs">
+                                          <p className="text-gray-600 mb-1">Allocated: {item.allocations.reduce((sum, a) => sum + a.quantity, 0).toFixed(1)} {item.recipe.yieldUnit}</p>
+                                          <p className="text-blue-600">
+                                            Extra/Internal: {Math.max(0, (item.quantity * parseFloat(item.recipe.yieldQuantity)) - item.allocations.reduce((sum, a) => sum + a.quantity, 0)).toFixed(1)} {item.recipe.yieldUnit}
+                                          </p>
+                                        </div>
+                                      )}
                                     </div>
-                                    {item.customYield && (
-                                      <p className="text-xs text-green-600">
-                                        = {(item.customYield / parseFloat(item.recipe.yieldQuantity)).toFixed(2)} batch{item.quantity !== 1 ? 'es' : ''}
-                                      </p>
-                                    )}
                                     
                                     {/* Allocations Section */}
                                     <div className="mt-3 pt-3 border-t border-gray-200">
@@ -964,9 +1134,9 @@ export function ProductionPlannerEnhanced({
         )}
       </AnimatePresence>
 
-      {/* Production Plans List */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-900">Production Plans</h2>
+        {/* Production Plans List */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900">Production Plans</h2>
         {plans.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -986,6 +1156,53 @@ export function ProductionPlannerEnhanced({
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => window.location.href = `/dashboard/production/view/${plan.id}`}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    title="View production plan"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Fetch unplanned orders for this plan's date range
+                      try {
+                        const planStart = format(new Date(plan.startDate), "yyyy-MM-dd");
+                        const planEnd = format(new Date(plan.endDate), "yyyy-MM-dd");
+                        const res = await fetch(
+                          `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${planStart}&endDate=${planEnd}`
+                        );
+                        if (res.ok) {
+                          const orders = await res.json();
+                          const unplannedOrders = orders.filter((o: any) => !o.isPlanned);
+                          if (unplannedOrders.length > 0) {
+                            if (confirm(`Found ${unplannedOrders.length} unplanned order(s). Add them to this production plan?`)) {
+                              setStartDate(planStart);
+                              setEndDate(planEnd);
+                              setPlanName(plan.name);
+                              loadOrdersIntoProduction(unplannedOrders.map((o: any) => o.id).join(','));
+                            }
+                          } else {
+                            alert('No new orders found for this date range');
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Failed to refresh orders:', error);
+                        alert('Failed to refresh orders');
+                      }
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    title="Refresh from wholesale orders"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                  </button>
                   <button
                     onClick={() => window.location.href = `/dashboard/production/edit/${plan.id}`}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -1012,38 +1229,76 @@ export function ProductionPlannerEnhanced({
                   return (
                     <div key={item.id}>
                       <div
-                        className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                        className={`flex items-start justify-between p-4 rounded-lg transition-colors ${
                           item.completed ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
                         }`}
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          <input
-                            type="checkbox"
-                            checked={item.completed}
-                            onChange={() => toggleItemComplete(plan.id, item.id, item.completed)}
-                            className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                          />
+                        <div className="flex items-start gap-4 flex-1">
+                          {/* Larger checkbox for mobile - 32px touch target */}
+                          <button
+                            onClick={() => toggleItemComplete(plan.id, item.id, item.completed)}
+                            className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border-2 transition-all ${
+                              item.completed 
+                                ? 'bg-green-600 border-green-600' 
+                                : 'bg-white border-gray-300 hover:border-green-500'
+                            }`}
+                            aria-label={item.completed ? "Mark as incomplete" : "Mark as complete"}
+                          >
+                            {item.completed && (
+                              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
                           <div className={`flex-1 ${item.completed ? "line-through text-gray-500" : ""}`}>
-                            <p className="font-medium">{item.recipe.name}</p>
-                            <p className="text-sm text-gray-600">
+                            <p className="font-medium text-base">{item.recipe.name}</p>
+                            <p className="text-sm text-gray-600 mt-1">
                               {totalYield % 1 === 0 ? totalYield : totalYield.toFixed(2)} {item.recipe.yieldUnit}
                               <span className="text-gray-400 ml-1">
                                 ({parseFloat(item.quantity) % 1 === 0 ? parseFloat(item.quantity) : parseFloat(item.quantity).toFixed(2)} batch{parseFloat(item.quantity) !== 1 ? "es" : ""})
                               </span>
                             </p>
+                            {/* Show who completed it */}
+                            {item.completed && (item as any).completedByUser && (
+                              <p className="text-xs text-green-700 mt-1 flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Completed by {(item as any).completedByUser.name || (item as any).completedByUser.email}
+                                {(item as any).completedAt && ` • ${format(new Date((item as any).completedAt), "MMM d, h:mm a")}`}
+                              </p>
+                            )}
                             {item.allocations && item.allocations.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {item.allocations.map((alloc: any, idx: number) => (
-                                  <span
-                                    key={idx}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs"
-                                  >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    {alloc.customer ? alloc.customer.name : alloc.destination}: {parseFloat(alloc.quantity)}
-                                  </span>
-                                ))}
+                              <div className="mt-2 space-y-1">
+                                <p className="text-xs font-medium text-gray-700">Customer Splits:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {item.allocations.map((alloc: any, idx: number) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 text-blue-900 rounded text-xs font-medium"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                      </svg>
+                                      {alloc.customer ? alloc.customer.name : alloc.destination}: {parseFloat(alloc.quantity).toFixed(1)} {item.recipe.yieldUnit}
+                                    </span>
+                                  ))}
+                                  {(() => {
+                                    const allocated = item.allocations.reduce((sum: number, a: any) => sum + parseFloat(a.quantity), 0);
+                                    const extra = totalYield - allocated;
+                                    if (extra > 0.1) {
+                                      return (
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 text-green-900 rounded text-xs font-medium">
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                          </svg>
+                                          Internal/Extra: {extra.toFixed(1)} {item.recipe.yieldUnit}
+                                        </span>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1056,7 +1311,134 @@ export function ProductionPlannerEnhanced({
             </div>
           ))
         )}
+        </div>
       </div>
+
+      {/* Orders Sidebar */}
+      {showOrdersSidebar && (
+        <div className="w-96 bg-white border border-gray-200 rounded-xl p-6 space-y-4 h-fit sticky top-4">
+          <div className="flex items-center justify-between border-b pb-3">
+            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Wholesale Orders
+            </h3>
+            <button
+              onClick={fetchUnplannedOrders}
+              disabled={loadingUnplannedOrders}
+              className="p-1 text-blue-600 hover:text-blue-700 disabled:opacity-50"
+              title="Refresh orders"
+            >
+              <svg className={`w-4 h-4 ${loadingUnplannedOrders ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="font-medium text-blue-900 mb-1">📅 Date Range</p>
+            <p>{format(new Date(startDate), "MMM d")} - {format(new Date(endDate), "MMM d, yyyy")}</p>
+          </div>
+
+          {loadingUnplannedOrders ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-sm text-gray-600 mt-2">Loading orders...</p>
+            </div>
+          ) : unplannedOrders.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-gray-600 font-medium">All orders are planned!</p>
+              <p className="text-xs text-gray-500 mt-1">No pending orders in this date range</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+              {unplannedOrders.map((order) => {
+                const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                const isPlanned = order.isPlanned;
+                
+                return (
+                  <div
+                    key={order.id}
+                    className={`border rounded-lg p-3 transition-all ${
+                      isPlanned 
+                        ? 'bg-green-50 border-green-300' 
+                        : 'bg-white border-gray-200 hover:border-blue-400 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 text-sm">{order.customer.name}</p>
+                        {order.deliveryDate && (
+                          <p className="text-xs text-gray-600">
+                            📅 {format(new Date(order.deliveryDate), "MMM d, yyyy")}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                        order.status === 'in_production' ? 'bg-purple-100 text-purple-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {order.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 mb-3">
+                      {order.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between text-xs">
+                          <span className="text-gray-700 truncate flex-1">{item.recipe.name}</span>
+                          <span className="text-gray-900 font-medium ml-2">{item.quantity} {item.recipe.yieldUnit}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {isPlanned ? (
+                      <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="font-medium">Already in production plan</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => quickAddOrderToCurrentPlan(order)}
+                        className="w-full px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add to Current Plan
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!showCreatePlan && unplannedOrders.filter(o => !o.isPlanned).length > 0 && (
+            <button
+              onClick={() => {
+                const unplannedIds = unplannedOrders
+                  .filter(o => !o.isPlanned)
+                  .map(o => o.id)
+                  .join(',');
+                loadOrdersIntoProduction(unplannedIds);
+              }}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Import All Unplanned Orders
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -20,7 +20,7 @@ export default async function RecipesPage({ searchParams }: Props) {
   const where = companyId 
     ? { 
         companyId, 
-        ...(category && { categoryRef: { name: category } }),
+        ...(category && { categoryRef: { is: { name: category } } }),
         ...(search && {
           OR: [
             { name: { contains: search, mode: "insensitive" as const } },
@@ -30,7 +30,7 @@ export default async function RecipesPage({ searchParams }: Props) {
         })
       }
     : { 
-        ...(category && { categoryRef: { name: category } }),
+        ...(category && { categoryRef: { is: { name: category } } }),
         ...(search && {
           OR: [
             { name: { contains: search, mode: "insensitive" as const } },

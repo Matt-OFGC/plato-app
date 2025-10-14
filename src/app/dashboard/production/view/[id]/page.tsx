@@ -2,7 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { ProductionPlanEditorEnhanced } from "@/components/ProductionPlanEditorEnhanced";
+import { ProductionPlanView } from "@/components/ProductionPlanView";
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,7 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default async function EditProductionPlanPage({ params }: Props) {
+export default async function ViewProductionPlanPage({ params }: Props) {
   const user = await getUserFromSession();
   if (!user) redirect("/login");
 
@@ -20,7 +20,7 @@ export default async function EditProductionPlanPage({ params }: Props) {
   const { id } = await params;
   const planId = parseInt(id);
 
-  // Get the production plan with all items and allocations
+  // Get the production plan with all items, allocations, and sections
   const planRaw = await prisma.productionPlan.findUnique({
     where: { id: planId },
     include: {
@@ -32,6 +32,20 @@ export default async function EditProductionPlanPage({ params }: Props) {
               name: true,
               yieldQuantity: true,
               yieldUnit: true,
+              method: true,
+              imageUrl: true,
+              categoryId: true,
+              category: true,
+              sections: {
+                select: {
+                  id: true,
+                  title: true,
+                  description: true,
+                  method: true,
+                  order: true,
+                },
+                orderBy: { order: 'asc' },
+              },
             },
           },
           allocations: {
@@ -44,8 +58,18 @@ export default async function EditProductionPlanPage({ params }: Props) {
               },
             },
           },
+          completedByUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
         orderBy: { priority: 'asc' },
+      },
+      tasks: {
+        orderBy: { dueDate: 'asc' },
       },
     },
   });
@@ -54,12 +78,12 @@ export default async function EditProductionPlanPage({ params }: Props) {
     redirect("/dashboard/production");
   }
 
-  // Serialize
+  // Serialize Decimal fields
   const plan = {
     ...planRaw,
     items: planRaw.items.map((item: any) => ({
       ...item,
-      quantity: parseFloat(item.quantity.toString()),
+      quantity: item.quantity.toString(),
       recipe: {
         ...item.recipe,
         yieldQuantity: item.recipe.yieldQuantity.toString(),
@@ -69,41 +93,12 @@ export default async function EditProductionPlanPage({ params }: Props) {
         quantity: alloc.quantity.toString(),
       })),
     })),
+    tasks: planRaw.tasks || [],
   };
 
-  // Get all recipes for adding new items
-  const recipesRaw = await prisma.recipe.findMany({
-    where: { companyId },
-    select: {
-      id: true,
-      name: true,
-      yieldQuantity: true,
-      yieldUnit: true,
-      categoryId: true,
-      category: true,
-    },
-    orderBy: { name: "asc" },
-  });
-
-  const recipes = recipesRaw.map(recipe => ({
-    ...recipe,
-    yieldQuantity: recipe.yieldQuantity.toString(),
-  }));
-
-  // Get wholesale customers for allocations
-  const wholesaleCustomers = await prisma.wholesaleCustomer.findMany({
-    where: {
-      companyId,
-      isActive: true,
-    },
-    orderBy: { name: "asc" },
-  });
-
   return (
-    <ProductionPlanEditorEnhanced
+    <ProductionPlanView
       plan={plan as any}
-      recipes={recipes}
-      wholesaleCustomers={wholesaleCustomers}
       companyId={companyId}
     />
   );

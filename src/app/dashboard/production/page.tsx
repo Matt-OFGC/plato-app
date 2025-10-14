@@ -67,6 +67,13 @@ export default async function ProductionPage() {
               },
             },
           },
+          completedByUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       },
       tasks: true,

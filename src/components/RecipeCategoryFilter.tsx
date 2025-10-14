@@ -20,7 +20,7 @@ export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCat
       params.delete("category");
     }
     
-    router.push(`/recipes?${params.toString()}`);
+    router.push(`/dashboard/recipes?${params.toString()}`);
   };
 
   return (
