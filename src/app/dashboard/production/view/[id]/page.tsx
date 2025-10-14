@@ -58,13 +58,6 @@ export default async function ViewProductionPlanPage({ params }: Props) {
               },
             },
           },
-          completedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
         },
         orderBy: { priority: 'asc' },
       },

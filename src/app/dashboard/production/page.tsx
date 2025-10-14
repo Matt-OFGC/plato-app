@@ -67,13 +67,6 @@ export default async function ProductionPage() {
               },
             },
           },
-          completedByUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
         },
       },
       tasks: true,
@@ -138,7 +131,7 @@ export default async function ProductionPage() {
 
       <ProductionPlannerEnhanced
         recipes={recipes}
-        productionPlans={productionPlans}
+        productionPlans={productionPlans as any}
         teamMembers={teamMembers}
         wholesaleCustomers={wholesaleCustomers}
         companyId={companyId!}

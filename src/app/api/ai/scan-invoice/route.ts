@@ -67,7 +67,8 @@ Rules:
 
         if (!pdfText || pdfText.trim().length === 0) {
           return NextResponse.json({ 
-            error: "Could not extract text from PDF. Please try converting to an image instead." 
+            error: "This PDF appears to be empty or contains only images. Please try: 1) Converting the PDF to a JPG/PNG image, or 2) Taking a screenshot of the PDF and uploading that instead.",
+            suggestion: "image"
           }, { status: 400 });
         }
 
@@ -94,10 +95,26 @@ Rules:
             temperature: 0.1
           })
         });
-      } catch (pdfError) {
+      } catch (pdfError: any) {
         console.error("PDF parsing error:", pdfError);
+        
+        // Provide helpful error message
+        let errorMessage = "This PDF could not be processed. ";
+        
+        if (pdfError?.message?.includes("Invalid PDF")) {
+          errorMessage += "The file may be corrupted or not a valid PDF. ";
+        } else if (pdfError?.message?.includes("encrypted")) {
+          errorMessage += "The PDF is password-protected. ";
+        } else {
+          errorMessage += "The PDF format is not compatible with text extraction. ";
+        }
+        
+        errorMessage += "Please try: 1) Opening the PDF and taking a screenshot, or 2) Converting it to a JPG/PNG image using an online converter.";
+        
         return NextResponse.json({ 
-          error: "Failed to parse PDF. Please try converting to an image (JPEG/PNG) instead." 
+          error: errorMessage,
+          suggestion: "image",
+          details: process.env.NODE_ENV === 'development' ? pdfError?.message : undefined
         }, { status: 400 });
       }
     } else {
