@@ -449,6 +449,14 @@ export function RecipePageInlineComplete({
       : [{ id: "section-0", title: "Step 1", description: "", method: "", bakeTemp: "", bakeTime: "", items: [] }]
   );
   
+  // Calculate total bake time from sections if using sections
+  const displayBakeTime = useSections && sections.length > 0
+    ? sections
+        .map(s => parseInt(s.bakeTime || "0"))
+        .filter(time => !isNaN(time) && time > 0)
+        .reduce((sum, time) => sum + time, 0) || recipe.bakeTime
+    : recipe.bakeTime;
+  
   const [items, setItems] = useState<RecipeItem[]>(
     recipe.items.map((item, idx) => ({
       id: `item-${idx}`,
@@ -1077,13 +1085,13 @@ export function RecipePageInlineComplete({
                     </div>
                   </div>
                 )}
-                {recipe.bakeTime && (
+                {displayBakeTime && (
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-2 shadow-sm">
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-sm font-bold text-blue-700">{recipe.bakeTime} min</span>
+                      <span className="text-sm font-bold text-blue-700">{displayBakeTime} min</span>
                     </div>
                   </div>
                 )}
