@@ -11,8 +11,8 @@ export function CommandBarProvider({ children }: { children: React.ReactNode }) 
       {children}
       <CommandBar open={open} setOpen={setOpen} />
       
-      {/* Keyboard shortcut hint */}
-      <div className="fixed bottom-4 right-4 z-40">
+      {/* Keyboard shortcut hint - Hidden on mobile to not block bottom nav */}
+      <div className="hidden md:block fixed bottom-4 right-4 z-40">
         <button
           onClick={() => setOpen(true)}
           className="group flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all text-sm text-gray-600 hover:text-gray-900"
