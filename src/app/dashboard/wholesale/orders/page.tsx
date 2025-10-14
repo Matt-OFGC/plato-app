@@ -58,25 +58,39 @@ export default async function WholesaleOrdersPage() {
     orderBy: { name: "asc" },
   });
 
-  // Get recipes for order items
-  const recipesRaw = await prisma.recipe.findMany({
+  // Get wholesale products for order items
+  const productsRaw = await prisma.wholesaleProduct.findMany({
     where: {
       companyId: companyId!,
-      isSubRecipe: false,
+      isActive: true,
     },
-    select: {
-      id: true,
-      name: true,
-      yieldQuantity: true,
-      yieldUnit: true,
-      category: true,
+    include: {
+      recipe: {
+        select: {
+          id: true,
+          name: true,
+          yieldQuantity: true,
+          yieldUnit: true,
+          category: true,
+        },
+      },
     },
-    orderBy: { name: "asc" },
+    orderBy: [
+      { sortOrder: "asc" },
+      { createdAt: "desc" },
+    ],
   });
 
-  const recipes = recipesRaw.map(recipe => ({
-    ...recipe,
-    yieldQuantity: recipe.yieldQuantity.toString(),
+  const products = productsRaw.map(product => ({
+    id: product.id,
+    recipeId: product.recipeId,
+    name: product.name || product.recipe?.name || "Product",
+    description: product.description || product.recipe?.description,
+    yieldQuantity: product.recipe?.yieldQuantity.toString() || "1",
+    yieldUnit: product.recipe?.yieldUnit || "unit",
+    unit: product.unit,
+    price: product.price.toString(),
+    category: product.category || product.recipe?.category,
   }));
 
   return (
@@ -93,7 +107,7 @@ export default async function WholesaleOrdersPage() {
       <WholesaleOrders
         orders={orders}
         customers={customers}
-        recipes={recipes}
+        products={products}
         companyId={companyId!}
       />
     </div>

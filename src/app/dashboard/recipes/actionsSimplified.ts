@@ -219,6 +219,22 @@ export async function createRecipeUnified(formData: FormData) {
       }
     }
 
+    // Check if should be added to wholesale catalogue
+    const isWholesaleProduct = formData.get("isWholesaleProduct") === "on";
+    if (isWholesaleProduct) {
+      await prisma.wholesaleProduct.create({
+        data: {
+          companyId: companyId!,
+          recipeId: recipe.id,
+          price: recipe.sellingPrice || 0, // Use recipe selling price or default to 0
+          currency: "GBP",
+          category: recipe.category || null,
+          isActive: true,
+          sortOrder: 0,
+        },
+      });
+    }
+
     revalidatePath("/dashboard/recipes");
     redirect(`/dashboard/recipes/${recipe.id}`);
   } catch (error) {

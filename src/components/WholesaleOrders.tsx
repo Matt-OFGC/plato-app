@@ -4,11 +4,15 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 
-interface Recipe {
+interface Product {
   id: number;
+  recipeId: number | null;
   name: string;
+  description: string | null;
   yieldQuantity: string;
   yieldUnit: string;
+  unit: string | null;
+  price: string;
   category: string | null;
 }
 
@@ -52,7 +56,7 @@ interface Customer {
 interface WholesaleOrdersProps {
   orders: WholesaleOrder[];
   customers: Customer[];
-  recipes: Recipe[];
+  products: Product[];
   companyId: number;
 }
 
@@ -68,7 +72,7 @@ const ORDER_STATUSES = [
 export function WholesaleOrders({
   orders: initialOrders,
   customers,
-  recipes,
+  products,
   companyId,
 }: WholesaleOrdersProps) {
   const [orders, setOrders] = useState(initialOrders);
@@ -77,13 +81,14 @@ export function WholesaleOrders({
   const [viewingOrder, setViewingOrder] = useState<WholesaleOrder | null>(null);
   const [saving, setSaving] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [productSearch, setProductSearch] = useState("");
 
   // Form state
   const [customerId, setCustomerId] = useState<number>(0);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [status, setStatus] = useState("pending");
   const [orderNotes, setOrderNotes] = useState("");
-  const [orderItems, setOrderItems] = useState<Map<number, { quantity: number; notes: string }>>(new Map());
+  const [orderItems, setOrderItems] = useState<Map<number, { quantity: number; notes: string; weeklySchedule?: Record<string, number> }>>(new Map());
   
   // Recurring order state
   const [isRecurring, setIsRecurring] = useState(false);
@@ -91,6 +96,10 @@ export function WholesaleOrders({
   const [recurringIntervalDays, setRecurringIntervalDays] = useState<number>(7);
   const [recurringEndDate, setRecurringEndDate] = useState("");
   const [recurringStatus, setRecurringStatus] = useState("active");
+  
+  // Weekly schedule state
+  const [showWeeklySchedule, setShowWeeklySchedule] = useState(false);
+  const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   function openModal(order?: WholesaleOrder) {
     if (order) {
@@ -131,15 +140,25 @@ export function WholesaleOrders({
     setEditingOrder(null);
   }
 
-  function updateItemQuantity(recipeId: number, quantity: number) {
+  function updateItemQuantity(productId: number, quantity: number) {
     const newItems = new Map(orderItems);
     if (quantity <= 0) {
-      newItems.delete(recipeId);
+      newItems.delete(productId);
     } else {
-      const existing = orderItems.get(recipeId) || { quantity: 0, notes: "" };
-      newItems.set(recipeId, { ...existing, quantity });
+      const existing = orderItems.get(productId) || { quantity: 0, notes: "", weeklySchedule: {} };
+      newItems.set(productId, { ...existing, quantity });
     }
     setOrderItems(newItems);
+  }
+
+  function updateWeeklySchedule(productId: number, day: string, dayQuantity: number) {
+    const newItems = new Map(orderItems);
+    const existing = orderItems.get(productId);
+    if (existing) {
+      const weeklySchedule = { ...existing.weeklySchedule, [day]: dayQuantity };
+      newItems.set(productId, { ...existing, weeklySchedule });
+      setOrderItems(newItems);
+    }
   }
 
   async function handleSave() {
@@ -156,11 +175,16 @@ export function WholesaleOrders({
     setSaving(true);
 
     try {
-      const items = Array.from(orderItems.entries()).map(([recipeId, data]) => ({
-        recipeId,
-        quantity: data.quantity,
-        notes: data.notes || null,
-      }));
+      // Map product IDs to recipe IDs for the order
+      const items = Array.from(orderItems.entries()).map(([productId, data]) => {
+        const product = products.find(p => p.id === productId);
+        return {
+          recipeId: product?.recipeId || productId,
+          quantity: data.quantity,
+          price: product?.price || null,
+          notes: data.notes || null,
+        };
+      });
 
       const url = editingOrder
         ? `/api/wholesale/orders/${editingOrder.id}`
@@ -572,50 +596,146 @@ export function WholesaleOrders({
 
                 {/* Order Items */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-3">Order Items <span className="text-red-500">*</span></h3>
-                  <div className="space-y-2">
-                    {recipes.map((recipe) => {
-                      const item = orderItems.get(recipe.id);
-                      const quantity = item?.quantity || 0;
-                      
-                      return (
-                        <div
-                          key={recipe.id}
-                          className={`flex items-center justify-between p-3 border rounded-lg transition-all ${
-                            quantity > 0 ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{recipe.name}</p>
-                            <p className="text-sm text-gray-500">{recipe.yieldQuantity} {recipe.yieldUnit} per unit</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-900">Order Items <span className="text-red-500">*</span></h3>
+                    {orderItems.size > 0 && (
+                      <button
+                        onClick={() => setShowWeeklySchedule(!showWeeklySchedule)}
+                        className="px-3 py-1 text-sm bg-purple-50 text-purple-700 rounded hover:bg-purple-100 transition-colors font-medium"
+                      >
+                        {showWeeklySchedule ? "Hide" : "Show"} Weekly Schedule
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Product Search */}
+                  <div className="mb-3">
+                    <div className="relative">
+                      <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        placeholder="Quick search products..."
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {products
+                      .filter(product => 
+                        productSearch === "" ||
+                        product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                        product.category?.toLowerCase().includes(productSearch.toLowerCase())
+                      )
+                      .map((product) => {
+                        const item = orderItems.get(product.id);
+                        const quantity = item?.quantity || 0;
+                        
+                        return (
+                          <div
+                            key={product.id}
+                            className={`flex items-center justify-between p-3 border rounded-lg transition-all ${
+                              quantity > 0 ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{product.name}</p>
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <span>{product.unit || `${product.yieldQuantity} ${product.yieldUnit}`}</span>
+                                {product.category && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{product.category}</span>
+                                  </>
+                                )}
+                                <span>•</span>
+                                <span className="font-semibold text-green-700">£{parseFloat(product.price).toFixed(2)}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateItemQuantity(product.id, quantity - 1)}
+                                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                value={quantity || ""}
+                                onChange={(e) => updateItemQuantity(product.id, parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                                className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                              />
+                              <button
+                                onClick={() => updateItemQuantity(product.id, quantity + 1)}
+                                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => updateItemQuantity(recipe.id, quantity - 1)}
-                              className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
-                            >
-                              -
-                            </button>
-                            <input
-                              type="number"
-                              min="0"
-                              value={quantity || ""}
-                              onChange={(e) => updateItemQuantity(recipe.id, parseInt(e.target.value) || 0)}
-                              placeholder="0"
-                              className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
-                            />
-                            <button
-                              onClick={() => updateItemQuantity(recipe.id, quantity + 1)}
-                              className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      );
+                        );
                     })}
                   </div>
                 </div>
+
+                {/* Weekly Production Schedule Sidebar */}
+                {showWeeklySchedule && orderItems.size > 0 && (
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Weekly Production Schedule
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Allocate quantities to specific days (for items like fruit scones that are baked daily)
+                    </p>
+
+                    <div className="grid grid-cols-7 gap-2">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <div key={day} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <h4 className="font-semibold text-xs text-gray-700 mb-2 text-center">{day.slice(0, 3)}</h4>
+                          <div className="space-y-2">
+                            {Array.from(orderItems.entries()).map(([productId, item]) => {
+                              const product = products.find(p => p.id === productId);
+                              if (!product || item.quantity === 0) return null;
+
+                              const dayQty = item.weeklySchedule?.[day] || 0;
+                              const totalAllocated = Object.values(item.weeklySchedule || {}).reduce((sum: number, q: number) => sum + q, 0);
+
+                              return (
+                                <div key={productId} className="bg-white rounded p-2 border border-gray-200">
+                                  <p className="text-xs font-medium text-gray-900 truncate" title={product.name}>
+                                    {product.name}
+                                  </p>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={item.quantity - (totalAllocated - dayQty)}
+                                    value={dayQty || ""}
+                                    onChange={(e) => updateWeeklySchedule(productId, day, parseInt(e.target.value) || 0)}
+                                    placeholder="0"
+                                    className="w-full mt-1 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3 text-xs text-gray-500">
+                      💡 Tip: The total across all days should equal your order quantity. Unallocated items will be produced as needed.
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
