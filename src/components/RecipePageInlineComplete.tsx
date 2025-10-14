@@ -1019,8 +1019,21 @@ export function RecipePageInlineComplete({
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-3">{name}</h1>
               {description && <p className="text-xl text-gray-600 mb-6">{description}</p>}
               
-              {/* Prominent Servings Control */}
-              <div className="flex justify-center mb-6">
+              {/* Image and Servings Control - Side by Side */}
+              <div className="flex justify-center items-center gap-8 mb-6 flex-wrap">
+                {/* Recipe Image */}
+                {(recipe.imageUrl || imageUrl) && (
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={imageUrl || recipe.imageUrl} 
+                      alt={recipe.name} 
+                      loading="lazy"
+                      className="w-auto h-auto max-h-[200px] max-w-[300px] object-cover rounded-2xl shadow-lg"
+                    />
+                  </div>
+                )}
+                
+                {/* Prominent Servings Control */}
                 <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl border-2 border-emerald-200 p-6 shadow-sm inline-flex items-center gap-6">
                   <div className="text-left">
                     <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Servings</div>
@@ -1122,17 +1135,6 @@ export function RecipePageInlineComplete({
 
       {/* Main Content Grid */}
       <div className={isLocked ? "max-w-5xl mx-auto" : "grid xl:grid-cols-12 gap-8"}>
-        {/* Recipe Image - Only in View Mode - Now at top for cooking */}
-        {isLocked && (recipe.imageUrl || imageUrl) && (
-          <div className="mb-8 flex justify-center">
-            <img 
-              src={imageUrl || recipe.imageUrl} 
-              alt={recipe.name} 
-              loading="lazy"
-              className="w-auto h-auto max-h-[240px] max-w-[400px] object-cover rounded-2xl shadow-lg"
-            />
-          </div>
-        )}
         {/* Left Sidebar - Details (only in edit mode) */}
         {!isLocked && (
           <div className="xl:col-span-2 space-y-6">
