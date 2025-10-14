@@ -142,6 +142,9 @@ model Recipe {
   wholesaleOrderItems WholesaleOrderItem[]
   shopifyOrderItems   ShopifyOrderItem[]
   shopifyProductMappings ShopifyProductMapping[]
+  customerPricing     CustomerPricing[]
+  inventory           Inventory[]
+  wholesaleProducts   WholesaleProduct[] @relation("WholesaleRecipes")
 
   @@index([companyId])
   @@index([category])
@@ -300,8 +303,10 @@ model Company {
   collections  Collection[]
   wholesaleCustomers WholesaleCustomer[]
   wholesaleOrders    WholesaleOrder[]
+  wholesaleProducts  WholesaleProduct[]
   shopifyOrders      ShopifyOrder[]
   shopifyProductMappings ShopifyProductMapping[]
+  inventory          Inventory[]
 }
 
 enum MemberRole {
@@ -541,15 +546,35 @@ model ProductionItem {
   recipeId    Int
   
   customer    WholesaleCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  customerId  Int?     // Optional: which wholesale customer this is for
+  customerId  Int?     // Optional: which wholesale customer this is for (legacy)
   
-  quantity    Int      // How many batches/units to make
+  quantity    Decimal  // How many batches/units to make (changed to Decimal for fractional batches)
   priority    Int      @default(0) // For ordering
   completed   Boolean  @default(false)
   notes       String?
   
+  allocations ProductionItemAllocation[]
+  
   @@index([planId])
   @@index([recipeId])
+  @@index([customerId])
+}
+
+model ProductionItemAllocation {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  item        ProductionItem @relation(fields: [productionItemId], references: [id], onDelete: Cascade)
+  productionItemId Int
+  
+  customer    WholesaleCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId  Int?     // Optional: which wholesale customer this allocation is for
+  
+  destination String   // "internal", "wholesale", or custom destination name
+  quantity    Decimal  // How many batches/units allocated
+  notes       String?  // Notes specific to this allocation
+  
+  @@index([productionItemId])
   @@index([customerId])
 }
 
@@ -593,15 +618,22 @@ model WholesaleCustomer {
   notes       String?  // Internal notes about this customer
   isActive    Boolean  @default(true)
   
+  // Portal access
+  portalToken String?  @unique // Unique token for customer ordering portal
+  portalEnabled Boolean @default(false) // Whether customer can place orders via portal
+  
   // Relations
   productionItems ProductionItem[]
+  productionAllocations ProductionItemAllocation[]
   orders          WholesaleOrder[]
+  customPricing   CustomerPricing[]
   
   @@index([companyId])
   @@index([isActive])
+  @@index([portalToken])
 }
 
-// Wholesale Orders (for future enhancement)
+// Wholesale Orders
 model WholesaleOrder {
   id          Int      @id @default(autoincrement())
   createdAt   DateTime @default(now())
@@ -618,12 +650,27 @@ model WholesaleOrder {
   status      String   @default("pending") // "pending", "confirmed", "in_production", "ready", "delivered", "cancelled"
   notes       String?
   
+  // Recurring order fields
+  isRecurring         Boolean  @default(false)
+  recurringInterval   String?  // "weekly", "biweekly", "monthly", "custom"
+  recurringIntervalDays Int?   // For custom intervals (e.g., every 10 days)
+  recurringEndDate    DateTime? // When to stop generating recurring orders
+  nextRecurrenceDate  DateTime? // When the next order should be generated
+  recurringStatus     String?  // "active", "paused", "cancelled"
+  parentOrderId       Int?     // Reference to the original order if this is auto-generated
+  parentOrder         WholesaleOrder?  @relation("RecurringOrders", fields: [parentOrderId], references: [id], onDelete: SetNull)
+  recurringOrders     WholesaleOrder[] @relation("RecurringOrders")
+  
   items       WholesaleOrderItem[]
   
   @@index([customerId])
   @@index([companyId])
   @@index([status])
   @@index([deliveryDate])
+  @@index([isRecurring])
+  @@index([nextRecurrenceDate])
+  @@index([recurringStatus])
+  @@index([parentOrderId])
 }
 
 model WholesaleOrderItem {
@@ -636,10 +683,74 @@ model WholesaleOrderItem {
   recipeId    Int
   
   quantity    Int      // How many units ordered
+  price       Decimal? // Price per unit at time of order
   notes       String?  // Special instructions for this item
   
   @@index([orderId])
   @@index([recipeId])
+}
+
+// Customer-specific pricing
+model CustomerPricing {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  customer    WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  Int
+  
+  recipe      Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId    Int
+  
+  price       Decimal  // Custom price for this customer
+  unit        String   @default("each") // "each", "batch", etc
+  notes       String?  // Pricing notes
+  
+  @@unique([customerId, recipeId])
+  @@index([customerId])
+  @@index([recipeId])
+}
+
+// Wholesale Product Catalogue
+model WholesaleProduct {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  // Option 1: Link to existing recipe
+  recipe      Recipe?  @relation("WholesaleRecipes", fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId    Int?
+  
+  // Option 2: Standalone product (not linked to recipe)
+  name        String?  // Product name if not linked to recipe
+  description String?
+  unit        String?  // e.g., "per box", "tray", "loaf"
+  
+  // Pricing
+  price       Decimal  // Default wholesale price
+  currency    String   @default("GBP")
+  
+  // Categorization
+  category    String?  // e.g., "Cakes", "Brownies", "Savouries"
+  
+  // Availability
+  isActive    Boolean  @default(true) // Whether currently available to order
+  
+  // Display order
+  sortOrder   Int      @default(0)
+  
+  // Additional metadata
+  imageUrl    String?
+  notes       String?  // Internal notes
+  
+  @@index([companyId])
+  @@index([recipeId])
+  @@index([isActive])
+  @@index([category])
+  @@index([companyId, isActive])
 }
 
 // Shopify Integration
@@ -853,4 +964,53 @@ model RecipeVersion {
   @@index([recipeId])
   @@index([recipeId, version])
   @@unique([recipeId, version])
+}
+
+// Inventory Tracking
+model Inventory {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  
+  recipe      Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId    Int
+  
+  quantity    Decimal  @default(0) // Current stock quantity
+  unit        String   // Unit of measurement (matches recipe yieldUnit)
+  
+  // Stock management
+  lowStockThreshold Decimal? // Alert when stock falls below this
+  lastRestocked     DateTime?
+  
+  movements   InventoryMovement[]
+  
+  @@unique([companyId, recipeId])
+  @@index([companyId])
+  @@index([recipeId])
+}
+
+model InventoryMovement {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  inventoryId Int
+  
+  type        String   // "production", "sale", "adjustment", "waste"
+  quantity    Decimal  // Positive for additions, negative for deductions
+  
+  // References
+  productionItemId   Int?    // Link to production item if from production
+  orderId            Int?    // Link to order if from sale
+  
+  reason      String?  // Optional reason for adjustment/waste
+  notes       String?  // Additional notes
+  createdBy   Int      // User ID who made the movement
+  
+  @@index([inventoryId])
+  @@index([createdAt])
+  @@index([type])
 }

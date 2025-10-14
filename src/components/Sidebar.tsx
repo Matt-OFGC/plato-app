@@ -184,6 +184,7 @@ export function Sidebar() {
   const [timersExpanded, setTimersExpanded] = useState(true);
   const [expandedTimerId, setExpandedTimerId] = useState<string | null>(null);
   const [timerOrder, setTimerOrder] = useState<string[]>([]);
+  const [expandedNavItem, setExpandedNavItem] = useState<string | null>(null);
   const { timers, stopTimer, stopAlarm } = useTimers();
   
   // Drag and drop sensor
@@ -278,6 +279,29 @@ export function Sidebar() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
         </svg>
       )
+    },
+    { 
+      href: "/dashboard/inventory", 
+      label: "Inventory", 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      )
+    },
+    { 
+      href: "/dashboard/wholesale", 
+      label: "Wholesale", 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+      subItems: [
+        { href: "/dashboard/wholesale", label: "Customers" },
+        { href: "/dashboard/wholesale/orders", label: "Orders" },
+        { href: "/dashboard/wholesale/products", label: "Products" },
+      ]
     },
     { 
       href: "/dashboard/recipe-mixer", 
@@ -412,27 +436,76 @@ export function Sidebar() {
 
           {/* Navigation Links */}
           <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                  isActive(item.href)
-                    ? "bg-emerald-500 text-white shadow-sm"
-                    : "text-gray-700 hover:bg-white hover:text-gray-900"
-                }`}
-              >
-                <div className={`${isActive(item.href) ? "text-white" : "text-gray-500 group-hover:text-gray-700"}`}>
-                  {item.icon}
-                </div>
-                <span className={`text-sm font-medium ${isActive(item.href) ? "font-semibold" : ""}`}>
-                  {item.label}
-                </span>
-                {isActive(item.href) && (
-                  <div className="ml-auto w-2 h-2 rounded-full bg-white"></div>
+            {navItems.map((item: any) => (
+              <div key={item.href}>
+                {item.subItems ? (
+                  // Nav item with sub-items
+                  <div>
+                    <button
+                      onClick={() => setExpandedNavItem(expandedNavItem === item.href ? null : item.href)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                        pathname.startsWith(item.href)
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "text-gray-700 hover:bg-white hover:text-gray-900"
+                      }`}
+                    >
+                      <div className={`${pathname.startsWith(item.href) ? "text-emerald-600" : "text-gray-500 group-hover:text-gray-700"}`}>
+                        {item.icon}
+                      </div>
+                      <span className={`text-sm font-medium ${pathname.startsWith(item.href) ? "font-semibold" : ""}`}>
+                        {item.label}
+                      </span>
+                      <svg 
+                        className={`ml-auto w-4 h-4 transition-transform ${expandedNavItem === item.href || pathname.startsWith(item.href) ? 'rotate-90' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    {(expandedNavItem === item.href || pathname.startsWith(item.href)) && (
+                      <div className="ml-8 mt-1 space-y-1">
+                        {item.subItems.map((subItem: any) => (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            onClick={() => setIsOpen(false)}
+                            className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                              isActive(subItem.href)
+                                ? "bg-emerald-500 text-white shadow-sm font-medium"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
+                          >
+                            {subItem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Regular nav item
+                  <Link
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                      isActive(item.href)
+                        ? "bg-emerald-500 text-white shadow-sm"
+                        : "text-gray-700 hover:bg-white hover:text-gray-900"
+                    }`}
+                  >
+                    <div className={`${isActive(item.href) ? "text-white" : "text-gray-500 group-hover:text-gray-700"}`}>
+                      {item.icon}
+                    </div>
+                    <span className={`text-sm font-medium ${isActive(item.href) ? "font-semibold" : ""}`}>
+                      {item.label}
+                    </span>
+                    {isActive(item.href) && (
+                      <div className="ml-auto w-2 h-2 rounded-full bg-white"></div>
+                    )}
+                  </Link>
                 )}
-              </Link>
+              </div>
             ))}
           </nav>
 

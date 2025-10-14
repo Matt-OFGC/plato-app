@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, addDays, startOfWeek, eachDayOfInterval } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -40,10 +41,18 @@ interface Recipe {
   sections?: RecipeSection[];
 }
 
+interface Allocation {
+  destination: string; // "internal", "wholesale", or customer name
+  customerId: number | null;
+  quantity: number;
+  notes?: string;
+}
+
 interface SelectedRecipe {
   recipe: Recipe;
   quantity: number;
   customYield?: number;
+  allocations?: Allocation[];
 }
 
 interface DayScheduleItem {
@@ -120,6 +129,7 @@ export function ProductionPlannerEnhanced({
   wholesaleCustomers,
   companyId,
 }: ProductionPlannerEnhancedProps) {
+  const searchParams = useSearchParams();
   const [showCreatePlan, setShowCreatePlan] = useState(false);
   const [step, setStep] = useState<'select' | 'schedule'>(  'select');
   const [planName, setPlanName] = useState("");
@@ -131,6 +141,92 @@ export function ProductionPlannerEnhanced({
   const [creating, setCreating] = useState(false);
   const [daySchedule, setDaySchedule] = useState<DayScheduleItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showAllocations, setShowAllocations] = useState<number | null>(null);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  
+  // Check if we should load orders from URL params
+  useEffect(() => {
+    const fromOrders = searchParams?.get('fromOrders');
+    const orderIds = searchParams?.get('orderIds');
+    
+    if (fromOrders === 'true' && orderIds) {
+      loadOrdersIntoProduction(orderIds);
+    }
+  }, [searchParams]);
+  
+  async function loadOrdersIntoProduction(orderIdsParam: string) {
+    setLoadingOrders(true);
+    try {
+      const ids = orderIdsParam.split(',').map(id => parseInt(id));
+      
+      // Fetch orders
+      const promises = ids.map(id => 
+        fetch(`/api/wholesale/orders/${id}`).then(r => r.json())
+      );
+      
+      const orders = await Promise.all(promises);
+      
+      // Aggregate items by recipe
+      const recipeMap = new Map<number, { quantity: number; customerId: number; customerName: string }[]>();
+      
+      orders.forEach((order: any) => {
+        order.items.forEach((item: any) => {
+          const existing = recipeMap.get(item.recipeId) || [];
+          existing.push({
+            quantity: item.quantity,
+            customerId: order.customerId,
+            customerName: order.customer.name,
+          });
+          recipeMap.set(item.recipeId, existing);
+        });
+      });
+      
+      // Pre-populate selected recipes with allocations
+      const newSelectedRecipes = new Map<number, SelectedRecipe>();
+      
+      recipeMap.forEach((orderItems, recipeId) => {
+        const recipe = recipes.find(r => r.id === recipeId);
+        if (!recipe) return;
+        
+        const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+        const allocations: Allocation[] = [];
+        
+        // Group by customer
+        const customerGroups = new Map<number, number>();
+        orderItems.forEach(item => {
+          const current = customerGroups.get(item.customerId) || 0;
+          customerGroups.set(item.customerId, current + item.quantity);
+        });
+        
+        customerGroups.forEach((qty, customerId) => {
+          const customerName = orderItems.find(i => i.customerId === customerId)?.customerName || '';
+          allocations.push({
+            destination: customerName,
+            customerId,
+            quantity: qty * parseFloat(recipe.yieldQuantity),
+            notes: '',
+          });
+        });
+        
+        newSelectedRecipes.set(recipeId, {
+          recipe,
+          quantity: totalQuantity,
+          customYield: totalQuantity * parseFloat(recipe.yieldQuantity),
+          allocations,
+        });
+      });
+      
+      setSelectedRecipes(newSelectedRecipes);
+      setPlanName(`Orders Production - ${format(new Date(), "MMM d, yyyy")}`);
+      setShowCreatePlan(true);
+      
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      alert('Failed to load orders into production');
+    } finally {
+      setLoadingOrders(false);
+    }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -194,6 +290,48 @@ export function ProductionPlannerEnhanced({
     const newMap = new Map(selectedRecipes);
     newMap.set(recipeId, { ...current, customYield: customYield > 0 ? customYield : undefined });
     setSelectedRecipes(newMap);
+  }
+
+  function updateAllocation(recipeId: number, allocations: Allocation[]) {
+    const current = selectedRecipes.get(recipeId);
+    if (!current) return;
+    
+    const newMap = new Map(selectedRecipes);
+    newMap.set(recipeId, { ...current, allocations });
+    setSelectedRecipes(newMap);
+  }
+
+  function addAllocation(recipeId: number) {
+    const current = selectedRecipes.get(recipeId);
+    if (!current) return;
+    
+    const newAllocations = [...(current.allocations || []), {
+      destination: "internal",
+      customerId: null,
+      quantity: 1,
+      notes: "",
+    }];
+    
+    updateAllocation(recipeId, newAllocations);
+  }
+
+  function removeAllocation(recipeId: number, index: number) {
+    const current = selectedRecipes.get(recipeId);
+    if (!current) return;
+    
+    const newAllocations = (current.allocations || []).filter((_, i) => i !== index);
+    updateAllocation(recipeId, newAllocations);
+  }
+
+  function updateAllocationField(recipeId: number, index: number, field: keyof Allocation, value: any) {
+    const current = selectedRecipes.get(recipeId);
+    if (!current || !current.allocations) return;
+    
+    const newAllocations = current.allocations.map((alloc, i) => 
+      i === index ? { ...alloc, [field]: value } : alloc
+    );
+    
+    updateAllocation(recipeId, newAllocations);
   }
 
   function proceedToSchedule() {
@@ -266,16 +404,20 @@ export function ProductionPlannerEnhanced({
       return;
     }
 
-    // Convert day schedule to production items
-    const itemsMap = new Map<number, number>();
+    // Convert day schedule to production items with allocations
+    const itemsMap = new Map<number, { quantity: number; allocations?: Allocation[] }>();
     daySchedule.forEach(item => {
-      const current = itemsMap.get(item.recipeId) || 0;
-      itemsMap.set(item.recipeId, current + item.quantity);
+      const current = itemsMap.get(item.recipeId) || { quantity: 0 };
+      itemsMap.set(item.recipeId, { 
+        quantity: current.quantity + item.quantity,
+        allocations: selectedRecipes.get(item.recipeId)?.allocations,
+      });
     });
 
-    const items = Array.from(itemsMap.entries()).map(([recipeId, quantity]) => ({
+    const items = Array.from(itemsMap.entries()).map(([recipeId, data]) => ({
       recipeId,
-      quantity,
+      quantity: data.quantity,
+      allocations: data.allocations || [],
     }));
 
     setCreating(true);
@@ -644,18 +786,98 @@ export function ProductionPlannerEnhanced({
                                       </svg>
                                     </button>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <label className="text-xs text-gray-600">Batches:</label>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={item.quantity}
-                                      onChange={(e) => updateQuantity(item.recipe.id, parseInt(e.target.value) || 0)}
-                                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
-                                    />
-                                    <span className="text-xs text-gray-500">
-                                      = {(item.quantity * parseFloat(item.recipe.yieldQuantity)).toFixed(0)} {item.recipe.yieldUnit}
-                                    </span>
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <label className="text-xs text-gray-600 whitespace-nowrap">Total {item.recipe.yieldUnit}:</label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step={parseFloat(item.recipe.yieldQuantity)}
+                                        value={item.customYield || ""}
+                                        placeholder={`e.g., ${parseFloat(item.recipe.yieldQuantity) * 2}`}
+                                        onChange={(e) => {
+                                          const value = parseFloat(e.target.value) || 0;
+                                          updateCustomYield(item.recipe.id, value);
+                                          // Auto-calculate batches
+                                          if (value > 0) {
+                                            const batches = value / parseFloat(item.recipe.yieldQuantity);
+                                            updateQuantity(item.recipe.id, batches);
+                                          }
+                                        }}
+                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                                      />
+                                    </div>
+                                    {item.customYield && (
+                                      <p className="text-xs text-green-600">
+                                        = {(item.customYield / parseFloat(item.recipe.yieldQuantity)).toFixed(2)} batch{item.quantity !== 1 ? 'es' : ''}
+                                      </p>
+                                    )}
+                                    
+                                    {/* Allocations Section */}
+                                    <div className="mt-3 pt-3 border-t border-gray-200">
+                                      <button
+                                        onClick={() => setShowAllocations(showAllocations === item.recipe.id ? null : item.recipe.id)}
+                                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                      >
+                                        <svg className={`w-3 h-3 transition-transform ${showAllocations === item.recipe.id ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        Split by Destination {item.allocations && item.allocations.length > 0 && `(${item.allocations.length})`}
+                                      </button>
+                                      
+                                      {showAllocations === item.recipe.id && (
+                                        <div className="mt-2 space-y-2">
+                                          {(item.allocations || []).map((alloc, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                              <select
+                                                value={alloc.customerId || alloc.destination}
+                                                onChange={(e) => {
+                                                  const val = e.target.value;
+                                                  if (val === "internal" || val === "wholesale") {
+                                                    updateAllocationField(item.recipe.id, idx, "destination", val);
+                                                    updateAllocationField(item.recipe.id, idx, "customerId", null);
+                                                  } else {
+                                                    const custId = parseInt(val);
+                                                    const customer = wholesaleCustomers.find(c => c.id === custId);
+                                                    updateAllocationField(item.recipe.id, idx, "destination", customer?.name || "");
+                                                    updateAllocationField(item.recipe.id, idx, "customerId", custId);
+                                                  }
+                                                }}
+                                                className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                              >
+                                                <option value="internal">Internal</option>
+                                                <option value="wholesale">Wholesale (General)</option>
+                                                {wholesaleCustomers.map(cust => (
+                                                  <option key={cust.id} value={cust.id}>{cust.name}</option>
+                                                ))}
+                                              </select>
+                                              <input
+                                                type="number"
+                                                min="0"
+                                                value={alloc.quantity}
+                                                onChange={(e) => updateAllocationField(item.recipe.id, idx, "quantity", parseFloat(e.target.value) || 0)}
+                                                placeholder="Qty"
+                                                className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                              />
+                                              <button
+                                                onClick={() => removeAllocation(item.recipe.id, idx)}
+                                                className="p-1 text-red-500 hover:text-red-700"
+                                              >
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                              </button>
+                                            </div>
+                                          ))}
+                                          <button
+                                            onClick={() => addAllocation(item.recipe.id)}
+                                            className="w-full px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors font-medium"
+                                          >
+                                            + Add Allocation
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               ))}
@@ -764,6 +986,15 @@ export function ProductionPlannerEnhanced({
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => window.location.href = `/dashboard/production/edit/${plan.id}`}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </button>
                   <div className="text-right">
                     <p className="text-sm text-gray-500">Progress</p>
                     <p className="text-lg font-semibold text-green-600">
@@ -774,32 +1005,48 @@ export function ProductionPlannerEnhanced({
               </div>
 
               <div className="space-y-2">
-                {plan.items.map((item) => {
+                {plan.items.map((item: any) => {
                   const recipeYield = parseFloat(item.recipe.yieldQuantity);
-                  const totalYield = item.quantity * recipeYield;
+                  const totalYield = parseFloat(item.quantity) * recipeYield;
                   
                   return (
-                    <div
-                      key={item.id}
-                      className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                        item.completed ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={item.completed}
-                          onChange={() => toggleItemComplete(plan.id, item.id, item.completed)}
-                          className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                        />
-                        <div className={item.completed ? "line-through text-gray-500" : ""}>
-                          <p className="font-medium">{item.recipe.name}</p>
-                          <p className="text-sm text-gray-600">
-                            {totalYield % 1 === 0 ? totalYield : totalYield.toFixed(2)} {item.recipe.yieldUnit}
-                            <span className="text-gray-400 ml-1">
-                              ({item.quantity % 1 === 0 ? item.quantity : item.quantity.toFixed(2)} batch{item.quantity !== 1 ? "es" : ""})
-                            </span>
-                          </p>
+                    <div key={item.id}>
+                      <div
+                        className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                          item.completed ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={item.completed}
+                            onChange={() => toggleItemComplete(plan.id, item.id, item.completed)}
+                            className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                          />
+                          <div className={`flex-1 ${item.completed ? "line-through text-gray-500" : ""}`}>
+                            <p className="font-medium">{item.recipe.name}</p>
+                            <p className="text-sm text-gray-600">
+                              {totalYield % 1 === 0 ? totalYield : totalYield.toFixed(2)} {item.recipe.yieldUnit}
+                              <span className="text-gray-400 ml-1">
+                                ({parseFloat(item.quantity) % 1 === 0 ? parseFloat(item.quantity) : parseFloat(item.quantity).toFixed(2)} batch{parseFloat(item.quantity) !== 1 ? "es" : ""})
+                              </span>
+                            </p>
+                            {item.allocations && item.allocations.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {item.allocations.map((alloc: any, idx: number) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs"
+                                  >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    {alloc.customer ? alloc.customer.name : alloc.destination}: {parseFloat(alloc.quantity)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

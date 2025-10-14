@@ -43,7 +43,7 @@ export default async function ProductionPage() {
     yieldQuantity: recipe.yieldQuantity.toString(),
   }));
 
-  // Get current production plans
+  // Get current production plans with allocations
   const productionPlansRaw = await prisma.productionPlan.findMany({
     where: { companyId },
     include: {
@@ -55,6 +55,16 @@ export default async function ProductionPage() {
               name: true,
               yieldQuantity: true,
               yieldUnit: true,
+            },
+          },
+          allocations: {
+            include: {
+              customer: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
@@ -70,10 +80,15 @@ export default async function ProductionPage() {
     ...plan,
     items: plan.items.map(item => ({
       ...item,
+      quantity: item.quantity.toString(),
       recipe: {
         ...item.recipe,
         yieldQuantity: item.recipe.yieldQuantity.toString(),
       },
+      allocations: item.allocations.map(alloc => ({
+        ...alloc,
+        quantity: alloc.quantity.toString(),
+      })),
     })),
   }));
 

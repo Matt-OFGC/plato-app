@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create production plan with items
+    // Create production plan with items and allocations
     const plan = await prisma.productionPlan.create({
       data: {
         name,
@@ -33,6 +33,14 @@ export async function POST(request: NextRequest) {
             recipeId: item.recipeId,
             quantity: item.quantity,
             priority: index,
+            allocations: item.allocations && item.allocations.length > 0 ? {
+              create: item.allocations.map((alloc: any) => ({
+                destination: alloc.destination,
+                customerId: alloc.customerId,
+                quantity: alloc.quantity,
+                notes: alloc.notes,
+              })),
+            } : undefined,
           })),
         },
       },
@@ -45,6 +53,16 @@ export async function POST(request: NextRequest) {
                 name: true,
                 yieldQuantity: true,
                 yieldUnit: true,
+              },
+            },
+            allocations: {
+              include: {
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },

@@ -53,12 +53,12 @@ function normalizeUnit(unit: string): Unit | null {
     'tsp': 'tsp', 'teaspoon': 'tsp', 'teaspoons': 'tsp',
     'tbsp': 'tbsp', 'tablespoon': 'tbsp', 'tablespoons': 'tbsp',
     'cup': 'cup', 'cups': 'cup',
-    'floz': 'floz', 'floz': 'floz', 'fluid ounce': 'floz', 'fluid ounces': 'floz',
+    'floz': 'floz', 'fl oz': 'floz', 'fluid ounce': 'floz', 'fluid ounces': 'floz',
     'pint': 'pint', 'pints': 'pint', 'pt': 'pint',
     'quart': 'quart', 'quarts': 'quart', 'qt': 'quart',
     'gallon': 'gallon', 'gallons': 'gallon', 'gal': 'gallon',
     'each': 'each', 'ea': 'each', 'unit': 'each', 'units': 'each', 'pc': 'each', 'pcs': 'each', 'piece': 'each', 'pieces': 'each',
-    'slice': 'slices', 'slices': 'slices',
+    'slice': 'slices', 'slices': 'slices', 'slc': 'slices',
   };
   
   return unitMap[cleaned] || null;
@@ -145,21 +145,22 @@ export async function POST(req: NextRequest) {
               densityGPerMl ?? undefined
             );
 
-            await prisma.ingredient.update({
-              where: { id: existing.id },
-              data: {
-                supplier: mappedRow.supplier ? String(mappedRow.supplier).trim() : null,
-                packQuantity: baseQuantity,
-                packUnit: baseUnit as BaseUnit,
-                originalUnit: packUnit,
-                packPrice: packPrice,
-                currency: mappedRow.currency ? String(mappedRow.currency).trim() : "GBP",
-                densityGPerMl: densityGPerMl,
-                allergens: parseAllergens(String(mappedRow.allergens || '')),
-                notes: mappedRow.notes ? String(mappedRow.notes).trim() : null,
-                lastPriceUpdate: new Date(),
-              },
-            });
+              await prisma.ingredient.update({
+                where: { id: existing.id },
+                data: {
+                  supplier: mappedRow.supplier ? String(mappedRow.supplier).trim() : null,
+                  supplierId: null, // Not supported in import yet
+                  packQuantity: baseQuantity,
+                  packUnit: baseUnit as BaseUnit,
+                  originalUnit: packUnit,
+                  packPrice: packPrice,
+                  currency: mappedRow.currency ? String(mappedRow.currency).trim() : "GBP",
+                  densityGPerMl: densityGPerMl,
+                  allergens: parseAllergens(String(mappedRow.allergens || '')),
+                  notes: mappedRow.notes ? String(mappedRow.notes).trim() : null,
+                  lastPriceUpdate: new Date(),
+                },
+              });
 
             result.imported++;
           } else {
@@ -200,6 +201,7 @@ export async function POST(req: NextRequest) {
           data: {
             name,
             supplier: mappedRow.supplier ? String(mappedRow.supplier).trim() : null,
+            supplierId: null, // Not supported in import yet
             packQuantity: baseQuantity,
             packUnit: baseUnit as BaseUnit,
             originalUnit: packUnit,

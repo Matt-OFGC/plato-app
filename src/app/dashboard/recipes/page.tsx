@@ -40,7 +40,7 @@ export default async function RecipesPage({ searchParams }: Props) {
         })
       };
     
-  const recipes = await prisma.recipe.findMany({ 
+  const recipesRaw = await prisma.recipe.findMany({ 
     where, 
     orderBy: { name: "asc" },
     select: {
@@ -66,6 +66,12 @@ export default async function RecipesPage({ searchParams }: Props) {
       },
     }
   });
+  
+  // Serialize Decimal fields for client component
+  const recipes = recipesRaw.map(r => ({
+    ...r,
+    yieldQuantity: r.yieldQuantity.toString(),
+  }));
   
   // Get categories from the already fetched recipes (no extra query needed)
   const categories = Array.from(new Set(recipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();

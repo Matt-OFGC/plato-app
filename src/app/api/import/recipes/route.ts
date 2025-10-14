@@ -28,6 +28,9 @@ interface ImportResult {
   imported: number;
   failed: number;
   skipped: number;
+  categoriesCreated: string[];
+  storageOptionsCreated: string[];
+  shelfLifeOptionsCreated: string[];
   errors: Array<{ row: number; error: string; data: any }>;
 }
 
@@ -73,6 +76,9 @@ export async function POST(req: NextRequest) {
       imported: 0,
       failed: 0,
       skipped: 0,
+      categoriesCreated: [],
+      storageOptionsCreated: [],
+      shelfLifeOptionsCreated: [],
       errors: [],
     };
 
@@ -130,6 +136,9 @@ export async function POST(req: NextRequest) {
                     companyId: companyId ?? undefined,
                   },
                 });
+                if (!result.categoriesCreated.includes(categoryName)) {
+                  result.categoriesCreated.push(categoryName);
+                }
               }
               categoryId = category.id;
             }
@@ -152,6 +161,9 @@ export async function POST(req: NextRequest) {
                     companyId: companyId ?? undefined,
                   },
                 });
+                if (!result.storageOptionsCreated.includes(storageName)) {
+                  result.storageOptionsCreated.push(storageName);
+                }
               }
               storageId = storage.id;
             }
@@ -174,6 +186,9 @@ export async function POST(req: NextRequest) {
                     companyId: companyId ?? undefined,
                   },
                 });
+                if (!result.shelfLifeOptionsCreated.includes(shelfLifeName)) {
+                  result.shelfLifeOptionsCreated.push(shelfLifeName);
+                }
               }
               shelfLifeId = shelfLife.id;
             }
@@ -228,6 +243,9 @@ export async function POST(req: NextRequest) {
                 companyId: companyId ?? undefined,
               },
             });
+            if (!result.categoriesCreated.includes(categoryName)) {
+              result.categoriesCreated.push(categoryName);
+            }
           }
           categoryId = category.id;
         }
@@ -250,6 +268,9 @@ export async function POST(req: NextRequest) {
                 companyId: companyId ?? undefined,
               },
             });
+            if (!result.storageOptionsCreated.includes(storageName)) {
+              result.storageOptionsCreated.push(storageName);
+            }
           }
           storageId = storage.id;
         }
@@ -272,6 +293,9 @@ export async function POST(req: NextRequest) {
                 companyId: companyId ?? undefined,
               },
             });
+            if (!result.shelfLifeOptionsCreated.includes(shelfLifeName)) {
+              result.shelfLifeOptionsCreated.push(shelfLifeName);
+            }
           }
           shelfLifeId = shelfLife.id;
         }
@@ -314,7 +338,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(result);
+    // Add summary message
+    let message = `Import completed: ${result.imported} imported, ${result.skipped} skipped`;
+    if (result.failed > 0) {
+      message += `, ${result.failed} failed`;
+    }
+    if (result.categoriesCreated.length > 0) {
+      message += `. Auto-created ${result.categoriesCreated.length} new categor${result.categoriesCreated.length === 1 ? 'y' : 'ies'}: ${result.categoriesCreated.join(', ')}`;
+    }
+    if (result.storageOptionsCreated.length > 0) {
+      message += `. Auto-created ${result.storageOptionsCreated.length} new storage option${result.storageOptionsCreated.length === 1 ? '' : 's'}: ${result.storageOptionsCreated.join(', ')}`;
+    }
+    if (result.shelfLifeOptionsCreated.length > 0) {
+      message += `. Auto-created ${result.shelfLifeOptionsCreated.length} new shelf life option${result.shelfLifeOptionsCreated.length === 1 ? '' : 's'}: ${result.shelfLifeOptionsCreated.join(', ')}`;
+    }
+
+    return NextResponse.json({
+      ...result,
+      message,
+    });
 
   } catch (error) {
     console.error("Import error:", error);

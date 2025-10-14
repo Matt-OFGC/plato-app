@@ -13,7 +13,7 @@ export default async function WholesalePage() {
   const { companyId } = await getCurrentUserAndCompany();
 
   // Get all wholesale customers for the company
-  const customersRaw = await prisma.wholesaleCustomer.findMany({
+  const customers = await prisma.wholesaleCustomer.findMany({
     where: { companyId: companyId! },
     include: {
       _count: {
@@ -28,9 +28,6 @@ export default async function WholesalePage() {
       { name: "asc" },
     ],
   });
-
-  // Serialize for client component
-  const customers = customersRaw;
 
   return (
     <div>
