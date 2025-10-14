@@ -12,6 +12,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -149,6 +150,87 @@ function SortableDayItem({
         onChange={(e) => onUpdateQuantity(parseInt(e.target.value) || 1)}
         className="w-full px-2 py-1 text-xs text-center border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
       />
+    </div>
+  );
+}
+
+function DroppableDay({ 
+  day, 
+  items, 
+  onRemove, 
+  onUpdateQuantity,
+  orderItems,
+  addProductToDay,
+  products
+}: { 
+  day: string;
+  items: { productId: number; productName: string; quantity: number; id: string }[];
+  onRemove: (day: string, id: string) => void;
+  onUpdateQuantity: (day: string, id: string, qty: number) => void;
+  orderItems: Map<number, any>;
+  addProductToDay: (productId: number, day: string) => void;
+  products: Product[];
+}) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: day,
+  });
+
+  const allItemIds = items.map(item => item.id);
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`bg-white rounded-lg p-3 border-2 min-h-[200px] transition-colors ${
+        isOver ? 'border-purple-400 bg-purple-50' : 'border-purple-200'
+      }`}
+    >
+      <h4 className="font-bold text-sm text-purple-900 mb-2 text-center border-b border-purple-200 pb-2">
+        {day}
+      </h4>
+      
+      <SortableContext items={allItemIds} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2 min-h-[150px]">
+          {items.map((item) => (
+            <SortableDayItem
+              key={item.id}
+              item={item}
+              day={day}
+              onRemove={() => onRemove(day, item.id)}
+              onUpdateQuantity={(qty) => onUpdateQuantity(day, item.id, qty)}
+            />
+          ))}
+          {items.length === 0 && (
+            <div className="text-center py-8 text-gray-400 text-xs">
+              {isOver ? "Drop here" : "Drag items here"}
+            </div>
+          )}
+        </div>
+      </SortableContext>
+
+      {/* Quick Add Buttons */}
+      {Array.from(orderItems.keys()).length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-200">
+          <select
+            onChange={(e) => {
+              const productId = parseInt(e.target.value);
+              if (productId) {
+                addProductToDay(productId, day);
+                e.target.value = "";
+              }
+            }}
+            className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+          >
+            <option value="">+ Add item...</option>
+            {Array.from(orderItems.keys()).map(productId => {
+              const product = products.find(p => p.id === productId);
+              if (!product) return null;
+              return (
+                <option key={productId} value={productId}>{product.name}</option>
+              );
+            })}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -324,18 +406,33 @@ export function WholesaleOrders({
 
     if (!sourceDay || !activeItem) return;
 
-    // Check if over is a day (droppable area) or another item
-    const targetDay = DAYS_OF_WEEK.find(day => overId === day || overId.startsWith(`${day}-`));
+    // Determine target day - check if overId is a day name or an item in a day
+    let targetDay = "";
     
-    if (targetDay) {
-      // Moving to a different day
-      if (sourceDay !== targetDay) {
-        setWeeklyAllocations(prev => ({
-          ...prev,
-          [sourceDay]: prev[sourceDay].filter(i => i.id !== activeId),
-          [targetDay]: [...prev[targetDay], { ...activeItem, id: `${targetDay}-${activeItem.productId}-${Date.now()}` }],
-        }));
+    // First check if overId is directly a day name
+    if (DAYS_OF_WEEK.includes(overId)) {
+      targetDay = overId;
+    } else {
+      // Check if overId is an item that belongs to a day
+      for (const day of DAYS_OF_WEEK) {
+        const itemInDay = weeklyAllocations[day].find(i => i.id === overId);
+        if (itemInDay) {
+          targetDay = day;
+          break;
+        }
       }
+    }
+
+    if (targetDay && sourceDay !== targetDay) {
+      // Moving to a different day - create new item with unique ID
+      setWeeklyAllocations(prev => ({
+        ...prev,
+        [sourceDay]: prev[sourceDay].filter(i => i.id !== activeId),
+        [targetDay]: [...prev[targetDay], { 
+          ...activeItem, 
+          id: `${targetDay}-${activeItem.productId}-${Date.now()}` 
+        }],
+      }));
     }
   }
 
@@ -929,65 +1026,17 @@ export function WholesaleOrders({
                     <div className="grid grid-cols-2 gap-3">
                       {DAYS_OF_WEEK.map((day) => {
                         const dayItems = weeklyAllocations[day];
-                        const allItemIds = dayItems.map(item => item.id);
 
                         return (
-                          <div key={day} className="bg-white rounded-lg p-3 border-2 border-purple-200 min-h-[200px]">
-                            <h4 className="font-bold text-sm text-purple-900 mb-2 text-center border-b border-purple-200 pb-2">
-                              {day}
-                            </h4>
-                            
-                            <SortableContext items={allItemIds} strategy={verticalListSortingStrategy}>
-                              <div 
-                                id={day}
-                                className="space-y-2 min-h-[150px]"
-                                onDrop={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                }}
-                              >
-                                {dayItems.map((item) => (
-                                  <SortableDayItem
-                                    key={item.id}
-                                    item={item}
-                                    day={day}
-                                    onRemove={() => removeProductFromDay(day, item.id)}
-                                    onUpdateQuantity={(qty) => updateDayItemQuantity(day, item.id, qty)}
-                                  />
-                                ))}
-                                {dayItems.length === 0 && (
-                                  <div className="text-center py-8 text-gray-400 text-xs">
-                                    Drag items here
-                                  </div>
-                                )}
-                              </div>
-                            </SortableContext>
-
-                            {/* Quick Add Buttons */}
-                            {Array.from(orderItems.keys()).length > 0 && (
-                              <div className="mt-2 pt-2 border-t border-gray-200">
-                                <select
-                                  onChange={(e) => {
-                                    const productId = parseInt(e.target.value);
-                                    if (productId) {
-                                      addProductToDay(productId, day);
-                                      e.target.value = "";
-                                    }
-                                  }}
-                                  className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
-                                >
-                                  <option value="">+ Add item...</option>
-                                  {Array.from(orderItems.keys()).map(productId => {
-                                    const product = products.find(p => p.id === productId);
-                                    if (!product) return null;
-                                    return (
-                                      <option key={productId} value={productId}>{product.name}</option>
-                                    );
-                                  })}
-                                </select>
-                              </div>
-                            )}
-                          </div>
+                          <DroppableDay
+                            key={day}
+                            day={day}
+                            items={dayItems}
+                            onRemove={removeProductFromDay}
+                            onUpdateQuantity={updateDayItemQuantity}
+                            orderItems={orderItems}
+                            addProductToDay={addProductToDay}
+                          />
                         );
                       })}
                     </div>
