@@ -255,3 +255,159 @@ export function generateOrderStatusEmail(order: {
 
   return { html, text: `${statusInfo.title}\n\n${statusInfo.message}` };
 }
+
+// Template for team invitation email
+export function sendTeamInviteEmail(options: {
+  to: string;
+  inviterName: string;
+  companyName: string;
+  inviteLink: string;
+}) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Team Invitation</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 30px 20px; border-radius: 0 0 8px 8px; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .button { display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 style="margin: 0;">You've Been Invited! 🎉</h1>
+        </div>
+        <div class="content">
+          <div class="card">
+            <p>Hi there,</p>
+            <p><strong>${options.inviterName}</strong> has invited you to join <strong>${options.companyName}</strong> on Plato.</p>
+            <p>Click the button below to accept the invitation and set up your account:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${options.inviteLink}" class="button">Accept Invitation</a>
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">This invitation will expire in 7 days.</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+You've Been Invited!
+
+${options.inviterName} has invited you to join ${options.companyName} on Plato.
+
+Click the link below to accept the invitation:
+${options.inviteLink}
+
+This invitation will expire in 7 days.
+  `;
+
+  return sendEmail({
+    to: options.to,
+    subject: `You've been invited to join ${options.companyName} on Plato`,
+    html,
+    text,
+  });
+}
+
+// Template for welcome email
+export function sendWelcomeEmail(options: {
+  to: string;
+  name: string;
+  companyName: string;
+}) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Welcome to Plato</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 30px 20px; border-radius: 0 0 8px 8px; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .feature { display: flex; align-items: start; margin: 15px 0; }
+        .feature-icon { color: #10b981; font-size: 24px; margin-right: 15px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 style="margin: 0;">Welcome to Plato! 🎉</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Your kitchen management platform</p>
+        </div>
+        <div class="content">
+          <div class="card">
+            <p>Hi ${options.name},</p>
+            <p>Welcome to Plato! We're excited to help you streamline your kitchen operations.</p>
+            
+            <h3 style="color: #10b981;">Getting Started</h3>
+            <div class="feature">
+              <div class="feature-icon">📝</div>
+              <div>
+                <strong>Create Your First Recipe</strong>
+                <p style="margin: 5px 0; color: #6b7280;">Start by adding your recipes and ingredients</p>
+              </div>
+            </div>
+            <div class="feature">
+              <div class="feature-icon">📦</div>
+              <div>
+                <strong>Plan Production</strong>
+                <p style="margin: 5px 0; color: #6b7280;">Create weekly production plans and track progress</p>
+              </div>
+            </div>
+            <div class="feature">
+              <div class="feature-icon">🏪</div>
+              <div>
+                <strong>Manage Wholesale Orders</strong>
+                <p style="margin: 5px 0; color: #6b7280;">Set up customer portals and recurring orders</p>
+              </div>
+            </div>
+            
+            <p style="margin-top: 20px;">If you have any questions, feel free to reach out to our support team.</p>
+          </div>
+        </div>
+        <div style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px;">
+          <p>Happy cooking! 👨‍🍳</p>
+          <p>${options.companyName}</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Welcome to Plato!
+
+Hi ${options.name},
+
+Welcome to Plato! We're excited to help you streamline your kitchen operations.
+
+Getting Started:
+- Create Your First Recipe: Start by adding your recipes and ingredients
+- Plan Production: Create weekly production plans and track progress  
+- Manage Wholesale Orders: Set up customer portals and recurring orders
+
+If you have any questions, feel free to reach out to our support team.
+
+Happy cooking!
+${options.companyName}
+  `;
+
+  return sendEmail({
+    to: options.to,
+    subject: `Welcome to Plato - Let's Get Started!`,
+    html,
+    text,
+  });
+}
