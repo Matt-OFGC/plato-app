@@ -3,6 +3,23 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { SearchableSelect } from "./SearchableSelect";
 
 interface Product {
@@ -70,6 +87,72 @@ const ORDER_STATUSES = [
   { value: "cancelled", label: "Cancelled", color: "red" },
 ];
 
+// Sortable day item component
+function SortableDayItem({ 
+  item, 
+  day,
+  onRemove,
+  onUpdateQuantity 
+}: { 
+  item: { productId: number; productName: string; quantity: number; id: string };
+  day: string;
+  onRemove: () => void;
+  onUpdateQuantity: (qty: number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-white border border-gray-200 rounded-lg p-2 shadow-sm hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+          </svg>
+        </div>
+        <p className="text-xs font-medium text-gray-900 flex-1 truncate" title={item.productName}>
+          {item.productName}
+        </p>
+        <button
+          onClick={onRemove}
+          className="text-red-500 hover:text-red-700 p-0.5"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <input
+        type="number"
+        min="1"
+        value={item.quantity}
+        onChange={(e) => onUpdateQuantity(parseInt(e.target.value) || 1)}
+        className="w-full px-2 py-1 text-xs text-center border border-gray-300 rounded focus:ring-1 focus:ring-green-500"
+      />
+    </div>
+  );
+}
+
 export function WholesaleOrders({
   orders: initialOrders,
   customers,
@@ -100,7 +183,27 @@ export function WholesaleOrders({
   
   // Weekly schedule state
   const [showWeeklySchedule, setShowWeeklySchedule] = useState(false);
+  const [weeklyAllocations, setWeeklyAllocations] = useState<Record<string, Array<{ productId: number; productName: string; quantity: number }>>>({
+    Monday: [],
+    Tuesday: [],
+    Wednesday: [],
+    Thursday: [],
+    Friday: [],
+    Saturday: [],
+    Sunday: [],
+  });
+  const [activeId, setActiveId] = useState<string | null>(null);
+  
   const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   function openModal(order?: WholesaleOrder) {
     if (order) {
@@ -160,6 +263,93 @@ export function WholesaleOrders({
       newItems.set(productId, { ...existing, weeklySchedule });
       setOrderItems(newItems);
     }
+  }
+
+  function addProductToDay(productId: number, day: string, quantity: number = 1) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    setWeeklyAllocations(prev => ({
+      ...prev,
+      [day]: [...prev[day], {
+        productId,
+        productName: product.name,
+        quantity,
+        id: `${day}-${productId}-${Date.now()}`,
+      }],
+    }));
+  }
+
+  function removeProductFromDay(day: string, itemId: string) {
+    setWeeklyAllocations(prev => ({
+      ...prev,
+      [day]: prev[day].filter(item => item.id !== itemId),
+    }));
+  }
+
+  function updateDayItemQuantity(day: string, itemId: string, quantity: number) {
+    setWeeklyAllocations(prev => ({
+      ...prev,
+      [day]: prev[day].map(item => 
+        item.id === itemId ? { ...item, quantity } : item
+      ),
+    }));
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Find which day the active item is from
+    let sourceDay = "";
+    let activeItem: any = null;
+
+    for (const day of DAYS_OF_WEEK) {
+      const item = weeklyAllocations[day].find(i => i.id === activeId);
+      if (item) {
+        sourceDay = day;
+        activeItem = item;
+        break;
+      }
+    }
+
+    if (!sourceDay || !activeItem) return;
+
+    // Check if over is a day (droppable area) or another item
+    const targetDay = DAYS_OF_WEEK.find(day => overId === day || overId.startsWith(`${day}-`));
+    
+    if (targetDay) {
+      // Moving to a different day
+      if (sourceDay !== targetDay) {
+        setWeeklyAllocations(prev => ({
+          ...prev,
+          [sourceDay]: prev[sourceDay].filter(i => i.id !== activeId),
+          [targetDay]: [...prev[targetDay], { ...activeItem, id: `${targetDay}-${activeItem.productId}-${Date.now()}` }],
+        }));
+      }
+    }
+  }
+
+  // Calculate total quantities from weekly allocations
+  function getTotalAllocatedForProduct(productId: number): number {
+    let total = 0;
+    DAYS_OF_WEEK.forEach(day => {
+      weeklyAllocations[day].forEach(item => {
+        if (item.productId === productId) {
+          total += item.quantity;
+        }
+      });
+    });
+    return total;
   }
 
   async function handleSave() {
@@ -450,16 +640,30 @@ export function WholesaleOrders({
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
+              className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {editingOrder ? "Edit Order" : "New Order"}
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {editingOrder ? "Edit Order" : "New Order"}
+                  </h2>
+                  <button
+                    onClick={() => setShowWeeklySchedule(!showWeeklySchedule)}
+                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors font-medium ${
+                      showWeeklySchedule 
+                        ? "bg-purple-100 text-purple-700" 
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {showWeeklySchedule ? "Hide" : "Show"} Weekly Schedule
+                  </button>
+                </div>
               </div>
 
-              <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-200px)]">
+              <div className="flex max-h-[calc(90vh-200px)]">
+                {/* Left Side - Order Details */}
+                <div className={`p-6 space-y-4 overflow-y-auto ${showWeeklySchedule ? 'w-1/2 border-r' : 'w-full'}`}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -663,86 +867,141 @@ export function WholesaleOrders({
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => updateItemQuantity(product.id, quantity - 1)}
-                                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
-                              >
-                                -
-                              </button>
-                              <input
-                                type="number"
-                                min="0"
-                                value={quantity || ""}
-                                onChange={(e) => updateItemQuantity(product.id, parseInt(e.target.value) || 0)}
-                                placeholder="0"
-                                className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
-                              />
-                              <button
-                                onClick={() => updateItemQuantity(product.id, quantity + 1)}
-                                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
-                              >
-                                +
-                              </button>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => updateItemQuantity(product.id, quantity - 1)}
+                                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={quantity || ""}
+                                  onChange={(e) => updateItemQuantity(product.id, parseInt(e.target.value) || 0)}
+                                  placeholder="0"
+                                  className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                                />
+                                <button
+                                  onClick={() => updateItemQuantity(product.id, quantity + 1)}
+                                  className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              {quantity > 0 && showWeeklySchedule && (
+                                <button
+                                  onClick={() => addProductToDay(product.id, "Monday", quantity)}
+                                  className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors font-medium"
+                                  title="Add to Monday"
+                                >
+                                  → Schedule
+                                </button>
+                              )}
                             </div>
                           </div>
                         );
                     })}
                   </div>
                 </div>
+              </div>
 
-                {/* Weekly Production Schedule Sidebar */}
-                {showWeeklySchedule && orderItems.size > 0 && (
-                  <div className="border-t pt-4 mt-4">
-                    <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+              {/* Right Side - Weekly Schedule (Drag & Drop) */}
+              {showWeeklySchedule && (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="w-1/2 p-6 bg-purple-50 overflow-y-auto">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       Weekly Production Schedule
                     </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Allocate quantities to specific days (for items like fruit scones that are baked daily)
+                    <p className="text-xs text-gray-600 mb-4">
+                      Click items on the left to add, then drag between days to schedule production
                     </p>
 
-                    <div className="grid grid-cols-7 gap-2">
-                      {DAYS_OF_WEEK.map((day) => (
-                        <div key={day} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                          <h4 className="font-semibold text-xs text-gray-700 mb-2 text-center">{day.slice(0, 3)}</h4>
-                          <div className="space-y-2">
-                            {Array.from(orderItems.entries()).map(([productId, item]) => {
-                              const product = products.find(p => p.id === productId);
-                              if (!product || item.quantity === 0) return null;
+                    <div className="grid grid-cols-2 gap-3">
+                      {DAYS_OF_WEEK.map((day) => {
+                        const dayItems = weeklyAllocations[day];
+                        const allItemIds = dayItems.map(item => item.id);
 
-                              const dayQty = item.weeklySchedule?.[day] || 0;
-                              const totalAllocated = Object.values(item.weeklySchedule || {}).reduce((sum: number, q: number) => sum + q, 0);
-
-                              return (
-                                <div key={productId} className="bg-white rounded p-2 border border-gray-200">
-                                  <p className="text-xs font-medium text-gray-900 truncate" title={product.name}>
-                                    {product.name}
-                                  </p>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max={item.quantity - (totalAllocated - dayQty)}
-                                    value={dayQty || ""}
-                                    onChange={(e) => updateWeeklySchedule(productId, day, parseInt(e.target.value) || 0)}
-                                    placeholder="0"
-                                    className="w-full mt-1 px-2 py-1 text-xs text-center border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                        return (
+                          <div key={day} className="bg-white rounded-lg p-3 border-2 border-purple-200 min-h-[200px]">
+                            <h4 className="font-bold text-sm text-purple-900 mb-2 text-center border-b border-purple-200 pb-2">
+                              {day}
+                            </h4>
+                            
+                            <SortableContext items={allItemIds} strategy={verticalListSortingStrategy}>
+                              <div 
+                                id={day}
+                                className="space-y-2 min-h-[150px]"
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                              >
+                                {dayItems.map((item) => (
+                                  <SortableDayItem
+                                    key={item.id}
+                                    item={item}
+                                    day={day}
+                                    onRemove={() => removeProductFromDay(day, item.id)}
+                                    onUpdateQuantity={(qty) => updateDayItemQuantity(day, item.id, qty)}
                                   />
-                                </div>
-                              );
-                            })}
+                                ))}
+                                {dayItems.length === 0 && (
+                                  <div className="text-center py-8 text-gray-400 text-xs">
+                                    Drag items here
+                                  </div>
+                                )}
+                              </div>
+                            </SortableContext>
+
+                            {/* Quick Add Buttons */}
+                            {Array.from(orderItems.keys()).length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <select
+                                  onChange={(e) => {
+                                    const productId = parseInt(e.target.value);
+                                    if (productId) {
+                                      addProductToDay(productId, day);
+                                      e.target.value = "";
+                                    }
+                                  }}
+                                  className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                                >
+                                  <option value="">+ Add item...</option>
+                                  {Array.from(orderItems.keys()).map(productId => {
+                                    const product = products.find(p => p.id === productId);
+                                    if (!product) return null;
+                                    return (
+                                      <option key={productId} value={productId}>{product.name}</option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
-                    <div className="mt-3 text-xs text-gray-500">
-                      💡 Tip: The total across all days should equal your order quantity. Unallocated items will be produced as needed.
+                    {/* Summary */}
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-800">
+                        💡 <strong>Drag items between days</strong> to schedule daily production. 
+                        Click items on the left to set total quantities first.
+                      </p>
                     </div>
                   </div>
-                )}
+                </DndContext>
+              )}
               </div>
 
               <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
