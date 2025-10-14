@@ -6,6 +6,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { StalePriceAlerts } from "@/components/StalePriceAlerts";
 import { SmartImporter } from "@/components/SmartImporter";
 import { IngredientsView } from "@/components/IngredientsView";
+import { IngredientsPageClient } from "./IngredientsPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +39,23 @@ export default async function IngredientsPage({ searchParams }: Props) {
         })
       };
       
-  const ingredients = await prisma.ingredient.findMany({ 
+  const ingredientsRaw = await prisma.ingredient.findMany({ 
     where, 
     include: { supplierRef: true },
     orderBy: { name: "asc" } 
   });
+
+  // Serialize ingredients to convert Decimal to number for Client Components
+  const ingredients = ingredientsRaw.map(ing => ({
+    ...ing,
+    packQuantity: ing.packQuantity.toNumber(),
+    packPrice: ing.packPrice.toNumber(),
+    densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+    supplierRef: ing.supplierRef ? {
+      ...ing.supplierRef,
+      minimumOrder: ing.supplierRef.minimumOrder ? Number(ing.supplierRef.minimumOrder) : null,
+    } : null,
+  }));
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -51,15 +64,7 @@ export default async function IngredientsPage({ searchParams }: Props) {
           <h1 className="text-3xl font-bold text-[var(--foreground)]">Ingredients</h1>
           <p className="text-[var(--muted-foreground)] mt-2">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
         </div>
-        <div className="flex items-center gap-3">
-          <SmartImporter type="ingredients" />
-          <Link href="/dashboard/ingredients/new" className="btn-primary flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Ingredient
-          </Link>
-        </div>
+        <IngredientsPageClient />
       </div>
 
       {/* Stale Price Alerts */}
@@ -68,7 +73,7 @@ export default async function IngredientsPage({ searchParams }: Props) {
           id: ing.id,
           name: ing.name,
           lastPriceUpdate: ing.lastPriceUpdate,
-          packPrice: Number(ing.packPrice),
+          packPrice: ing.packPrice,
           supplier: ing.supplierRef?.name || ing.supplier || undefined,
         }))} />
       </div>

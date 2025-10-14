@@ -22,7 +22,7 @@ interface Supplier {
   country?: string | null;
   currency?: string | null;
   paymentTerms?: string | null;
-  minimumOrder?: number | null | any;
+  minimumOrder?: number | null;
 }
 
 interface SupplierSelectorProps {

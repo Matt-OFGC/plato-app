@@ -6,6 +6,7 @@ import { RecipeCategoryFilter } from "@/components/RecipeCategoryFilter";
 import { SearchBar } from "@/components/SearchBar";
 import { SmartImporter } from "@/components/SmartImporter";
 import { RecipesView } from "@/components/RecipesView";
+import { RecipesPageClient } from "./RecipesPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -83,15 +84,7 @@ export default async function RecipesPage({ searchParams }: Props) {
           <h1 className="text-3xl font-bold text-[var(--foreground)]">Recipes</h1>
           <p className="text-[var(--muted-foreground)] mt-2">Create and manage your recipes with automatic cost calculation</p>
         </div>
-        <div className="flex items-center gap-3">
-          <SmartImporter type="recipes" />
-          <Link href="/dashboard/recipes/new" className="btn-primary flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create Recipe
-          </Link>
-        </div>
+        <RecipesPageClient />
       </div>
 
       <div className="mb-6 space-y-4">

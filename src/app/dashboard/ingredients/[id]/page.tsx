@@ -27,10 +27,16 @@ export default async function EditIngredientPage({ params }: Props) {
   }
 
   // Get suppliers for the dropdown (company-scoped)
-  const suppliers = await prisma.supplier.findMany({
+  const suppliersRaw = await prisma.supplier.findMany({
     where: companyId ? { companyId } : {},
     orderBy: { name: "asc" }
   });
+
+  // Serialize suppliers to convert Decimal to number for Client Components
+  const suppliers = suppliersRaw.map(supplier => ({
+    ...supplier,
+    minimumOrder: supplier.minimumOrder ? Number(supplier.minimumOrder) : null,
+  }));
 
   // Calculate the original quantity to display
   const originalUnit = ing.originalUnit || ing.packUnit;

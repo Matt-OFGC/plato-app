@@ -12,19 +12,88 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 export const STRIPE_CONFIG = {
   // Product and price IDs - you'll need to create these in your Stripe dashboard
   products: {
-    pro: {
-      productId: process.env.STRIPE_PRO_PRODUCT_ID || "prod_pro_placeholder",
-      priceId: process.env.STRIPE_PRO_PRICE_ID || "price_pro_placeholder",
+    professional: {
+      monthly: {
+        productId: process.env.STRIPE_PROFESSIONAL_PRODUCT_ID || "prod_professional_placeholder",
+        priceId: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || "price_professional_monthly_placeholder",
+      },
+      annual: {
+        productId: process.env.STRIPE_PROFESSIONAL_PRODUCT_ID || "prod_professional_placeholder",
+        priceId: process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID || "price_professional_annual_placeholder",
+      },
     },
-    // Seat-based pricing for team members
-    seat: {
-      productId: process.env.STRIPE_SEAT_PRODUCT_ID || "prod_seat_placeholder", 
-      priceId: process.env.STRIPE_SEAT_PRICE_ID || "price_seat_placeholder",
+    team: {
+      monthly: {
+        productId: process.env.STRIPE_TEAM_PRODUCT_ID || "prod_team_placeholder",
+        priceId: process.env.STRIPE_TEAM_MONTHLY_PRICE_ID || "price_team_monthly_placeholder",
+      },
+      annual: {
+        productId: process.env.STRIPE_TEAM_PRODUCT_ID || "prod_team_placeholder",
+        priceId: process.env.STRIPE_TEAM_ANNUAL_PRICE_ID || "price_team_annual_placeholder",
+      },
+    },
+    business: {
+      monthly: {
+        productId: process.env.STRIPE_BUSINESS_PRODUCT_ID || "prod_business_placeholder",
+        priceId: process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID || "price_business_monthly_placeholder",
+      },
+      annual: {
+        productId: process.env.STRIPE_BUSINESS_PRODUCT_ID || "prod_business_placeholder",
+        priceId: process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID || "price_business_annual_placeholder",
+      },
+    },
+    // Seat-based pricing for team tier additional seats
+    teamSeat: {
+      monthly: {
+        productId: process.env.STRIPE_TEAM_SEAT_PRODUCT_ID || "prod_team_seat_placeholder",
+        priceId: process.env.STRIPE_TEAM_SEAT_MONTHLY_PRICE_ID || "price_team_seat_monthly_placeholder",
+      },
+      annual: {
+        productId: process.env.STRIPE_TEAM_SEAT_PRODUCT_ID || "prod_team_seat_placeholder",
+        priceId: process.env.STRIPE_TEAM_SEAT_ANNUAL_PRICE_ID || "price_team_seat_annual_placeholder",
+      },
     },
   },
   // Webhook endpoint secret
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
 } as const;
+
+// Map price IDs back to tiers for webhook handling
+export function getTierFromPriceId(priceId: string): { tier: string; interval: "month" | "year" } | null {
+  // Professional
+  if (priceId === STRIPE_CONFIG.products.professional.monthly.priceId) {
+    return { tier: "professional", interval: "month" };
+  }
+  if (priceId === STRIPE_CONFIG.products.professional.annual.priceId) {
+    return { tier: "professional", interval: "year" };
+  }
+  
+  // Team
+  if (priceId === STRIPE_CONFIG.products.team.monthly.priceId) {
+    return { tier: "team", interval: "month" };
+  }
+  if (priceId === STRIPE_CONFIG.products.team.annual.priceId) {
+    return { tier: "team", interval: "year" };
+  }
+  
+  // Business
+  if (priceId === STRIPE_CONFIG.products.business.monthly.priceId) {
+    return { tier: "business", interval: "month" };
+  }
+  if (priceId === STRIPE_CONFIG.products.business.annual.priceId) {
+    return { tier: "business", interval: "year" };
+  }
+  
+  return null;
+}
+
+/**
+ * Get the appropriate price ID for a tier and interval
+ */
+export function getPriceId(tier: "professional" | "team" | "business", interval: "month" | "year"): string {
+  const intervalKey = interval === "month" ? "monthly" : "annual";
+  return STRIPE_CONFIG.products[tier][intervalKey].priceId;
+}
 
 /**
  * Create a Stripe customer for a user
@@ -50,24 +119,45 @@ export async function createStripeCustomer(user: {
  */
 export async function createCheckoutSession(
   customerId: string,
-  priceId: string,
+  tier: "professional" | "team" | "business",
+  interval: "month" | "year",
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  additionalSeats: number = 0
 ): Promise<Stripe.Checkout.Session> {
+  const priceId = getPriceId(tier, interval);
+  
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+    {
+      price: priceId,
+      quantity: 1,
+    },
+  ];
+  
+  // Add additional seats for Team tier if requested
+  if (tier === "team" && additionalSeats > 0) {
+    const seatPriceId = interval === "month" 
+      ? STRIPE_CONFIG.products.teamSeat.monthly.priceId
+      : STRIPE_CONFIG.products.teamSeat.annual.priceId;
+    
+    lineItems.push({
+      price: seatPriceId,
+      quantity: additionalSeats,
+    });
+  }
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     payment_method_types: ["card"],
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
+    line_items: lineItems,
     mode: "subscription",
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: {
       type: "subscription",
+      tier,
+      interval,
+      additionalSeats: additionalSeats.toString(),
     },
   });
 
@@ -113,26 +203,33 @@ export async function cancelStripeSubscription(
 }
 
 /**
- * Update subscription with new seat count
+ * Update subscription with new seat count (for Team tier)
  */
 export async function updateSubscriptionSeats(
   subscriptionId: string,
-  baseSeats: number = 1,
+  interval: "month" | "year",
   additionalSeats: number = 0
 ): Promise<Stripe.Subscription> {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   
-  // Calculate total seats needed
-  const totalSeats = baseSeats + additionalSeats;
-  
   // Get current subscription items
   const items = subscription.items.data;
   
-  // Find base plan item
-  const baseItem = items.find(item => item.price.id === STRIPE_CONFIG.products.pro.priceId);
+  // Find team base plan item
+  const teamMonthlyPriceId = STRIPE_CONFIG.products.team.monthly.priceId;
+  const teamAnnualPriceId = STRIPE_CONFIG.products.team.annual.priceId;
+  const baseItem = items.find(item => 
+    item.price.id === teamMonthlyPriceId || 
+    item.price.id === teamAnnualPriceId
+  );
   
   // Find seat item (if exists)
-  const seatItem = items.find(item => item.price.id === STRIPE_CONFIG.products.seat.priceId);
+  const seatMonthlyPriceId = STRIPE_CONFIG.products.teamSeat.monthly.priceId;
+  const seatAnnualPriceId = STRIPE_CONFIG.products.teamSeat.annual.priceId;
+  const seatItem = items.find(item => 
+    item.price.id === seatMonthlyPriceId || 
+    item.price.id === seatAnnualPriceId
+  );
   
   // Prepare subscription items for update
   const subscriptionItems: Stripe.SubscriptionUpdateParams.Item[] = [];
@@ -141,10 +238,15 @@ export async function updateSubscriptionSeats(
   if (baseItem) {
     subscriptionItems.push({
       id: baseItem.id,
-      price: STRIPE_CONFIG.products.pro.priceId,
+      price: baseItem.price.id,
       quantity: 1,
     });
   }
+  
+  // Get appropriate seat price ID based on interval
+  const seatPriceId = interval === "month" 
+    ? STRIPE_CONFIG.products.teamSeat.monthly.priceId
+    : STRIPE_CONFIG.products.teamSeat.annual.priceId;
   
   // Add or update seat quantity
   if (additionalSeats > 0) {
@@ -152,13 +254,13 @@ export async function updateSubscriptionSeats(
       // Update existing seat item
       subscriptionItems.push({
         id: seatItem.id,
-        price: STRIPE_CONFIG.products.seat.priceId,
+        price: seatPriceId,
         quantity: additionalSeats,
       });
     } else {
       // Add new seat item
       subscriptionItems.push({
-        price: STRIPE_CONFIG.products.seat.priceId,
+        price: seatPriceId,
         quantity: additionalSeats,
       });
     }
@@ -190,8 +292,10 @@ export async function getSubscriptionSeatCount(subscriptionId: string): Promise<
   let additionalSeats = 0;
   
   // Find seat item and get quantity
+  const seatMonthlyPriceId = STRIPE_CONFIG.products.teamSeat.monthly.priceId;
+  const seatAnnualPriceId = STRIPE_CONFIG.products.teamSeat.annual.priceId;
   const seatItem = subscription.items.data.find(
-    item => item.price.id === STRIPE_CONFIG.products.seat.priceId
+    item => item.price.id === seatMonthlyPriceId || item.price.id === seatAnnualPriceId
   );
   
   if (seatItem) {
@@ -199,7 +303,7 @@ export async function getSubscriptionSeatCount(subscriptionId: string): Promise<
   }
   
   return {
-    baseSeats: 1, // Base plan always includes 1 seat
+    baseSeats: 1, // Base plan always includes 1 seat (Professional), or 5 seats (Team)
     additionalSeats,
     totalSeats: 1 + additionalSeats,
   };

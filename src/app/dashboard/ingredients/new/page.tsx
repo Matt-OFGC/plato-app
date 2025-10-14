@@ -17,10 +17,16 @@ export default async function NewIngredientPage({ searchParams }: NewIngredientP
   const { companyId } = await getCurrentUserAndCompany();
   
   // Get suppliers for the dropdown
-  const suppliers = await prisma.supplier.findMany({
+  const suppliersRaw = await prisma.supplier.findMany({
     where: { companyId },
     orderBy: { name: "asc" }
   });
+
+  // Serialize suppliers to convert Decimal to number for Client Components
+  const suppliers = suppliersRaw.map(supplier => ({
+    ...supplier,
+    minimumOrder: supplier.minimumOrder ? Number(supplier.minimumOrder) : null,
+  }));
   
   async function handleSubmit(formData: FormData) {
     "use server";

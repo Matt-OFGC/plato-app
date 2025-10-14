@@ -235,7 +235,8 @@ model User {
   subscription  Subscription?
   stripeCustomerId String? @unique
   subscriptionStatus String @default("free") // free, active, past_due, canceled, trialing
-  subscriptionTier String @default("free") // free, pro
+  subscriptionTier String @default("starter") // starter, professional, team, business
+  subscriptionInterval String @default("month") // month, year
   subscriptionEndsAt DateTime?
   
   // Usage tracking
@@ -371,8 +372,8 @@ model Subscription {
   
   // Subscription details
   status            String    @default("active") // active, canceled, past_due, trialing
-  tier              String    @default("pro") // free, pro
-  price             Decimal   @default(9.99)
+  tier              String    @default("professional") // starter, professional, team, business
+  price             Decimal   @default(19.00)
   currency          String    @default("GBP")
   interval          String    @default("month") // month, year
   

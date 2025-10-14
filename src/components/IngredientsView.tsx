@@ -13,13 +13,13 @@ interface Ingredient {
   id: number;
   name: string;
   supplier: string | null;
-  supplierRef: { name: string; contactName: string | null } | null;
-  packQuantity: any;
+  supplierRef: { name: string; contactName: string | null; minimumOrder: number | null } | null;
+  packQuantity: number;
   packUnit: string;
   originalUnit: string | null;
-  packPrice: any;
+  packPrice: number;
   currency: string;
-  densityGPerMl: any;
+  densityGPerMl: number | null;
   lastPriceUpdate: Date | null;
 }
 
