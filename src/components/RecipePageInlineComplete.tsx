@@ -1015,25 +1015,29 @@ export function RecipePageInlineComplete({
         ) : (
           <>
             {/* Cooking-Focused Header */}
-            <div className="text-center">
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-3">{name}</h1>
-              {description && <p className="text-xl text-gray-600 mb-6">{description}</p>}
-              
-              {/* Image and Servings Control - Side by Side */}
-              <div className="flex justify-center items-center gap-8 mb-6 flex-wrap">
-                {/* Recipe Image */}
+            <div>
+              {/* Title with Image on Right */}
+              <div className="flex items-start justify-between gap-6 mb-4 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-3">{name}</h1>
+                  {description && <p className="text-xl text-gray-600">{description}</p>}
+                </div>
+                
+                {/* Recipe Image - Next to Title */}
                 {(recipe.imageUrl || imageUrl) && (
                   <div className="flex-shrink-0">
                     <img 
                       src={imageUrl || recipe.imageUrl} 
                       alt={recipe.name} 
                       loading="lazy"
-                      className="w-auto h-auto max-h-[200px] max-w-[300px] object-cover rounded-2xl shadow-lg"
+                      className="w-auto h-auto max-h-[180px] max-w-[280px] object-cover rounded-2xl shadow-lg"
                     />
                   </div>
                 )}
-                
-                {/* Prominent Servings Control */}
+              </div>
+              
+              {/* Servings Control - Centered Below */}
+              <div className="flex justify-center mb-6">
                 <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl border-2 border-emerald-200 p-6 shadow-sm inline-flex items-center gap-6">
                   <div className="text-left">
                     <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Servings</div>
