@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar } from "@/components/SidebarImproved";
 import { CommandBarProvider } from "@/components/CommandBarProvider";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -23,7 +23,7 @@ export default function DashboardLayout({
             <Sidebar />
             
             {/* Main Content Area */}
-            <main className="flex-1 lg:ml-64 transition-all duration-300">
+            <main className="flex-1 md:ml-20 lg:ml-64 transition-all duration-300 pb-20 md:pb-0">
               <div className="max-w-7xl mx-auto px-4 py-8 lg:px-8">
                 {children}
               </div>
@@ -34,4 +34,5 @@ export default function DashboardLayout({
     </ErrorBoundary>
   );
 }
+
 
