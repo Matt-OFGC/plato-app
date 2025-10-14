@@ -26,6 +26,7 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
         name: true,
         packQuantity: true,
         packUnit: true,
+        originalUnit: true,
         packPrice: true,
         densityGPerMl: true,
       }

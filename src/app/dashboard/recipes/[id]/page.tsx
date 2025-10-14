@@ -58,6 +58,7 @@ export default async function RecipePage({ params }: Props) {
         name: true,
         packQuantity: true,
         packUnit: true,
+        originalUnit: true,
         packPrice: true,
         densityGPerMl: true,
       }

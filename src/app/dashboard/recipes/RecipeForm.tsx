@@ -11,6 +11,7 @@ type IngredientOption = {
   name: string;
   packQuantity: number;
   packUnit: "g" | "ml" | "each";
+  originalUnit?: Unit | null;
   packPrice: number;
   densityGPerMl?: number | null;
 };
@@ -282,16 +283,18 @@ export function RecipeForm({
           <div className="space-y-3">
             {items.map((row) => (
               <div key={row.id} className="grid grid-cols-12 gap-3 p-4 bg-gray-50 rounded-xl">
-                <select
-                  className="col-span-5 rounded-xl border border-gray-300 px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-colors"
-                  value={row.ingredientId ?? ""}
-                  onChange={(e) => setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, ingredientId: e.target.value ? Number(e.target.value) : undefined } : r)))}
-                >
-                  <option value="">Select ingredient</option>
-                  {ingredients.map((ing) => (
-                    <option key={ing.id} value={ing.id}>{ing.name}</option>
-                  ))}
-                </select>
+                <div className="col-span-5">
+                  <SearchableSelect
+                    options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
+                    value={row.ingredientId}
+                    onChange={(value) => {
+                      const selectedIngredient = value ? ingredients.find(i => i.id === value) : null;
+                      const defaultUnit = selectedIngredient?.originalUnit || "g";
+                      setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, ingredientId: value, unit: r.unit || defaultUnit } : r)));
+                    }}
+                    placeholder="Select ingredient..."
+                  />
+                </div>
                 <input
                   type="number"
                   step="any"
