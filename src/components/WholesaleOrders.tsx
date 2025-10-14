@@ -168,7 +168,7 @@ function DroppableDay({
   onRemove: (day: string, id: string) => void;
   onUpdateQuantity: (day: string, id: string, qty: number) => void;
   orderItems: Map<number, any>;
-  addProductToDay: (productId: number, day: string) => void;
+  addProductToDay: (productId: number, day: string, quantity?: number) => void;
   products: Product[];
 }) {
   const { isOver, setNodeRef } = useDroppable({
@@ -265,7 +265,7 @@ export function WholesaleOrders({
   
   // Weekly schedule state
   const [showWeeklySchedule, setShowWeeklySchedule] = useState(false);
-  const [weeklyAllocations, setWeeklyAllocations] = useState<Record<string, Array<{ productId: number; productName: string; quantity: number }>>>({
+  const [weeklyAllocations, setWeeklyAllocations] = useState<Record<string, Array<{ productId: number; productName: string; quantity: number; id: string }>>>({
     Monday: [],
     Tuesday: [],
     Wednesday: [],
@@ -1036,6 +1036,7 @@ export function WholesaleOrders({
                             onUpdateQuantity={updateDayItemQuantity}
                             orderItems={orderItems}
                             addProductToDay={addProductToDay}
+                            products={products}
                           />
                         );
                       })}
