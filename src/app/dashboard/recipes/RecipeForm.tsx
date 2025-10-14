@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { computeIngredientUsageCost, computeRecipeCost, computeCostPerOutputUnit, Unit } from "@/lib/units";
 import { formatCurrency } from "@/lib/currency";
 import { UnitConversionHelp } from "@/components/UnitConversionHelp";
+import { SearchableSelect } from "@/components/SearchableSelect";
 
 type IngredientOption = {
   id: number;
@@ -136,7 +137,7 @@ export function RecipeForm({
               {isWholesaleProduct && (
                 <div className="p-4 bg-white border-t border-green-200">
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Wholesale Price (Optional)
+                    Wholesale Price Per Unit (Optional)
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">£</span>
@@ -147,13 +148,16 @@ export function RecipeForm({
                       name="wholesalePrice"
                       value={wholesalePrice}
                       onChange={(e) => setWholesalePrice(e.target.value)}
-                      placeholder="Leave empty to use selling price"
+                      placeholder="Price per slice/unit"
                       className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-colors"
                     />
                   </div>
-                  <p className="text-xs text-gray-600 mt-2">
-                    Set a separate wholesale price, or leave empty to use the recipe's selling price
-                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                    <p className="text-xs text-blue-800">
+                      💡 <strong>Per unit pricing:</strong> If this recipe makes 24 slices, enter the price for <strong>one slice</strong>. 
+                      Customers will order by number of slices, and the system will calculate batches needed for production.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

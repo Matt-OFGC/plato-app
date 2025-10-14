@@ -1317,7 +1317,7 @@ export function RecipePageInlineComplete({
                   
                   {isWholesaleProduct && (
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-2">Wholesale Price</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">Wholesale Price Per Unit</label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">£</span>
                         <input
@@ -1326,12 +1326,12 @@ export function RecipePageInlineComplete({
                           min="0"
                           value={wholesalePrice}
                           onChange={(e) => setWholesalePrice(e.target.value)}
-                          placeholder="Use selling price"
+                          placeholder="Per slice/unit"
                           className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Leave empty to use selling price
+                        Price per {yieldUnit} (leave empty to use selling price)
                       </p>
                     </div>
                   )}

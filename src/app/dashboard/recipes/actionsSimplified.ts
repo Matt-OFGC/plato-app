@@ -223,6 +223,9 @@ export async function createRecipeUnified(formData: FormData) {
     const isWholesaleProduct = formData.get("isWholesaleProduct") === "on";
     if (isWholesaleProduct) {
       const wholesalePriceStr = formData.get("wholesalePrice") as string;
+      
+      // Calculate cost per unit (e.g., cost per slice if batch makes 24 slices)
+      // This will be set in the recipe action, so we need to get the cost breakdown
       const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
         ? parseFloat(wholesalePriceStr) 
         : (recipeData.sellingPrice || 0);
@@ -231,9 +234,10 @@ export async function createRecipeUnified(formData: FormData) {
         data: {
           companyId: companyId!,
           recipeId: recipe.id,
-          price: wholesalePrice,
+          price: wholesalePrice, // This should be price per unit (per slice)
           currency: "GBP",
-          category: recipeData.categoryId ? null : (categoryId ? null : null), // Will use recipe's category
+          unit: `per ${yieldUnit}`, // e.g., "per each" or "per slice"
+          category: recipeData.categoryId ? null : (categoryId ? null : null),
           isActive: true,
           sortOrder: 0,
         },
@@ -387,6 +391,8 @@ export async function updateRecipeUnified(formData: FormData) {
     });
 
     if (isWholesaleProduct) {
+      // Use wholesale price if provided, otherwise use selling price
+      // This should be price per unit (per slice/piece)
       const priceToUse = wholesalePrice || parseFloat(sellingPrice || "0");
       
       if (existingWholesaleProduct) {
@@ -395,7 +401,8 @@ export async function updateRecipeUnified(formData: FormData) {
           where: { id: existingWholesaleProduct.id },
           data: {
             price: priceToUse,
-            category: categoryId ? null : null, // Will use recipe's category
+            unit: `per ${yieldUnit}`, // e.g., "per slice", "per each"
+            category: categoryId ? null : null,
             isActive: true,
           },
         });
@@ -407,6 +414,7 @@ export async function updateRecipeUnified(formData: FormData) {
             recipeId: recipeId,
             price: priceToUse,
             currency: "GBP",
+            unit: `per ${yieldUnit}`, // e.g., "per slice", "per each"
             isActive: true,
             sortOrder: 0,
           },

@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCost } from "@/lib/units";
+import { SearchableSelect } from "./SearchableSelect";
 import {
   DndContext,
   closestCenter,
@@ -121,18 +122,15 @@ function SortableIngredientItem({
         </svg>
       </div>
 
-      <select
-        value={item.ingredientId}
-        onChange={(e) => onUpdate(item.id, "ingredientId", parseInt(e.target.value))}
-        className="col-span-4 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-      >
-        <option value="">Select ingredient...</option>
-        {ingredients.map((ing) => (
-          <option key={ing.id} value={ing.id}>
-            {ing.name}
-          </option>
-        ))}
-      </select>
+      <div className="col-span-4">
+        <SearchableSelect
+          options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
+          value={item.ingredientId}
+          onChange={(value) => onUpdate(item.id, "ingredientId", value || 0)}
+          placeholder="Select ingredient..."
+          className="text-sm"
+        />
+      </div>
       <input
         type="number"
         value={item.quantity}

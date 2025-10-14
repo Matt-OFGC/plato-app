@@ -414,12 +414,18 @@ export function WholesaleOrders({
 
               {/* Order Items Preview */}
               <div className="space-y-2">
-                {order.items.slice(0, 3).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">{item.recipe.name}</span>
-                    <span className="text-gray-600">{item.quantity} × {item.recipe.yieldQuantity} {item.recipe.yieldUnit}</span>
-                  </div>
-                ))}
+                {order.items.slice(0, 3).map((item) => {
+                  const batchesNeeded = Math.ceil(item.quantity / parseFloat(item.recipe.yieldQuantity));
+                  return (
+                    <div key={item.id} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{item.recipe.name}</span>
+                      <div className="text-right">
+                        <span className="text-gray-900 font-medium">{item.quantity} {item.recipe.yieldUnit}</span>
+                        <span className="text-gray-500 text-xs ml-2">({batchesNeeded} batch{batchesNeeded !== 1 ? 'es' : ''})</span>
+                      </div>
+                    </div>
+                  );
+                })}
                 {order.items.length > 3 && (
                   <p className="text-sm text-gray-500">+{order.items.length - 3} more...</p>
                 )}
@@ -645,15 +651,19 @@ export function WholesaleOrders({
                             <div className="flex-1">
                               <p className="font-medium text-gray-900">{product.name}</p>
                               <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <span>{product.unit || `${product.yieldQuantity} ${product.yieldUnit}`}</span>
+                                <span className="font-semibold text-green-700">£{parseFloat(product.price).toFixed(2)} {product.unit || 'each'}</span>
                                 {product.category && (
                                   <>
                                     <span>•</span>
                                     <span>{product.category}</span>
                                   </>
                                 )}
-                                <span>•</span>
-                                <span className="font-semibold text-green-700">£{parseFloat(product.price).toFixed(2)}</span>
+                                {product.recipeId && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-xs text-gray-400">Batch makes {product.yieldQuantity} {product.yieldUnit}</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -827,25 +837,36 @@ export function WholesaleOrders({
 
                 {/* Order Items */}
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Items</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">Items Ordered</h3>
                   <div className="space-y-2">
-                    {viewingOrder.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{item.recipe.name}</p>
-                          <p className="text-sm text-gray-600">{item.recipe.yieldQuantity} {item.recipe.yieldUnit} per unit</p>
+                    {viewingOrder.items.map((item) => {
+                      const batchesNeeded = Math.ceil(item.quantity / parseFloat(item.recipe.yieldQuantity));
+                      return (
+                        <div key={item.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-medium text-gray-900">{item.recipe.name}</p>
+                            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                              {batchesNeeded} batch{batchesNeeded !== 1 ? 'es' : ''} needed
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-gray-500">Ordered:</span>
+                              <span className="ml-2 font-semibold text-gray-900">{item.quantity} {item.recipe.yieldUnit}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Per batch:</span>
+                              <span className="ml-2 text-gray-700">{item.recipe.yieldQuantity} {item.recipe.yieldUnit}</span>
+                            </div>
+                          </div>
                           {item.notes && (
-                            <p className="text-sm text-gray-500 mt-1">Note: {item.notes}</p>
+                            <p className="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                              📝 {item.notes}
+                            </p>
                           )}
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">{item.quantity} units</p>
-                          <p className="text-sm text-gray-600">
-                            {(parseFloat(item.recipe.yieldQuantity) * item.quantity).toFixed(2)} {item.recipe.yieldUnit}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 

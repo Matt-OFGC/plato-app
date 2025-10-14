@@ -168,19 +168,31 @@ export async function POST(
           
           // Add order items to production plan
           for (const item of order.items) {
+            // Get recipe to calculate batches needed
+            const recipe = await prisma.recipe.findUnique({
+              where: { id: item.recipeId },
+              select: { yieldQuantity: true },
+            });
+
+            // Calculate batches needed: ordered quantity / yield per batch
+            // e.g., 48 slices ordered / 24 slices per batch = 2 batches
+            const batchesNeeded = recipe 
+              ? Math.ceil(item.quantity / Number(recipe.yieldQuantity))
+              : item.quantity;
+
             await prisma.productionItem.create({
               data: {
                 planId: productionPlan.id,
                 recipeId: item.recipeId,
-                quantity: item.quantity,
+                quantity: batchesNeeded,
                 customerId: customer.id,
-                notes: `Wholesale order #${order.id} for ${customer.name}`,
+                notes: `Wholesale order #${order.id} for ${customer.name} - ${item.quantity} units ordered (${batchesNeeded} batches)`,
                 allocations: {
                   create: {
                     customerId: customer.id,
                     destination: "wholesale",
-                    quantity: item.quantity,
-                    notes: `Order #${order.id}`,
+                    quantity: batchesNeeded,
+                    notes: `Order #${order.id} - ${item.quantity} units`,
                   },
                 },
               },

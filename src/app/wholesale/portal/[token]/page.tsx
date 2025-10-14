@@ -274,23 +274,26 @@ export default function CustomerPortalPage() {
                       <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.description}</p>
                     )}
                     <div className="flex items-center justify-between mt-3">
-                      <div className="text-sm">
-                        <div className="text-gray-500">
-                          {product.yieldQuantity} {product.yieldUnit}
-                          {product.category && <span className="ml-2">• {product.category}</span>}
-                        </div>
+                      <div className="text-sm flex-1">
                         {product.price && (
-                          <div className="font-semibold text-gray-900 mt-1">
+                          <div className="font-bold text-green-700 text-lg">
                             {product.currency === 'GBP' ? '£' : product.currency === 'USD' ? '$' : '€'}{parseFloat(product.price).toFixed(2)}
-                            {product.hasCustomPrice && (
-                              <span className="ml-1 text-xs font-normal text-blue-600">(Your Price)</span>
-                            )}
+                            <span className="text-sm font-normal text-gray-600 ml-1">{product.unit || 'each'}</span>
                           </div>
                         )}
+                        <div className="text-gray-500 text-xs mt-1">
+                          {product.yieldQuantity && product.recipeId && (
+                            <span>Batch size: {product.yieldQuantity} {product.yieldUnit}</span>
+                          )}
+                          {product.category && <span className="ml-2">• {product.category}</span>}
+                          {product.hasCustomPrice && (
+                            <span className="ml-2 text-blue-600 font-medium">✓ Your Price</span>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={() => addToCart(product)}
-                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"
                       >
                         Add
                       </button>
@@ -374,6 +377,34 @@ export default function CustomerPortalPage() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                   />
+                </div>
+
+                {/* Recurring Order Option */}
+                <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isRecurring}
+                      onChange={(e) => setIsRecurring(e.target.checked)}
+                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm font-medium text-gray-900">Repeat this order automatically</span>
+                  </label>
+                  
+                  {isRecurring && (
+                    <div className="mt-3">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">How often?</label>
+                      <select
+                        value={recurringInterval}
+                        onChange={(e) => setRecurringInterval(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                      >
+                        <option value="weekly">Every week</option>
+                        <option value="biweekly">Every 2 weeks</option>
+                        <option value="monthly">Every month</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <button

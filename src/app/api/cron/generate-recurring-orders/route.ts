@@ -107,6 +107,77 @@ export async function GET(request: NextRequest) {
           data: { nextRecurrenceDate },
         });
 
+        // Auto-sync to production plan if delivery date is within 14 days
+        const daysUntilDelivery = Math.ceil((nextDeliveryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilDelivery >= 0 && daysUntilDelivery <= 14) {
+          try {
+            // Get or create production plan for the week
+            const weekStart = new Date(nextDeliveryDate);
+            const day = weekStart.getDay();
+            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+            weekStart.setDate(diff);
+            weekStart.setHours(0, 0, 0, 0);
+            
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+            
+            let productionPlan = await prisma.productionPlan.findFirst({
+              where: {
+                companyId: parentOrder.companyId,
+                startDate: { lte: weekEnd },
+                endDate: { gte: weekStart },
+              },
+            });
+            
+            if (!productionPlan) {
+              productionPlan = await prisma.productionPlan.create({
+                data: {
+                  companyId: parentOrder.companyId,
+                  name: `Week of ${weekStart.toLocaleDateString()}`,
+                  startDate: weekStart,
+                  endDate: weekEnd,
+                  notes: "Auto-created from recurring wholesale order",
+                  createdBy: 1,
+                },
+              });
+            }
+            
+            // Add items to production plan with batch calculation
+            for (const item of newOrder.items) {
+              const recipe = await prisma.recipe.findUnique({
+                where: { id: item.recipeId },
+                select: { yieldQuantity: true },
+              });
+
+              const batchesNeeded = recipe 
+                ? Math.ceil(item.quantity / Number(recipe.yieldQuantity))
+                : item.quantity;
+
+              await prisma.productionItem.create({
+                data: {
+                  planId: productionPlan.id,
+                  recipeId: item.recipeId,
+                  quantity: batchesNeeded,
+                  customerId: parentOrder.customerId,
+                  notes: `Recurring order #${newOrder.id} for ${parentOrder.customer.name} - ${item.quantity} units (${batchesNeeded} batches)`,
+                  allocations: {
+                    create: {
+                      customerId: parentOrder.customerId,
+                      destination: "wholesale",
+                      quantity: batchesNeeded,
+                      notes: `Recurring order #${newOrder.id}`,
+                    },
+                  },
+                },
+              });
+            }
+          } catch (prodError) {
+            console.error("Failed to sync recurring order to production:", prodError);
+          }
+        }
+
         // Create a notification for the admin
         await prisma.notification.create({
           data: {
