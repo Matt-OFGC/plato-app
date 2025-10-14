@@ -620,6 +620,7 @@ model WholesaleCustomer {
   
   // Portal access
   portalToken String?  @unique // Unique token for customer ordering portal
+  portalShortCode String? @unique // Short URL code (e.g., "abc123" for /p/abc123)
   portalEnabled Boolean @default(false) // Whether customer can place orders via portal
   
   // Relations

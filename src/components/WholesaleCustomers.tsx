@@ -40,6 +40,7 @@ export function WholesaleCustomers({
   const [selectedCustomer, setSelectedCustomer] = useState<WholesaleCustomer | null>(null);
   const [generatingToken, setGeneratingToken] = useState(false);
   const [portalUrl, setPortalUrl] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
   
   // Form state
   const [name, setName] = useState("");
@@ -176,6 +177,7 @@ export function WholesaleCustomers({
       if (res.ok) {
         const data = await res.json();
         setPortalUrl(data.portalUrl);
+        setShortUrl(data.shortUrl);
         setCustomers(customers.map(c => 
           c.id === customer.id ? { ...c, portalToken: data.token, portalEnabled: true } : c
         ));
@@ -191,9 +193,9 @@ export function WholesaleCustomers({
     }
   }
 
-  function copyPortalUrl() {
-    navigator.clipboard.writeText(portalUrl);
-    alert("Portal URL copied to clipboard!");
+  function copyPortalUrl(url: string) {
+    navigator.clipboard.writeText(url);
+    alert("URL copied to clipboard!");
   }
 
   function viewOrders(customerId: number) {
@@ -560,9 +562,32 @@ export function WholesaleCustomers({
               </div>
 
               <div className="p-6 space-y-4">
+                {/* Short URL - Easy to share */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Portal URL
+                    Short URL (Easy to Share) 🎯
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={shortUrl}
+                      readOnly
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-green-50 text-sm font-medium"
+                    />
+                    <button
+                      onClick={() => copyPortalUrl(shortUrl)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Use this shorter link to easily share with customers</p>
+                </div>
+
+                {/* Full URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Portal URL
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -572,7 +597,7 @@ export function WholesaleCustomers({
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
                     />
                     <button
-                      onClick={copyPortalUrl}
+                      onClick={() => copyPortalUrl(portalUrl)}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
                       Copy
