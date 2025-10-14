@@ -128,7 +128,7 @@ export function InvoiceScanner({ onIngredientsExtracted, onClose }: InvoiceScann
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Invoice or Receipt</h3>
                 <p className="text-gray-600 mb-6">
-                  Upload a photo of your invoice/receipt to automatically extract ingredients
+                  Upload a photo or PDF of your invoice/receipt to automatically extract ingredients
                 </p>
               </div>
 
@@ -136,7 +136,7 @@ export function InvoiceScanner({ onIngredientsExtracted, onClose }: InvoiceScann
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
                 onChange={handleFileUpload}
                 className="hidden"
                 disabled={isScanning}
@@ -149,7 +149,7 @@ export function InvoiceScanner({ onIngredientsExtracted, onClose }: InvoiceScann
                   {isScanning ? "Scanning..." : "Choose File"}
                 </button>
                 <p className="text-sm text-gray-500 mt-2">
-                  Supports JPEG, PNG, and WebP images
+                  Supports JPEG, PNG, WebP images and PDF files
                 </p>
               </div>
 

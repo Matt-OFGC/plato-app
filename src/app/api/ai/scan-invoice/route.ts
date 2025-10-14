@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import * as pdfParse from "pdf-parse";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,10 +17,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json({ 
-        error: "Invalid file type. Please upload JPEG, PNG, or WebP images. (PDF support coming soon!)" 
+        error: "Invalid file type. Please upload JPEG, PNG, WebP images or PDF files." 
       }, { status: 400 });
     }
 
@@ -29,19 +30,7 @@ export async function POST(request: NextRequest) {
     const base64 = buffer.toString('base64');
     const mimeType = file.type;
 
-    // Call AI service to extract ingredients from invoice
-    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert at analyzing invoices and receipts to extract food ingredients and their details.
+    const systemPrompt = `You are an expert at analyzing invoices and receipts to extract food ingredients and their details.
 
 Extract ingredients from this invoice/receipt and return them in this exact JSON format:
 {
@@ -65,29 +54,89 @@ Rules:
 - currency should be GBP, USD, or EUR based on the invoice
 - confidence should be 0-1 based on how clear the text is
 - If quantity/price is unclear, make your best estimate
-- Skip any items that aren't clearly food ingredients`
+- Skip any items that aren't clearly food ingredients`;
+
+    let aiResponse;
+
+    // Handle PDFs differently - extract text first, then analyze
+    if (file.type === "application/pdf") {
+      try {
+        // Extract text from PDF
+        const pdfData = await (pdfParse as any).default(buffer);
+        const pdfText = pdfData.text;
+
+        if (!pdfText || pdfText.trim().length === 0) {
+          return NextResponse.json({ 
+            error: "Could not extract text from PDF. Please try converting to an image instead." 
+          }, { status: 400 });
+        }
+
+        // Use GPT-4o to analyze the extracted text
+        aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
           },
-          {
-            role: "user",
-            content: [
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
               {
-                type: "text",
-                text: "Extract ingredients from this invoice/receipt:"
+                role: "system",
+                content: systemPrompt
               },
               {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType};base64,${base64}`,
-                  detail: "high"
-                }
+                role: "user",
+                content: `Extract ingredients from this invoice/receipt text:\n\n${pdfText}`
               }
-            ]
-          }
-        ],
-        max_tokens: 2000,
-        temperature: 0.1
-      })
-    });
+            ],
+            max_tokens: 2000,
+            temperature: 0.1
+          })
+        });
+      } catch (pdfError) {
+        console.error("PDF parsing error:", pdfError);
+        return NextResponse.json({ 
+          error: "Failed to parse PDF. Please try converting to an image (JPEG/PNG) instead." 
+        }, { status: 400 });
+      }
+    } else {
+      // Handle images with vision API
+      aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Extract ingredients from this invoice/receipt:"
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64}`,
+                    detail: "high"
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.1
+        })
+      });
+    }
 
     if (!aiResponse.ok) {
       const errorData = await aiResponse.json().catch(() => ({}));
