@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { createCheckoutSession, createStripeCustomer, STRIPE_CONFIG } from "@/lib/stripe";
+import { createCheckoutSession, createStripeCustomer } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { tier, interval = "month", seats = 0 } = body;
+
+    // Validate tier
+    if (!tier || !["professional", "team", "business"].includes(tier)) {
+      return NextResponse.json({ error: "Invalid tier specified" }, { status: 400 });
+    }
+
+    // Validate interval
+    if (!["month", "year"].includes(interval)) {
+      return NextResponse.json({ error: "Invalid interval specified" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
@@ -23,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (!customerId) {
       const customer = await createStripeCustomer(user);
       customerId = customer.id;
-      
+
       await prisma.user.update({
         where: { id: user.id },
         data: { stripeCustomerId: customerId },
@@ -33,13 +46,15 @@ export async function POST(request: NextRequest) {
     // Create checkout session
     const checkoutSession = await createCheckoutSession(
       customerId,
-      STRIPE_CONFIG.products.pro.priceId,
-      `${request.nextUrl.origin}/account?success=true`,
-      `${request.nextUrl.origin}/pricing?canceled=true`
+      tier,
+      interval,
+      `${request.nextUrl.origin}/dashboard/account?success=true`,
+      `${request.nextUrl.origin}/pricing?canceled=true`,
+      seats
     );
 
-    return NextResponse.json({ 
-      url: checkoutSession.url 
+    return NextResponse.json({
+      url: checkoutSession.url,
     });
   } catch (error) {
     console.error("Checkout error:", error);
@@ -49,4 +64,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -6,6 +6,7 @@ import { MemberRole } from "@/generated/prisma";
 import { updateSubscriptionSeats } from "@/lib/stripe";
 import { sendTeamInviteEmail } from "@/lib/email";
 import crypto from "crypto";
+import { canInviteTeamMembers, createFeatureGateError } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +26,20 @@ export async function POST(request: NextRequest) {
     const canManage = await checkPermission(session.id, companyId, "manage:team");
     if (!canManage) {
       return NextResponse.json({ error: "No permission to manage team" }, { status: 403 });
+    }
+
+    // Check if user has access to team features (Team tier+)
+    const hasTeamAccess = await canInviteTeamMembers(session.id);
+    if (!hasTeamAccess) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: { subscriptionTier: true },
+      });
+      const currentTier = user?.subscriptionTier || "starter";
+      return NextResponse.json(
+        createFeatureGateError("team", currentTier as any, "Team Collaboration"),
+        { status: 403 }
+      );
     }
 
     // Check if company has reached seat limit
@@ -116,11 +131,11 @@ export async function POST(request: NextRequest) {
     
     // Send invitation email
     try {
-      await sendTeamInviteEmail(email, {
+      await sendTeamInviteEmail({
+        to: email,
         inviterName: inviter?.name || inviter?.email || "Someone",
         companyName: company.name,
         inviteLink: inviteUrl,
-        role,
       });
       console.log(`✅ Invitation email sent to ${email}`);
     } catch (emailError) {

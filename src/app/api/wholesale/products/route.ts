@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { canAccessWholesale, createFeatureGateError } from "@/lib/subscription";
 
 // GET /api/wholesale/products - Get all wholesale products for a company
 export async function GET(request: NextRequest) {
@@ -8,6 +9,20 @@ export async function GET(request: NextRequest) {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check if user has access to wholesale features
+    const hasAccess = await canAccessWholesale(session.id);
+    if (!hasAccess) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: { subscriptionTier: true },
+      });
+      const currentTier = user?.subscriptionTier || "starter";
+      return NextResponse.json(
+        createFeatureGateError("business", currentTier as any, "Wholesale Products"),
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);

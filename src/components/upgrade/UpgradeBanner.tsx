@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, ArrowRight } from "lucide-react";
 
 interface UpgradeBannerProps {
   message: string;
@@ -56,14 +55,18 @@ export function UpgradeBanner({
           className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-semibold rounded-lg hover:shadow-md transition-all"
         >
           Upgrade to {tierData.name}
-          <ArrowRight className="w-4 h-4" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
         </a>
         {dismissible && (
           <button
             onClick={handleDismiss}
             className="flex-shrink-0 p-1 rounded hover:bg-white/50 transition-colors"
           >
-            <X className="w-4 h-4 text-gray-500" />
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
       </div>

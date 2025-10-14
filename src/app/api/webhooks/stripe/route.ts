@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
+import { stripe, STRIPE_CONFIG, getTierFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 
@@ -25,23 +25,23 @@ export async function POST(request: NextRequest) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
         break;
-      
+
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
         break;
-      
+
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
         break;
-      
+
       case "invoice.payment_succeeded":
         await handlePaymentSucceeded(event.data.object as Stripe.Invoice);
         break;
-      
+
       case "invoice.payment_failed":
         await handlePaymentFailed(event.data.object as Stripe.Invoice);
         break;
-      
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -60,6 +60,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Get user by Stripe customer ID
   const user = await prisma.user.findUnique({
     where: { stripeCustomerId: customerId },
+    include: {
+      memberships: {
+        where: { role: "OWNER" },
+        include: { company: true },
+      },
+    },
   });
 
   if (!user) {
@@ -71,6 +77,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const price = subscription.items.data[0].price;
 
+  // Determine tier from price ID
+  const tierInfo = getTierFromPriceId(price.id);
+  const tier = tierInfo?.tier || "professional";
+  const interval = tierInfo?.interval || "month";
+
+  // Get seat limits based on tier
+  let maxSeats = 1;
+  if (tier === "team") {
+    maxSeats = 5;
+  } else if (tier === "business") {
+    maxSeats = 999999; // Effectively unlimited
+  }
+
   // Create or update subscription in database
   await prisma.subscription.upsert({
     where: { userId: user.id },
@@ -80,24 +99,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripePriceId: price.id,
       stripeProductId: price.product as string,
       status: subscription.status,
-      tier: "pro",
-      price: price.unit_amount ? price.unit_amount / 100 : 9.99,
+      tier: tier,
+      price: price.unit_amount ? price.unit_amount / 100 : 19.0,
       currency: price.currency,
-      interval: price.recurring?.interval || "month",
+      interval: interval,
       currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
       currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-      maxIngredients: null, // unlimited
-      maxRecipes: null, // unlimited
+      maxIngredients: null, // All paid tiers have unlimited
+      maxRecipes: null, // All paid tiers have unlimited
     },
     update: {
       stripeSubscriptionId: subscriptionId,
       stripePriceId: price.id,
       stripeProductId: price.product as string,
       status: subscription.status,
-      tier: "pro",
-      price: price.unit_amount ? price.unit_amount / 100 : 9.99,
+      tier: tier,
+      price: price.unit_amount ? price.unit_amount / 100 : 19.0,
       currency: price.currency,
-      interval: price.recurring?.interval || "month",
+      interval: interval,
       currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
       currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
       maxIngredients: null,
@@ -109,25 +128,62 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      subscriptionTier: "pro",
+      subscriptionTier: tier,
+      subscriptionInterval: interval,
       subscriptionStatus: subscription.status,
       subscriptionEndsAt: new Date((subscription as any).current_period_end * 1000),
     },
   });
+
+  // Update company seat limits if user is company owner
+  if (user.memberships.length > 0) {
+    for (const membership of user.memberships) {
+      if (membership.company) {
+        await prisma.company.update({
+          where: { id: membership.company.id },
+          data: {
+            maxSeats: maxSeats,
+          },
+        });
+      }
+    }
+  }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const user = await prisma.user.findFirst({
     where: { stripeCustomerId: subscription.customer as string },
+    include: {
+      memberships: {
+        where: { role: "OWNER" },
+        include: { company: true },
+      },
+    },
   });
 
   if (!user) return;
+
+  // Get the main price to determine tier
+  const price = subscription.items.data[0].price;
+  const tierInfo = getTierFromPriceId(price.id);
+  const tier = tierInfo?.tier || "professional";
+  const interval = tierInfo?.interval || "month";
+
+  // Get seat limits based on tier
+  let maxSeats = 1;
+  if (tier === "team") {
+    maxSeats = 5;
+  } else if (tier === "business") {
+    maxSeats = 999999;
+  }
 
   // Update subscription in database
   await prisma.subscription.updateMany({
     where: { stripeSubscriptionId: subscription.id },
     data: {
       status: subscription.status,
+      tier: tier,
+      interval: interval,
       currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
       currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -139,15 +195,37 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   await prisma.user.update({
     where: { id: user.id },
     data: {
+      subscriptionTier: tier,
+      subscriptionInterval: interval,
       subscriptionStatus: subscription.status,
       subscriptionEndsAt: new Date((subscription as any).current_period_end * 1000),
     },
   });
+
+  // Update company seat limits if user is company owner
+  if (user.memberships.length > 0) {
+    for (const membership of user.memberships) {
+      if (membership.company) {
+        await prisma.company.update({
+          where: { id: membership.company.id },
+          data: {
+            maxSeats: maxSeats,
+          },
+        });
+      }
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const user = await prisma.user.findFirst({
     where: { stripeCustomerId: subscription.customer as string },
+    include: {
+      memberships: {
+        where: { role: "OWNER" },
+        include: { company: true },
+      },
+    },
   });
 
   if (!user) return;
@@ -161,15 +239,29 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     },
   });
 
-  // Downgrade user to free tier
+  // Downgrade user to starter tier
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      subscriptionTier: "free",
+      subscriptionTier: "starter",
       subscriptionStatus: "canceled",
       subscriptionEndsAt: null,
     },
   });
+
+  // Reset company seat limits to 1
+  if (user.memberships.length > 0) {
+    for (const membership of user.memberships) {
+      if (membership.company) {
+        await prisma.company.update({
+          where: { id: membership.company.id },
+          data: {
+            maxSeats: 1,
+          },
+        });
+      }
+    }
+  }
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { ArrowRight, Lock } from "lucide-react";
 
 interface UpgradeCardProps {
   title: string;
@@ -50,7 +49,9 @@ export function UpgradeCard({
       >
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
-            <Lock className="w-6 h-6 text-gray-400" />
+            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
@@ -59,7 +60,10 @@ export function UpgradeCard({
               href={`/pricing?highlight=${tier}`}
               className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:text-emerald-700"
             >
-              Upgrade to {tierData.name} <ArrowRight className="w-4 h-4" />
+              Upgrade to {tierData.name}{" "}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </a>
           </div>
         </div>
@@ -73,7 +77,9 @@ export function UpgradeCard({
     >
       <div className="text-center mb-6">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl mb-4">
-          <Lock className="w-8 h-8 text-gray-400" />
+          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
         </div>
         <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-semibold mb-3">
           {tierData.badge}

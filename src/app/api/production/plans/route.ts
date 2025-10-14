@@ -1,12 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { canAccessProduction, createFeatureGateError } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check if user has access to production features
+    const hasAccess = await canAccessProduction(session.id);
+    if (!hasAccess) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: { subscriptionTier: true },
+      });
+      const currentTier = user?.subscriptionTier || "starter";
+      return NextResponse.json(
+        createFeatureGateError("team", currentTier as any, "Production Planning"),
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
