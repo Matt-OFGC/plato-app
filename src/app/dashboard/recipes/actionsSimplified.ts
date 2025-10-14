@@ -222,13 +222,18 @@ export async function createRecipeUnified(formData: FormData) {
     // Check if should be added to wholesale catalogue
     const isWholesaleProduct = formData.get("isWholesaleProduct") === "on";
     if (isWholesaleProduct) {
+      const wholesalePriceStr = formData.get("wholesalePrice") as string;
+      const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
+        ? parseFloat(wholesalePriceStr) 
+        : (recipeData.sellingPrice || 0);
+
       await prisma.wholesaleProduct.create({
         data: {
           companyId: companyId!,
           recipeId: recipe.id,
-          price: recipe.sellingPrice || 0, // Use recipe selling price or default to 0
+          price: wholesalePrice,
           currency: "GBP",
-          category: recipe.category || null,
+          category: recipeData.categoryId ? null : (categoryId ? null : null), // Will use recipe's category
           isActive: true,
           sortOrder: 0,
         },
@@ -366,8 +371,58 @@ export async function updateRecipeUnified(formData: FormData) {
       }
     }
 
+    // Handle wholesale product sync
+    const isWholesaleProduct = formData.get("isWholesaleProduct") === "on";
+    const wholesalePriceStr = formData.get("wholesalePrice") as string;
+    const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
+      ? parseFloat(wholesalePriceStr) 
+      : null;
+
+    // Check if wholesale product already exists for this recipe
+    const existingWholesaleProduct = await prisma.wholesaleProduct.findFirst({
+      where: {
+        recipeId: recipeId,
+        companyId: companyId!,
+      },
+    });
+
+    if (isWholesaleProduct) {
+      const priceToUse = wholesalePrice || parseFloat(sellingPrice || "0");
+      
+      if (existingWholesaleProduct) {
+        // Update existing wholesale product
+        await prisma.wholesaleProduct.update({
+          where: { id: existingWholesaleProduct.id },
+          data: {
+            price: priceToUse,
+            category: categoryId ? null : null, // Will use recipe's category
+            isActive: true,
+          },
+        });
+      } else {
+        // Create new wholesale product
+        await prisma.wholesaleProduct.create({
+          data: {
+            companyId: companyId!,
+            recipeId: recipeId,
+            price: priceToUse,
+            currency: "GBP",
+            isActive: true,
+            sortOrder: 0,
+          },
+        });
+      }
+    } else if (existingWholesaleProduct) {
+      // If unchecked and product exists, mark as inactive (don't delete to preserve history)
+      await prisma.wholesaleProduct.update({
+        where: { id: existingWholesaleProduct.id },
+        data: { isActive: false },
+      });
+    }
+
     revalidatePath(`/dashboard/recipes/${recipeId}`);
     revalidatePath("/dashboard/recipes");
+    revalidatePath("/dashboard/wholesale/products");
     
     // Don't redirect - just revalidate so the component can handle the state
   } catch (error) {

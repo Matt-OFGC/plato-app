@@ -49,7 +49,7 @@ export default async function RecipePage({ params }: Props) {
   }
 
   // Get only the data we need for this recipe
-  const [ingredients, categories, shelfLifeOptions, storageOptions] = await Promise.all([
+  const [ingredients, categories, shelfLifeOptions, storageOptions, wholesaleProduct] = await Promise.all([
     prisma.ingredient.findMany({ 
       where, 
       orderBy: { name: "asc" },
@@ -76,6 +76,17 @@ export default async function RecipePage({ params }: Props) {
       where, 
       orderBy: { name: "asc" },
       select: { id: true, name: true }
+    }),
+    prisma.wholesaleProduct.findFirst({
+      where: {
+        recipeId: id,
+        companyId: companyId!,
+      },
+      select: {
+        id: true,
+        price: true,
+        isActive: true,
+      }
     }),
   ]);
 
@@ -181,6 +192,11 @@ export default async function RecipePage({ params }: Props) {
       categories={categories}
       shelfLifeOptions={shelfLifeOptions}
       storageOptions={storageOptions}
+      wholesaleProduct={wholesaleProduct ? {
+        id: wholesaleProduct.id,
+        price: wholesaleProduct.price.toString(),
+        isActive: wholesaleProduct.isActive,
+      } : null}
       onSave={updateRecipeUnified}
     />
   );

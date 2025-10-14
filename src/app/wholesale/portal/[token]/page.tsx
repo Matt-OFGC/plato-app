@@ -260,36 +260,36 @@ export default function CustomerPortalPage() {
 
               {/* Product Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredRecipes.map((recipe) => (
-                  <div key={recipe.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
-                    {recipe.imageUrl && (
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    {product.imageUrl && (
                       <img
-                        src={recipe.imageUrl}
-                        alt={recipe.name}
+                        src={product.imageUrl}
+                        alt={product.name}
                         className="w-full h-32 object-cover rounded-lg mb-3"
                       />
                     )}
-                    <h3 className="font-semibold text-gray-900 mb-1">{recipe.name}</h3>
-                    {recipe.description && (
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{recipe.description}</p>
+                    <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
+                    {product.description && (
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.description}</p>
                     )}
                     <div className="flex items-center justify-between mt-3">
                       <div className="text-sm">
                         <div className="text-gray-500">
-                          {recipe.yieldQuantity} {recipe.yieldUnit}
-                          {recipe.category && <span className="ml-2">• {recipe.category}</span>}
+                          {product.yieldQuantity} {product.yieldUnit}
+                          {product.category && <span className="ml-2">• {product.category}</span>}
                         </div>
-                        {recipe.sellingPrice && (
+                        {product.price && (
                           <div className="font-semibold text-gray-900 mt-1">
-                            £{parseFloat(recipe.sellingPrice).toFixed(2)}
-                            {recipe.hasCustomPrice && (
+                            {product.currency === 'GBP' ? '£' : product.currency === 'USD' ? '$' : '€'}{parseFloat(product.price).toFixed(2)}
+                            {product.hasCustomPrice && (
                               <span className="ml-1 text-xs font-normal text-blue-600">(Your Price)</span>
                             )}
                           </div>
                         )}
                       </div>
                       <button
-                        onClick={() => addToCart(recipe)}
+                        onClick={() => addToCart(product)}
                         className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                       >
                         Add
@@ -317,19 +317,19 @@ export default function CustomerPortalPage() {
               ) : (
                 <div className="space-y-3 mb-6">
                   {Array.from(cart.values()).map((item) => (
-                    <div key={item.recipeId} className="flex items-center justify-between pb-3 border-b">
+                    <div key={item.productId} className="flex items-center justify-between pb-3 border-b">
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.recipeName}</p>
+                        <p className="font-medium text-gray-900">{item.productName}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <button
-                            onClick={() => updateCartQuantity(item.recipeId, item.quantity - 1)}
+                            onClick={() => updateCartQuantity(item.productId, item.quantity - 1)}
                             className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
                           >
                             -
                           </button>
                           <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                           <button
-                            onClick={() => updateCartQuantity(item.recipeId, item.quantity + 1)}
+                            onClick={() => updateCartQuantity(item.productId, item.quantity + 1)}
                             className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
                           >
                             +
@@ -337,7 +337,7 @@ export default function CustomerPortalPage() {
                         </div>
                       </div>
                       <button
-                        onClick={() => removeFromCart(item.recipeId)}
+                        onClick={() => removeFromCart(item.productId)}
                         className="text-red-500 hover:text-red-700 p-1"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
