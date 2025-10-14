@@ -54,7 +54,7 @@ export default async function AccountPage() {
   });
 
   // Get user's suppliers
-  const suppliers = await prisma.supplier.findMany({
+  const suppliersRaw = await prisma.supplier.findMany({
     where: { companyId },
     include: {
       _count: {
@@ -64,14 +64,20 @@ export default async function AccountPage() {
     orderBy: { name: "asc" }
   });
 
+  // Serialize suppliers to convert Decimal to number for Client Components
+  const suppliers = suppliersRaw.map(supplier => ({
+    ...supplier,
+    minimumOrder: supplier.minimumOrder ? Number(supplier.minimumOrder) : null,
+  }));
+
   // Get all data for database management
-  const allIngredients = await prisma.ingredient.findMany({
+  const allIngredientsRaw = await prisma.ingredient.findMany({
     where: { companyId },
     include: { supplierRef: true },
     orderBy: { name: "asc" }
   });
 
-  const allRecipes = await prisma.recipe.findMany({
+  const allRecipesRaw = await prisma.recipe.findMany({
     where: { companyId },
     include: { 
       categoryRef: true,
@@ -80,6 +86,20 @@ export default async function AccountPage() {
     },
     orderBy: { name: "asc" }
   });
+
+  // Serialize data to convert Decimal to number for Client Components
+  const allIngredients = allIngredientsRaw.map(ing => ({
+    ...ing,
+    packQuantity: ing.packQuantity.toNumber(),
+    packPrice: ing.packPrice.toNumber(),
+    densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+    supplierRef: ing.supplierRef ? {
+      ...ing.supplierRef,
+      minimumOrder: ing.supplierRef.minimumOrder ? Number(ing.supplierRef.minimumOrder) : null,
+    } : null,
+  }));
+
+  const allRecipes = allRecipesRaw;
 
   async function updateCurrency(formData: FormData) {
     "use server";
@@ -240,7 +260,7 @@ export default async function AccountPage() {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Suppliers & Information</h2>
               <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <SupplierManager suppliers={suppliers as any} />
+                <SupplierManager suppliers={suppliers} />
               </div>
             </div>
           ),

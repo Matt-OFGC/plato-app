@@ -3,14 +3,25 @@
 import { useState } from "react";
 import { Ingredient, Recipe, Supplier, Category, ShelfLifeOption, StorageOption } from "@/generated/prisma";
 
+// Serialized types for Client Components (Decimal -> number)
+type SerializedIngredient = Omit<Ingredient, 'packQuantity' | 'packPrice' | 'densityGPerMl'> & {
+  packQuantity: number;
+  packPrice: number;
+  densityGPerMl: number | null;
+};
+
+type SerializedSupplier = Omit<Supplier, 'minimumOrder'> & {
+  minimumOrder: number | null;
+};
+
 interface DatabaseManagerProps {
-  ingredients: (Ingredient & { supplierRef?: Supplier | null })[];
+  ingredients: (SerializedIngredient & { supplierRef?: SerializedSupplier | null })[];
   recipes: (Recipe & { 
     categoryRef?: Category | null;
     storageRef?: StorageOption | null;
     shelfLifeRef?: ShelfLifeOption | null;
   })[];
-  suppliers: Supplier[];
+  suppliers: SerializedSupplier[];
   categories: Category[];
   shelfLifeOptions: ShelfLifeOption[];
   storageOptions: StorageOption[];
@@ -138,8 +149,11 @@ export function DatabaseManager({
         body: JSON.stringify({ ids: Array.from(selectedItems) }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to delete items');
+        alert(data.error || 'Failed to delete items');
+        return;
       }
 
       // Update local state to remove deleted items
@@ -154,7 +168,12 @@ export function DatabaseManager({
       }
 
       setSelectedItems(new Set());
-      alert(`Successfully deleted ${selectedItems.size} ${activeTab}`);
+      alert(data.message || `Successfully deleted items`);
+      
+      // Refresh the page if some items couldn't be deleted
+      if (data.skippedCount && data.skippedCount > 0) {
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Bulk delete error:', error);
       alert('Failed to delete items. Please try again.');

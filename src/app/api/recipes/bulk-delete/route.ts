@@ -24,23 +24,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete recipes that belong to the user's company
+    // Check which recipes are used in production plans or wholesale orders
+    const productionItems = await prisma.productionItem.findMany({
+      where: { recipeId: { in: ids } },
+      select: { recipeId: true },
+      distinct: ['recipeId'],
+    });
+
+    const wholesaleOrderItems = await prisma.wholesaleOrderItem.findMany({
+      where: { recipeId: { in: ids } },
+      select: { recipeId: true },
+      distinct: ['recipeId'],
+    });
+
+    const recipesInUse = new Set([
+      ...productionItems.map(item => item.recipeId),
+      ...wholesaleOrderItems.map(item => item.recipeId),
+    ]);
+
+    // Separate recipes that can be deleted from those in use
+    const recipeIdsToDelete = ids.filter(id => !recipesInUse.has(id));
+    const recipeIdsInUse = ids.filter(id => recipesInUse.has(id));
+
+    if (recipeIdsToDelete.length === 0) {
+      return NextResponse.json(
+        { 
+          error: "All selected recipes are currently used in production plans or wholesale orders and cannot be deleted",
+          recipesInUse: recipeIdsInUse.length,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Delete recipes that can be deleted (cascade will handle related records)
     const result = await prisma.recipe.deleteMany({
       where: {
-        id: { in: ids },
+        id: { in: recipeIdsToDelete },
         companyId,
       },
     });
 
+    const message = recipeIdsInUse.length > 0
+      ? `Deleted ${result.count} recipe(s). ${recipeIdsInUse.length} recipe(s) could not be deleted because they are used in production plans or orders.`
+      : `Successfully deleted ${result.count} recipe(s)`;
+
     return NextResponse.json({ 
       success: true, 
       deletedCount: result.count,
-      message: `Successfully deleted ${result.count} recipe(s)` 
+      skippedCount: recipeIdsInUse.length,
+      message,
     });
   } catch (error) {
     console.error("Bulk delete recipes error:", error);
     return NextResponse.json(
-      { error: "Failed to delete recipes" },
+      { error: "Failed to delete recipes. Some recipes may be in use." },
       { status: 500 }
     );
   }
