@@ -263,7 +263,7 @@ export function RecipePageInlineComplete({
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
       {/* Header Container */}
-      <div className="flex-shrink-0 px-6 pt-4 pb-6 border-l-2 border-r-2 border-gray-100">
+      <div className="flex-shrink-0 px-6 pt-12 pb-6 border-l-2 border-r-2 border-gray-100">
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between h-20">
             <div className="flex flex-col justify-center gap-1">
@@ -797,7 +797,7 @@ function StepCard({
       {/* Compact Step Header */}
       <div className="mb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
               {index + 1}
                     </div>
@@ -806,7 +806,7 @@ function StepCard({
           
           {/* Compact Cooking Parameters */}
                         {(section.bakeTemp || section.bakeTime) && (
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2 mb-6">
                             {section.bakeTemp && (
                 <div className="bg-orange-100 text-orange-700 px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
