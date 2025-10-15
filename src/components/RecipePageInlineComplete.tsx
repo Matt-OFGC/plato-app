@@ -944,7 +944,6 @@ function EditModeContent({
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
     yield: true,
-    cooking: false,
     category: false,
     ingredients: true
   });
@@ -959,8 +958,6 @@ function EditModeContent({
   const [categoryId, setCategoryId] = useState(recipe.categoryId?.toString() || "");
   const [shelfLifeId, setShelfLifeId] = useState(recipe.shelfLifeId?.toString() || "");
   const [storageId, setStorageId] = useState(recipe.storageId?.toString() || "");
-  const [bakeTime, setBakeTime] = useState(recipe.bakeTime?.toString() || "");
-  const [bakeTemp, setBakeTemp] = useState(recipe.bakeTemp?.toString() || "");
 
   // Recipe type and wholesale
   const [recipeType, setRecipeType] = useState<'single' | 'batch'>('batch');
@@ -1039,7 +1036,7 @@ function EditModeContent({
     return (
       <div className="relative">
         <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
+                    <button
             type="button"
             onClick={(e) => handleClick('single', e)}
             className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
@@ -1049,8 +1046,8 @@ function EditModeContent({
             }`}
           >
             {leftLabel}
-          </button>
-          <button
+                    </button>
+                    <button
             type="button"
             onClick={(e) => handleClick('batch', e)}
             className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
@@ -1060,8 +1057,8 @@ function EditModeContent({
             }`}
           >
             {rightLabel}
-          </button>
-        </div>
+                    </button>
+                </div>
       </div>
     );
   };
@@ -1075,8 +1072,8 @@ function EditModeContent({
     const newSection: RecipeSection = {
       id: `section-${sections.length}`,
       title: `Step ${sections.length + 1}`,
-      description: "",
-      method: "",
+                              description: "",
+                              method: "",
       bakeTemp: "",
       bakeTime: "",
       items: []
@@ -1169,8 +1166,6 @@ function EditModeContent({
       formData.append('categoryId', categoryId);
       formData.append('shelfLifeId', shelfLifeId);
       formData.append('storageId', storageId);
-      formData.append('bakeTime', bakeTime);
-      formData.append('bakeTemp', bakeTemp);
       formData.append('useSections', 'true'); // Always use sections
       formData.append('recipeType', recipeType);
       formData.append('isWholesaleProduct', isWholesaleProduct.toString());
@@ -1489,30 +1484,6 @@ function EditModeContent({
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Cooking Parameters" sectionKey="cooking" icon="🔥">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bake Temperature (°C)</label>
-                                    <input
-                                      type="number"
-                  value={bakeTemp}
-                  onChange={(e) => setBakeTemp(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  min="0"
-                                    />
-                          </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (minutes)</label>
-                <input
-                  type="number"
-                  value={bakeTime}
-                  onChange={(e) => setBakeTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  min="0"
-                />
-                        </div>
-                      </div>
-          </CollapsibleSection>
 
           <CollapsibleSection title="Category & Storage" sectionKey="category" icon="🏷️">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1567,48 +1538,74 @@ function EditModeContent({
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">Recipe Steps</h3>
                     <p className="text-sm text-gray-500">Each step has its own ingredients and instructions. Add more steps for complex recipes.</p>
-                  </div>
-                  <button
+                          </div>
+                          <button
                     type="button"
                     onClick={(e) => addSection(e)}
                     className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                  >
+                          >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                            </svg>
                     Add Step
-                            </button>
-                          </div>
-                
+                          </button>
+                        </div>
+
                 <div className="space-y-6">
                   {sections.map((section, index) => (
                     <div key={section.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-lg font-semibold text-gray-900">{section.title}</h4>
                         {sections.length > 1 && (
-                          <button
+                            <button
                             type="button"
                             onClick={(e) => removeSection(section.id, e)}
                             className="text-red-600 hover:text-red-800 p-1"
-                          >
+                            >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                          </button>
+                            </button>
                 )}
-              </div>
+                          </div>
 
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Step Instructions</label>
-                  <textarea
+                          <textarea
                             value={section.method}
                             onChange={(e) => updateSection(section.id, 'method', e.target.value)}
                             rows={3}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             placeholder="Instructions for this step..."
                           />
-                    </div>
+                        </div>
+
+                        {/* Baking Parameters for this step */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Bake Temperature (°C)</label>
+                            <input
+                              type="number"
+                              value={section.bakeTemp}
+                              onChange={(e) => updateSection(section.id, 'bakeTemp', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              placeholder="e.g., 180"
+                              min="0"
+                            />
+                      </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (minutes)</label>
+                            <input
+                              type="number"
+                              value={section.bakeTime}
+                              onChange={(e) => updateSection(section.id, 'bakeTime', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              placeholder="e.g., 25"
+                              min="0"
+                            />
+                  </div>
+                        </div>
                         
                         <div>
                           <div className="flex items-center justify-between mb-3">
@@ -1636,10 +1633,10 @@ function EditModeContent({
                                   onRemove={() => removeSectionItem(section.id, item.id)}
                               />
                             ))}
-              </div>
+                          </div>
                         </SortableContext>
-            </div>
-          </div>
+                                    </div>
+                                  </div>
                     </div>
                               ))}
                   </div>
@@ -1652,10 +1649,10 @@ function EditModeContent({
             <div className="text-blue-800 font-semibold mb-2">Edit Mode Active</div>
             <div className="text-blue-600 text-sm">
               Make your changes above and click "Save Recipe" to update. Switch to cooking mode to use the carousel interface.
-                </div>
-                </div>
+                    </div>
+                    </div>
         </form>
-              </div>
+          </div>
 
     </div>
   );
