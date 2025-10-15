@@ -679,7 +679,10 @@ function SimpleRecipeCarousel({
               <div className="grid grid-cols-2 gap-8 h-full">
                 {/* Left Column - Ingredients */}
                 <div className="flex flex-col">
-                  <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Ingredients</h3>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                    <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
+                  </div>
                   <div className="space-y-4 flex-1 overflow-y-auto">
                     {recipe.items.map((item: any) => {
                       const ingredient = ingredients.find((ing: any) => ing.id === item.ingredient.id);
@@ -723,7 +726,10 @@ function SimpleRecipeCarousel({
 
                 {/* Right Column - Instructions */}
                 <div className="flex flex-col">
-                  <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Instructions</h3>
+                  <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+                    <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                    <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
+                  </div>
                   <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
                     <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                       {recipe.method || 'No instructions provided.'}
@@ -802,16 +808,16 @@ function StepCard({
                         {(section.bakeTemp || section.bakeTime) && (
                                 <div className="flex items-center gap-2">
               {section.bakeTemp && (
-                <div className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-orange-100 text-orange-700 px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                                   </svg>
                   {section.bakeTemp}°C
                               </div>
                             )}
                             {section.bakeTime && (
-                <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                   {section.bakeTime}m
@@ -820,9 +826,9 @@ function StepCard({
               {(section.bakeTemp || section.bakeTime) && (
                                     <button
                   onClick={() => startTimer(`section-${index}`, recipe.id, recipe.name, section.title, parseInt(section.bakeTime || '0'))}
-                  className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-medium hover:bg-emerald-200 transition-colors flex items-center gap-1"
+                  className="bg-emerald-100 text-emerald-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-200 transition-colors flex items-center gap-2"
                                     >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
                   Timer
@@ -837,7 +843,10 @@ function StepCard({
       <div className="grid grid-cols-2 gap-8 h-full">
         {/* Left Column - Ingredients */}
         <div className="flex flex-col">
-          <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Ingredients</h3>
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+            <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+            <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
+          </div>
           <div className="space-y-4 flex-1 overflow-y-auto">
             {section.items.map((item) => {
               const ingredient = ingredients.find((ing: any) => ing.id === item.ingredientId);
@@ -881,7 +890,10 @@ function StepCard({
         
         {/* Right Column - Instructions */}
         <div className="flex flex-col">
-          <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Instructions</h3>
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+            <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
+          </div>
           <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
             <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
               {section.method || 'No instructions provided for this step.'}
