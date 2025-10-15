@@ -261,9 +261,9 @@ export function RecipePageInlineComplete({
   }, [totalSteps]);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8">
+    <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 border-l-2 border-r-2 border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
@@ -294,7 +294,7 @@ export function RecipePageInlineComplete({
             </div>
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex-1 flex gap-12 min-h-0 p-12">
+      <div className="flex-1 flex gap-12 min-h-0 p-12 border-l-2 border-r-2 border-gray-100">
         {/* Left Panel - Recipe Overview (Fixed) */}
         <div className="w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-y-auto">
           {/* Recipe Image */}
@@ -1325,8 +1325,8 @@ function EditModeContent({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
-                <input
-                  type="text"
+                            <input
+                              type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => {
@@ -1356,7 +1356,7 @@ function EditModeContent({
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
+                            <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   onKeyDown={(e) => {
@@ -1365,7 +1365,7 @@ function EditModeContent({
                       e.stopPropagation();
                     }
                   }}
-                  rows={3}
+                              rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
@@ -1382,7 +1382,7 @@ function EditModeContent({
             </h2>
             <div className="space-y-6">
               {/* Recipe Type Toggle */}
-              <div>
+                                  <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Recipe Type</label>
                 <SliderToggle
                   leftLabel="Single Serving"
@@ -1404,8 +1404,8 @@ function EditModeContent({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {recipeType === 'batch' ? 'Batch Size' : 'Serving Size'}
                   </label>
-                  <input
-                    type="number"
+                                    <input
+                                      type="number"
                     value={yieldQuantity}
                     onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
                     onKeyDown={(e) => {
@@ -1418,9 +1418,9 @@ function EditModeContent({
                     min="0.1"
                     step="0.1"
                     required
-                  />
-                </div>
-                <div>
+                                    />
+                                  </div>
+                                  <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
                   <select
                     value={yieldUnit}
@@ -1460,20 +1460,20 @@ function EditModeContent({
                       <label className="block text-sm font-medium text-gray-700 mb-2">Wholesale Price</label>
                       <div className="flex items-center gap-2">
                         <span className="text-gray-500">£</span>
-                        <input
-                          type="number"
+                                    <input
+                                      type="number"
                           value={wholesalePrice}
                           onChange={(e) => setWholesalePrice(e.target.value)}
                           placeholder="0.00"
                           step="0.01"
                           min="0"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        />
-                      </div>
+                                    />
+                                  </div>
                       <p className="text-xs text-gray-500 mt-1">
                         This will sync to your wholesale offering menu
                       </p>
-                    </div>
+                                </div>
                   )}
                 </div>
               </div>
@@ -1666,7 +1666,7 @@ function EditModeContent({
                   </div>
               </div>
             </DndContext>
-          </div>
+              </div>
 
           {/* Edit Mode Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
