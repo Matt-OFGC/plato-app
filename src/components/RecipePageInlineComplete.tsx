@@ -263,31 +263,36 @@ export function RecipePageInlineComplete({
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-6 border-l-2 border-r-2 border-gray-100">
+      <div className="flex-shrink-0 bg-gradient-to-r from-white to-gray-50 border-b border-gray-200 px-8 py-8 border-l-2 border-r-2 border-gray-100">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{name}</h1>
             <button
-              onClick={() => setIsLocked(!isLocked)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                isLocked 
-                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
-                  : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-              }`}
-            >
-              {isLocked ? '🔒 Locked' : '🔓 Editing'}
+                onClick={() => setIsLocked(!isLocked)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-sm ${
+                  isLocked 
+                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200' 
+                    : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
+                }`}
+              >
+                {isLocked ? '🔒 Locked' : '🔓 Editing'}
               </button>
+            </div>
+            <div className="text-sm text-gray-500 font-medium">
+              Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
+        </div>
       </div>
 
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+            <button className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl transition-all duration-200 shadow-sm border border-gray-200 font-medium">
               Print
                   </button>
                   <button
               onClick={() => setIsLocked(!isLocked)}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all duration-200 shadow-sm font-medium"
             >
-              {isLocked ? 'Edit' : 'Save'}
+              {isLocked ? 'Edit Recipe' : 'Save Changes'}
                   </button>
                 </div>
               </div>
@@ -449,9 +454,9 @@ export function RecipePageInlineComplete({
             />
           )}
               </div>
-      </div>
+            </div>
 
-    </div>
+      </div>
   );
 }
 
@@ -595,7 +600,7 @@ function RecipeCarousel({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
       </button>
-                  </div>
+                </div>
                   </div>
   );
 }
@@ -665,9 +670,9 @@ function SimpleRecipeCarousel({
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                     1
-                      </div>
+                </div>
                   <h2 className="text-xl font-bold text-gray-900">Recipe</h2>
-                    </div>
+                  </div>
                 </div>
                 
               {/* Two Column Layout: Ingredients Left, Instructions Right */}
@@ -697,9 +702,9 @@ function SimpleRecipeCarousel({
                             {isChecked && (
                               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                      </svg>
                             )}
-                        </div>
+                  </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
@@ -708,13 +713,13 @@ function SimpleRecipeCarousel({
                       </div>
                             {item.note && (
                               <div className="text-sm text-gray-500 mt-1">{item.note}</div>
-                            )}
+                  )}
+                </div>
                         </div>
-                      </div>
                       );
                     })}
-                    </div>
-                  </div>
+                      </div>
+                        </div>
 
                 {/* Right Column - Instructions */}
                 <div className="flex flex-col">
@@ -722,13 +727,13 @@ function SimpleRecipeCarousel({
                   <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
                     <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                       {recipe.method || 'No instructions provided.'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-            </div>
-          </div>
-              </div>
                     </div>
       
       {/* Navigation Arrows */}
