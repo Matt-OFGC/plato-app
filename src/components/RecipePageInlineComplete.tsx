@@ -1013,7 +1013,6 @@ export function RecipePageInlineComplete({
               {uploadError && (
                 <p className="text-xs text-red-600 mt-1">{uploadError}</p>
               )}
-                </div>
                 
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-6 min-h-0">
