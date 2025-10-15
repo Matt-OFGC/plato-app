@@ -410,3 +410,273 @@ body {
     print-color-adjust: exact;
   }
 }
+
+/* Floating Navigation Bar Styles - Mobile First */
+.floating-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  /* Ensure visibility on all devices */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  /* Mobile-specific adjustments */
+  min-height: 60px;
+  /* Ensure touch targets are large enough */
+  touch-action: manipulation;
+}
+
+.dark .floating-nav {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile-specific floating nav adjustments */
+@media (max-width: 640px) {
+  .floating-nav {
+    /* Larger touch targets on mobile */
+    min-height: 64px;
+    /* Ensure it's always visible */
+    position: fixed !important;
+    bottom: 1rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    z-index: 50 !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .floating-nav {
+    min-height: 60px;
+  }
+}
+
+/* Desktop adjustments */
+@media (min-width: 1025px) {
+  .floating-nav {
+    min-height: 56px;
+  }
+}
+
+/* Glass morphism utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.glass-dark {
+  background: rgba(30, 41, 59, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Safe area support for iOS */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Floating nav animations - Mobile optimized */
+.floating-nav-item {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Ensure minimum touch target size */
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.floating-nav-item:hover {
+  transform: translateY(-2px);
+}
+
+.floating-nav-item:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* Mobile touch optimizations */
+@media (max-width: 640px) {
+  .floating-nav-item {
+    /* Larger touch targets on mobile */
+    min-height: 48px;
+    min-width: 48px;
+    padding: 0.75rem 0.5rem;
+  }
+  
+  /* Ensure icons are properly sized */
+  .floating-nav-item svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  
+  /* Better text sizing for mobile */
+  .floating-nav-item span {
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+}
+
+/* Tablet touch optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .floating-nav-item {
+    min-height: 46px;
+    min-width: 46px;
+    padding: 0.625rem 0.5rem;
+  }
+}
+
+/* Timer badge animation */
+.timer-badge {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .8;
+  }
+}
+
+/* Enhanced floating nav animations */
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Magnetic hover effect */
+.magnetic-hover {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.magnetic-hover:hover {
+  transform: translateY(-4px) scale(1.05);
+}
+
+/* Ripple effect */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple-effect:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Enhanced glass morphism with dynamic blur */
+.floating-nav-enhanced {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .floating-nav-enhanced {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Glassy green tint for active nav items */
+.floating-nav-active {
+  background: rgba(16, 185, 129, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 
+    0 4px 16px rgba(16, 185, 129, 0.15),
+    0 2px 8px rgba(16, 185, 129, 0.1),
+    inset 0 1px 0 rgba(16, 185, 129, 0.2);
+}
+
+.floating-nav-active svg {
+  color: #000000 !important;
+}
+
+.dark .floating-nav-active {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 
+    0 4px 16px rgba(16, 185, 129, 0.25),
+    0 2px 8px rgba(16, 185, 129, 0.15),
+    inset 0 1px 0 rgba(16, 185, 129, 0.3);
+}
+
+.dark .floating-nav-active svg {
+  color: #000000 !important;
+}
+
+/* Smooth reveal animation */
+.reveal-from-bottom {
+  animation: revealFromBottom 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes revealFromBottom {
+  0% {
+    transform: translateY(100%) scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Contextual glow effect */
+.contextual-glow {
+  position: relative;
+}
+
+.contextual-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(45deg, 
+    rgba(16, 185, 129, 0.3), 
+    rgba(5, 150, 105, 0.3), 
+    rgba(16, 185, 129, 0.3)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.contextual-glow:hover::before {
+  opacity: 1;
+}
