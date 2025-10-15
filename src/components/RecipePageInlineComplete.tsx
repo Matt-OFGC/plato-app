@@ -299,7 +299,7 @@ export function RecipePageInlineComplete({
                 </div>
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex-1 flex gap-8 min-h-0 pt-2 pb-8 px-8 border-l-2 border-r-2 border-gray-100">
+      <div className="flex-1 flex gap-8 min-h-0 pt-2 pb-12 px-8 border-l-2 border-r-2 border-gray-100">
         {/* Left Panel - Recipe Overview (Fixed) */}
         <div className="w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-y-auto">
           {/* Recipe Image */}
