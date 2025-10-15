@@ -22,8 +22,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useTimers } from "@/contexts/TimerContext";
 import { SearchableSelect } from "@/components/SearchableSelect";
+import { useTimers } from "@/contexts/TimerContext";
 
 interface Ingredient {
   id: number;
@@ -1277,27 +1277,29 @@ function EditModeContent({
             </svg>
         </div>
         <div className="col-span-3">
-          <select
-            value={item.ingredientId || ""}
-            onChange={(e) => onUpdate('ingredientId', parseInt(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-          >
-            <option value="">Select ingredient...</option>
-            {ingredients.map(ing => (
-              <option key={ing.id} value={ing.id}>{ing.name}</option>
-            ))}
-          </select>
+          <SearchableSelect
+            options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
+            value={item.ingredientId}
+            onChange={(value) => onUpdate('ingredientId', value)}
+            placeholder="Search ingredients..."
+          />
         </div>
         <input
           type="number"
           value={item.quantity}
-          onChange={(e) => onUpdate('quantity', e.target.value)}
+          onChange={(e) => {
+            e.preventDefault();
+            onUpdate('quantity', e.target.value);
+          }}
           placeholder="Qty"
           className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
         />
         <select
           value={item.unit}
-          onChange={(e) => onUpdate('unit', e.target.value)}
+          onChange={(e) => {
+            e.preventDefault();
+            onUpdate('unit', e.target.value);
+          }}
           className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
         >
           <option value="g">g</option>
@@ -1309,7 +1311,10 @@ function EditModeContent({
                             <input
                               type="text"
           value={item.note}
-          onChange={(e) => onUpdate('note', e.target.value)}
+          onChange={(e) => {
+            e.preventDefault();
+            onUpdate('note', e.target.value);
+          }}
           placeholder="Note (optional)"
           className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
         />
@@ -1489,42 +1494,30 @@ function EditModeContent({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="">Select category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  options={categories.map(cat => ({ id: cat.id, name: cat.name }))}
+                  value={categoryId ? parseInt(categoryId) : undefined}
+                  onChange={(value) => setCategoryId(value ? value.toString() : "")}
+                  placeholder="Search categories..."
+                />
                   </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
-                <select
-                  value={shelfLifeId}
-                  onChange={(e) => setShelfLifeId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="">Select shelf life</option>
-                  {shelfLifeOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  options={shelfLifeOptions.map(option => ({ id: option.id, name: option.name }))}
+                  value={shelfLifeId ? parseInt(shelfLifeId) : undefined}
+                  onChange={(value) => setShelfLifeId(value ? value.toString() : "")}
+                  placeholder="Search shelf life options..."
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
-                <select
-                  value={storageId}
-                  onChange={(e) => setStorageId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="">Select storage</option>
-                  {storageOptions.map(option => (
-                    <option key={option.id} value={option.id}>{option.name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  options={storageOptions.map(option => ({ id: option.id, name: option.name }))}
+                  value={storageId ? parseInt(storageId) : undefined}
+                  onChange={(value) => setStorageId(value ? value.toString() : "")}
+                  placeholder="Search storage options..."
+                />
                           </div>
             </div>
           </CollapsibleSection>
@@ -1574,7 +1567,10 @@ function EditModeContent({
                           <label className="block text-sm font-medium text-gray-700 mb-2">Step Instructions</label>
                           <textarea
                             value={section.method}
-                            onChange={(e) => updateSection(section.id, 'method', e.target.value)}
+                            onChange={(e) => {
+                              e.preventDefault();
+                              updateSection(section.id, 'method', e.target.value);
+                            }}
                             rows={3}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             placeholder="Instructions for this step..."
@@ -1588,7 +1584,10 @@ function EditModeContent({
                             <input
                               type="number"
                               value={section.bakeTemp}
-                              onChange={(e) => updateSection(section.id, 'bakeTemp', e.target.value)}
+                              onChange={(e) => {
+                                e.preventDefault();
+                                updateSection(section.id, 'bakeTemp', e.target.value);
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                               placeholder="e.g., 180"
                               min="0"
@@ -1599,7 +1598,10 @@ function EditModeContent({
                             <input
                               type="number"
                               value={section.bakeTime}
-                              onChange={(e) => updateSection(section.id, 'bakeTime', e.target.value)}
+                              onChange={(e) => {
+                                e.preventDefault();
+                                updateSection(section.id, 'bakeTime', e.target.value);
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                               placeholder="e.g., 25"
                               min="0"
