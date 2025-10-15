@@ -23,7 +23,7 @@ export default function DashboardLayout({
             <Sidebar />
             
             {/* Main Content Area */}
-            <main className="flex-1 md:ml-5 lg:ml-64 transition-all duration-300 pb-20 md:pb-0">
+            <main className="flex-1 md:ml-5 lg:ml-16 group-hover:lg:ml-64 transition-all duration-300 pb-20 md:pb-0">
               <div className="max-w-7xl mx-auto px-4 py-8 lg:px-8">
                 {children}
               </div>

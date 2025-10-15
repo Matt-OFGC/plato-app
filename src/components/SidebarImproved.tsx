@@ -442,7 +442,7 @@ export function Sidebar() {
 
       {/* TABLET SIDEBAR (iPad) - Auto-hiding slim bar */}
       <aside 
-        className="hidden md:flex lg:hidden fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-30 flex-col transition-all duration-300 ease-in-out"
+        className="hidden md:flex lg:hidden fixed left-0 top-0 h-full bg-gray-900 border-r border-gray-700 z-30 flex-col transition-all duration-300 ease-in-out"
         style={{ width: isIPadSidebarVisible ? '240px' : '20px' }}
         onMouseEnter={handleIPadSidebarMouseEnter}
         onMouseLeave={handleIPadSidebarMouseLeave}
@@ -453,10 +453,10 @@ export function Sidebar() {
         {/* Sidebar Content */}
         <div className={`flex flex-col h-full transition-opacity duration-300 ${isIPadSidebarVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-green-500 to-green-600 border-b border-green-600">
+          <div className="p-4 border-b border-gray-700">
             <div className="flex items-center gap-3">
               {company?.logoUrl ? (
-                <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/20">
+                <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-600">
                   <Image
                     src={company.logoUrl}
                     alt={company.name}
@@ -466,7 +466,7 @@ export function Sidebar() {
                   />
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white text-sm font-bold">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
                   P
                 </div>
               )}
@@ -474,7 +474,7 @@ export function Sidebar() {
                 <h1 className="text-sm font-semibold text-white truncate">
                   {loading ? "Loading..." : company?.name || "Plato"}
                 </h1>
-                <p className="text-xs text-green-100 truncate">
+                <p className="text-xs text-gray-300 truncate">
                   {company?.businessType || "Kitchen"}
                 </p>
               </div>
@@ -491,11 +491,13 @@ export function Sidebar() {
                       onClick={() => setExpandedNavItem(expandedNavItem === item.href ? null : item.href)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                         pathname.startsWith(item.href)
-                          ? "bg-green-50 text-green-700"
-                          : "text-gray-700 hover:bg-gray-50"
+                          ? "bg-emerald-500 text-white"
+                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
                       }`}
                     >
-                      {item.icon}
+                      <div className={`${pathname.startsWith(item.href) ? "text-white" : "text-gray-400"}`}>
+                        {item.icon}
+                      </div>
                       <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
                       <svg 
                         className={`w-4 h-4 transition-transform ${expandedNavItem === item.href ? 'rotate-90' : ''}`}
@@ -514,8 +516,8 @@ export function Sidebar() {
                             href={subItem.href}
                             className={`block px-3 py-2 rounded-lg text-sm ${
                               isActive(subItem.href)
-                                ? "bg-green-500 text-white"
-                                : "text-gray-600 hover:bg-gray-100"
+                                ? "bg-emerald-600 text-white"
+                                : "text-gray-400 hover:bg-gray-800 hover:text-gray-300"
                             }`}
                           >
                             {subItem.label}
@@ -529,11 +531,13 @@ export function Sidebar() {
                     href={item.href}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                       isActive(item.href)
-                        ? "bg-green-500 text-white"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-emerald-500 text-white"
+                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
                     }`}
                   >
-                    {item.icon}
+                    <div className={`${isActive(item.href) ? "text-white" : "text-gray-400"}`}>
+                      {item.icon}
+                    </div>
                     <span className="text-sm font-medium">{item.label}</span>
                   </Link>
                 )}
@@ -543,19 +547,19 @@ export function Sidebar() {
 
           {/* User Section */}
           {user && (
-            <div className="p-3 border-t space-y-2">
-              <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-semibold">
+            <div className="p-3 border-t border-gray-700 space-y-2">
+              <div className="flex items-center gap-3 px-3 py-2 bg-gray-800 rounded-lg">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-semibold">
                   {user.name?.[0] || user.email[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{user.name || "Account"}</p>
-                  <p className="text-xs text-gray-600 truncate">{user.email}</p>
+                  <p className="text-sm font-medium truncate text-white">{user.name || "Account"}</p>
+                  <p className="text-xs text-gray-300 truncate">{user.email}</p>
                 </div>
               </div>
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 font-medium text-sm"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white font-medium text-sm"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -567,20 +571,20 @@ export function Sidebar() {
         </div>
 
         {/* Mini Indicator - Always visible when collapsed */}
-        <div className={`absolute top-1/2 -translate-y-1/2 left-1 w-1 h-12 bg-green-500 rounded-r-full transition-opacity duration-300 ${isIPadSidebarVisible ? 'opacity-0' : 'opacity-60'}`}></div>
+        <div className={`absolute top-1/2 -translate-y-1/2 left-1 w-1 h-12 bg-emerald-500 rounded-r-full transition-opacity duration-300 ${isIPadSidebarVisible ? 'opacity-0' : 'opacity-60'}`}></div>
       </aside>
 
 
       {/* DESKTOP SIDEBAR (Full) */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-full bg-gray-50 z-30 w-64 border-r border-gray-200 flex-col">
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full bg-gray-900 z-30 w-16 group hover:w-64 border-r border-gray-700 flex-col transition-all duration-300 ease-in-out">
         <div className="flex flex-col h-full">
           {/* Business/Company Section */}
-          <div className="p-4 bg-white border-b border-gray-200">
+          <div className="p-4 border-b border-gray-700">
             <Link href="/dashboard" className="block">
-              <div className="flex items-center justify-between group">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {company?.logoUrl ? (
-                    <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-600 flex-shrink-0">
                       <Image
                         src={company.logoUrl}
                         alt={company.name}
@@ -594,16 +598,16 @@ export function Sidebar() {
                       P
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <h1 className="text-sm font-semibold text-gray-900 truncate">
+                  <div className="min-w-0 flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <h1 className="text-sm font-semibold text-white truncate">
                       {loading ? "Loading..." : company?.name || "Plato Kitchen"}
                     </h1>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-gray-300 truncate">
                       {company?.businessType || "Management"}
                     </p>
                   </div>
                 </div>
-                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -613,25 +617,25 @@ export function Sidebar() {
           {/* Navigation Links */}
           <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
             {navItems.map((item: any) => (
-              <div key={item.href}>
+              <div key={item.href} className="relative">
                 {item.subItems ? (
                   <div>
                     <button
                       onClick={() => setExpandedNavItem(expandedNavItem === item.href ? null : item.href)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                         pathname.startsWith(item.href)
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "text-gray-700 hover:bg-white hover:text-gray-900"
+                          ? "bg-emerald-500 text-white"
+                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
                       }`}
                     >
-                      <div className={`${pathname.startsWith(item.href) ? "text-emerald-600" : "text-gray-500 group-hover:text-gray-700"}`}>
+                      <div className={`${pathname.startsWith(item.href) ? "text-white" : "text-gray-400 group-hover:text-gray-300"}`}>
                         {item.icon}
                       </div>
-                      <span className={`text-sm font-medium ${pathname.startsWith(item.href) ? "font-semibold" : ""}`}>
+                      <span className={`text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${pathname.startsWith(item.href) ? "font-semibold opacity-100" : ""}`}>
                         {item.label}
                       </span>
                       <svg 
-                        className={`ml-auto w-4 h-4 transition-transform ${expandedNavItem === item.href || pathname.startsWith(item.href) ? 'rotate-90' : ''}`}
+                        className={`ml-auto w-4 h-4 transition-all duration-200 opacity-0 group-hover:opacity-100 ${expandedNavItem === item.href || pathname.startsWith(item.href) ? 'rotate-90 opacity-100' : ''}`}
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -647,8 +651,8 @@ export function Sidebar() {
                             href={subItem.href}
                             className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                               isActive(subItem.href)
-                                ? "bg-emerald-500 text-white shadow-sm font-medium"
-                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                ? "bg-emerald-600 text-white shadow-sm font-medium"
+                                : "text-gray-400 hover:bg-gray-800 hover:text-gray-300"
                             }`}
                           >
                             {subItem.label}
@@ -658,24 +662,30 @@ export function Sidebar() {
                     )}
                   </div>
                 ) : (
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                      isActive(item.href)
-                        ? "bg-emerald-500 text-white shadow-sm"
-                        : "text-gray-700 hover:bg-white hover:text-gray-900"
-                    }`}
-                  >
-                    <div className={`${isActive(item.href) ? "text-white" : "text-gray-500 group-hover:text-gray-700"}`}>
-                      {item.icon}
-                    </div>
-                    <span className={`text-sm font-medium ${isActive(item.href) ? "font-semibold" : ""}`}>
+                  <div className="relative">
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                        isActive(item.href)
+                          ? "bg-emerald-500 text-white shadow-sm"
+                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                      }`}
+                    >
+                      <div className={`${isActive(item.href) ? "text-white" : "text-gray-400 group-hover:text-gray-300"}`}>
+                        {item.icon}
+                      </div>
+                      <span className={`text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isActive(item.href) ? "font-semibold opacity-100" : ""}`}>
+                        {item.label}
+                      </span>
+                      {isActive(item.href) && (
+                        <div className="ml-auto w-2 h-2 rounded-full bg-white"></div>
+                      )}
+                    </Link>
+                    {/* Tooltip for collapsed state */}
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-50">
                       {item.label}
-                    </span>
-                    {isActive(item.href) && (
-                      <div className="ml-auto w-2 h-2 rounded-full bg-white"></div>
-                    )}
-                  </Link>
+                    </div>
+                  </div>
                 )}
               </div>
             ))}
@@ -685,19 +695,19 @@ export function Sidebar() {
           <div className="p-3 space-y-2">
             {/* Active Timers */}
             {Object.keys(timers).length > 0 && (
-              <div className="bg-white rounded-lg border border-amber-300 shadow-sm overflow-hidden">
+              <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
                 <button
                   onClick={() => setTimersExpanded(!timersExpanded)}
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-700 transition-colors"
                 >
-                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-semibold text-amber-900">
+                  <span className="text-sm font-semibold text-amber-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     Timers ({Object.keys(timers).length})
                   </span>
                   <svg
-                    className={`ml-auto w-4 h-4 text-amber-600 transition-transform ${timersExpanded ? 'rotate-180' : ''}`}
+                    className={`ml-auto w-4 h-4 text-amber-400 transition-transform opacity-0 group-hover:opacity-100 ${timersExpanded ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -752,35 +762,35 @@ export function Sidebar() {
             {/* User Section */}
             {loading ? (
               <div className="flex items-center gap-3 px-3 py-2">
-                <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
-                <div className="flex-1">
-                  <div className="h-3 bg-gray-200 rounded animate-pulse mb-1"></div>
-                  <div className="h-2.5 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+                <div className="flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="h-3 bg-gray-700 rounded animate-pulse mb-1"></div>
+                  <div className="h-2.5 bg-gray-700 rounded animate-pulse w-2/3"></div>
                 </div>
               </div>
             ) : user ? (
               <div className="space-y-1">
-                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white">
+                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-800">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-semibold">
                     {user.name?.[0] || user.email[0].toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{user.name || "My Account"}</p>
-                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <p className="text-sm font-medium truncate text-white">{user.name || "My Account"}</p>
+                    <p className="text-xs text-gray-300 truncate">{user.email}</p>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <NotificationCenter />
                     <ThemeToggle />
                   </div>
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-white hover:text-gray-900 transition-all duration-200 text-sm font-medium"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-200 text-sm font-medium"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  <span>Sign Out</span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">Sign Out</span>
                 </button>
               </div>
             ) : null}
