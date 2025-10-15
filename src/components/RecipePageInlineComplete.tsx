@@ -263,18 +263,18 @@ export function RecipePageInlineComplete({
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
       {/* Header Container */}
-      <div className="flex-shrink-0 p-6 border-l-2 border-r-2 border-gray-100">
+      <div className="flex-shrink-0 px-6 pt-4 pb-6 border-l-2 border-r-2 border-gray-100">
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between h-20">
             <div className="flex flex-col justify-center gap-1">
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{name}</h1>
               <div className="text-sm text-gray-500 font-medium">
                 Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
-              </div>
-            </div>
+        </div>
+      </div>
 
             <div className="flex items-center gap-4">
-              <button
+                  <button
                 onClick={() => setIsLocked(!isLocked)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-sm ${
                   isLocked 
@@ -286,17 +286,17 @@ export function RecipePageInlineComplete({
               </button>
               <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">
                 Print
-              </button>
-              <button
+                  </button>
+                  <button
                 onClick={() => setIsLocked(!isLocked)}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
               >
                 {isLocked ? 'Edit Recipe' : 'Save Changes'}
-              </button>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+                </div>
 
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-12 min-h-0 p-12 border-l-2 border-r-2 border-gray-100">
@@ -707,13 +707,13 @@ function SimpleRecipeCarousel({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                             )}
-                  </div>
+                      </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
                               <span className="text-xl text-gray-600">{item.unit}</span>
                               <span className="text-xl text-gray-900">{ingredient.name}</span>
-                      </div>
+                    </div>
                             {item.note && (
                               <div className="text-sm text-gray-500 mt-1">{item.note}</div>
                   )}
@@ -729,16 +729,16 @@ function SimpleRecipeCarousel({
                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
                     <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
                     <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
-                  </div>
+                      </div>
                   <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
                     <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                       {recipe.method || 'No instructions provided.'}
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
           </div>
                     </div>
       
@@ -806,8 +806,8 @@ function StepCard({
           
           {/* Compact Cooking Parameters */}
                         {(section.bakeTemp || section.bakeTime) && (
-                                <div className="flex items-center gap-2">
-              {section.bakeTemp && (
+                                <div className="flex items-center gap-2 mb-2">
+                            {section.bakeTemp && (
                 <div className="bg-orange-100 text-orange-700 px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
@@ -893,15 +893,15 @@ function StepCard({
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
-          </div>
+                          </div>
           <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
             <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
               {section.method || 'No instructions provided for this step.'}
+                        </div>
                     </div>
                 </div>
                       </div>
                     </div>
-                </div>
   );
 }
 
