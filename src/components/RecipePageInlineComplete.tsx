@@ -1016,7 +1016,6 @@ export function RecipePageInlineComplete({
             </div>
                   </div>
                 )}
-      )}
 
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-6 min-h-0">
