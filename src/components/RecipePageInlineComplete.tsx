@@ -940,13 +940,6 @@ function EditModeContent({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   
-  // Collapsible sections state
-  const [expandedSections, setExpandedSections] = useState({
-    basic: true,
-    yield: true,
-    category: false,
-    ingredients: true
-  });
   
   // Editable recipe fields
   const [name, setName] = useState(recipe.name);
@@ -1007,13 +1000,6 @@ function EditModeContent({
     })
   );
   
-  // Collapsible section toggle
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
 
   // Slider Toggle Component
   const SliderToggle = ({ 
@@ -1180,56 +1166,6 @@ function EditModeContent({
     }
   };
 
-  // Collapsible Section Component
-  const CollapsibleSection = ({ 
-    title, 
-    sectionKey, 
-    children, 
-    icon 
-  }: { 
-    title: string; 
-    sectionKey: keyof typeof expandedSections; 
-    children: React.ReactNode;
-    icon?: string;
-  }) => {
-    const handleToggle = (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleSection(sectionKey);
-    };
-
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <button
-          type="button"
-          onClick={handleToggle}
-          className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            {icon && (
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <span className="text-emerald-600 text-lg">{icon}</span>
-                      </div>
-            )}
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          </div>
-          <svg 
-            className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections[sectionKey] ? 'rotate-180' : ''}`}
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {expandedSections[sectionKey] && (
-          <div className="px-6 pb-6">
-            {children}
-                  </div>
-                )}
-      </div>
-    );
-  };
 
   // Sortable Ingredient Component
   const SortableIngredientItem = ({ 
@@ -1378,21 +1314,27 @@ function EditModeContent({
                   </div>
       </div>
 
-          {/* Collapsible Sections */}
-          <CollapsibleSection title="Basic Information" sectionKey="basic" icon="📝">
+          {/* Basic Information */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <span className="text-emerald-600 text-lg">📝</span>
+              </div>
+              Basic Information
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
-                            <input
-                              type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -1414,26 +1356,33 @@ function EditModeContent({
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-                              rows={3}
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
+                  rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
             </div>
-          </CollapsibleSection>
+          </div>
 
-          <CollapsibleSection title="Recipe Output & Wholesale" sectionKey="yield" icon="⚖️">
+          {/* Recipe Output & Wholesale */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <span className="text-emerald-600 text-lg">⚖️</span>
+              </div>
+              Recipe Output & Wholesale
+            </h2>
             <div className="space-y-6">
               {/* Recipe Type Toggle */}
-                                  <div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Recipe Type</label>
                 <SliderToggle
                   leftLabel="Single Serving"
@@ -1455,8 +1404,8 @@ function EditModeContent({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {recipeType === 'batch' ? 'Batch Size' : 'Serving Size'}
                   </label>
-                                    <input
-                                      type="number"
+                  <input
+                    type="number"
                     value={yieldQuantity}
                     onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
                     onKeyDown={(e) => {
@@ -1469,9 +1418,9 @@ function EditModeContent({
                     min="0.1"
                     step="0.1"
                     required
-                                    />
-                                  </div>
-                                  <div>
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
                   <select
                     value={yieldUnit}
@@ -1511,28 +1460,35 @@ function EditModeContent({
                       <label className="block text-sm font-medium text-gray-700 mb-2">Wholesale Price</label>
                       <div className="flex items-center gap-2">
                         <span className="text-gray-500">£</span>
-                                    <input
-                                      type="number"
+                        <input
+                          type="number"
                           value={wholesalePrice}
                           onChange={(e) => setWholesalePrice(e.target.value)}
                           placeholder="0.00"
                           step="0.01"
                           min="0"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                    />
-                                  </div>
+                        />
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
                         This will sync to your wholesale offering menu
                       </p>
-                                </div>
+                    </div>
                   )}
-                          </div>
-                        </div>
+                </div>
+              </div>
             </div>
-          </CollapsibleSection>
+          </div>
 
 
-          <CollapsibleSection title="Category & Storage" sectionKey="category" icon="🏷️">
+          {/* Category & Storage */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <span className="text-emerald-600 text-lg">🏷️</span>
+              </div>
+              Category & Storage
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
@@ -1542,7 +1498,7 @@ function EditModeContent({
                   onChange={(value) => setCategoryId(value ? value.toString() : "")}
                   placeholder="Search categories..."
                 />
-                  </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
                 <SearchableSelect
@@ -1560,13 +1516,19 @@ function EditModeContent({
                   onChange={(value) => setStorageId(value ? value.toString() : "")}
                   placeholder="Search storage options..."
                 />
-                          </div>
+              </div>
             </div>
-          </CollapsibleSection>
+          </div>
 
                 
-          {/* Ingredients and Steps */}
-          <CollapsibleSection title="Recipe Steps" sectionKey="ingredients" icon="🥘">
+          {/* Recipe Steps */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <span className="text-emerald-600 text-lg">🥘</span>
+              </div>
+              Recipe Steps
+            </h2>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <div className="space-y-6">
                           <div className="flex items-center justify-between">
@@ -1704,7 +1666,7 @@ function EditModeContent({
                   </div>
               </div>
             </DndContext>
-          </CollapsibleSection>
+          </div>
 
           {/* Edit Mode Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
