@@ -695,15 +695,15 @@ function SimpleRecipeCarousel({
                         <div 
                           key={item.id}
                           onClick={() => toggleItem(item.id)}
-                          className={`flex items-center gap-4 p-6 rounded-lg cursor-pointer transition-colors touch-manipulation ${
+                          className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-colors touch-manipulation ${
                             isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
                           }`}
                         >
-                          <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
+                          <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
                             isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
                           }`}>
                             {isChecked && (
-                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                             )}
