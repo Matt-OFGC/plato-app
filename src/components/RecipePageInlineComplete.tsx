@@ -296,7 +296,7 @@ export function RecipePageInlineComplete({
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-6 min-h-0 p-6">
         {/* Left Panel - Recipe Overview (Fixed) */}
-        <div className="w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-y-auto">
+        <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-y-auto">
           {/* Recipe Image */}
                 {(recipe.imageUrl || imageUrl) && (
             <div className="mb-6">
@@ -692,85 +692,79 @@ function SimpleRecipeCarousel({
         style={{ scrollSnapType: 'x mandatory' }}
       >
         <div className="flex h-full">
-          {/* Card 1: Ingredients */}
+          {/* Card 1: Ingredients & Instructions Combined */}
           <div 
             className="flex-shrink-0 w-full h-full"
             style={{ scrollSnapAlign: 'start' }}
           >
             <div className="h-full p-8">
-              <div className="mb-8">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+              <div className="mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                     1
-                      </div>
-                  <h2 className="text-3xl font-bold text-gray-900">Ingredients</h2>
-                    </div>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Recipe</h2>
+                </div>
+              </div>
+              
+              {/* Two Column Layout: Ingredients Left, Instructions Right */}
+              <div className="grid grid-cols-2 gap-8 h-full">
+                {/* Left Column - Ingredients */}
+                <div className="flex flex-col">
+                  <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Ingredients</h3>
+                  <div className="space-y-4 flex-1 overflow-y-auto">
+                    {recipe.items.map((item: any) => {
+                      const ingredient = ingredients.find((ing: any) => ing.id === item.ingredient.id);
+                      if (!ingredient) return null;
+                      
+                      const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
+                      const isChecked = checkedItems.has(item.id);
+                      
+                      return (
+                        <div 
+                          key={item.id}
+                          onClick={() => toggleItem(item.id)}
+                          className={`flex items-center gap-4 p-6 rounded-lg cursor-pointer transition-colors touch-manipulation ${
+                            isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
+                            isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
+                          }`}>
+                            {isChecked && (
+                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
+                              <span className="text-xl text-gray-600">{item.unit}</span>
+                              <span className="text-xl text-gray-900">{ingredient.name}</span>
+                            </div>
+                            {item.note && (
+                              <div className="text-sm text-gray-500 mt-1">{item.note}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
                 
-                  <div className="space-y-4">
-                {recipe.items.map((item: any) => {
-                  const ingredient = ingredients.find((ing: any) => ing.id === item.ingredient.id);
-                  if (!ingredient) return null;
-                  
-                  const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
-                  const isChecked = checkedItems.has(item.id);
-                  
-                  return (
-                    <div 
-                      key={item.id}
-                      onClick={() => toggleItem(item.id)}
-                      className={`flex items-center gap-4 p-6 rounded-lg cursor-pointer transition-colors touch-manipulation ${
-                        isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
-                        isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
-                      }`}>
-                        {isChecked && (
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          )}
-                        </div>
-                      <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                          <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
-                          <span className="text-xl text-gray-600">{item.unit}</span>
-                          <span className="text-xl text-gray-900">{ingredient.name}</span>
-                      </div>
-                        {item.note && (
-                          <div className="text-sm text-gray-500 mt-1">{item.note}</div>
-                        )}
+                {/* Right Column - Instructions */}
+                <div className="flex flex-col">
+                  <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Instructions</h3>
+                  <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
+                    <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
+                      {recipe.method || 'No instructions provided.'}
                     </div>
                   </div>
-                  );
-                })}
                 </div>
               </div>
             </div>
-                      
-          {/* Card 2: Instructions */}
-          <div 
-            className="flex-shrink-0 w-full h-full"
-            style={{ scrollSnapAlign: 'start' }}
-          >
-            <div className="h-full p-8">
-              <div className="mb-8">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                    2
-                    </div>
-                  <h2 className="text-3xl font-bold text-gray-900">Instructions</h2>
-                  </div>
-                </div>
-
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
-                  {recipe.method || 'No instructions provided.'}
-                    </div>
-                    </div>
-                  </div>
-                </div>
+          </div>
               </div>
                     </div>
       
@@ -826,107 +820,112 @@ function StepCard({
 }) {
   return (
     <div className="h-full p-8">
-      {/* Step Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-            {index + 1}
-                            </div>
-          <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>
-                        </div>
-                        
-        {/* Cooking Parameters */}
-                        {(section.bakeTemp || section.bakeTime) && (
-          <div className="flex gap-4 mb-6">
-                            {section.bakeTemp && (
-              <div className="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                                  </svg>
-                <span className="font-semibold">Temp: {section.bakeTemp}°C</span>
-                              </div>
-                            )}
-                            {section.bakeTime && (
-              <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                <span className="font-semibold">Time: {section.bakeTime} min</span>
-                                  </div>
-            )}
-            {(section.bakeTemp || section.bakeTime) && (
-                                    <button
-                onClick={() => startTimer(`section-${index}`, recipe.id, recipe.name, section.title, parseInt(section.bakeTime || '0'))}
-                className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-emerald-200 transition-colors"
-                                    >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                <span className="font-semibold">Start Timer</span>
-                                    </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      
-      {/* Ingredients Section */}
-                        <div className="mb-8">
-        <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Ingredients</h3>
-        <div className="space-y-4">
-          {section.items.map((item) => {
-            const ingredient = ingredients.find((ing: any) => ing.id === item.ingredientId);
-            if (!ingredient) return null;
-            
-            const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
-            const isChecked = checkedItems.has(item.id);
-            
-            return (
-              <div 
-                                key={item.id}
-                onClick={() => toggleItem(item.id)}
-                className={`flex items-center gap-4 p-6 rounded-lg cursor-pointer transition-colors touch-manipulation ${
-                  isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
-                }`}
-              >
-                <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
-                  isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
-                }`}>
-                  {isChecked && (
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                )}
-                          </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
-                    <span className="text-xl text-gray-600">{item.unit}</span>
-                    <span className="text-xl text-gray-900">{ingredient.name}</span>
-                        </div>
-                  {item.note && (
-                    <div className="text-sm text-gray-500 mt-1">{item.note}</div>
-                      )}
-                    </div>
+      {/* Compact Step Header */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              {index + 1}
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">{section.title}</h2>
+          </div>
+          
+          {/* Compact Cooking Parameters */}
+          {(section.bakeTemp || section.bakeTime) && (
+            <div className="flex items-center gap-2">
+              {section.bakeTemp && (
+                <div className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                  </svg>
+                  {section.bakeTemp}°C
                 </div>
-            );
-          })}
-                      </div>
+              )}
+              {section.bakeTime && (
+                <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {section.bakeTime}m
                 </div>
-
-      {/* Instructions Section */}
-                      <div>
-        <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Instructions</h3>
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
-            {section.method || 'No instructions provided for this step.'}
-                      </div>
+              )}
+              {(section.bakeTemp || section.bakeTime) && (
+                <button
+                  onClick={() => startTimer(`section-${index}`, recipe.id, recipe.name, section.title, parseInt(section.bakeTime || '0'))}
+                  className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-medium hover:bg-emerald-200 transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Timer
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Two Column Layout: Ingredients Left, Instructions Right */}
+      <div className="grid grid-cols-2 gap-8 h-full">
+        {/* Left Column - Ingredients */}
+        <div className="flex flex-col">
+          <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Ingredients</h3>
+          <div className="space-y-4 flex-1 overflow-y-auto">
+            {section.items.map((item) => {
+              const ingredient = ingredients.find((ing: any) => ing.id === item.ingredientId);
+              if (!ingredient) return null;
+              
+              const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
+              const isChecked = checkedItems.has(item.id);
+              
+              return (
+                <div 
+                  key={item.id}
+                  onClick={() => toggleItem(item.id)}
+                  className={`flex items-center gap-4 p-6 rounded-lg cursor-pointer transition-colors touch-manipulation ${
+                    isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
+                    isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
+                  }`}>
+                    {isChecked && (
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
                   </div>
-                                  </div>
-                                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
+                      <span className="text-xl text-gray-600">{item.unit}</span>
+                      <span className="text-xl text-gray-900">{ingredient.name}</span>
+                    </div>
+                    {item.note && (
+                      <div className="text-sm text-gray-500 mt-1">{item.note}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* Right Column - Instructions */}
+        <div className="flex flex-col">
+          <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Instructions</h3>
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
+            <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
+              {section.method || 'No instructions provided for this step.'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
-// Edit Mode Content (Traditional Scrollable Layout)
+// Edit Mode Content - Full Recipe Editing Interface
 function EditModeContent({ 
   recipe, 
   costBreakdown, 
@@ -937,91 +936,300 @@ function EditModeContent({
   wholesaleProduct, 
   onSave 
 }: RecipePageInlineCompleteProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  
+  // Editable recipe fields
+  const [name, setName] = useState(recipe.name);
+  const [description, setDescription] = useState(recipe.description || "");
+  const [imageUrl, setImageUrl] = useState(recipe.imageUrl || "");
+  const [method, setMethod] = useState(recipe.method || "");
+  const [yieldQuantity, setYieldQuantity] = useState(recipe.yieldQuantity);
+  const [yieldUnit, setYieldUnit] = useState(recipe.yieldUnit);
+  const [categoryId, setCategoryId] = useState(recipe.categoryId?.toString() || "");
+  const [shelfLifeId, setShelfLifeId] = useState(recipe.shelfLifeId?.toString() || "");
+  const [storageId, setStorageId] = useState(recipe.storageId?.toString() || "");
+  const [bakeTime, setBakeTime] = useState(recipe.bakeTime?.toString() || "");
+  const [bakeTemp, setBakeTemp] = useState(recipe.bakeTemp?.toString() || "");
+
+  // Sections vs simple items
+  const [useSections, setUseSections] = useState(recipe.sections.length > 0);
+  const [sections, setSections] = useState<RecipeSection[]>(
+    recipe.sections.length > 0
+      ? recipe.sections.map((s, idx) => ({
+          id: `section-${idx}`,
+          title: s.title,
+          description: s.description || "",
+          method: s.method || "",
+          bakeTemp: s.bakeTemp?.toString() || "",
+          bakeTime: s.bakeTime?.toString() || "",
+          items: s.items.map((item, itemIdx) => ({
+            id: `section-${idx}-item-${itemIdx}`,
+            ingredientId: item.ingredient.id,
+            quantity: item.quantity.toString(),
+            unit: item.unit as Unit,
+            note: item.note || "",
+          })),
+        }))
+      : [{ id: "section-0", title: "Step 1", description: "", method: "", bakeTemp: "", bakeTime: "", items: [] }]
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('description', description);
+      formData.append('imageUrl', imageUrl);
+      formData.append('method', method);
+      formData.append('yieldQuantity', yieldQuantity.toString());
+      formData.append('yieldUnit', yieldUnit);
+      formData.append('categoryId', categoryId);
+      formData.append('shelfLifeId', shelfLifeId);
+      formData.append('storageId', storageId);
+      formData.append('bakeTime', bakeTime);
+      formData.append('bakeTemp', bakeTemp);
+      formData.append('useSections', useSections.toString());
+      
+      if (useSections) {
+        formData.append('sections', JSON.stringify(sections));
+      } else {
+        formData.append('items', JSON.stringify(recipe.items.map(item => ({
+          ingredientId: item.ingredient.id,
+          quantity: item.quantity,
+          unit: item.unit,
+          note: item.note || ""
+        }))));
+      }
+      
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Recipe Title and Description */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">{recipe.name}</h1>
-          {recipe.description && (
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">{recipe.description}</p>
-          )}
-                          </div>
-
-        {/* Recipe Image */}
-        {recipe.imageUrl && (
-          <div className="flex justify-center">
-            <img 
-              src={recipe.imageUrl} 
-              alt={recipe.name} 
-              className="w-full max-w-md h-64 object-cover rounded-xl shadow-lg"
-            />
-                  </div>
-                )}
-
-        {/* Recipe Details Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {recipe.bakeTemp && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-orange-700">{recipe.bakeTemp}°C</div>
-              <div className="text-sm text-orange-600">Temperature</div>
-                          </div>
-          )}
-          {recipe.bakeTime && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-blue-700">{recipe.bakeTime} min</div>
-              <div className="text-sm text-blue-600">Bake Time</div>
-                  </div>
-                )}
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-purple-700">{recipe.yieldQuantity}</div>
-            <div className="text-sm text-purple-600">Servings</div>
-              </div>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-700">{formatCurrency(costBreakdown.totalCost)}</div>
-            <div className="text-sm text-emerald-600">Total Cost</div>
-                    </div>
-                    </div>
-
-        {/* Ingredients Section */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Ingredients</h2>
-          <div className="space-y-3">
-            {recipe.items.map((item: any) => {
-              const ingredient = ingredients.find((ing: any) => ing.id === item.ingredient.id);
-              if (!ingredient) return null;
-              
-              return (
-                <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-xl font-bold text-gray-900 min-w-[4rem]">{item.quantity}</div>
-                  <div className="text-lg text-gray-600 min-w-[3rem]">{item.unit}</div>
-                  <div className="text-lg text-gray-900 flex-1">{ingredient.name}</div>
-                  {item.note && (
-                    <div className="text-sm text-gray-500 italic">({item.note})</div>
-                )}
-              </div>
-              );
-            })}
+      <div className="max-w-6xl mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">Edit Recipe</h1>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : 'Save Recipe'}
+              </button>
             </div>
           </div>
 
-        {/* Instructions Section */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Instructions</h2>
+          {/* Basic Information */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
-              {recipe.method || 'No instructions provided.'}
-                </div>
-                </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  required
+                />
               </div>
-
-        {/* Edit Mode Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
-          <div className="text-blue-800 font-semibold mb-2">Edit Mode Active</div>
-          <div className="text-blue-600 text-sm">
-            This is the traditional scrollable layout for editing. Switch to cooking mode to use the carousel interface.
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                <input
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
             </div>
           </div>
+
+          {/* Yield Information */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Yield Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                <input
+                  type="number"
+                  value={yieldQuantity}
+                  onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  min="0.1"
+                  step="0.1"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                <select
+                  value={yieldUnit}
+                  onChange={(e) => setYieldUnit(e.target.value as Unit)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="g">g</option>
+                  <option value="kg">kg</option>
+                  <option value="ml">ml</option>
+                  <option value="l">l</option>
+                  <option value="each">each</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Total Cost</label>
+                <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
+                  {formatCurrency(costBreakdown.totalCost)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cooking Parameters */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Cooking Parameters</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bake Temperature (°C)</label>
+                <input
+                  type="number"
+                  value={bakeTemp}
+                  onChange={(e) => setBakeTemp(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (minutes)</label>
+                <input
+                  type="number"
+                  value={bakeTime}
+                  onChange={(e) => setBakeTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  min="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Category and Storage */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Category & Storage</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="">Select category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
+                <select
+                  value={shelfLifeId}
+                  onChange={(e) => setShelfLifeId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="">Select shelf life</option>
+                  {shelfLifeOptions.map(option => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
+                <select
+                  value={storageId}
+                  onChange={(e) => setStorageId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                >
+                  <option value="">Select storage</option>
+                  {storageOptions.map(option => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Instructions</h2>
+            <textarea
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              rows={8}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              placeholder="Enter detailed cooking instructions..."
+            />
+          </div>
+
+          {/* Recipe Structure */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Recipe Structure</h2>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={!useSections}
+                  onChange={() => setUseSections(false)}
+                  className="text-emerald-600"
+                />
+                <span className="text-gray-700">Simple Recipe (no sections)</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={useSections}
+                  onChange={() => setUseSections(true)}
+                  className="text-emerald-600"
+                />
+                <span className="text-gray-700">Recipe with Sections</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Edit Mode Notice */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+            <div className="text-blue-800 font-semibold mb-2">Edit Mode Active</div>
+            <div className="text-blue-600 text-sm">
+              Make your changes above and click "Save Recipe" to update. Switch to cooking mode to use the carousel interface.
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );
