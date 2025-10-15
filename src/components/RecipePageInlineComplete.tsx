@@ -1029,42 +1029,54 @@ function EditModeContent({
     rightLabel: string; 
     value: 'single' | 'batch'; 
     onChange: (value: 'single' | 'batch') => void;
-  }) => (
-    <div className="relative">
-      <div className="flex bg-gray-100 rounded-lg p-1">
-                    <button
-          type="button"
-          onClick={() => onChange('single')}
-          className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
-            value === 'single'
-              ? 'bg-white text-emerald-700 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          {leftLabel}
-                    </button>
-                    <button
-          type="button"
-          onClick={() => onChange('batch')}
-          className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
-            value === 'batch'
-              ? 'bg-white text-emerald-700 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          {rightLabel}
-                    </button>
-                </div>
-    </div>
-  );
+  }) => {
+    const handleClick = (newValue: 'single' | 'batch', e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onChange(newValue);
+    };
+
+    return (
+      <div className="relative">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            type="button"
+            onClick={(e) => handleClick('single', e)}
+            className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+              value === 'single'
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {leftLabel}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => handleClick('batch', e)}
+            className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+              value === 'batch'
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {rightLabel}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   // Helper functions for sections and items
-  const addSection = () => {
+  const addSection = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const newSection: RecipeSection = {
       id: `section-${sections.length}`,
       title: `Step ${sections.length + 1}`,
-                              description: "",
-                              method: "",
+      description: "",
+      method: "",
       bakeTemp: "",
       bakeTime: "",
       items: []
@@ -1072,7 +1084,11 @@ function EditModeContent({
     setSections([...sections, newSection]);
   };
 
-  const removeSection = (sectionId: string) => {
+  const removeSection = (sectionId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (sections.length > 1) {
       setSections(sections.filter(s => s.id !== sectionId));
     }
@@ -1084,7 +1100,11 @@ function EditModeContent({
     ));
   };
 
-  const addSectionItem = (sectionId: string) => {
+  const addSectionItem = (sectionId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setSections(sections.map(s => 
       s.id === sectionId 
         ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, note: "" }] }
@@ -1298,11 +1318,15 @@ function EditModeContent({
           placeholder="Note (optional)"
           className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
         />
-            <button
+        <button
           type="button"
-          onClick={onRemove}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRemove();
+          }}
           className="col-span-1 text-red-600 hover:text-red-800 p-2"
-            >
+        >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -1544,11 +1568,11 @@ function EditModeContent({
                     <h3 className="text-lg font-semibold text-gray-900">Recipe Steps</h3>
                     <p className="text-sm text-gray-500">Each step has its own ingredients and instructions. Add more steps for complex recipes.</p>
                   </div>
-                            <button
+                  <button
                     type="button"
-                    onClick={addSection}
+                    onClick={(e) => addSection(e)}
                     className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                            >
+                  >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
@@ -1564,7 +1588,7 @@ function EditModeContent({
                         {sections.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => removeSection(section.id)}
+                            onClick={(e) => removeSection(section.id, e)}
                             className="text-red-600 hover:text-red-800 p-1"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1591,7 +1615,7 @@ function EditModeContent({
                             <label className="block text-sm font-medium text-gray-700">Ingredients for this step</label>
                             <button
                               type="button"
-                              onClick={() => addSectionItem(section.id)}
+                              onClick={(e) => addSectionItem(section.id, e)}
                               className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
                             >
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
