@@ -30,7 +30,7 @@ export async function createSession(user: SessionUser, rememberMe: boolean = tru
   cookieStore.set("session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict", // Changed from "lax" to "strict" for better CSRF protection
+    sameSite: "lax", // Changed back to "lax" to allow cross-device authentication
     maxAge: expirationSeconds,
     path: "/",
   });
@@ -56,7 +56,13 @@ export async function getSession(): Promise<SessionUser | null> {
 
 export async function destroySession() {
   const cookieStore = await cookies();
-  cookieStore.delete("session");
+  cookieStore.set("session", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0,
+    path: "/",
+  });
 }
 
 export async function requireAuth() {

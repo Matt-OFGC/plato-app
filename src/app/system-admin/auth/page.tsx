@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
@@ -87,16 +88,13 @@ export default function AdminLoginPage() {
                 Password
               </label>
               <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
+                <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                   placeholder="Enter password"
+                  autoComplete="current-password"
+                  required
+                  className="appearance-none block w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                 />
               </div>
             </div>

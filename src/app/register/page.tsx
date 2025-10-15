@@ -1,6 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+
+interface RegisterError {
+  error: string;
+  code?: string;
+  errorId?: string;
+  field?: string;
+}
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -11,10 +19,14 @@ export default function RegisterPage() {
   const [country, setCountry] = useState("United Kingdom");
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<RegisterError | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("Creating account...");
+    setError(null);
+    setStatus(null);
+    setLoading(true);
     
     try {
       const formData = new URLSearchParams({ 
@@ -26,7 +38,6 @@ export default function RegisterPage() {
         country,
         phone
       });
-      console.log("Sending registration data:", { email, company, name, businessType, country, password: "***" });
       
       const res = await fetch("/api/register", { 
         method: "POST", 
@@ -37,23 +48,29 @@ export default function RegisterPage() {
       });
       
       const result = await res.json();
-      console.log("Registration response:", result);
       
       if (res.ok) {
-        setStatus("Account created successfully! You can now sign in.");
+        setStatus(result.message || "Account created successfully! You can now sign in.");
+        // Clear form on success
+        setEmail("");
+        setPassword("");
+        setCompany("");
+        setName("");
+        setBusinessType("");
+        setPhone("");
       } else {
-        const errorMessage = result.error || 'Unknown error';
-        if (errorMessage === "Email in use") {
-          setStatus("This email is already registered. Please use a different email or try signing in.");
-        } else if (errorMessage === "Missing fields") {
-          setStatus("Please fill in all required fields.");
-        } else {
-          setStatus(`Failed to register: ${errorMessage}`);
-        }
+        setError(result);
+        setStatus(null);
       }
     } catch (error) {
       console.error("Registration error:", error);
-      setStatus("Failed to register: Network error");
+      setError({
+        error: "We couldn't complete sign-up. Please try again.",
+        code: "NETWORK_ERROR"
+      });
+      setStatus(null);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -75,6 +92,27 @@ export default function RegisterPage() {
         </div>
         
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <div className="font-medium">{error.error}</div>
+              {error.code === "EMAIL_ALREADY_EXISTS" && (
+                <div className="mt-2">
+                  <a 
+                    href="/login" 
+                    className="text-red-600 hover:text-red-700 underline"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+              )}
+              {error.errorId && (
+                <div className="mt-1 text-xs text-red-500">
+                  Error ID: {error.errorId}
+                </div>
+              )}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Personal Information */}
             <div className="space-y-4">
@@ -103,14 +141,13 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                <input 
-                  type="password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors" 
-                  value={password} 
+                <PasswordInput
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a password (min. 6 characters)"
+                  placeholder="Create a password (min. 8 characters)"
+                  autoComplete="new-password"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
               </div>
             </div>
@@ -185,9 +222,20 @@ export default function RegisterPage() {
             </div>
             <button 
               type="submit"
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 px-4 rounded-lg hover:shadow-md transition-all font-semibold"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 px-4 rounded-lg hover:shadow-md transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              Create account
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating account...
+                </>
+              ) : (
+                "Create account"
+              )}
             </button>
           </form>
           
