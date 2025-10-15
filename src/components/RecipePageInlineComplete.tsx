@@ -168,7 +168,7 @@ export function RecipePageInlineComplete({
   
   // Cooking mode state
   const [servings, setServings] = useState(recipe.yieldQuantity);
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   
   // Editable recipe fields
   const [name, setName] = useState(recipe.name);
@@ -218,12 +218,12 @@ export function RecipePageInlineComplete({
     ? sections
         .map(s => parseInt(s.bakeTime) || 0)
         .reduce((a, b) => a + b, 0)
-    : parseInt(bakeTime) || 0;
+    : parseInt(bakeTime.toString()) || 0;
   
   // Calculate total bake temp from sections if using sections
   const displayBakeTemp = useSections && sections.length > 0
     ? Math.max(...sections.map(s => parseInt(s.bakeTemp) || 0))
-    : parseInt(bakeTemp) || 0;
+    : parseInt(bakeTemp.toString()) || 0;
 
   // Get all ingredients for progress calculation
   const allIngredients = useMemo(() => {
@@ -235,7 +235,7 @@ export function RecipePageInlineComplete({
   }, [useSections, sections, recipe.items]);
 
   // Toggle item checked state
-  const toggleItem = useCallback((itemId: number) => {
+  const toggleItem = useCallback((itemId: string) => {
     setCheckedItems(prev => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
@@ -301,7 +301,7 @@ export function RecipePageInlineComplete({
                 {(recipe.imageUrl || imageUrl) && (
             <div className="mb-6">
                     <img 
-                      src={imageUrl || recipe.imageUrl} 
+                      src={imageUrl || recipe.imageUrl || ""} 
                       alt={recipe.name} 
                 className="w-full h-48 object-cover rounded-xl shadow-md"
                     />
@@ -417,6 +417,7 @@ export function RecipePageInlineComplete({
                 getTimer={getTimer}
                 startTimer={startTimer}
                 recipe={recipe}
+                ingredients={ingredients}
                 servings={servings}
                 currentStep={currentStep}
                 setCurrentStep={setCurrentStep}
@@ -428,6 +429,7 @@ export function RecipePageInlineComplete({
                 toggleItem={toggleItem}
                 getTimer={getTimer}
                 startTimer={startTimer}
+                ingredients={ingredients}
                 servings={servings}
                 currentStep={currentStep}
                 setCurrentStep={setCurrentStep}
@@ -498,16 +500,18 @@ function RecipeCarousel({
   getTimer, 
   startTimer, 
   recipe,
+  ingredients,
   servings,
   currentStep,
   setCurrentStep
 }: {
   sections: RecipeSection[];
-  checkedItems: Set<number>;
-  toggleItem: (itemId: number) => void;
+  checkedItems: Set<string>;
+  toggleItem: (itemId: string) => void;
   getTimer: (id: string) => any;
-  startTimer: (id: string, duration: number, label: string) => void;
+  startTimer: (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number) => void;
   recipe: any;
+  ingredients: Ingredient[];
   servings: number;
   currentStep: number;
   setCurrentStep: (step: number) => void;
@@ -597,6 +601,7 @@ function RecipeCarousel({
                 getTimer={getTimer}
                 startTimer={startTimer}
                 recipe={recipe}
+                ingredients={ingredients}
                 servings={servings}
               />
                         </div>
@@ -639,15 +644,17 @@ function SimpleRecipeCarousel({
   toggleItem, 
   getTimer, 
   startTimer,
+  ingredients,
   servings,
   currentStep,
   setCurrentStep
 }: {
   recipe: any;
-  checkedItems: Set<number>;
-  toggleItem: (itemId: number) => void;
+  checkedItems: Set<string>;
+  toggleItem: (itemId: string) => void;
   getTimer: (id: string) => any;
-  startTimer: (id: string, duration: number, label: string) => void;
+  startTimer: (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number) => void;
+  ingredients: Ingredient[];
   servings: number;
   currentStep: number;
   setCurrentStep: (step: number) => void;
@@ -702,7 +709,7 @@ function SimpleRecipeCarousel({
                 
                   <div className="space-y-4">
                 {recipe.items.map((item: any) => {
-                  const ingredient = recipe.ingredients.find((ing: any) => ing.id === item.ingredientId);
+                  const ingredient = ingredients.find((ing: any) => ing.id === item.ingredient.id);
                   if (!ingredient) return null;
                   
                   const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
@@ -804,15 +811,17 @@ function StepCard({
   getTimer, 
   startTimer, 
   recipe,
+  ingredients,
   servings
 }: {
   section: RecipeSection;
   index: number;
-  checkedItems: Set<number>;
-  toggleItem: (itemId: number) => void;
+  checkedItems: Set<string>;
+  toggleItem: (itemId: string) => void;
   getTimer: (id: string) => any;
-  startTimer: (id: string, duration: number, label: string) => void;
+  startTimer: (id: string, recipeId: number, recipeName: string, stepTitle: string, minutes: number) => void;
   recipe: any;
+  ingredients: Ingredient[];
   servings: number;
 }) {
   return (
@@ -847,7 +856,7 @@ function StepCard({
             )}
             {(section.bakeTemp || section.bakeTime) && (
                                     <button
-                onClick={() => startTimer(`section-${index}`, parseInt(section.bakeTime || '0'), section.title)}
+                onClick={() => startTimer(`section-${index}`, recipe.id, recipe.name, section.title, parseInt(section.bakeTime || '0'))}
                 className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-emerald-200 transition-colors"
                                     >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -865,7 +874,7 @@ function StepCard({
         <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Ingredients</h3>
         <div className="space-y-4">
           {section.items.map((item) => {
-            const ingredient = recipe.ingredients.find((ing: any) => ing.id === item.ingredientId);
+            const ingredient = ingredients.find((ing: any) => ing.id === item.ingredientId);
             if (!ingredient) return null;
             
             const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
@@ -979,7 +988,7 @@ function EditModeContent({
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Ingredients</h2>
           <div className="space-y-3">
             {recipe.items.map((item: any) => {
-              const ingredient = recipe.ingredients.find((ing: any) => ing.id === item.ingredientId);
+              const ingredient = ingredients.find((ing: any) => ing.id === item.ingredient.id);
               if (!ingredient) return null;
               
               return (
