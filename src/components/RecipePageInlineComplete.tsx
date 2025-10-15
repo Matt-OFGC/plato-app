@@ -266,7 +266,7 @@ export function RecipePageInlineComplete({
       <div className="flex-shrink-0 px-6 pt-12 pb-2 border-l-2 border-r-2 border-gray-100">
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between h-20">
-            <div className="flex flex-col justify-center gap-1">
+            <div className="flex flex-col justify-center gap-1 ml-16">
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{name}</h1>
               <div className="text-sm text-gray-500 font-medium">
                 Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
@@ -1123,6 +1123,7 @@ function EditModeContent({
     
     try {
       const formData = new FormData();
+      formData.append('recipeId', recipe.id.toString());
       formData.append('name', name);
       formData.append('description', description);
       formData.append('imageUrl', imageUrl);
