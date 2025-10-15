@@ -943,12 +943,9 @@ function EditModeContent({
   // Collapsible sections state
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
-    yield: false,
+    yield: true,
     cooking: false,
     category: false,
-    instructions: false,
-    recipeType: false,
-    structure: false,
     ingredients: true
   });
   
@@ -970,8 +967,7 @@ function EditModeContent({
   const [isWholesaleProduct, setIsWholesaleProduct] = useState(!!wholesaleProduct?.isActive);
   const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.price || "");
   
-  // Sections vs simple items
-  const [useSections, setUseSections] = useState(recipe.sections.length > 0);
+  // Always use sections-based system
   const [sections, setSections] = useState<RecipeSection[]>(
     recipe.sections.length > 0
       ? recipe.sections.map((s, idx) => ({
@@ -989,18 +985,21 @@ function EditModeContent({
             note: item.note || "",
           })),
         }))
-      : [{ id: "section-0", title: "Step 1", description: "", method: "", bakeTemp: "", bakeTime: "", items: [] }]
-  );
-  
-  // Simple recipe items (for non-sectioned recipes)
-  const [simpleItems, setSimpleItems] = useState(
-    recipe.items.map((item, idx) => ({
-      id: `item-${idx}`,
-      ingredientId: item.ingredient.id,
-      quantity: item.quantity.toString(),
-      unit: item.unit as Unit,
-      note: item.note || "",
-    }))
+      : [{
+                              id: "section-0",
+                              title: "Step 1",
+          description: "", 
+          method: recipe.method || "", 
+          bakeTemp: recipe.bakeTemp?.toString() || "", 
+          bakeTime: recipe.bakeTime?.toString() || "", 
+          items: recipe.items.map((item, idx) => ({
+            id: `section-0-item-${idx}`,
+            ingredientId: item.ingredient.id,
+            quantity: item.quantity.toString(),
+            unit: item.unit as Unit,
+            note: item.note || "",
+          }))
+        }]
   );
   
   // Drag and drop sensors
@@ -1018,6 +1017,46 @@ function EditModeContent({
       [section]: !prev[section]
     }));
   };
+
+  // Slider Toggle Component
+  const SliderToggle = ({ 
+    leftLabel, 
+    rightLabel, 
+    value, 
+    onChange 
+  }: { 
+    leftLabel: string; 
+    rightLabel: string; 
+    value: 'single' | 'batch'; 
+    onChange: (value: 'single' | 'batch') => void;
+  }) => (
+    <div className="relative">
+      <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+          type="button"
+          onClick={() => onChange('single')}
+          className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+            value === 'single'
+              ? 'bg-white text-emerald-700 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {leftLabel}
+                    </button>
+                    <button
+          type="button"
+          onClick={() => onChange('batch')}
+          className={`relative flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+            value === 'batch'
+              ? 'bg-white text-emerald-700 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {rightLabel}
+                    </button>
+                </div>
+    </div>
+  );
 
   // Helper functions for sections and items
   const addSection = () => {
@@ -1069,19 +1108,6 @@ function EditModeContent({
     ));
   };
 
-  const addSimpleItem = () => {
-    setSimpleItems([...simpleItems, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, note: "" }]);
-  };
-
-  const removeSimpleItem = (itemId: string) => {
-    setSimpleItems(simpleItems.filter(item => item.id !== itemId));
-  };
-
-  const updateSimpleItem = (itemId: string, field: string, value: any) => {
-    setSimpleItems(simpleItems.map(item => 
-      item.id === itemId ? { ...item, [field]: value } : item
-    ));
-  };
 
   // Drag and drop handlers
   const handleDragEnd = (event: DragEndEvent) => {
@@ -1089,31 +1115,21 @@ function EditModeContent({
     
     if (!over || active.id === over.id) return;
     
-    if (useSections) {
-      // Handle section item reordering
-      const activeSectionId = active.data.current?.sectionId;
-      const overSectionId = over.data.current?.sectionId;
-      
-      if (activeSectionId === overSectionId) {
-        // Reorder within same section
-        const section = sections.find(s => s.id === activeSectionId);
-        if (section) {
-          const oldIndex = section.items.findIndex(item => item.id === active.id);
-          const newIndex = section.items.findIndex(item => item.id === over.id);
-          
-          if (oldIndex !== -1 && newIndex !== -1) {
-            const newItems = arrayMove(section.items, oldIndex, newIndex);
-            updateSection(activeSectionId, 'items', newItems);
-          }
+    // Handle section item reordering
+    const activeSectionId = active.data.current?.sectionId;
+    const overSectionId = over.data.current?.sectionId;
+    
+    if (activeSectionId === overSectionId) {
+      // Reorder within same section
+      const section = sections.find(s => s.id === activeSectionId);
+      if (section) {
+        const oldIndex = section.items.findIndex(item => item.id === active.id);
+        const newIndex = section.items.findIndex(item => item.id === over.id);
+        
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newItems = arrayMove(section.items, oldIndex, newIndex);
+          updateSection(activeSectionId, 'items', newItems);
         }
-      }
-    } else {
-      // Handle simple items reordering
-      const oldIndex = simpleItems.findIndex(item => item.id === active.id);
-      const newIndex = simpleItems.findIndex(item => item.id === over.id);
-      
-      if (oldIndex !== -1 && newIndex !== -1) {
-        setSimpleItems(arrayMove(simpleItems, oldIndex, newIndex));
       }
     }
   };
@@ -1135,16 +1151,11 @@ function EditModeContent({
       formData.append('storageId', storageId);
       formData.append('bakeTime', bakeTime);
       formData.append('bakeTemp', bakeTemp);
-      formData.append('useSections', useSections.toString());
+      formData.append('useSections', 'true'); // Always use sections
       formData.append('recipeType', recipeType);
       formData.append('isWholesaleProduct', isWholesaleProduct.toString());
       formData.append('wholesalePrice', wholesalePrice);
-      
-      if (useSections) {
-        formData.append('sections', JSON.stringify(sections));
-      } else {
-        formData.append('items', JSON.stringify(simpleItems.filter(item => item.ingredientId && item.quantity)));
-      }
+      formData.append('sections', JSON.stringify(sections));
       
       await onSave(formData);
     } catch (error) {
@@ -1165,37 +1176,45 @@ function EditModeContent({
     sectionKey: keyof typeof expandedSections; 
     children: React.ReactNode;
     icon?: string;
-  }) => (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                    <button
-        type="button"
-        onClick={() => toggleSection(sectionKey)}
-        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          {icon && (
-            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <span className="text-emerald-600 text-lg">{icon}</span>
-            </div>
-          )}
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-        </div>
-        <svg 
-          className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections[sectionKey] ? 'rotate-180' : ''}`}
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
+  }) => {
+    const handleToggle = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSection(sectionKey);
+    };
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={handleToggle}
+          className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-                    </button>
-      {expandedSections[sectionKey] && (
-        <div className="px-6 pb-6">
-          {children}
-        </div>
-                  )}
-                </div>
-  );
+          <div className="flex items-center gap-3">
+            {icon && (
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <span className="text-emerald-600 text-lg">{icon}</span>
+                      </div>
+            )}
+            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          </div>
+          <svg 
+            className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections[sectionKey] ? 'rotate-180' : ''}`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {expandedSections[sectionKey] && (
+          <div className="px-6 pb-6">
+            {children}
+                  </div>
+                )}
+      </div>
+    );
+  };
 
   // Sortable Ingredient Component
   const SortableIngredientItem = ({ 
@@ -1272,8 +1291,8 @@ function EditModeContent({
           <option value="l">l</option>
           <option value="each">each</option>
         </select>
-        <input
-          type="text"
+                            <input
+                              type="text"
           value={item.note}
           onChange={(e) => onUpdate('note', e.target.value)}
           placeholder="Note (optional)"
@@ -1351,41 +1370,99 @@ function EditModeContent({
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Yield Information" sectionKey="yield" icon="⚖️">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <CollapsibleSection title="Recipe Output & Wholesale" sectionKey="yield" icon="⚖️">
+            <div className="space-y-6">
+              {/* Recipe Type Toggle */}
                                   <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Recipe Type</label>
+                <SliderToggle
+                  leftLabel="Single Serving"
+                  rightLabel="Batch Recipe"
+                  value={recipeType}
+                  onChange={setRecipeType}
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  {recipeType === 'batch' 
+                    ? `Perfect for making ${yieldQuantity} servings - great for meal prep or feeding a group.`
+                    : 'Ideal for individual portions and precise scaling.'
+                  }
+                </p>
+              </div>
+
+              {/* Yield Information */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {recipeType === 'batch' ? 'Batch Size' : 'Serving Size'}
+                  </label>
                                     <input
                                       type="number"
                     value={yieldQuantity}
-                  onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  min="0.1"
-                  step="0.1"
-                  required
+                    onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    min="0.1"
+                    step="0.1"
+                    required
                                     />
                                   </div>
                                   <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
                   <select
                     value={yieldUnit}
-                  onChange={(e) => setYieldUnit(e.target.value as Unit)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="g">g</option>
-                  <option value="kg">kg</option>
-                  <option value="ml">ml</option>
-                  <option value="l">l</option>
-                  <option value="each">each</option>
+                    onChange={(e) => setYieldUnit(e.target.value as Unit)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="ml">ml</option>
+                    <option value="l">l</option>
+                    <option value="each">each</option>
                   </select>
                 </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Total Cost</label>
-                <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
-                  {formatCurrency(costBreakdown.totalCost)}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Cost</label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
+                    {formatCurrency(costBreakdown.totalCost)}
+                  </div>
                 </div>
               </div>
+
+              {/* Wholesale Product */}
+              <div className="border-t border-gray-200 pt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Wholesale Product</label>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isWholesaleProduct}
+                      onChange={(e) => setIsWholesaleProduct(e.target.checked)}
+                      className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                    />
+                    <span className="text-gray-700 font-medium">Enable as wholesale product</span>
+                  </label>
+                  {isWholesaleProduct && (
+                    <div className="ml-7">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Wholesale Price</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">£</span>
+                                    <input
+                                      type="number"
+                          value={wholesalePrice}
+                          onChange={(e) => setWholesalePrice(e.target.value)}
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                    />
+                                  </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        This will sync to your wholesale offering menu
+                      </p>
+                                </div>
+                  )}
+                          </div>
+                        </div>
+            </div>
           </CollapsibleSection>
 
           <CollapsibleSection title="Cooking Parameters" sectionKey="cooking" icon="🔥">
@@ -1399,7 +1476,7 @@ function EditModeContent({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   min="0"
                                     />
-                                  </div>
+                          </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (minutes)</label>
                 <input
@@ -1409,8 +1486,8 @@ function EditModeContent({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   min="0"
                 />
-                                </div>
-                          </div>
+                        </div>
+                      </div>
           </CollapsibleSection>
 
           <CollapsibleSection title="Category & Storage" sectionKey="category" icon="🏷️">
@@ -1427,7 +1504,7 @@ function EditModeContent({
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
-              </div>
+                  </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
                 <select
@@ -1453,225 +1530,96 @@ function EditModeContent({
                     <option key={option.id} value={option.id}>{option.name}</option>
                   ))}
                 </select>
-              </div>
+                          </div>
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Instructions" sectionKey="instructions" icon="📋">
-            <textarea
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              placeholder="Enter detailed cooking instructions..."
-            />
-          </CollapsibleSection>
-
-          <CollapsibleSection title="Recipe Type & Wholesale" sectionKey="recipeType" icon="🏪">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Recipe Type</label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={recipeType === 'single'}
-                      onChange={() => setRecipeType('single')}
-                      className="text-emerald-600"
-                    />
-                    <span className="text-gray-700">Single Serving</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={recipeType === 'batch'}
-                      onChange={() => setRecipeType('batch')}
-                      className="text-emerald-600"
-                    />
-                    <span className="text-gray-700">Batch Recipe</span>
-                  </label>
-                  <p className="text-sm text-gray-500">
-                    {recipeType === 'batch' 
-                      ? `Makes ${yieldQuantity} servings - great for meal prep or feeding a group.`
-                      : 'Perfect for individual portions and precise scaling.'
-                    }
-                  </p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Wholesale Product</label>
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={isWholesaleProduct}
-                      onChange={(e) => setIsWholesaleProduct(e.target.checked)}
-                      className="text-emerald-600 rounded"
-                    />
-                    <span className="text-gray-700">Enable as wholesale product</span>
-                  </label>
-                  {isWholesaleProduct && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Wholesale Price</label>
-                      <input
-                        type="number"
-                        value={wholesalePrice}
-                        onChange={(e) => setWholesalePrice(e.target.value)}
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CollapsibleSection>
                 
-          <CollapsibleSection title="Recipe Structure" sectionKey="structure" icon="🏗️">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={!useSections}
-                    onChange={() => setUseSections(false)}
-                    className="text-emerald-600"
-                  />
-                  <span className="text-gray-700">Simple Recipe (no sections)</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={useSections}
-                    onChange={() => setUseSections(true)}
-                    className="text-emerald-600"
-                  />
-                  <span className="text-gray-700">Recipe with Sections</span>
-                </label>
-              </div>
-              {useSections && (
-                <p className="text-sm text-gray-500">
-                  Organize ingredients and instructions into separate steps for complex recipes.
-                </p>
-              )}
-            </div>
-          </CollapsibleSection>
-
           {/* Ingredients and Steps */}
-          <CollapsibleSection title="Ingredients & Steps" sectionKey="ingredients" icon="🥘">
+          <CollapsibleSection title="Recipe Steps" sectionKey="ingredients" icon="🥘">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              {useSections ? (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
+              <div className="space-y-6">
+                          <div className="flex items-center justify-between">
+                  <div>
                     <h3 className="text-lg font-semibold text-gray-900">Recipe Steps</h3>
-                          <button
-                      type="button"
-                      onClick={addSection}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Add Step
-                    </button>
+                    <p className="text-sm text-gray-500">Each step has its own ingredients and instructions. Add more steps for complex recipes.</p>
                   </div>
-                  
-                  <div className="space-y-6">
-                    {sections.map((section, index) => (
-                      <div key={section.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-lg font-semibold text-gray-900">{section.title}</h4>
-                          {sections.length > 1 && (
                             <button
-                              type="button"
+                    type="button"
+                    onClick={addSection}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                            >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Step
+                            </button>
+                          </div>
+                
+                <div className="space-y-6">
+                  {sections.map((section, index) => (
+                    <div key={section.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold text-gray-900">{section.title}</h4>
+                        {sections.length > 1 && (
+                          <button
+                            type="button"
                             onClick={() => removeSection(section.id)}
-                              className="text-red-600 hover:text-red-800 p-1"
+                            className="text-red-600 hover:text-red-800 p-1"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
-                          )}
-                        </div>
+                )}
+              </div>
 
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Step Instructions</label>
-                            <textarea
-                              value={section.method}
-                              onChange={(e) => updateSection(section.id, 'method', e.target.value)}
-                              rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                              placeholder="Instructions for this step..."
-                            />
-                          </div>
-                          
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <label className="block text-sm font-medium text-gray-700">Ingredients for this step</label>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Step Instructions</label>
+                  <textarea
+                            value={section.method}
+                            onChange={(e) => updateSection(section.id, 'method', e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            placeholder="Instructions for this step..."
+                          />
+                    </div>
+                        
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <label className="block text-sm font-medium text-gray-700">Ingredients for this step</label>
                             <button
-                                type="button"
-                                onClick={() => addSectionItem(section.id)}
-                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                              type="button"
+                              onClick={() => addSectionItem(section.id)}
+                              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
                             >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Add Ingredient
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                              Add Ingredient
                             </button>
-                          </div>
-                            
-                            <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                              <div className="space-y-2">
-                                  {section.items.map((item) => (
-                                  <SortableIngredientItem
-                                      key={item.id}
-                                      item={item}
-                                    sectionId={section.id}
-                                    onUpdate={(field, value) => updateSectionItem(section.id, item.id, field, value)}
-                                    onRemove={() => removeSectionItem(section.id, item.id)}
-                                    />
-                                  ))}
-                              </div>
-                                </SortableContext>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">Ingredients</h3>
-                    <button
-                      type="button"
-                      onClick={addSimpleItem}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Add Ingredient
-                    </button>
-                  </div>
-                  
-                  <SortableContext items={simpleItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2">
-                      {simpleItems.map((item) => (
+                    </div>
+                          
+                          <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-2">
+                              {section.items.map((item) => (
                               <SortableIngredientItem
                                 key={item.id}
                                 item={item}
-                          onUpdate={(field, value) => updateSimpleItem(item.id, field, value)}
-                          onRemove={() => removeSimpleItem(item.id)}
+                                  sectionId={section.id}
+                                  onUpdate={(field, value) => updateSectionItem(section.id, item.id, field, value)}
+                                  onRemove={() => removeSectionItem(section.id, item.id)}
                               />
                             ))}
-                          </div>
+              </div>
                         </SortableContext>
+            </div>
+          </div>
+                    </div>
+                              ))}
                   </div>
-                )}
+              </div>
             </DndContext>
           </CollapsibleSection>
 
@@ -1680,10 +1628,10 @@ function EditModeContent({
             <div className="text-blue-800 font-semibold mb-2">Edit Mode Active</div>
             <div className="text-blue-600 text-sm">
               Make your changes above and click "Save Recipe" to update. Switch to cooking mode to use the carousel interface.
-                    </div>
-                    </div>
+                </div>
+                </div>
         </form>
-          </div>
+              </div>
 
       {/* Floating Cost Breakdown Panel */}
       <div className="fixed right-8 top-1/2 transform -translate-y-1/2 w-80 bg-white border-2 border-emerald-200 rounded-xl p-6 shadow-lg z-10">
@@ -1692,7 +1640,7 @@ function EditModeContent({
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Total Cost:</span>
             <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost)}</span>
-                </div>
+            </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Cost per {yieldUnit}:</span>
             <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost / yieldQuantity)}</span>
