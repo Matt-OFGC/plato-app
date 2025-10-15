@@ -1291,6 +1291,12 @@ function EditModeContent({
             e.preventDefault();
             onUpdate('quantity', e.target.value);
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
           placeholder="Qty"
           className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
         />
@@ -1299,6 +1305,12 @@ function EditModeContent({
           onChange={(e) => {
             e.preventDefault();
             onUpdate('unit', e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+            }
           }}
           className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
         >
@@ -1314,6 +1326,12 @@ function EditModeContent({
           onChange={(e) => {
             e.preventDefault();
             onUpdate('note', e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+            }
           }}
           placeholder="Note (optional)"
           className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -1369,6 +1387,12 @@ function EditModeContent({
                               type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -1379,6 +1403,12 @@ function EditModeContent({
                   type="url"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
@@ -1387,6 +1417,12 @@ function EditModeContent({
                             <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
                               rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
@@ -1423,6 +1459,12 @@ function EditModeContent({
                                       type="number"
                     value={yieldQuantity}
                     onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     min="0.1"
                     step="0.1"
@@ -1571,6 +1613,12 @@ function EditModeContent({
                               e.preventDefault();
                               updateSection(section.id, 'method', e.target.value);
                             }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
                             rows={3}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             placeholder="Instructions for this step..."
@@ -1588,6 +1636,12 @@ function EditModeContent({
                                 e.preventDefault();
                                 updateSection(section.id, 'bakeTemp', e.target.value);
                               }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }
+                              }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                               placeholder="e.g., 180"
                               min="0"
@@ -1601,6 +1655,12 @@ function EditModeContent({
                               onChange={(e) => {
                                 e.preventDefault();
                                 updateSection(section.id, 'bakeTime', e.target.value);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                               placeholder="e.g., 25"
