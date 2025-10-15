@@ -1201,30 +1201,30 @@ export function RecipePageInlineComplete({
             className="h-full bg-emerald-500 transition-all duration-300"
             style={{ width: `${allIngredients.length > 0 ? (checkedItems.size / allIngredients.length) * 100 : 0}%` }}
           ></div>
-              </div>
+        </div>
         
         {/* Step Navigation */}
         <div className="flex items-center gap-4">
-                    <button 
+          <button 
             className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600"
             disabled={true} // Will be implemented with carousel state
-                    >
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
+            </svg>
+          </button>
           <span className="text-lg font-semibold text-gray-700">1 / {recipe.sections.length || 2}</span>
-                    <button 
+          <button 
             className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600"
             disabled={true} // Will be implemented with carousel state
-                    >
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    </div>
-                  </div>
-                </div>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
