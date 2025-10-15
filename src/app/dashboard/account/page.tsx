@@ -10,6 +10,7 @@ import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { TimerSettings } from "@/components/TimerSettings";
+import { NavigationSettingsClient } from "@/components/NavigationSettingsClient";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';
@@ -141,7 +142,7 @@ export default async function AccountPage() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-2">Manage your account, pricing, and content organization</p>
@@ -278,6 +279,14 @@ export default async function AccountPage() {
                   storageOptions={storageOptions}
                 />
               </div>
+            </div>
+          ),
+          
+          navigation: (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Navigation Preferences</h2>
+              <p className="text-sm text-gray-600 mb-6">Customize which navigation items appear in your floating navigation bar</p>
+              <NavigationSettingsClient />
             </div>
           ),
           
