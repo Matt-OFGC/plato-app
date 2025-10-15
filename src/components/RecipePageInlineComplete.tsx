@@ -261,7 +261,7 @@ export function RecipePageInlineComplete({
   }, [totalSteps]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8">
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -294,9 +294,9 @@ export function RecipePageInlineComplete({
             </div>
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex-1 flex gap-6 min-h-0 p-6">
+      <div className="flex-1 flex gap-12 min-h-0 p-12">
         {/* Left Panel - Recipe Overview (Fixed) */}
-        <div className="w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-y-auto">
+        <div className="w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-y-auto">
           {/* Recipe Image */}
                 {(recipe.imageUrl || imageUrl) && (
             <div className="mb-6">
@@ -1290,8 +1290,8 @@ function EditModeContent({
   };
 
   return (
-    <div className="h-full overflow-y-auto p-8 relative">
-      <div className="max-w-6xl mx-auto">
+    <div className="h-full overflow-y-auto p-12 relative">
+      <div className="max-w-none mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
