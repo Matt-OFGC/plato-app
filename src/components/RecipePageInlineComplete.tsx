@@ -262,13 +262,19 @@ export function RecipePageInlineComplete({
 
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
-      {/* Header */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-white to-gray-50 border-b border-gray-200 px-8 py-8 border-l-2 border-r-2 border-gray-100">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
+      {/* Header Container */}
+      <div className="flex-shrink-0 p-6 border-l-2 border-r-2 border-gray-100">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between h-20">
+            <div className="flex flex-col justify-center gap-1">
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{name}</h1>
-            <button
+              <div className="text-sm text-gray-500 font-medium">
+                Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
                 onClick={() => setIsLocked(!isLocked)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-sm ${
                   isLocked 
@@ -278,25 +284,19 @@ export function RecipePageInlineComplete({
               >
                 {isLocked ? '🔒 Locked' : '🔓 Editing'}
               </button>
+              <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">
+                Print
+              </button>
+              <button
+                onClick={() => setIsLocked(!isLocked)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
+              >
+                {isLocked ? 'Edit Recipe' : 'Save Changes'}
+              </button>
             </div>
-            <div className="text-sm text-gray-500 font-medium">
-              Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
+          </div>
         </div>
       </div>
-
-          <div className="flex items-center gap-3">
-            <button className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl transition-all duration-200 shadow-sm border border-gray-200 font-medium">
-              Print
-                  </button>
-                  <button
-              onClick={() => setIsLocked(!isLocked)}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all duration-200 shadow-sm font-medium"
-            >
-              {isLocked ? 'Edit Recipe' : 'Save Changes'}
-                  </button>
-                </div>
-              </div>
-            </div>
 
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-12 min-h-0 p-12 border-l-2 border-r-2 border-gray-100">
