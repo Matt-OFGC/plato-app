@@ -702,11 +702,11 @@ function SimpleRecipeCarousel({
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                     1
-                  </div>
+                      </div>
                   <h2 className="text-xl font-bold text-gray-900">Recipe</h2>
+                    </div>
                 </div>
-              </div>
-              
+                
               {/* Two Column Layout: Ingredients Left, Instructions Right */}
               <div className="grid grid-cols-2 gap-8 h-full">
                 {/* Left Column - Ingredients */}
@@ -734,24 +734,24 @@ function SimpleRecipeCarousel({
                             {isChecked && (
                               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
+                    </svg>
                             )}
-                          </div>
+                        </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
                               <span className="text-xl text-gray-600">{item.unit}</span>
                               <span className="text-xl text-gray-900">{ingredient.name}</span>
-                            </div>
+                      </div>
                             {item.note && (
                               <div className="text-sm text-gray-500 mt-1">{item.note}</div>
                             )}
-                          </div>
                         </div>
+                      </div>
                       );
                     })}
+                    </div>
                   </div>
-                </div>
                 
                 {/* Right Column - Instructions */}
                 <div className="flex flex-col">
@@ -759,10 +759,10 @@ function SimpleRecipeCarousel({
                   <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
                     <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                       {recipe.method || 'No instructions provided.'}
-                    </div>
-                  </div>
                 </div>
               </div>
+            </div>
+          </div>
             </div>
           </div>
               </div>
@@ -770,29 +770,29 @@ function SimpleRecipeCarousel({
       
       {/* Navigation Arrows */}
       <div className="absolute left-4 top-1/2 -translate-y-1/2">
-        <button 
+                    <button 
           onClick={() => scrollToStep(0)}
           disabled={currentStep === 0}
           className="w-16 h-16 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-        >
+                    >
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+                      </svg>
                     </button>
                             </div>
       
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
-        <button 
+                    <button 
           onClick={() => scrollToStep(1)}
           disabled={currentStep === 1}
           className="w-16 h-16 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-        >
+                    >
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+                      </svg>
                     </button>
-                          </div>
-                              </div>
+                    </div>
+                  </div>
   );
 }
 
@@ -826,45 +826,45 @@ function StepCard({
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
               {index + 1}
-            </div>
+                    </div>
             <h2 className="text-xl font-bold text-gray-900">{section.title}</h2>
-          </div>
+                    </div>
           
           {/* Compact Cooking Parameters */}
-          {(section.bakeTemp || section.bakeTime) && (
-            <div className="flex items-center gap-2">
+                        {(section.bakeTemp || section.bakeTime) && (
+                                <div className="flex items-center gap-2">
               {section.bakeTemp && (
                 <div className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                  </svg>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                                  </svg>
                   {section.bakeTemp}°C
-                </div>
-              )}
-              {section.bakeTime && (
+                              </div>
+                            )}
+                            {section.bakeTime && (
                 <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                   {section.bakeTime}m
-                </div>
+                                  </div>
               )}
               {(section.bakeTemp || section.bakeTime) && (
-                <button
+                                    <button
                   onClick={() => startTimer(`section-${index}`, recipe.id, recipe.name, section.title, parseInt(section.bakeTime || '0'))}
                   className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-medium hover:bg-emerald-200 transition-colors flex items-center gap-1"
-                >
+                                    >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
                   Timer
-                </button>
-              )}
-            </div>
-          )}
+                                    </button>
+                            )}
+                          </div>
+                        )}
         </div>
-      </div>
-      
+                      </div>
+                      
       {/* Two Column Layout: Ingredients Left, Instructions Right */}
       <div className="grid grid-cols-2 gap-8 h-full">
         {/* Left Column - Ingredients */}
@@ -880,7 +880,7 @@ function StepCard({
               
               return (
                 <div 
-                  key={item.id}
+                                key={item.id}
                   onClick={() => toggleItem(item.id)}
                   className={`flex items-center gap-4 p-6 rounded-lg cursor-pointer transition-colors touch-manipulation ${
                     isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
@@ -894,22 +894,22 @@ function StepCard({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
-                  </div>
+                                  </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
                       <span className="text-xl text-gray-600">{item.unit}</span>
                       <span className="text-xl text-gray-900">{ingredient.name}</span>
-                    </div>
+                                </div>
                     {item.note && (
                       <div className="text-sm text-gray-500 mt-1">{item.note}</div>
                     )}
-                  </div>
-                </div>
+                          </div>
+                        </div>
               );
             })}
-          </div>
-        </div>
+                          </div>
+                        </div>
         
         {/* Right Column - Instructions */}
         <div className="flex flex-col">
@@ -917,11 +917,11 @@ function StepCard({
           <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
             <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
               {section.method || 'No instructions provided for this step.'}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                    </div>
+                </div>
+                      </div>
+                    </div>
+                </div>
   );
 }
 
@@ -953,6 +953,11 @@ function EditModeContent({
   const [bakeTime, setBakeTime] = useState(recipe.bakeTime?.toString() || "");
   const [bakeTemp, setBakeTemp] = useState(recipe.bakeTemp?.toString() || "");
 
+  // Recipe type and wholesale
+  const [recipeType, setRecipeType] = useState<'single' | 'batch'>('batch');
+  const [isWholesaleProduct, setIsWholesaleProduct] = useState(!!wholesaleProduct?.isActive);
+  const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.price || "");
+
   // Sections vs simple items
   const [useSections, setUseSections] = useState(recipe.sections.length > 0);
   const [sections, setSections] = useState<RecipeSection[]>(
@@ -975,6 +980,81 @@ function EditModeContent({
       : [{ id: "section-0", title: "Step 1", description: "", method: "", bakeTemp: "", bakeTime: "", items: [] }]
   );
 
+  // Simple recipe items (for non-sectioned recipes)
+  const [simpleItems, setSimpleItems] = useState(
+    recipe.items.map((item, idx) => ({
+      id: `item-${idx}`,
+      ingredientId: item.ingredient.id,
+      quantity: item.quantity.toString(),
+      unit: item.unit as Unit,
+      note: item.note || "",
+    }))
+  );
+
+  // Helper functions for sections and items
+  const addSection = () => {
+    const newSection: RecipeSection = {
+      id: `section-${sections.length}`,
+      title: `Step ${sections.length + 1}`,
+                              description: "",
+                              method: "",
+      bakeTemp: "",
+      bakeTime: "",
+      items: []
+    };
+    setSections([...sections, newSection]);
+  };
+
+  const removeSection = (sectionId: string) => {
+    if (sections.length > 1) {
+      setSections(sections.filter(s => s.id !== sectionId));
+    }
+  };
+
+  const updateSection = (sectionId: string, field: string, value: string) => {
+    setSections(sections.map(s => 
+      s.id === sectionId ? { ...s, [field]: value } : s
+    ));
+  };
+
+  const addSectionItem = (sectionId: string) => {
+    setSections(sections.map(s => 
+      s.id === sectionId 
+        ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, note: "" }] }
+        : s
+    ));
+  };
+
+  const removeSectionItem = (sectionId: string, itemId: string) => {
+    setSections(sections.map(s => 
+      s.id === sectionId 
+        ? { ...s, items: s.items.filter(item => item.id !== itemId) }
+        : s
+    ));
+  };
+
+  const updateSectionItem = (sectionId: string, itemId: string, field: string, value: any) => {
+    setSections(sections.map(s => 
+      s.id === sectionId 
+        ? { ...s, items: s.items.map(item => item.id === itemId ? { ...item, [field]: value } : item) }
+        : s
+    ));
+  };
+
+  const addSimpleItem = () => {
+    setSimpleItems([...simpleItems, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, note: "" }]);
+  };
+
+  const removeSimpleItem = (itemId: string) => {
+    setSimpleItems(simpleItems.filter(item => item.id !== itemId));
+  };
+
+  const updateSimpleItem = (itemId: string, field: string, value: any) => {
+    setSimpleItems(simpleItems.map(item => 
+      item.id === itemId ? { ...item, [field]: value } : item
+    ));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -993,16 +1073,14 @@ function EditModeContent({
       formData.append('bakeTime', bakeTime);
       formData.append('bakeTemp', bakeTemp);
       formData.append('useSections', useSections.toString());
+      formData.append('recipeType', recipeType);
+      formData.append('isWholesaleProduct', isWholesaleProduct.toString());
+      formData.append('wholesalePrice', wholesalePrice);
       
       if (useSections) {
         formData.append('sections', JSON.stringify(sections));
       } else {
-        formData.append('items', JSON.stringify(recipe.items.map(item => ({
-          ingredientId: item.ingredient.id,
-          quantity: item.quantity,
-          unit: item.unit,
-          note: item.note || ""
-        }))));
+        formData.append('items', JSON.stringify(simpleItems.filter(item => item.ingredientId && item.quantity)));
       }
       
       await onSave(formData);
@@ -1014,7 +1092,7 @@ function EditModeContent({
   };
 
   return (
-    <div className="h-full overflow-y-auto p-8">
+    <div className="h-full overflow-y-auto p-8 relative">
       <div className="max-w-6xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Header */}
@@ -1035,8 +1113,8 @@ function EditModeContent({
               >
                 {isSaving ? 'Saving...' : 'Save Recipe'}
               </button>
-            </div>
-          </div>
+                      </div>
+                  </div>
 
           {/* Basic Information */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
@@ -1044,8 +1122,8 @@ function EditModeContent({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
-                <input
-                  type="text"
+                            <input
+                              type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -1063,10 +1141,10 @@ function EditModeContent({
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
+                            <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
+                              rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
@@ -1077,19 +1155,19 @@ function EditModeContent({
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Yield Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
+                                  <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                <input
-                  type="number"
+                                    <input
+                                      type="number"
                   value={yieldQuantity}
                   onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   min="0.1"
                   step="0.1"
                   required
-                />
-              </div>
-              <div>
+                                    />
+                                  </div>
+                                  <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
                 <select
                   value={yieldUnit}
@@ -1118,14 +1196,14 @@ function EditModeContent({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Bake Temperature (°C)</label>
-                <input
-                  type="number"
+                                    <input
+                                      type="number"
                   value={bakeTemp}
                   onChange={(e) => setBakeTemp(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   min="0"
-                />
-              </div>
+                                    />
+                                  </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Bake Time (minutes)</label>
                 <input
@@ -1135,9 +1213,9 @@ function EditModeContent({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   min="0"
                 />
-              </div>
-            </div>
-          </div>
+                                </div>
+                          </div>
+                        </div>
 
           {/* Category and Storage */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
@@ -1155,7 +1233,7 @@ function EditModeContent({
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
-              </div>
+                          </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
                 <select
@@ -1181,9 +1259,9 @@ function EditModeContent({
                     <option key={option.id} value={option.id}>{option.name}</option>
                   ))}
                 </select>
-              </div>
-            </div>
-          </div>
+                        </div>
+                      </div>
+                  </div>
 
           {/* Instructions */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
@@ -1195,32 +1273,294 @@ function EditModeContent({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               placeholder="Enter detailed cooking instructions..."
             />
+                          </div>
+
+          {/* Recipe Type and Wholesale */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Recipe Type & Wholesale</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Recipe Type</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={recipeType === 'single'}
+                      onChange={() => setRecipeType('single')}
+                      className="text-emerald-600"
+                    />
+                    <span className="text-gray-700">Single Serving</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={recipeType === 'batch'}
+                      onChange={() => setRecipeType('batch')}
+                      className="text-emerald-600"
+                    />
+                    <span className="text-gray-700">Batch Recipe</span>
+                  </label>
+                  <p className="text-sm text-gray-500">
+                    {recipeType === 'batch' 
+                      ? `Makes ${yieldQuantity} servings - great for meal prep or feeding a group.`
+                      : 'Perfect for individual portions and precise scaling.'
+                    }
+                  </p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Wholesale Product</label>
+                  <div className="space-y-3">
+                  <label className="flex items-center gap-2">
+                                  <input 
+                                    type="checkbox" 
+                      checked={isWholesaleProduct}
+                      onChange={(e) => setIsWholesaleProduct(e.target.checked)}
+                      className="text-emerald-600 rounded"
+                    />
+                    <span className="text-gray-700">Enable as wholesale product</span>
+                  </label>
+                  {isWholesaleProduct && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Wholesale Price</label>
+                      <input
+                        type="number"
+                        value={wholesalePrice}
+                        onChange={(e) => setWholesalePrice(e.target.value)}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      />
+                                    </div>
+                  )}
+                                  </div>
+              </div>
+            </div>
           </div>
 
           {/* Recipe Structure */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Recipe Structure</h2>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={!useSections}
-                  onChange={() => setUseSections(false)}
-                  className="text-emerald-600"
-                />
-                <span className="text-gray-700">Simple Recipe (no sections)</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={useSections}
-                  onChange={() => setUseSections(true)}
-                  className="text-emerald-600"
-                />
-                <span className="text-gray-700">Recipe with Sections</span>
-              </label>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={!useSections}
+                    onChange={() => setUseSections(false)}
+                    className="text-emerald-600"
+                  />
+                  <span className="text-gray-700">Simple Recipe (no sections)</span>
+                                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={useSections}
+                    onChange={() => setUseSections(true)}
+                    className="text-emerald-600"
+                  />
+                  <span className="text-gray-700">Recipe with Sections</span>
+                </label>
+                  </div>
+              {useSections && (
+                <p className="text-sm text-gray-500">
+                  Organize ingredients and instructions into separate steps for complex recipes.
+                </p>
+                )}
+            </div>
+              </div>
+
+          {/* Ingredients and Steps */}
+          {useSections ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Recipe Steps</h2>
+                <button
+                  type="button"
+                  onClick={addSection}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Step
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                {sections.map((section, index) => (
+                  <div key={section.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
+                      {sections.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeSection(section.id)}
+                          className="text-red-600 hover:text-red-800 p-1"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Step Instructions</label>
+                  <textarea
+                          value={section.method}
+                          onChange={(e) => updateSection(section.id, 'method', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                          placeholder="Instructions for this step..."
+                        />
+                    </div>
+                      
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-gray-700">Ingredients for this step</label>
+                          <button
+                            type="button"
+                            onClick={() => addSectionItem(section.id)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Ingredient
+                          </button>
+                    </div>
+                        
+                        <div className="space-y-2">
+                          {section.items.map((item) => (
+                            <div key={item.id} className="grid grid-cols-12 gap-3 items-center">
+                              <div className="col-span-4">
+                                <select
+                                  value={item.ingredientId || ""}
+                                  onChange={(e) => updateSectionItem(section.id, item.id, 'ingredientId', parseInt(e.target.value))}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                >
+                                  <option value="">Select ingredient...</option>
+                                  {ingredients.map(ing => (
+                                    <option key={ing.id} value={ing.id}>{ing.name}</option>
+                                  ))}
+                                </select>
+              </div>
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateSectionItem(section.id, item.id, 'quantity', e.target.value)}
+                                placeholder="Qty"
+                                className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                              />
+                              <select
+                                value={item.unit}
+                                onChange={(e) => updateSectionItem(section.id, item.id, 'unit', e.target.value)}
+                                className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                              >
+                                <option value="g">g</option>
+                                <option value="kg">kg</option>
+                                <option value="ml">ml</option>
+                                <option value="l">l</option>
+                                <option value="each">each</option>
+                              </select>
+                              <input
+                                type="text"
+                                value={item.note}
+                                onChange={(e) => updateSectionItem(section.id, item.id, 'note', e.target.value)}
+                                placeholder="Note (optional)"
+                                className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeSectionItem(section.id, item.id)}
+                                className="col-span-1 text-red-600 hover:text-red-800 p-2"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+            </div>
+                          ))}
+          </div>
+                </div>
+                </div>
+              </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Ingredients</h2>
+                <button
+                  type="button"
+                  onClick={addSimpleItem}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Ingredient
+                </button>
+              </div>
+              
+              <div className="space-y-2">
+                {simpleItems.map((item) => (
+                  <div key={item.id} className="grid grid-cols-12 gap-3 items-center">
+                    <div className="col-span-4">
+                      <select
+                        value={item.ingredientId || ""}
+                        onChange={(e) => updateSimpleItem(item.id, 'ingredientId', parseInt(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      >
+                        <option value="">Select ingredient...</option>
+                        {ingredients.map(ing => (
+                          <option key={ing.id} value={ing.id}>{ing.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => updateSimpleItem(item.id, 'quantity', e.target.value)}
+                      placeholder="Qty"
+                      className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <select
+                      value={item.unit}
+                      onChange={(e) => updateSimpleItem(item.id, 'unit', e.target.value)}
+                      className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="g">g</option>
+                      <option value="kg">kg</option>
+                      <option value="ml">ml</option>
+                      <option value="l">l</option>
+                      <option value="each">each</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={item.note}
+                      onChange={(e) => updateSimpleItem(item.id, 'note', e.target.value)}
+                      placeholder="Note (optional)"
+                      className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSimpleItem(item.id)}
+                      className="col-span-1 text-red-600 hover:text-red-800 p-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
             </div>
           </div>
+        )}
 
           {/* Edit Mode Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
@@ -1230,6 +1570,27 @@ function EditModeContent({
             </div>
           </div>
         </form>
+      </div>
+
+      {/* Floating Cost Breakdown Panel */}
+      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 w-80 bg-white border-2 border-emerald-200 rounded-xl p-6 shadow-lg z-10">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Cost Breakdown</h3>
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Total Cost:</span>
+            <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Cost per {yieldUnit}:</span>
+            <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost / yieldQuantity)}</span>
+          </div>
+          {isWholesaleProduct && wholesalePrice && (
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+              <span className="text-gray-600">Wholesale Price:</span>
+              <span className="text-lg font-bold text-blue-600">£{parseFloat(wholesalePrice).toFixed(2)}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
