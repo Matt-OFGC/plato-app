@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCost } from "@/lib/units";
@@ -377,8 +377,8 @@ export function RecipePageInlineComplete({
                   <span className="text-sm font-semibold text-amber-700">{recipe.shelfLife.name}</span>
                     </div>
                   </div>
-        )}
-      </div>
+                )}
+                  </div>
 
           {/* Cost Analysis */}
           <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
@@ -394,15 +394,29 @@ export function RecipePageInlineComplete({
                 
         {/* Right Panel - Recipe Steps Carousel */}
         <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <h3 className="text-xl font-semibold mb-2">Recipe Steps</h3>
-              <p>Carousel implementation coming soon...</p>
+          {useSections ? (
+            <RecipeCarousel 
+              sections={sections}
+              checkedItems={checkedItems}
+              toggleItem={toggleItem}
+              getTimer={getTimer}
+              startTimer={startTimer}
+              recipe={recipe}
+              servings={servings}
+            />
+          ) : (
+            <SimpleRecipeCarousel 
+              recipe={recipe}
+              checkedItems={checkedItems}
+              toggleItem={toggleItem}
+              getTimer={getTimer}
+              startTimer={startTimer}
+              servings={servings}
+            />
+                  )}
                 </div>
-                </div>
-                  </div>
-                </div>
-                
+      </div>
+
       {/* Footer - Progress & Navigation */}
       <div className="flex-shrink-0 px-6 pb-6">
         <div className="flex items-center gap-6">
@@ -412,8 +426,8 @@ export function RecipePageInlineComplete({
               className="h-full bg-emerald-500 transition-all duration-300"
               style={{ width: `${allIngredients.length > 0 ? (checkedItems.size / allIngredients.length) * 100 : 0}%` }}
             ></div>
-                  </div>
-                  
+                </div>
+                
           {/* Step Navigation */}
                           <div className="flex items-center gap-4">
                                     <button
@@ -422,19 +436,420 @@ export function RecipePageInlineComplete({
                                     >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                      </svg>
+                      </svg>
                                     </button>
-            <span className="text-lg font-semibold text-gray-700">1 / {recipe.sections.length || 2}</span>
+            <span className="text-lg font-semibold text-gray-700">
+            {useSections ? `1 / ${sections.length}` : '1 / 2'}
+          </span>
                     <button
               className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600"
               disabled={true}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                      </svg>
                           </button>
+                </div>
+                  </div>
+                </div>
+                  </div>
+  );
+}
+
+// Carousel Component for Recipes with Sections
+function RecipeCarousel({ 
+  sections, 
+  checkedItems, 
+  toggleItem, 
+  getTimer, 
+  startTimer, 
+  recipe,
+  servings
+}: {
+  sections: RecipeSection[];
+  checkedItems: Set<number>;
+  toggleItem: (itemId: number) => void;
+  getTimer: (id: string) => any;
+  startTimer: (id: string, duration: number, label: string) => void;
+  recipe: any;
+  servings: number;
+}) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollToStep = (stepIndex: number) => {
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.clientWidth;
+      carouselRef.current.scrollTo({
+        left: stepIndex * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+    setCurrentStep(stepIndex);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+      
+      // Prevent vertical scroll during horizontal swipe
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        e.preventDefault();
+      }
+    };
+    
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - startX;
+      const velocity = Math.abs(deltaX);
+      
+      if (velocity > 50) { // Minimum swipe distance
+        if (deltaX > 0 && currentStep > 0) {
+          scrollToStep(currentStep - 1);
+        } else if (deltaX < 0 && currentStep < sections.length - 1) {
+          scrollToStep(currentStep + 1);
+        }
+      }
+      
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Carousel Container */}
+      <div 
+        ref={carouselRef}
+        className="flex-1 overflow-x-auto scroll-snap-x-mandatory scroll-smooth"
+        style={{ scrollSnapType: 'x mandatory' }}
+        onTouchStart={handleTouchStart}
+      >
+        <div className="flex h-full">
+          {sections.map((section, index) => (
+            <div 
+              key={section.id} 
+              className="flex-shrink-0 w-full h-full"
+              style={{ scrollSnapAlign: 'start' }}
+            >
+              <StepCard 
+                section={section}
+                index={index}
+                checkedItems={checkedItems}
+                toggleItem={toggleItem}
+                getTimer={getTimer}
+                startTimer={startTimer}
+                recipe={recipe}
+                servings={servings}
+              />
                         </div>
+          ))}
+                      </div>
+                        </div>
+      
+      {/* Navigation Arrows */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                    <button 
+          onClick={() => scrollToStep(Math.max(0, currentStep - 1))}
+          disabled={currentStep === 0}
+          className="w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+      </div>
+      
+      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <button 
+          onClick={() => scrollToStep(Math.min(sections.length - 1, currentStep + 1))}
+          disabled={currentStep === sections.length - 1}
+          className="w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    </div>
+                  </div>
+  );
+}
+
+// Simple Carousel for Recipes without Sections
+function SimpleRecipeCarousel({ 
+  recipe, 
+  checkedItems, 
+  toggleItem, 
+  getTimer, 
+  startTimer,
+  servings
+}: {
+  recipe: any;
+  checkedItems: Set<number>;
+  toggleItem: (itemId: number) => void;
+  getTimer: (id: string) => any;
+  startTimer: (id: string, duration: number, label: string) => void;
+  servings: number;
+}) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollToStep = (stepIndex: number) => {
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.clientWidth;
+      carouselRef.current.scrollTo({
+        left: stepIndex * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+    setCurrentStep(stepIndex);
+  };
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Carousel Container */}
+      <div 
+        ref={carouselRef}
+        className="flex-1 overflow-x-auto scroll-snap-x-mandatory scroll-smooth"
+        style={{ scrollSnapType: 'x mandatory' }}
+      >
+        <div className="flex h-full">
+          {/* Card 1: Ingredients */}
+          <div 
+            className="flex-shrink-0 w-full h-full"
+            style={{ scrollSnapAlign: 'start' }}
+          >
+            <div className="h-full p-8">
+              <div className="mb-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                    1
+                    </div>
+                  <h2 className="text-3xl font-bold text-gray-900">Ingredients</h2>
+                  </div>
+                </div>
+              
+              <div className="space-y-4">
+                {recipe.items.map((item: any) => {
+                  const ingredient = recipe.ingredients.find((ing: any) => ing.id === item.ingredientId);
+                  if (!ingredient) return null;
+                  
+                  const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
+                  const isChecked = checkedItems.has(item.id);
+                  
+                  return (
+                    <div 
+                      key={item.id}
+                      onClick={() => toggleItem(item.id)}
+                      className={`flex items-center gap-4 p-4 rounded-lg cursor-pointer transition-colors ${
+                        isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center ${
+                        isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
+                      }`}>
+                        {isChecked && (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          )}
+                        </div>
+                      <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                          <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
+                          <span className="text-xl text-gray-600">{item.unit}</span>
+                          <span className="text-xl text-gray-900">{ingredient.name}</span>
+                                </div>
+                        {item.note && (
+                          <div className="text-sm text-gray-500 mt-1">{item.note}</div>
+                        )}
+                                  </div>
+                                </div>
+                  );
+                })}
+                              </div>
                           </div>
+                      </div>
+                      
+          {/* Card 2: Instructions */}
+          <div 
+            className="flex-shrink-0 w-full h-full"
+            style={{ scrollSnapAlign: 'start' }}
+          >
+            <div className="h-full p-8">
+              <div className="mb-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                    2
+                                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900">Instructions</h2>
+                                </div>
+                          </div>
+              
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
+                  {recipe.method || 'No instructions provided.'}
+                          </div>
+                        </div>
+                    </div>
+                </div>
+                      </div>
+                    </div>
+      
+      {/* Navigation Arrows */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                    <button
+          onClick={() => scrollToStep(0)}
+          disabled={currentStep === 0}
+          className="w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+                    </button>
+      </div>
+      
+      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <button
+          onClick={() => scrollToStep(1)}
+          disabled={currentStep === 1}
+          className="w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+                    </button>
+                </div>
+    </div>
+  );
+}
+
+// Step Card Component
+function StepCard({ 
+  section, 
+  index, 
+  checkedItems, 
+  toggleItem, 
+  getTimer, 
+  startTimer, 
+  recipe,
+  servings
+}: {
+  section: RecipeSection;
+  index: number;
+  checkedItems: Set<number>;
+  toggleItem: (itemId: number) => void;
+  getTimer: (id: string) => any;
+  startTimer: (id: string, duration: number, label: string) => void;
+  recipe: any;
+  servings: number;
+}) {
+  return (
+    <div className="h-full p-8">
+      {/* Step Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+            {index + 1}
+                      </div>
+          <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>
+                  </div>
+        
+        {/* Cooking Parameters */}
+        {(section.bakeTemp || section.bakeTime) && (
+          <div className="flex gap-4 mb-6">
+            {section.bakeTemp && (
+              <div className="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                </svg>
+                <span className="font-semibold">Temp: {section.bakeTemp}°C</span>
+                                  </div>
+            )}
+            {section.bakeTime && (
+              <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-semibold">Time: {section.bakeTime} min</span>
+                                  </div>
+            )}
+            {(section.bakeTemp || section.bakeTime) && (
+                          <button
+                onClick={() => startTimer(`section-${index}`, parseInt(section.bakeTime || '0'), section.title)}
+                className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-emerald-200 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                <span className="font-semibold">Start Timer</span>
+                          </button>
+            )}
+                          </div>
+        )}
+      </div>
+      
+      {/* Ingredients Section */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Ingredients</h3>
+        <div className="space-y-4">
+          {section.items.map((item) => {
+            const ingredient = recipe.ingredients.find((ing: any) => ing.id === item.ingredientId);
+            if (!ingredient) return null;
+            
+            const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
+            const isChecked = checkedItems.has(item.id);
+            
+            return (
+              <div 
+                                  key={item.id}
+                onClick={() => toggleItem(item.id)}
+                className={`flex items-center gap-4 p-4 rounded-lg cursor-pointer transition-colors ${
+                  isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center ${
+                  isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
+                }`}>
+                  {isChecked && (
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                )}
+              </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
+                    <span className="text-xl text-gray-600">{item.unit}</span>
+                    <span className="text-xl text-gray-900">{ingredient.name}</span>
+                    </div>
+                  {item.note && (
+                    <div className="text-sm text-gray-500 mt-1">{item.note}</div>
+                )}
+              </div>
+              </div>
+            );
+          })}
+            </div>
+          </div>
+
+      {/* Instructions Section */}
+      <div>
+        <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Instructions</h3>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
+            {section.method || 'No instructions provided for this step.'}
+                </div>
+                </div>
       </div>
     </div>
   );
