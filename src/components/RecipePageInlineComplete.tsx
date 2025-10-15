@@ -604,7 +604,7 @@ function RecipeCarousel({
                 ingredients={ingredients}
                 servings={servings}
               />
-                        </div>
+      </div>
           ))}
                   </div>
                 </div>
@@ -623,7 +623,7 @@ function RecipeCarousel({
                 </div>
                 
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
-        <button 
+      <button
           onClick={() => scrollToStep(Math.min(sections.length - 1, currentStep + 1))}
           disabled={currentStep === sections.length - 1}
           className="w-16 h-16 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
@@ -631,7 +631,7 @@ function RecipeCarousel({
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </button>
+      </button>
                   </div>
                   </div>
   );
@@ -752,7 +752,7 @@ function SimpleRecipeCarousel({
                     })}
                     </div>
                   </div>
-                
+
                 {/* Right Column - Instructions */}
                 <div className="flex flex-col">
                   <h3 className="text-xl font-bold text-gray-900 uppercase tracking-wide mb-4">Instructions</h3>
@@ -779,7 +779,7 @@ function SimpleRecipeCarousel({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
-                            </div>
+      </div>
       
       <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     <button 
@@ -927,18 +927,30 @@ function StepCard({
 
 // Edit Mode Content - Full Recipe Editing Interface
 function EditModeContent({ 
-  recipe, 
-  costBreakdown, 
-  ingredients, 
-  categories, 
-  shelfLifeOptions, 
-  storageOptions, 
-  wholesaleProduct, 
+  recipe,
+  costBreakdown,
+  ingredients,
+  categories,
+  shelfLifeOptions,
+  storageOptions,
+  wholesaleProduct,
   onSave 
 }: RecipePageInlineCompleteProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  
+  // Collapsible sections state
+  const [expandedSections, setExpandedSections] = useState({
+    basic: true,
+    yield: false,
+    cooking: false,
+    category: false,
+    instructions: false,
+    recipeType: false,
+    structure: false,
+    ingredients: true
+  });
   
   // Editable recipe fields
   const [name, setName] = useState(recipe.name);
@@ -957,7 +969,7 @@ function EditModeContent({
   const [recipeType, setRecipeType] = useState<'single' | 'batch'>('batch');
   const [isWholesaleProduct, setIsWholesaleProduct] = useState(!!wholesaleProduct?.isActive);
   const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.price || "");
-
+  
   // Sections vs simple items
   const [useSections, setUseSections] = useState(recipe.sections.length > 0);
   const [sections, setSections] = useState<RecipeSection[]>(
@@ -979,7 +991,7 @@ function EditModeContent({
         }))
       : [{ id: "section-0", title: "Step 1", description: "", method: "", bakeTemp: "", bakeTime: "", items: [] }]
   );
-
+  
   // Simple recipe items (for non-sectioned recipes)
   const [simpleItems, setSimpleItems] = useState(
     recipe.items.map((item, idx) => ({
@@ -990,6 +1002,22 @@ function EditModeContent({
       note: item.note || "",
     }))
   );
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  // Collapsible section toggle
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   // Helper functions for sections and items
   const addSection = () => {
@@ -1011,7 +1039,7 @@ function EditModeContent({
     }
   };
 
-  const updateSection = (sectionId: string, field: string, value: string) => {
+  const updateSection = (sectionId: string, field: string, value: any) => {
     setSections(sections.map(s => 
       s.id === sectionId ? { ...s, [field]: value } : s
     ));
@@ -1055,6 +1083,41 @@ function EditModeContent({
     ));
   };
 
+  // Drag and drop handlers
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+    
+    if (useSections) {
+      // Handle section item reordering
+      const activeSectionId = active.data.current?.sectionId;
+      const overSectionId = over.data.current?.sectionId;
+      
+      if (activeSectionId === overSectionId) {
+        // Reorder within same section
+        const section = sections.find(s => s.id === activeSectionId);
+        if (section) {
+          const oldIndex = section.items.findIndex(item => item.id === active.id);
+          const newIndex = section.items.findIndex(item => item.id === over.id);
+          
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const newItems = arrayMove(section.items, oldIndex, newIndex);
+            updateSection(activeSectionId, 'items', newItems);
+          }
+        }
+      }
+    } else {
+      // Handle simple items reordering
+      const oldIndex = simpleItems.findIndex(item => item.id === active.id);
+      const newIndex = simpleItems.findIndex(item => item.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        setSimpleItems(arrayMove(simpleItems, oldIndex, newIndex));
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -1091,10 +1154,148 @@ function EditModeContent({
     }
   };
 
+  // Collapsible Section Component
+  const CollapsibleSection = ({ 
+    title, 
+    sectionKey, 
+    children, 
+    icon 
+  }: { 
+    title: string; 
+    sectionKey: keyof typeof expandedSections; 
+    children: React.ReactNode;
+    icon?: string;
+  }) => (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <button
+        type="button"
+        onClick={() => toggleSection(sectionKey)}
+        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          {icon && (
+            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <span className="text-emerald-600 text-lg">{icon}</span>
+            </div>
+          )}
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        </div>
+        <svg 
+          className={`w-5 h-5 text-gray-400 transition-transform ${expandedSections[sectionKey] ? 'rotate-180' : ''}`}
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+                    </button>
+      {expandedSections[sectionKey] && (
+        <div className="px-6 pb-6">
+          {children}
+        </div>
+                  )}
+                </div>
+  );
+
+  // Sortable Ingredient Component
+  const SortableIngredientItem = ({ 
+    item, 
+    sectionId, 
+    onUpdate, 
+    onRemove 
+  }: { 
+    item: any; 
+    sectionId?: string; 
+    onUpdate: (field: string, value: any) => void;
+    onRemove: () => void;
+  }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ 
+      id: item.id,
+      data: { sectionId }
+    });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+  return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg border border-gray-200"
+      >
+        <div 
+          {...attributes}
+          {...listeners}
+          className="col-span-1 flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+            </svg>
+        </div>
+        <div className="col-span-3">
+          <select
+            value={item.ingredientId || ""}
+            onChange={(e) => onUpdate('ingredientId', parseInt(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+          >
+            <option value="">Select ingredient...</option>
+            {ingredients.map(ing => (
+              <option key={ing.id} value={ing.id}>{ing.name}</option>
+            ))}
+          </select>
+        </div>
+        <input
+          type="number"
+          value={item.quantity}
+          onChange={(e) => onUpdate('quantity', e.target.value)}
+          placeholder="Qty"
+          className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        />
+        <select
+          value={item.unit}
+          onChange={(e) => onUpdate('unit', e.target.value)}
+          className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        >
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l</option>
+          <option value="each">each</option>
+        </select>
+        <input
+          type="text"
+          value={item.note}
+          onChange={(e) => onUpdate('note', e.target.value)}
+          placeholder="Note (optional)"
+          className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        />
+            <button
+          type="button"
+          onClick={onRemove}
+          className="col-span-1 text-red-600 hover:text-red-800 p-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+                      </div>
+    );
+  };
+
   return (
     <div className="h-full overflow-y-auto p-8 relative">
       <div className="max-w-6xl mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-gray-900">Edit Recipe</h1>
@@ -1113,19 +1314,18 @@ function EditModeContent({
               >
                 {isSaving ? 'Saving...' : 'Save Recipe'}
               </button>
-                      </div>
                   </div>
+      </div>
 
-          {/* Basic Information */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
+          {/* Collapsible Sections */}
+          <CollapsibleSection title="Basic Information" sectionKey="basic" icon="📝">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
                             <input
                               type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
@@ -1142,24 +1342,22 @@ function EditModeContent({
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                             <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                               rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Yield Information */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Yield Information</h2>
+          <CollapsibleSection title="Yield Information" sectionKey="yield" icon="⚖️">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                   <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
                                     <input
                                       type="number"
-                  value={yieldQuantity}
+                    value={yieldQuantity}
                   onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   min="0.1"
@@ -1169,8 +1367,8 @@ function EditModeContent({
                                   </div>
                                   <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
-                <select
-                  value={yieldUnit}
+                  <select
+                    value={yieldUnit}
                   onChange={(e) => setYieldUnit(e.target.value as Unit)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
@@ -1179,20 +1377,18 @@ function EditModeContent({
                   <option value="ml">ml</option>
                   <option value="l">l</option>
                   <option value="each">each</option>
-                </select>
-              </div>
+                  </select>
+                </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Total Cost</label>
                 <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
                   {formatCurrency(costBreakdown.totalCost)}
+              </div>
                 </div>
               </div>
-            </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Cooking Parameters */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Cooking Parameters</h2>
+          <CollapsibleSection title="Cooking Parameters" sectionKey="cooking" icon="🔥">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Bake Temperature (°C)</label>
@@ -1215,11 +1411,9 @@ function EditModeContent({
                 />
                                 </div>
                           </div>
-                        </div>
+          </CollapsibleSection>
 
-          {/* Category and Storage */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Category & Storage</h2>
+          <CollapsibleSection title="Category & Storage" sectionKey="category" icon="🏷️">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
@@ -1233,7 +1427,7 @@ function EditModeContent({
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
-                          </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
                 <select
@@ -1259,13 +1453,11 @@ function EditModeContent({
                     <option key={option.id} value={option.id}>{option.name}</option>
                   ))}
                 </select>
-                        </div>
-                      </div>
-                  </div>
+              </div>
+            </div>
+          </CollapsibleSection>
 
-          {/* Instructions */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Instructions</h2>
+          <CollapsibleSection title="Instructions" sectionKey="instructions" icon="📋">
             <textarea
               value={method}
               onChange={(e) => setMethod(e.target.value)}
@@ -1273,11 +1465,9 @@ function EditModeContent({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               placeholder="Enter detailed cooking instructions..."
             />
-                          </div>
+          </CollapsibleSection>
 
-          {/* Recipe Type and Wholesale */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Recipe Type & Wholesale</h2>
+          <CollapsibleSection title="Recipe Type & Wholesale" sectionKey="recipeType" icon="🏪">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Recipe Type</label>
@@ -1310,10 +1500,10 @@ function EditModeContent({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Wholesale Product</label>
-                  <div className="space-y-3">
+                <div className="space-y-3">
                   <label className="flex items-center gap-2">
-                                  <input 
-                                    type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={isWholesaleProduct}
                       onChange={(e) => setIsWholesaleProduct(e.target.checked)}
                       className="text-emerald-600 rounded"
@@ -1332,16 +1522,14 @@ function EditModeContent({
                         min="0"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       />
-                                    </div>
+                    </div>
                   )}
-                                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Recipe Structure */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Recipe Structure</h2>
+          </CollapsibleSection>
+                
+          <CollapsibleSection title="Recipe Structure" sectionKey="structure" icon="🏗️">
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2">
@@ -1352,7 +1540,7 @@ function EditModeContent({
                     className="text-emerald-600"
                   />
                   <span className="text-gray-700">Simple Recipe (no sections)</span>
-                                </label>
+                </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -1362,234 +1550,159 @@ function EditModeContent({
                   />
                   <span className="text-gray-700">Recipe with Sections</span>
                 </label>
-                  </div>
+              </div>
               {useSections && (
                 <p className="text-sm text-gray-500">
                   Organize ingredients and instructions into separate steps for complex recipes.
                 </p>
-                )}
+              )}
             </div>
-              </div>
+          </CollapsibleSection>
 
           {/* Ingredients and Steps */}
-          {useSections ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Recipe Steps</h2>
-                <button
-                  type="button"
-                  onClick={addSection}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add Step
-                </button>
-              </div>
-              
-              <div className="space-y-6">
-                {sections.map((section, index) => (
-                  <div key={section.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
-                      {sections.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeSection(section.id)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Step Instructions</label>
-                  <textarea
-                          value={section.method}
-                          onChange={(e) => updateSection(section.id, 'method', e.target.value)}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                          placeholder="Instructions for this step..."
-                        />
-                    </div>
-                      
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-medium text-gray-700">Ingredients for this step</label>
+          <CollapsibleSection title="Ingredients & Steps" sectionKey="ingredients" icon="🥘">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              {useSections ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">Recipe Steps</h3>
                           <button
-                            type="button"
-                            onClick={() => addSectionItem(section.id)}
-                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Ingredient
-                          </button>
-                    </div>
-                        
-                        <div className="space-y-2">
-                          {section.items.map((item) => (
-                            <div key={item.id} className="grid grid-cols-12 gap-3 items-center">
-                              <div className="col-span-4">
-                                <select
-                                  value={item.ingredientId || ""}
-                                  onChange={(e) => updateSectionItem(section.id, item.id, 'ingredientId', parseInt(e.target.value))}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                >
-                                  <option value="">Select ingredient...</option>
-                                  {ingredients.map(ing => (
-                                    <option key={ing.id} value={ing.id}>{ing.name}</option>
-                                  ))}
-                                </select>
-              </div>
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateSectionItem(section.id, item.id, 'quantity', e.target.value)}
-                                placeholder="Qty"
-                                className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                              />
-                              <select
-                                value={item.unit}
-                                onChange={(e) => updateSectionItem(section.id, item.id, 'unit', e.target.value)}
-                                className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                              >
-                                <option value="g">g</option>
-                                <option value="kg">kg</option>
-                                <option value="ml">ml</option>
-                                <option value="l">l</option>
-                                <option value="each">each</option>
-                              </select>
-                              <input
-                                type="text"
-                                value={item.note}
-                                onChange={(e) => updateSectionItem(section.id, item.id, 'note', e.target.value)}
-                                placeholder="Note (optional)"
-                                className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeSectionItem(section.id, item.id)}
-                                className="col-span-1 text-red-600 hover:text-red-800 p-2"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-            </div>
-                          ))}
-          </div>
-                </div>
-                </div>
-              </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Ingredients</h2>
-                <button
-                  type="button"
-                  onClick={addSimpleItem}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add Ingredient
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                {simpleItems.map((item) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-3 items-center">
-                    <div className="col-span-4">
-                      <select
-                        value={item.ingredientId || ""}
-                        onChange={(e) => updateSimpleItem(item.id, 'ingredientId', parseInt(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      >
-                        <option value="">Select ingredient...</option>
-                        {ingredients.map(ing => (
-                          <option key={ing.id} value={ing.id}>{ing.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateSimpleItem(item.id, 'quantity', e.target.value)}
-                      placeholder="Qty"
-                      className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <select
-                      value={item.unit}
-                      onChange={(e) => updateSimpleItem(item.id, 'unit', e.target.value)}
-                      className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    >
-                      <option value="g">g</option>
-                      <option value="kg">kg</option>
-                      <option value="ml">ml</option>
-                      <option value="l">l</option>
-                      <option value="each">each</option>
-                    </select>
-                    <input
-                      type="text"
-                      value={item.note}
-                      onChange={(e) => updateSimpleItem(item.id, 'note', e.target.value)}
-                      placeholder="Note (optional)"
-                      className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <button
                       type="button"
-                      onClick={() => removeSimpleItem(item.id)}
-                      className="col-span-1 text-red-600 hover:text-red-800 p-2"
+                      onClick={addSection}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
+                      Add Step
                     </button>
                   </div>
-                ))}
-            </div>
-          </div>
-        )}
+                  
+                  <div className="space-y-6">
+                    {sections.map((section, index) => (
+                      <div key={section.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-900">{section.title}</h4>
+                          {sections.length > 1 && (
+                            <button
+                              type="button"
+                            onClick={() => removeSection(section.id)}
+                              className="text-red-600 hover:text-red-800 p-1"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Step Instructions</label>
+                            <textarea
+                              value={section.method}
+                              onChange={(e) => updateSection(section.id, 'method', e.target.value)}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              placeholder="Instructions for this step..."
+                            />
+                          </div>
+                          
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <label className="block text-sm font-medium text-gray-700">Ingredients for this step</label>
+                            <button
+                                type="button"
+                                onClick={() => addSectionItem(section.id)}
+                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                            >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Ingredient
+                            </button>
+                          </div>
+                            
+                            <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                              <div className="space-y-2">
+                                  {section.items.map((item) => (
+                                  <SortableIngredientItem
+                                      key={item.id}
+                                      item={item}
+                                    sectionId={section.id}
+                                    onUpdate={(field, value) => updateSectionItem(section.id, item.id, field, value)}
+                                    onRemove={() => removeSectionItem(section.id, item.id)}
+                                    />
+                                  ))}
+                              </div>
+                                </SortableContext>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">Ingredients</h3>
+                    <button
+                      type="button"
+                      onClick={addSimpleItem}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Ingredient
+                    </button>
+                  </div>
+                  
+                  <SortableContext items={simpleItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      {simpleItems.map((item) => (
+                              <SortableIngredientItem
+                                key={item.id}
+                                item={item}
+                          onUpdate={(field, value) => updateSimpleItem(item.id, field, value)}
+                          onRemove={() => removeSimpleItem(item.id)}
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
+                  </div>
+                )}
+            </DndContext>
+          </CollapsibleSection>
 
           {/* Edit Mode Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
             <div className="text-blue-800 font-semibold mb-2">Edit Mode Active</div>
             <div className="text-blue-600 text-sm">
               Make your changes above and click "Save Recipe" to update. Switch to cooking mode to use the carousel interface.
-            </div>
-          </div>
+                    </div>
+                    </div>
         </form>
-      </div>
+          </div>
 
       {/* Floating Cost Breakdown Panel */}
       <div className="fixed right-8 top-1/2 transform -translate-y-1/2 w-80 bg-white border-2 border-emerald-200 rounded-xl p-6 shadow-lg z-10">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Cost Breakdown</h3>
-        <div className="space-y-3">
+              <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Total Cost:</span>
             <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost)}</span>
-          </div>
+                </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Cost per {yieldUnit}:</span>
             <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost / yieldQuantity)}</span>
-          </div>
+                </div>
           {isWholesaleProduct && wholesalePrice && (
             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
               <span className="text-gray-600">Wholesale Price:</span>
               <span className="text-lg font-bold text-blue-600">£{parseFloat(wholesalePrice).toFixed(2)}</span>
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
     </div>
