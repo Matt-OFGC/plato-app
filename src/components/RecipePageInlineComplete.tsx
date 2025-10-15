@@ -1167,7 +1167,7 @@ export function RecipePageInlineComplete({
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
-                  </svg>
+                      </svg>
                 </button>
                 <span className="text-4xl font-bold text-gray-900 min-w-[4rem] text-center">{servings}</span>
                 <button 
@@ -1178,10 +1178,10 @@ export function RecipePageInlineComplete({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
-              </div>
-            </div>
-          </div>
-
+                </div>
+                  </div>
+                </div>
+                
           {/* Metadata Badges */}
           <div className="space-y-3 mb-6">
             {recipe.bakeTemp && (
@@ -1189,20 +1189,20 @@ export function RecipePageInlineComplete({
                 <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                  </svg>
+                      </svg>
                   <span className="text-sm font-bold text-orange-700">{recipe.bakeTemp}°C</span>
                 </div>
-              </div>
+                  </div>
             )}
             {displayBakeTime && (
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-3 shadow-sm">
                 <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                      </svg>
                   <span className="text-sm font-bold text-blue-700">{displayBakeTime} min</span>
                 </div>
-              </div>
+                  </div>
             )}
             {recipe.categoryId && categories.find(c => c.id === recipe.categoryId) && (
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl px-4 py-3 shadow-sm">
@@ -1219,10 +1219,10 @@ export function RecipePageInlineComplete({
                 <div className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
+                      </svg>
                   <span className="text-sm font-bold text-cyan-700">{storageOptions.find(s => s.id === recipe.storageId)?.name}</span>
-                </div>
-              </div>
+                  </div>
+                      </div>
             )}
             {recipe.shelfLifeId && shelfLifeOptions.find(s => s.id === recipe.shelfLifeId) && (
               <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-xl px-4 py-3 shadow-sm">
@@ -1232,10 +1232,10 @@ export function RecipePageInlineComplete({
                   </svg>
                   <span className="text-sm font-bold text-amber-700">{shelfLifeOptions.find(s => s.id === recipe.shelfLifeId)?.name}</span>
                 </div>
-              </div>
-            )}
-          </div>
-
+                    </div>
+                  )}
+                </div>
+                
           {/* Cost Analysis */}
           <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Cost Analysis</h3>
@@ -1243,22 +1243,17 @@ export function RecipePageInlineComplete({
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-700">Total Cost:</span>
                 <span className="text-lg font-bold text-emerald-700">{formatCurrency(editModeTotalCost * scaleFactor)}</span>
-              </div>
+                        </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-700">Cost per {recipe.yieldUnit}:</span>
                 <span className="text-base font-semibold text-emerald-600">{formatCurrency(editModeCostPerUnit * scaleFactor)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+                      </div>
+                        </div>
+                      </div>
+                    </div>
 
         {/* Right Panel - Recipe Steps Carousel */}
         <div className="flex-1 min-w-0 flex flex-col">
-          {/* Recipe Title */}
-          <div className="flex-shrink-0 mb-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">{name}</h1>
-            {description && <p className="text-lg text-gray-600">{description}</p>}
-          </div>
 
           {/* Carousel Container */}
           <div className="flex-1 min-h-0 relative">
@@ -1318,10 +1313,10 @@ export function RecipePageInlineComplete({
                 shelfLifeOptions={shelfLifeOptions}
                 storageOptions={storageOptions}
               />
-            )}
-          </div>
-        </div>
-      </div>
+                  )}
+                  </div>
+                </div>
+              </div>
 
       {/* Footer - Progress & Navigation */}
       <div className="flex-shrink-0 mt-6 flex items-center gap-6">
@@ -1331,30 +1326,30 @@ export function RecipePageInlineComplete({
             className="h-full bg-emerald-500 transition-all duration-300"
             style={{ width: `${allIngredients.length > 0 ? (checkedItems.size / allIngredients.length) * 100 : 0}%` }}
           ></div>
-        </div>
+            </div>
         
         {/* Step Navigation */}
         <div className="flex items-center gap-4">
-          <button 
+                    <button 
             className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600"
             disabled={true} // Will be implemented with carousel state
-          >
+                    >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+                      </svg>
+                    </button>
           <span className="text-lg font-semibold text-gray-700">1 / {recipe.sections.length || 2}</span>
-          <button 
+                    <button 
             className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600"
             disabled={true} // Will be implemented with carousel state
-          >
+                    >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
+                      </svg>
+                    </button>
+                    </div>
+                  </div>
+                </div>
   );
 }
 
@@ -1379,102 +1374,102 @@ function RecipeCarousel({
       {sections.map((section, idx) => (
         <div key={section.id} className="flex-shrink-0 w-full h-full bg-white rounded-xl border border-gray-200 p-8 shadow-sm" style={{ scrollSnapAlign: 'start' }}>
           {/* Step Header */}
-          <div className="mb-6">
+                      <div className="mb-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xl font-bold">
-                {idx + 1}
-              </div>
+                              {idx + 1}
+                            </div>
               <h2 className="text-2xl font-bold text-gray-900">{section.title}</h2>
-            </div>
-            
+                        </div>
+                        
             {/* Cooking Parameters */}
-            {(section.bakeTemp || section.bakeTime) && (
+                        {(section.bakeTemp || section.bakeTime) && (
               <div className="flex gap-3 flex-wrap mb-6">
-                {section.bakeTemp && (
+                            {section.bakeTemp && (
                   <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200 px-4 py-2">
-                    <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                      </svg>
-                      <span className="text-sm font-semibold text-gray-700">Temp:</span>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                                  </svg>
+                                  <span className="text-sm font-semibold text-gray-700">Temp:</span>
                       <span className="text-lg font-bold text-orange-700">{section.bakeTemp}°C</span>
-                    </div>
-                  </div>
-                )}
-                {section.bakeTime && (
-                  <div className="flex items-center gap-3">
+                                </div>
+                              </div>
+                            )}
+                            {section.bakeTime && (
+                              <div className="flex items-center gap-3">
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 px-4 py-2">
-                      <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2">
                         <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-sm font-semibold text-gray-700">Time:</span>
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-sm font-semibold text-gray-700">Time:</span>
                         <span className="text-lg font-bold text-blue-700">{section.bakeTime} min</span>
-                      </div>
-                    </div>
-                    <button
+                                  </div>
+                                </div>
+                                    <button
                       onClick={() => startTimer(`recipe-${recipe.id}-section-${section.id}`, recipe.id, recipe.name, section.title, section.bakeTime!)}
                       className="bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-300 px-4 py-2 transition-all"
-                    >
+                                    >
                       <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          
-          {/* Ingredients */}
-          {section.items.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Ingredients</h3>
-              <div className="space-y-3">
-                {section.items.map((item: any) => (
-                  <label 
-                    key={item.id}
-                    htmlFor={`item-${item.id}`}
-                    className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                      checkedItems.has(item.id) 
-                        ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                    }`}
-                  >
-                    <input 
-                      id={`item-${item.id}`}
-                      type="checkbox" 
-                      checked={checkedItems.has(item.id)}
-                      onChange={() => toggleItem(item.id)}
-                      className="w-6 h-6 text-emerald-600 rounded-lg focus:ring-emerald-500 focus:ring-2 cursor-pointer"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className="text-xl font-bold text-gray-900">
-                          {item.scaledQuantity.toFixed(1)}
-                        </span>
-                        <span className="text-lg font-semibold text-gray-600">{item.unit}</span>
-                        <span className="text-lg text-gray-800">{item.ingredient.name}</span>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                    </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-          
+                      
+          {/* Ingredients */}
+                      {section.items.length > 0 && (
+                        <div className="mb-8">
+                          <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Ingredients</h3>
+                          <div className="space-y-3">
+                {section.items.map((item: any) => (
+                              <label 
+                                key={item.id}
+                                htmlFor={`item-${item.id}`}
+                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                                  checkedItems.has(item.id) 
+                                    ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
+                                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                                }`}
+                              >
+                                <input 
+                                  id={`item-${item.id}`}
+                                  type="checkbox" 
+                                  checked={checkedItems.has(item.id)}
+                                  onChange={() => toggleItem(item.id)}
+                      className="w-6 h-6 text-emerald-600 rounded-lg focus:ring-emerald-500 focus:ring-2 cursor-pointer"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-xl font-bold text-gray-900">
+                                      {item.scaledQuantity.toFixed(1)}
+                                    </span>
+                                    <span className="text-lg font-semibold text-gray-600">{item.unit}</span>
+                        <span className="text-lg text-gray-800">{item.ingredient.name}</span>
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
           {/* Instructions */}
-          {section.method && (
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Instructions</h3>
-              <div className="whitespace-pre-wrap text-lg text-gray-800 leading-relaxed bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
-                {section.method}
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+                      {section.method && (
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Instructions</h3>
+                          <div className="whitespace-pre-wrap text-lg text-gray-800 leading-relaxed bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                            {section.method}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
   );
 }
 
@@ -1495,49 +1490,49 @@ function SimpleRecipeCarousel({
       {/* Ingredients Card */}
       <div className="flex-shrink-0 w-full h-full bg-white rounded-xl border border-gray-200 p-8 shadow-sm" style={{ scrollSnapAlign: 'start' }}>
         <h3 className="text-2xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Ingredients</h3>
-        <div className="space-y-3">
+                        <div className="space-y-3">
           {ingredients.map((item) => (
-            <label 
-              key={item.id}
-              htmlFor={`simple-item-${item.id}`}
-              className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                checkedItems.has(item.id) 
-                  ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
-                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-              }`}
-            >
-              <input 
-                id={`simple-item-${item.id}`}
-                type="checkbox" 
-                checked={checkedItems.has(item.id)}
-                onChange={() => toggleItem(item.id)}
+                                <label 
+                                  key={item.id}
+                                  htmlFor={`simple-item-${item.id}`}
+                                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                                    checkedItems.has(item.id) 
+                                      ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
+                                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                                  }`}
+                                >
+                                  <input 
+                                    id={`simple-item-${item.id}`}
+                                    type="checkbox" 
+                                    checked={checkedItems.has(item.id)}
+                                    onChange={() => toggleItem(item.id)}
                 className="w-6 h-6 text-emerald-600 rounded-lg focus:ring-emerald-500 focus:ring-2 cursor-pointer"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2 flex-wrap">
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-xl font-bold text-gray-900">
-                    {item.scaledQuantity.toFixed(1)}
-                  </span>
-                  <span className="text-lg font-semibold text-gray-600">{item.unit}</span>
+                                        {item.scaledQuantity.toFixed(1)}
+                                      </span>
+                                      <span className="text-lg font-semibold text-gray-600">{item.unit}</span>
                   <span className="text-lg text-gray-800">{item.ingredient.name}</span>
-                </div>
+                                    </div>
+                                  </div>
+                                </label>
+                              ))}
+                  </div>
               </div>
-            </label>
-          ))}
-        </div>
-      </div>
 
       {/* Instructions Card */}
       <div className="flex-shrink-0 w-full h-full bg-white rounded-xl border border-gray-200 p-8 shadow-sm" style={{ scrollSnapAlign: 'start' }}>
         <h3 className="text-2xl font-bold text-gray-900 mb-6 uppercase tracking-wide">Instructions</h3>
         {instructions ? (
-          <div className="whitespace-pre-wrap text-lg text-gray-800 leading-relaxed bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                    <div className="whitespace-pre-wrap text-lg text-gray-800 leading-relaxed bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
             {instructions}
-          </div>
-        ) : (
-          <p className="text-lg text-gray-400 italic">No instructions provided</p>
-        )}
-      </div>
+                    </div>
+                  ) : (
+                    <p className="text-lg text-gray-400 italic">No instructions provided</p>
+                )}
+              </div>
     </div>
   );
 }
@@ -1602,7 +1597,7 @@ function EditModeContent({
               + Add Step
             </button>
           )}
-        </div>
+          </div>
 
         {/* Sections Toggle */}
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -1619,14 +1614,14 @@ function EditModeContent({
             <div>
               <div className="font-medium text-gray-900 text-sm">Use Sections (Multi-Step Recipe)</div>
               <div className="text-xs text-gray-600">Organize ingredients and instructions into separate steps</div>
-            </div>
+                </div>
           </label>
-        </div>
+                </div>
 
         {/* Edit mode content continues... */}
         <div className="text-center py-8 text-gray-500">
           Edit mode content - keeping existing functionality
-        </div>
+              </div>
       </div>
     </div>
   );

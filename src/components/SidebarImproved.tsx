@@ -576,15 +576,15 @@ export function Sidebar() {
 
 
       {/* DESKTOP SIDEBAR (Full) */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-full bg-gray-900 z-30 w-16 group hover:w-64 border-r border-gray-700 flex-col transition-all duration-300 ease-in-out">
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full bg-gray-50 z-30 w-16 group hover:w-64 border-r border-gray-200 flex-col transition-all duration-300 ease-in-out">
         <div className="flex flex-col h-full">
           {/* Business/Company Section */}
-          <div className="p-4 border-b border-gray-700">
+          <div className="p-4 bg-white border-b border-gray-200">
             <Link href="/dashboard" className="block">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between group">
                 <div className="flex items-center gap-3">
                   {company?.logoUrl ? (
-                    <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-600 flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
                       <Image
                         src={company.logoUrl}
                         alt={company.name}
@@ -599,15 +599,15 @@ export function Sidebar() {
                     </div>
                   )}
                   <div className="min-w-0 flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <h1 className="text-sm font-semibold text-white truncate">
+                    <h1 className="text-sm font-semibold text-gray-900 truncate">
                       {loading ? "Loading..." : company?.name || "Plato Kitchen"}
                     </h1>
-                    <p className="text-xs text-gray-300 truncate">
+                    <p className="text-xs text-gray-500 truncate">
                       {company?.businessType || "Management"}
                     </p>
                   </div>
                 </div>
-                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -624,11 +624,11 @@ export function Sidebar() {
                       onClick={() => setExpandedNavItem(expandedNavItem === item.href ? null : item.href)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                         pathname.startsWith(item.href)
-                          ? "bg-emerald-500 text-white"
-                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "text-gray-700 hover:bg-white hover:text-gray-900"
                       }`}
                     >
-                      <div className={`${pathname.startsWith(item.href) ? "text-white" : "text-gray-400 group-hover:text-gray-300"}`}>
+                      <div className={`${pathname.startsWith(item.href) ? "text-emerald-600" : "text-gray-500 group-hover:text-gray-700"}`}>
                         {item.icon}
                       </div>
                       <span className={`text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${pathname.startsWith(item.href) ? "font-semibold opacity-100" : ""}`}>
@@ -651,8 +651,8 @@ export function Sidebar() {
                             href={subItem.href}
                             className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                               isActive(subItem.href)
-                                ? "bg-emerald-600 text-white shadow-sm font-medium"
-                                : "text-gray-400 hover:bg-gray-800 hover:text-gray-300"
+                                ? "bg-emerald-500 text-white shadow-sm font-medium"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                             }`}
                           >
                             {subItem.label}
@@ -665,13 +665,13 @@ export function Sidebar() {
                   <div className="relative">
                     <Link
                       href={item.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                        isActive(item.href)
-                          ? "bg-emerald-500 text-white shadow-sm"
-                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      }`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                      isActive(item.href)
+                        ? "bg-emerald-500 text-white shadow-sm"
+                        : "text-gray-700 hover:bg-white hover:text-gray-900"
+                    }`}
                     >
-                      <div className={`${isActive(item.href) ? "text-white" : "text-gray-400 group-hover:text-gray-300"}`}>
+                      <div className={`${isActive(item.href) ? "text-white" : "text-gray-500 group-hover:text-gray-700"}`}>
                         {item.icon}
                       </div>
                       <span className={`text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isActive(item.href) ? "font-semibold opacity-100" : ""}`}>
@@ -682,7 +682,7 @@ export function Sidebar() {
                       )}
                     </Link>
                     {/* Tooltip for collapsed state */}
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-50">
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-50">
                       {item.label}
                     </div>
                   </div>
@@ -695,19 +695,19 @@ export function Sidebar() {
           <div className="p-3 space-y-2">
             {/* Active Timers */}
             {Object.keys(timers).length > 0 && (
-              <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-lg border border-amber-300 shadow-sm overflow-hidden">
                 <button
                   onClick={() => setTimersExpanded(!timersExpanded)}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors"
                 >
-                  <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-semibold text-amber-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span className="text-sm font-semibold text-amber-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     Timers ({Object.keys(timers).length})
                   </span>
                   <svg
-                    className={`ml-auto w-4 h-4 text-amber-400 transition-transform opacity-0 group-hover:opacity-100 ${timersExpanded ? 'rotate-180' : ''}`}
+                    className={`ml-auto w-4 h-4 text-amber-600 transition-transform opacity-0 group-hover:opacity-100 ${timersExpanded ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -762,21 +762,21 @@ export function Sidebar() {
             {/* User Section */}
             {loading ? (
               <div className="flex items-center gap-3 px-3 py-2">
-                <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+                <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
                 <div className="flex-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="h-3 bg-gray-700 rounded animate-pulse mb-1"></div>
-                  <div className="h-2.5 bg-gray-700 rounded animate-pulse w-2/3"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse mb-1"></div>
+                  <div className="h-2.5 bg-gray-200 rounded animate-pulse w-2/3"></div>
                 </div>
               </div>
             ) : user ? (
               <div className="space-y-1">
-                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-800">
+                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-semibold">
                     {user.name?.[0] || user.email[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <p className="text-sm font-medium truncate text-white">{user.name || "My Account"}</p>
-                    <p className="text-xs text-gray-300 truncate">{user.email}</p>
+                    <p className="text-sm font-medium truncate">{user.name || "My Account"}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <NotificationCenter />
@@ -785,7 +785,7 @@ export function Sidebar() {
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-200 text-sm font-medium"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-white hover:text-gray-900 transition-all duration-200 text-sm font-medium"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
