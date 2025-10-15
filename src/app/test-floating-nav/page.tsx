@@ -1,0 +1,308 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { FloatingNavBar } from "@/components/FloatingNavBar";
+import { TimerProvider, useTimers } from "@/contexts/TimerContext";
+
+// Test Timer Component
+function TestTimer() {
+  const { addTimer, removeTimer, timers } = useTimers();
+  const [testTime, setTestTime] = useState(60); // 1 minute default
+  const [isRunning, setIsRunning] = useState(false);
+
+  const startTestTimer = () => {
+    if (isRunning) {
+      // Stop timer
+      removeTimer("test-timer");
+      setIsRunning(false);
+    } else {
+      // Start timer
+      addTimer({
+        id: "test-timer",
+        recipeId: 999,
+        recipeName: "Test Recipe",
+        stepTitle: "Test Step",
+        totalMinutes: testTime / 60,
+        remaining: testTime,
+        alarmInterval: null
+      });
+      setIsRunning(true);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border p-6 mb-8">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Test Timer</h2>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Duration:</label>
+          <select
+            value={testTime}
+            onChange={(e) => setTestTime(Number(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+            disabled={isRunning}
+          >
+            <option value={30}>30 seconds</option>
+            <option value={60}>1 minute</option>
+            <option value={120}>2 minutes</option>
+            <option value={300}>5 minutes</option>
+            <option value={600}>10 minutes</option>
+          </select>
+        </div>
+        
+        <button
+          onClick={startTestTimer}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            isRunning
+              ? "bg-red-500 hover:bg-red-600 text-white"
+              : "bg-emerald-500 hover:bg-emerald-600 text-white"
+          }`}
+        >
+          {isRunning ? "Stop Timer" : "Start Timer"}
+        </button>
+        
+        {Object.keys(timers).length > 0 && (
+          <div className="text-sm text-gray-600">
+            Active timers: {Object.keys(timers).length}
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-3 text-xs text-gray-500">
+        Start a timer to see the badge animation in the floating navigation bar!
+      </div>
+    </div>
+  );
+}
+
+// Mock timers for testing (fallback)
+const mockTimers = {};
+
+function TestPageContent() {
+  const [selectedNavItems, setSelectedNavItems] = useState([
+    "dashboard", 
+    "ingredients", 
+    "recipes", 
+    "recipe-mixer"
+  ]);
+  const { timers } = useTimers();
+
+  const navigationOptions = [
+    { value: "dashboard", label: "Dashboard" },
+    { value: "ingredients", label: "Ingredients" },
+    { value: "recipes", label: "Recipes" },
+    { value: "recipe-mixer", label: "Recipe Mixer" },
+    { value: "production", label: "Production" },
+    { value: "wholesale", label: "Wholesale" },
+    { value: "account", label: "Settings" },
+    { value: "business", label: "Business" },
+    { value: "team", label: "Team" }
+  ];
+
+  const handleNavItemChange = (index: number, newValue: string) => {
+    const newItems = [...selectedNavItems];
+    newItems[index] = newValue;
+    setSelectedNavItems(newItems);
+  };
+
+  return (
+    <TimerProvider initialTimers={showTimers ? mockTimers : {}}>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Floating Navigation Bar Test
+            </h1>
+            <p className="text-gray-600">
+              Test the floating navigation bar design before integrating it into the main app.
+            </p>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Test Timer */}
+          <TestTimer />
+
+          {/* Controls */}
+          <div className="bg-white rounded-2xl shadow-sm border p-6 mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Customize Navigation</h2>
+            
+            {/* Navigation Item Selection */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+              {selectedNavItems.map((item, index) => (
+                <div key={index}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Item {index + 1}
+                  </label>
+                  <select
+                    value={item}
+                    onChange={(e) => handleNavItemChange(index, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    {navigationOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+
+
+            {/* Auto-hide Debug Info */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-blue-800 mb-2">Auto-Hide Debug</h4>
+              <p className="text-xs text-blue-700">
+                • Nav bar will auto-hide after 5 seconds of inactivity<br/>
+                • Only hides when scrolled down &gt; 100px<br/>
+                • Check browser console for activity logs<br/>
+                • Any mouse movement, click, or scroll resets the timer
+              </p>
+            </div>
+          </div>
+
+          {/* Enhanced Features Info */}
+          <div className="bg-white rounded-2xl shadow-sm border p-6 mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Enhanced Features</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Smart Behavior</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Hides when scrolling down (after 100px)</li>
+                  <li>• Shows when scrolling up</li>
+                  <li>• Always visible at top of page</li>
+                  <li>• Auto-hides after 8 seconds of inactivity</li>
+                  <li>• Smooth slide animations (500ms)</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Micro-Interactions</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Magnetic hover effects (lift + scale)</li>
+                  <li>• Ripple effects on press</li>
+                  <li>• Breathing animation when timers active</li>
+                  <li>• Staggered item animations</li>
+                  <li>• Contextual glow effects</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Enhanced Glass Morphism</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Dynamic blur intensity (24px)</li>
+                  <li>• Multi-layered shadows</li>
+                  <li>• Inset highlights for depth</li>
+                  <li>• Adaptive transparency</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Timer Enhancements</h3>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Breathing glow effect</li>
+                  <li>• Pulse ring animation</li>
+                  <li>• Scale on hover</li>
+                  <li>• Enhanced badge styling</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Test Content */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Sample Content</h3>
+              <p className="text-gray-600 mb-4">
+                This content scrolls behind the floating navigation bar. The navigation should remain 
+                fixed at the bottom with proper spacing and glass morphism effects.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-emerald-50 rounded-lg p-4">
+                  <h4 className="font-medium text-emerald-800 mb-2">Feature 1</h4>
+                  <p className="text-emerald-700 text-sm">
+                    The floating nav bar uses modern glass morphism design with backdrop blur effects.
+                  </p>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-800 mb-2">Feature 2</h4>
+                  <p className="text-blue-700 text-sm">
+                    Users can customize which navigation items appear in the floating bar.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* More content to test scrolling */}
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="bg-white rounded-2xl shadow-sm border p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Content Section {i + 2}
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor 
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud 
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="w-full h-20 bg-gray-200 rounded mb-2"></div>
+                    <p className="text-sm text-gray-600">Sample item 1</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="w-full h-20 bg-gray-200 rounded mb-2"></div>
+                    <p className="text-sm text-gray-600">Sample item 2</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="w-full h-20 bg-gray-200 rounded mb-2"></div>
+                    <p className="text-sm text-gray-600">Sample item 3</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Instructions */}
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mt-8">
+            <h3 className="text-lg font-semibold text-amber-800 mb-3">Test Instructions</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold text-amber-800 mb-2">Smart Behavior Testing</h4>
+                <ul className="text-amber-700 space-y-1 text-sm">
+                  <li>• Scroll down to see nav disappear</li>
+                  <li>• Scroll up to see nav reappear</li>
+                  <li>• Wait 8 seconds for auto-hide</li>
+                  <li>• Click anywhere to bring it back</li>
+                  <li>• Always visible at page top</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold text-amber-800 mb-2">Interaction Testing</h4>
+                <ul className="text-amber-700 space-y-1 text-sm">
+                  <li>• Hover over items for magnetic effect</li>
+                  <li>• Toggle timer badge for breathing animation</li>
+                  <li>• Try "More" button for overlay menu</li>
+                  <li>• Customize nav items with dropdowns</li>
+                  <li>• Test on different screen sizes</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Navigation Bar */}
+        <FloatingNavBar 
+          navigationItems={selectedNavItems}
+          onMoreClick={() => console.log('More clicked')}
+        />
+      </div>
+    );
+}
+
+export default function TestFloatingNavPage() {
+  return (
+    <TimerProvider initialTimers={{}}>
+      <TestPageContent />
+    </TimerProvider>
+  );
+}
