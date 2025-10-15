@@ -1657,26 +1657,6 @@ function EditModeContent({
         </form>
               </div>
 
-      {/* Floating Cost Breakdown Panel */}
-      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 w-80 bg-white border-2 border-emerald-200 rounded-xl p-6 shadow-lg z-10">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Cost Breakdown</h3>
-              <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Total Cost:</span>
-            <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost)}</span>
-            </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Cost per {yieldUnit}:</span>
-            <span className="text-lg font-bold text-emerald-600">{formatCurrency(costBreakdown.totalCost / yieldQuantity)}</span>
-                </div>
-          {isWholesaleProduct && wholesalePrice && (
-            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-              <span className="text-gray-600">Wholesale Price:</span>
-              <span className="text-lg font-bold text-blue-600">£{parseFloat(wholesalePrice).toFixed(2)}</span>
-          </div>
-        )}
-        </div>
-      </div>
     </div>
   );
 }
