@@ -247,6 +247,19 @@ export function RecipePageInlineComplete({
     });
   }, []);
 
+  // Carousel state
+  const [currentStep, setCurrentStep] = useState(0);
+  const totalSteps = useSections ? sections.length : 2;
+
+  // Navigation functions
+  const goToPreviousStep = useCallback(() => {
+    setCurrentStep(prev => Math.max(0, prev - 1));
+  }, []);
+
+  const goToNextStep = useCallback(() => {
+    setCurrentStep(prev => Math.min(totalSteps - 1, prev + 1));
+  }, [totalSteps]);
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
@@ -392,29 +405,48 @@ export function RecipePageInlineComplete({
                   </div>
                 </div>
                 
-        {/* Right Panel - Recipe Steps Carousel */}
+        {/* Right Panel - Recipe Steps Carousel or Edit Mode */}
         <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {useSections ? (
-            <RecipeCarousel 
-              sections={sections}
-              checkedItems={checkedItems}
-              toggleItem={toggleItem}
-              getTimer={getTimer}
-              startTimer={startTimer}
-              recipe={recipe}
-              servings={servings}
-            />
+          {isLocked ? (
+            // Cooking Mode - Carousel
+            useSections ? (
+              <RecipeCarousel 
+                sections={sections}
+                checkedItems={checkedItems}
+                toggleItem={toggleItem}
+                getTimer={getTimer}
+                startTimer={startTimer}
+                recipe={recipe}
+                servings={servings}
+                currentStep={currentStep}
+                setCurrentStep={setCurrentStep}
+              />
+            ) : (
+              <SimpleRecipeCarousel 
+                recipe={recipe}
+                checkedItems={checkedItems}
+                toggleItem={toggleItem}
+                getTimer={getTimer}
+                startTimer={startTimer}
+                servings={servings}
+                currentStep={currentStep}
+                setCurrentStep={setCurrentStep}
+              />
+            )
           ) : (
-            <SimpleRecipeCarousel 
+            // Edit Mode - Traditional Scrollable Layout
+            <EditModeContent 
               recipe={recipe}
-              checkedItems={checkedItems}
-              toggleItem={toggleItem}
-              getTimer={getTimer}
-              startTimer={startTimer}
-              servings={servings}
+              costBreakdown={costBreakdown}
+              ingredients={ingredients}
+              categories={categories}
+              shelfLifeOptions={shelfLifeOptions}
+              storageOptions={storageOptions}
+              wholesaleProduct={wholesaleProduct}
+              onSave={onSave}
             />
-                  )}
-                </div>
+          )}
+        </div>
       </div>
 
       {/* Footer - Progress & Navigation */}
@@ -429,26 +461,28 @@ export function RecipePageInlineComplete({
                 </div>
                 
           {/* Step Navigation */}
-                          <div className="flex items-center gap-4">
-                                    <button
-              className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600"
-              disabled={true}
-                                    >
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={goToPreviousStep}
+              disabled={currentStep === 0}
+              className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
-                                    </button>
+            </button>
             <span className="text-lg font-semibold text-gray-700">
-            {useSections ? `1 / ${sections.length}` : '1 / 2'}
-          </span>
-                    <button
-              className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600"
-              disabled={true}
+              {currentStep + 1} / {totalSteps}
+            </span>
+            <button 
+              onClick={goToNextStep}
+              disabled={currentStep === totalSteps - 1}
+              className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                          </button>
+            </button>
                 </div>
                   </div>
                 </div>
@@ -464,7 +498,9 @@ function RecipeCarousel({
   getTimer, 
   startTimer, 
   recipe,
-  servings
+  servings,
+  currentStep,
+  setCurrentStep
 }: {
   sections: RecipeSection[];
   checkedItems: Set<number>;
@@ -473,8 +509,9 @@ function RecipeCarousel({
   startTimer: (id: string, duration: number, label: string) => void;
   recipe: any;
   servings: number;
+  currentStep: number;
+  setCurrentStep: (step: number) => void;
 }) {
-  const [currentStep, setCurrentStep] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const scrollToStep = (stepIndex: number) => {
@@ -487,6 +524,17 @@ function RecipeCarousel({
     }
     setCurrentStep(stepIndex);
   };
+
+  // Sync scroll position when currentStep changes
+  useEffect(() => {
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.clientWidth;
+      carouselRef.current.scrollTo({
+        left: currentStep * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+  }, [currentStep]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -591,7 +639,9 @@ function SimpleRecipeCarousel({
   toggleItem, 
   getTimer, 
   startTimer,
-  servings
+  servings,
+  currentStep,
+  setCurrentStep
 }: {
   recipe: any;
   checkedItems: Set<number>;
@@ -599,8 +649,9 @@ function SimpleRecipeCarousel({
   getTimer: (id: string) => any;
   startTimer: (id: string, duration: number, label: string) => void;
   servings: number;
+  currentStep: number;
+  setCurrentStep: (step: number) => void;
 }) {
-  const [currentStep, setCurrentStep] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const scrollToStep = (stepIndex: number) => {
@@ -613,6 +664,17 @@ function SimpleRecipeCarousel({
     }
     setCurrentStep(stepIndex);
   };
+
+  // Sync scroll position when currentStep changes
+  useEffect(() => {
+    if (carouselRef.current) {
+      const cardWidth = carouselRef.current.clientWidth;
+      carouselRef.current.scrollTo({
+        left: currentStep * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+  }, [currentStep]);
 
   return (
     <div className="h-full flex flex-col">
@@ -633,10 +695,10 @@ function SimpleRecipeCarousel({
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                     1
-                    </div>
+                            </div>
                   <h2 className="text-3xl font-bold text-gray-900">Ingredients</h2>
-                  </div>
-                </div>
+                          </div>
+                              </div>
               
               <div className="space-y-4">
                 {recipe.items.map((item: any) => {
@@ -850,6 +912,107 @@ function StepCard({
             {section.method || 'No instructions provided for this step.'}
                 </div>
                 </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit Mode Content (Traditional Scrollable Layout)
+function EditModeContent({ 
+  recipe, 
+  costBreakdown, 
+  ingredients, 
+  categories, 
+  shelfLifeOptions, 
+  storageOptions, 
+  wholesaleProduct, 
+  onSave 
+}: RecipePageInlineCompleteProps) {
+  return (
+    <div className="h-full overflow-y-auto p-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Recipe Title and Description */}
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">{recipe.name}</h1>
+          {recipe.description && (
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">{recipe.description}</p>
+          )}
+        </div>
+
+        {/* Recipe Image */}
+        {recipe.imageUrl && (
+          <div className="flex justify-center">
+            <img 
+              src={recipe.imageUrl} 
+              alt={recipe.name} 
+              className="w-full max-w-md h-64 object-cover rounded-xl shadow-lg"
+            />
+          </div>
+        )}
+
+        {/* Recipe Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {recipe.bakeTemp && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-orange-700">{recipe.bakeTemp}°C</div>
+              <div className="text-sm text-orange-600">Temperature</div>
+            </div>
+          )}
+          {recipe.bakeTime && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-blue-700">{recipe.bakeTime} min</div>
+              <div className="text-sm text-blue-600">Bake Time</div>
+            </div>
+          )}
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-purple-700">{recipe.yieldQuantity}</div>
+            <div className="text-sm text-purple-600">Servings</div>
+          </div>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-emerald-700">{formatCurrency(costBreakdown.totalCost)}</div>
+            <div className="text-sm text-emerald-600">Total Cost</div>
+          </div>
+        </div>
+
+        {/* Ingredients Section */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Ingredients</h2>
+          <div className="space-y-3">
+            {recipe.items.map((item: any) => {
+              const ingredient = recipe.ingredients.find((ing: any) => ing.id === item.ingredientId);
+              if (!ingredient) return null;
+              
+              return (
+                <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-xl font-bold text-gray-900 min-w-[4rem]">{item.quantity}</div>
+                  <div className="text-lg text-gray-600 min-w-[3rem]">{item.unit}</div>
+                  <div className="text-lg text-gray-900 flex-1">{ingredient.name}</div>
+                  {item.note && (
+                    <div className="text-sm text-gray-500 italic">({item.note})</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Instructions Section */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Instructions</h2>
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
+              {recipe.method || 'No instructions provided.'}
+            </div>
+          </div>
+        </div>
+
+        {/* Edit Mode Notice */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+          <div className="text-blue-800 font-semibold mb-2">Edit Mode Active</div>
+          <div className="text-blue-600 text-sm">
+            This is the traditional scrollable layout for editing. Switch to cooking mode to use the carousel interface.
+          </div>
+        </div>
       </div>
     </div>
   );
