@@ -457,6 +457,12 @@ export function RecipePageInlineComplete({
               storageOptions={storageOptions}
               wholesaleProduct={wholesaleProduct}
               onSave={onSave}
+              uploading={uploading}
+              setUploading={setUploading}
+              uploadError={uploadError}
+              setUploadError={setUploadError}
+              imageUrl={imageUrl}
+              setImageUrl={setImageUrl}
             />
           )}
               </div>
@@ -920,14 +926,26 @@ function EditModeContent({
   shelfLifeOptions,
   storageOptions,
   wholesaleProduct,
-  onSave 
-}: RecipePageInlineCompleteProps) {
+  onSave,
+  uploading,
+  setUploading,
+  uploadError,
+  setUploadError,
+  imageUrl,
+  setImageUrl
+}: RecipePageInlineCompleteProps & {
+  uploading: boolean;
+  setUploading: (value: boolean) => void;
+  uploadError: string;
+  setUploadError: (value: string) => void;
+  imageUrl: string;
+  setImageUrl: (value: string) => void;
+}) {
   const [isSaving, setIsSaving] = useState(false);
   
   // Editable recipe fields
   const [name, setName] = useState(recipe.name);
   const [description, setDescription] = useState(recipe.description || "");
-  const [imageUrl, setImageUrl] = useState(recipe.imageUrl || "");
   const [method, setMethod] = useState(recipe.method || "");
   const [yieldQuantity, setYieldQuantity] = useState(recipe.yieldQuantity);
   const [yieldUnit, setYieldUnit] = useState(recipe.yieldUnit);
