@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { RecipePageInlineCompleteV2 } from "@/components/RecipePageInlineCompleteV2";
 import { redirect } from "next/navigation";
-import { updateRecipeUnified } from "../actionsSimplified";
+import { updateRecipeUnified } from "../../dashboard/recipes/actionsSimplified";
 import { calculateRecipeCost } from "@/lib/recipeCostCalculator";
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ interface Props {
   params: Promise<{ id: string }> 
 }
 
-export default async function RecipePage({ params }: Props) {
+export default async function TestRecipePage({ params }: Props) {
   const { id: idParam } = await params;
   const id = Number(idParam);
   
@@ -144,9 +144,6 @@ export default async function RecipePage({ params }: Props) {
     yieldQuantity: Number(recipe.yieldQuantity),
     imageUrl: recipe.imageUrl || undefined,
     method: recipe.method || undefined,
-    category: recipe.category ? { id: recipe.categoryId || 0, name: recipe.category } : null,
-    storage: recipe.storage ? { id: recipe.storageId || 0, name: recipe.storage } : null,
-    shelfLife: recipe.shelfLife ? { id: recipe.shelfLifeId || 0, name: recipe.shelfLife } : null,
     sections: recipe.sections.map(section => ({
       ...section,
       description: section.description || undefined,
@@ -193,19 +190,31 @@ export default async function RecipePage({ params }: Props) {
   }));
 
   return (
-    <RecipePageInlineCompleteV2
-      recipe={transformedRecipe}
-      costBreakdown={costBreakdown}
-      ingredients={transformedIngredients}
-      categories={categories}
-      shelfLifeOptions={shelfLifeOptions}
-      storageOptions={storageOptions}
-      wholesaleProduct={wholesaleProduct ? {
-        id: wholesaleProduct.id,
-        price: wholesaleProduct.price.toString(),
-        isActive: wholesaleProduct.isActive,
-      } : null}
-      onSave={updateRecipeUnified}
-    />
+    <div className="min-h-screen bg-gray-100">
+      <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4">
+        <div className="flex">
+          <div className="ml-3">
+            <p className="text-sm text-yellow-700">
+              <strong>Test Mode:</strong> This is the new recipe view with enhanced features. 
+              <a href={`/dashboard/recipes/${id}`} className="underline ml-2">← Back to original view</a>
+            </p>
+          </div>
+        </div>
+      </div>
+      <RecipePageInlineCompleteV2
+        recipe={transformedRecipe}
+        costBreakdown={costBreakdown}
+        ingredients={transformedIngredients}
+        categories={categories}
+        shelfLifeOptions={shelfLifeOptions}
+        storageOptions={storageOptions}
+        wholesaleProduct={wholesaleProduct ? {
+          id: wholesaleProduct.id,
+          price: wholesaleProduct.price.toString(),
+          isActive: wholesaleProduct.isActive,
+        } : null}
+        onSave={updateRecipeUnified}
+      />
+    </div>
   );
 }
