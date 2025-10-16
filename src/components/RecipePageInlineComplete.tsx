@@ -1296,40 +1296,41 @@ function EditModeContent({
     <div className="h-full overflow-y-auto p-12 relative">
       <div className="max-w-none mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">Edit Recipe</h1>
-            <div className="flex items-center gap-3">
+          {/* Compact Header */}
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+            <h1 className="text-xl font-bold text-gray-900">Edit Recipe</h1>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => window.history.back()}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors text-sm"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors disabled:opacity-50 text-sm"
               >
                 {isSaving ? 'Saving...' : 'Save Recipe'}
               </button>
-                  </div>
-      </div>
+            </div>
+          </div>
+          
+          {/* Compact Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto space-y-4">
 
-          {/* Basic Information */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <span className="text-emerald-600 text-lg">📝</span>
-              </div>
+          {/* Basic Information - Compact */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-emerald-600 text-sm">📝</span>
               Basic Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
-                            <input
-                              type="text"
+                <label className="block text-xs font-medium text-gray-700 mb-1">Recipe Name</label>
+                <input
+                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => {
@@ -1338,22 +1339,22 @@ function EditModeContent({
                       e.stopPropagation();
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Image</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Recipe Image</label>
                 {imageUrl ? (
-                  <div className="mb-3 relative">
-                    <img src={imageUrl} alt="Recipe" className="h-32 w-32 object-cover rounded-xl border border-gray-200" />
+                  <div className="mb-2 relative">
+                    <img src={imageUrl} alt="Recipe" className="h-16 w-16 object-cover rounded-md border border-gray-200" />
                     <button
                       type="button"
                       onClick={() => {
                         setImageUrl("");
                         setUploadError("");
                       }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600"
                     >
                       ×
                     </button>
@@ -1408,7 +1409,7 @@ function EditModeContent({
                       }
                     }}
                     disabled={uploading}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Maximum file size: 5MB (JPEG, PNG, GIF, WebP)</p>
@@ -1419,43 +1420,42 @@ function EditModeContent({
                   <p className="text-sm text-blue-600 mt-2">Uploading...</p>
                 )}
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <textarea
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === 'Enter') {
                       e.preventDefault();
                       e.stopPropagation();
                     }
                   }}
-                              rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Brief description of the recipe..."
                 />
               </div>
             </div>
           </div>
 
-          {/* Recipe Output & Wholesale */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <span className="text-emerald-600 text-lg">⚖️</span>
-              </div>
+          {/* Recipe Output & Wholesale - Compact */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-emerald-600 text-sm">⚖️</span>
               Recipe Output & Wholesale
             </h2>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Recipe Type Toggle */}
-                                  <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Recipe Type</label>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">Recipe Type</label>
                 <SliderToggle
                   leftLabel="Single Serving"
                   rightLabel="Batch Recipe"
                   value={recipeType}
                   onChange={setRecipeType}
                 />
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 mt-1">
                   {recipeType === 'batch' 
                     ? `Perfect for making ${yieldQuantity} servings - great for meal prep or feeding a group.`
                     : 'Ideal for individual portions and precise scaling.'
@@ -1464,13 +1464,13 @@ function EditModeContent({
               </div>
 
               {/* Yield Information */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     {recipeType === 'batch' ? 'Batch Size' : 'Serving Size'}
                   </label>
-                                    <input
-                                      type="number"
+                  <input
+                    type="number"
                     value={yieldQuantity}
                     onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 1)}
                     onKeyDown={(e) => {
@@ -1479,18 +1479,18 @@ function EditModeContent({
                         e.stopPropagation();
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
                     min="0.1"
                     step="0.1"
                     required
-                                    />
-                                  </div>
-                                  <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Unit</label>
                   <select
                     value={yieldUnit}
                     onChange={(e) => setYieldUnit(e.target.value as Unit)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
                   >
                     <option value="g">g</option>
                     <option value="kg">kg</option>
@@ -1500,18 +1500,18 @@ function EditModeContent({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Total Cost</label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Total Cost</label>
+                  <div className="px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-md text-sm font-semibold text-gray-900">
                     {formatCurrency(costBreakdown.totalCost)}
                   </div>
                 </div>
               </div>
 
               {/* Wholesale Product */}
-              <div className="border-t border-gray-200 pt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Wholesale Product</label>
-                <div className="space-y-4">
-                  <label className="flex items-center gap-3">
+              <div className="border-t border-gray-200 pt-4">
+                <label className="block text-xs font-medium text-gray-700 mb-2">Wholesale Product</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={isWholesaleProduct}
@@ -1546,17 +1546,15 @@ function EditModeContent({
           </div>
 
 
-          {/* Category & Storage */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <span className="text-emerald-600 text-lg">🏷️</span>
-              </div>
+          {/* Category & Storage - Compact */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-emerald-600 text-sm">🏷️</span>
               Category & Storage
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
                 <SearchableSelect
                   options={categories.map(cat => ({ id: cat.id, name: cat.name }))}
                   value={categoryId ? parseInt(categoryId) : undefined}
@@ -1565,7 +1563,7 @@ function EditModeContent({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Shelf Life</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Shelf Life</label>
                 <SearchableSelect
                   options={shelfLifeOptions.map(option => ({ id: option.id, name: option.name }))}
                   value={shelfLifeId ? parseInt(shelfLifeId) : undefined}
@@ -1574,7 +1572,7 @@ function EditModeContent({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Storage</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Storage</label>
                 <SearchableSelect
                   options={storageOptions.map(option => ({ id: option.id, name: option.name }))}
                   value={storageId ? parseInt(storageId) : undefined}
@@ -1586,26 +1584,24 @@ function EditModeContent({
           </div>
 
                 
-          {/* Recipe Steps */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <span className="text-emerald-600 text-lg">🥘</span>
-              </div>
+          {/* Recipe Steps - Compact */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-emerald-600 text-sm">🥘</span>
               Recipe Steps
             </h2>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <div className="space-y-6">
-                          <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Recipe Steps</h3>
-                    <p className="text-sm text-gray-500">Each step has its own ingredients and instructions. Add more steps for complex recipes.</p>
-                          </div>
-                          <button
+                    <h3 className="text-sm font-semibold text-gray-900">Recipe Steps</h3>
+                    <p className="text-xs text-gray-500">Each step has its own ingredients and instructions. Add more steps for complex recipes.</p>
+                  </div>
+                  <button
                     type="button"
                     onClick={(e) => addSection(e)}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
-                          >
+                    className="px-3 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors flex items-center gap-1 text-sm"
+                  >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
@@ -1740,6 +1736,7 @@ function EditModeContent({
               Make your changes above and click "Save Recipe" to update. Switch to cooking mode to use the carousel interface.
                     </div>
                     </div>
+          </div> {/* End scrollable content */}
         </form>
           </div>
 
