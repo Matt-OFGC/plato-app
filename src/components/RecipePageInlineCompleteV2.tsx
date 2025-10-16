@@ -1526,6 +1526,14 @@ function RecipeCarousel({
   };
 
 
+  // Debug: Log section details
+  console.log('Sections data:', sections.map(s => ({
+    id: s.id,
+    title: s.title,
+    method: s.method,
+    itemsCount: s.items.length
+  })));
+
   return (
     <div className="h-full flex flex-col relative">
       {/* Navigation Tabs */}
