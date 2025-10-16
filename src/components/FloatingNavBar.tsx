@@ -44,7 +44,7 @@ export function FloatingNavBar({
     <>
       {/* Floating Navigation Bar */}
       <nav className="fixed bottom-4 left-4 right-4 z-50 md:left-8 md:right-8 lg:left-12 lg:right-12 xl:left-16 xl:right-16 safe-area-bottom">
-        <div className={`floating-nav rounded-3xl px-4 py-2 mx-auto max-w-md ${timerCount > 0 ? 'animate-pulse-subtle' : ''}`}>
+        <div className={`floating-nav rounded-3xl px-3 sm:px-4 py-2 mx-auto max-w-md ${timerCount > 0 ? 'animate-pulse-subtle' : ''}`}>
           <div className="flex items-center justify-between">
             {/* Navigation Items */}
             <div className="flex items-center space-x-1 flex-1">
@@ -57,7 +57,7 @@ export function FloatingNavBar({
                     href={item.href}
                     onMouseEnter={() => setHoveredItem(item.href)}
                     onMouseLeave={() => setHoveredItem(null)}
-                    className={`floating-nav-item flex-1 flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative ${
+                    className={`floating-nav-item flex-1 flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-2xl transition-all duration-300 ease-out group relative touch-target ${
                       active 
                         ? "floating-nav-active text-black shadow-lg scale-105" 
                         : `text-gray-500 hover:text-gray-700 hover:bg-gray-100/50 ${

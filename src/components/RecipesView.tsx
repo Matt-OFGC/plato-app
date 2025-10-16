@@ -46,8 +46,8 @@ export function RecipesView({ recipes }: RecipesViewProps) {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <p className="text-sm text-gray-600">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <p className="text-responsive-body text-gray-600">
           Showing {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}
         </p>
         <ViewToggle 
@@ -58,12 +58,12 @@ export function RecipesView({ recipes }: RecipesViewProps) {
       </div>
 
       {viewMode === 'grid' ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid-responsive-mobile">
           {recipes.map((r) => (
-            <div key={r.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
+            <div key={r.id} className="card-responsive hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
               {/* Recipe Image Placeholder */}
               <Link href={`/dashboard/recipes/${r.id}`} className="block">
-                <div className="w-full h-48 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl mb-4 flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer">
+                <div className="w-full h-32 sm:h-40 md:h-48 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl mb-4 flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer touch-target">
                   {r.imageUrl ? (
                     <img 
                       src={r.imageUrl} 
@@ -85,7 +85,7 @@ export function RecipesView({ recipes }: RecipesViewProps) {
               {/* Recipe Info */}
               <div className="space-y-3">
                 <div>
-                  <Link href={`/dashboard/recipes/${r.id}`} className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
+                  <Link href={`/dashboard/recipes/${r.id}`} className="text-responsive-body font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
                     {r.name}
                   </Link>
                   {r.description && (
@@ -94,7 +94,7 @@ export function RecipesView({ recipes }: RecipesViewProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-sm text-gray-500">
                     <span>Yield: {String(r.yieldQuantity)} {r.yieldUnit}</span>
                     <span>{r.items.length} ingredient{r.items.length !== 1 ? 's' : ''}</span>
                   </div>
@@ -141,7 +141,7 @@ export function RecipesView({ recipes }: RecipesViewProps) {
                 <div className="pt-2">
                   <Link 
                     href={`/dashboard/recipes/${r.id}`}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white px-4 py-2.5 rounded-lg hover:shadow-lg transition-all text-sm font-medium text-center flex items-center justify-center gap-2"
+                    className="btn-responsive-primary w-full text-center flex items-center justify-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -155,29 +155,29 @@ export function RecipesView({ recipes }: RecipesViewProps) {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="card-responsive overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yield</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingredients</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time/Temp</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yield</th>
+                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingredients</th>
+                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time/Temp</th>
+                  <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {recipes.map((r) => (
                   <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <Link href={`/dashboard/recipes/${r.id}`} className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                           {r.imageUrl ? (
                             <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover rounded-lg" />
                           ) : (
-                            <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                           )}
@@ -189,10 +189,13 @@ export function RecipesView({ recipes }: RecipesViewProps) {
                           {r.description && (
                             <div className="text-xs text-gray-500 truncate">{r.description}</div>
                           )}
+                          <div className="sm:hidden text-xs text-gray-500 mt-1">
+                            {String(r.yieldQuantity)} {r.yieldUnit} • {r.items.length} ingredients
+                          </div>
                         </div>
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                       {r.categoryRef && (
                         <span 
                           className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium" 
@@ -206,21 +209,21 @@ export function RecipesView({ recipes }: RecipesViewProps) {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {String(r.yieldQuantity)} {r.yieldUnit}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {r.items.length} item{r.items.length !== 1 ? 's' : ''}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600">
+                    <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-xs text-gray-600">
                       {r.bakeTime && <div>{r.bakeTime}min</div>}
                       {r.bakeTemp && <div>{r.bakeTemp}°C</div>}
                       {!r.bakeTime && !r.bakeTemp && '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link 
                         href={`/dashboard/recipes/${r.id}`}
-                        className="text-emerald-600 hover:text-emerald-900"
+                        className="btn-responsive-secondary text-xs"
                       >
                         Open
                       </Link>
