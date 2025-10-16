@@ -1373,10 +1373,10 @@ function EditModeContent({
                       const file = e.target.files?.[0];
                       if (!file) return;
                       
-                      // Client-side file size check (10MB)
-                      const maxSize = 10 * 1024 * 1024;
+                      // Client-side file size check (5MB to stay under Vercel's 6MB limit)
+                      const maxSize = 5 * 1024 * 1024;
                       if (file.size > maxSize) {
-                        setUploadError("File is too large. Maximum size is 10MB.");
+                        setUploadError("File is too large. Maximum size is 5MB.");
                         return;
                       }
                       
@@ -1394,7 +1394,12 @@ function EditModeContent({
                         if (!res.ok) {
                           const errorText = await res.text();
                           console.error("Upload failed:", res.status, errorText);
-                          setUploadError(`Upload failed: ${res.status} ${errorText}`);
+                          
+                          if (res.status === 413) {
+                            setUploadError("File is too large. Please choose a smaller image (under 5MB).");
+                          } else {
+                            setUploadError(`Upload failed: ${res.status} ${errorText}`);
+                          }
                           return;
                         }
                         
@@ -1412,7 +1417,7 @@ function EditModeContent({
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Maximum file size: 10MB (JPEG, PNG, GIF, WebP)</p>
+                <p className="text-xs text-gray-500 mt-1">Maximum file size: 5MB (JPEG, PNG, GIF, WebP)</p>
                 {uploadError && (
                   <p className="text-sm text-red-600 mt-2">{uploadError}</p>
                 )}

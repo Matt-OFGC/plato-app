@@ -5,8 +5,8 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit-log";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
-// Max file size: 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// Max file size: 5MB (to stay under Vercel's 6MB serverless function limit)
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // Configure the route segment to handle large uploads
 export const runtime = 'nodejs';
