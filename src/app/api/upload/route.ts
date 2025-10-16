@@ -15,15 +15,21 @@ export const maxDuration = 30; // 30 seconds max
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("Upload API called");
+    
     // Check authentication
     const session = await getSession();
+    console.log("Session check:", session ? "authenticated" : "not authenticated");
     if (!session) {
+      console.log("Returning 401 - no session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Apply rate limiting
     const rateLimitResult = rateLimit(req, RATE_LIMITS.UPLOAD);
+    console.log("Rate limit check:", rateLimitResult);
     if (!rateLimitResult.allowed) {
+      console.log("Rate limited, retry after:", rateLimitResult.retryAfter);
       return NextResponse.json(
         { error: `Too many upload attempts. Please try again in ${rateLimitResult.retryAfter} seconds.` },
         { 

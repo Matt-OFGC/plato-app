@@ -1386,16 +1386,24 @@ function EditModeContent({
                       try {
                         const fd = new FormData();
                         fd.append("file", file);
-                        const res = await fetch("/api/upload", { method: "POST", body: fd });
-                        const data = await res.json();
+                        console.log("Uploading file:", file.name, "Size:", file.size);
                         
-                        if (res.ok) {
-                          setImageUrl(data.url);
-                        } else {
-                          setUploadError(data.error || "Upload failed");
+                        const res = await fetch("/api/upload", { method: "POST", body: fd });
+                        console.log("Upload response status:", res.status);
+                        
+                        if (!res.ok) {
+                          const errorText = await res.text();
+                          console.error("Upload failed:", res.status, errorText);
+                          setUploadError(`Upload failed: ${res.status} ${errorText}`);
+                          return;
                         }
+                        
+                        const data = await res.json();
+                        console.log("Upload success:", data);
+                        setImageUrl(data.url);
                       } catch (error) {
-                        setUploadError("Network error. Please try again.");
+                        console.error("Upload error:", error);
+                        setUploadError(`Network error: ${error instanceof Error ? error.message : "Please try again."}`);
                       } finally {
                         setUploading(false);
                       }
