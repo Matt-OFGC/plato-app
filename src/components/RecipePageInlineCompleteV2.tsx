@@ -683,7 +683,7 @@ export function RecipePageInlineCompleteV2({
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 pb-12 px-4 md:px-6 lg:px-8 border-l-2 border-r-2 border-gray-100">
         {/* Left Panel - Recipe Overview (Responsive) */}
-        <div className="w-64 md:w-72 lg:w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm overflow-y-auto">
+        <div className="w-48 md:w-56 lg:w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
           {/* Recipe Image */}
           {(recipe.imageUrl || imageUrl) && (
             <div className="mb-6">
@@ -691,7 +691,7 @@ export function RecipePageInlineCompleteV2({
                 <img 
                   src={imageUrl || recipe.imageUrl || ""} 
                   alt={recipe.name} 
-                  className="w-full h-48 object-cover rounded-xl shadow-md"
+                  className="w-full h-32 md:h-36 lg:h-40 object-cover rounded-xl shadow-md"
                 />
                 {!isLocked && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 rounded-xl flex items-center justify-center">
@@ -735,25 +735,25 @@ export function RecipePageInlineCompleteV2({
           )}
 
           {/* Servings Adjuster */}
-          <div className="mb-6">
+          <div className="mb-4">
             <div className="text-center">
-              <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Servings</div>
-              <div className="text-xs text-gray-500 mb-4">Adjust recipe quantity</div>
-              <div className="flex items-center justify-center gap-4">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Servings</div>
+              <div className="text-xs text-gray-500 mb-3">Adjust recipe quantity</div>
+              <div className="flex items-center justify-center gap-3">
                 <button 
                   onClick={() => setServings(Math.max(1, servings - 1))}
-                  className="w-16 h-16 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700 touch-manipulation"
+                  className="w-12 h-12 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700 touch-manipulation"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
                   </svg>
                 </button>
-                <span className="text-4xl font-bold text-gray-900 min-w-[4rem] text-center">{servings}</span>
+                <span className="text-3xl font-bold text-gray-900 min-w-[3rem] text-center">{servings}</span>
                 <button 
                   onClick={() => setServings(servings + 1)}
-                  className="w-16 h-16 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700 touch-manipulation"
+                  className="w-12 h-12 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700 touch-manipulation"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
@@ -762,80 +762,80 @@ export function RecipePageInlineCompleteV2({
           </div>
           
           {/* Metadata Badges */}
-          <div className="space-y-3 mb-6">
+          <div className="space-y-2 mb-4">
             {recipe.bakeTemp && (
-              <div className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-xl px-4 py-3 shadow-sm">
+              <div className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                   </svg>
-                  <span className="text-sm font-semibold text-orange-700">Temp: {displayBakeTemp}°C</span>
+                  <span className="text-xs font-semibold text-orange-700">{displayBakeTemp}°C</span>
                 </div>
               </div>
             )}
                 
             {recipe.bakeTime && (
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl px-4 py-3 shadow-sm">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-semibold text-blue-700">Time: {displayBakeTime} min</span>
+                  <span className="text-xs font-semibold text-blue-700">{displayBakeTime}m</span>
                 </div>
               </div>
             )}
                 
             {recipe.category && (
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl px-4 py-3 shadow-sm">
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
-                  <span className="text-sm font-semibold text-purple-700">{recipe.category.name}</span>
+                  <span className="text-xs font-semibold text-purple-700 truncate">{recipe.category.name}</span>
                 </div>
               </div>
             )}
                 
             {recipe.storage && (
-              <div className="bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 rounded-xl px-4 py-3 shadow-sm">
+              <div className="bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
-                  <span className="text-sm font-semibold text-cyan-700">{recipe.storage.name}</span>
+                  <span className="text-xs font-semibold text-cyan-700 truncate">{recipe.storage.name}</span>
                 </div>
               </div>
             )}
                 
             {recipe.shelfLife && (
-              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-xl px-4 py-3 shadow-sm">
+              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-lg px-3 py-2 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm font-semibold text-amber-700">{recipe.shelfLife.name}</span>
+                  <span className="text-xs font-semibold text-amber-700 truncate">{recipe.shelfLife.name}</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Cost Analysis */}
-          <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-3 shadow-sm mb-3">
             <div className="text-center">
-              <div className="text-sm font-semibold text-emerald-600 uppercase tracking-wide mb-2">Cost Analysis</div>
-              <div className="text-2xl font-bold text-emerald-700 mb-1">{formatCurrency(costBreakdown.totalCost)}</div>
-              <div className="text-xs text-emerald-600">Total Cost</div>
-              <div className="text-lg font-semibold text-emerald-600 mt-2">{formatCurrency(costBreakdown.costPerOutputUnit)}</div>
+              <div className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">Cost Analysis</div>
+              <div className="text-lg font-bold text-emerald-700 mb-1">{formatCurrency(costBreakdown.totalCost)}</div>
+              <div className="text-xs text-emerald-600">Total</div>
+              <div className="text-sm font-semibold text-emerald-600 mt-1">{formatCurrency(costBreakdown.costPerOutputUnit)}</div>
               <div className="text-xs text-emerald-600">Per {recipe.yieldUnit}</div>
             </div>
           </div>
 
           {/* Allergens */}
           {allAllergens.length > 0 && (
-            <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 shadow-sm">
+            <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-lg p-3 shadow-sm mb-3">
               <div className="text-center">
-                <div className="text-sm font-semibold text-red-600 uppercase tracking-wide mb-2">Allergens</div>
-                <div className="text-sm text-red-700">
+                <div className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Allergens</div>
+                <div className="text-xs text-red-700">
                   {allAllergens.join(', ')}
                 </div>
               </div>
@@ -843,18 +843,18 @@ export function RecipePageInlineCompleteV2({
           )}
 
           {/* Notes */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 shadow-sm">
             <div className="text-center">
-              <div className="text-sm font-semibold text-blue-600 uppercase tracking-wide mb-2">Notes</div>
+              <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Notes</div>
               {isLocked ? (
-                <div className="text-sm text-blue-700 min-h-[2rem]">
+                <div className="text-xs text-blue-700 min-h-[1.5rem]">
                   {notes || 'No notes added'}
                 </div>
               ) : (
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full text-sm text-blue-700 bg-transparent border-none resize-none focus:outline-none min-h-[2rem]"
+                  className="w-full text-xs text-blue-700 bg-transparent border-none resize-none focus:outline-none min-h-[1.5rem]"
                   placeholder="Add recipe notes..."
                 />
               )}
