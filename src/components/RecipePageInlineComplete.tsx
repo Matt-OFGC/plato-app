@@ -564,18 +564,18 @@ export function RecipePageInlineComplete({
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
       {/* Header Container */}
-      <div className="flex-shrink-0 px-6 pt-12 pb-2 border-l-2 border-r-2 border-gray-100">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between h-20">
+      <div className="flex-shrink-0 px-6 pt-8 pb-2 border-l-2 border-r-2 border-gray-100">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between h-16">
             <div className="flex flex-col justify-center gap-1 ml-16">
               {isLocked ? (
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{name}</h1>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{name}</h1>
               ) : (
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="text-3xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
+                  className="text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
                   placeholder="Recipe name..."
                 />
               )}
