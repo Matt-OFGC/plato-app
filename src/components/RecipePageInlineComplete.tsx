@@ -329,9 +329,10 @@ export function RecipePageInlineComplete({
       e.preventDefault();
       e.stopPropagation();
     }
+    console.log('Adding ingredient to section:', sectionId, 'Available ingredients:', ingredients.length);
     setSections(sections.map(s => 
       s.id === sectionId 
-        ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, price: "", note: "" }] }
+        ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: ingredients.length > 0 ? ingredients[0].id : 0, quantity: "1", unit: "g" as Unit, price: "", note: "" }] }
         : s
     ));
   };
@@ -1296,7 +1297,7 @@ function SortableIngredientItem({
           {/* Ingredient Search/Selection */}
           <div className="col-span-5">
             <SearchableSelect
-              value={item.ingredientId || 0}
+              value={item.ingredientId}
               onChange={(value) => onUpdate('ingredientId', value)}
               placeholder="Select ingredient..."
               options={ingredients.map(ing => ({
