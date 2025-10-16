@@ -280,7 +280,7 @@ export function RecipePageInlineComplete({
       </div>
 
             <div className="flex items-center gap-4">
-                  <button
+              <button
                 onClick={() => setIsLocked(!isLocked)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-sm ${
                   isLocked 
@@ -292,21 +292,8 @@ export function RecipePageInlineComplete({
               </button>
               <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">
                 Print
-                  </button>
-                  <button
-                onClick={async () => {
-                  if (isLocked) {
-                    setIsLocked(false);
-                  } else {
-                    // Save the recipe when "Save Changes" is clicked
-                    await handleSubmit(new Event('submit') as any);
-                  }
-                }}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
-              >
-                {isLocked ? 'Edit Recipe' : 'Save Changes'}
-                  </button>
-                </div>
+              </button>
+            </div>
               </div>
             </div>
                 </div>
