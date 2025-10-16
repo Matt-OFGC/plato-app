@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = `You are an expert at analyzing invoices and receipts to extract food ingredients and their details.
 
+IMPORTANT: You must respond with ONLY valid JSON. Do not include any explanatory text, markdown formatting, or code blocks.
+
 Extract ingredients from this invoice/receipt and return them in this exact JSON format:
 {
   "ingredients": [
@@ -54,7 +56,10 @@ Rules:
 - currency should be GBP, USD, or EUR based on the invoice
 - confidence should be 0-1 based on how clear the text is
 - If quantity/price is unclear, make your best estimate
-- Skip any items that aren't clearly food ingredients`;
+- Skip any items that aren't clearly food ingredients
+- If no ingredients are found, return: {"ingredients": []}
+
+CRITICAL: Your response must be valid JSON only. No other text.`;
 
     let aiResponse;
 
@@ -168,24 +173,47 @@ Rules:
     }
 
     const aiData = await aiResponse.json();
+    console.log("AI response data:", JSON.stringify(aiData, null, 2));
+    
     const extractedText = aiData.choices[0]?.message?.content;
 
     if (!extractedText) {
-      throw new Error("No response from AI service");
+      console.error("No content in AI response:", aiData);
+      throw new Error("No response from AI service. Please check your OpenAI API key and try again.");
     }
 
     // Parse the JSON response
     let parsedData;
     try {
+      console.log("Raw AI response:", extractedText);
+      
+      // Clean the response text
+      let cleanedText = extractedText.trim();
+      
+      // Remove any markdown code blocks
+      cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      
       // Extract JSON from the response (in case there's extra text)
-      const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("No JSON found in response");
+        console.error("No JSON found in response:", cleanedText);
+        throw new Error("No JSON found in AI response. The AI may have returned an error message instead of ingredient data.");
       }
-      parsedData = JSON.parse(jsonMatch[0]);
+      
+      const jsonString = jsonMatch[0];
+      console.log("Extracted JSON string:", jsonString);
+      
+      parsedData = JSON.parse(jsonString);
     } catch (parseError) {
       console.error("Failed to parse AI response:", extractedText);
-      throw new Error("Failed to parse AI response");
+      console.error("Parse error:", parseError);
+      
+      // Provide more helpful error message
+      if (parseError instanceof SyntaxError) {
+        throw new Error("AI response was not valid JSON. This might be due to the PDF being unclear or the AI service having issues. Please try taking a screenshot of the PDF instead.");
+      } else {
+        throw new Error("Failed to parse AI response. Please try uploading a screenshot of the PDF instead.");
+      }
     }
 
     // Validate and clean the extracted ingredients

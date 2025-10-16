@@ -40,7 +40,13 @@ export function InvoiceScanner({ onIngredientsExtracted, onClose }: InvoiceScann
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse response as JSON:", jsonError);
+        throw new Error("Invalid response from server. Please try taking a screenshot of the PDF instead.");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to scan invoice");
@@ -56,6 +62,8 @@ export function InvoiceScanner({ onIngredientsExtracted, onClose }: InvoiceScann
     } catch (err) {
       if (err instanceof Error && err.message.includes("401")) {
         setError("OpenAI API key not configured. Please add OPENAI_API_KEY to your environment variables.");
+      } else if (err instanceof Error && err.message.includes("JSON")) {
+        setError("PDF Processing Issue\n\nUnexpected end of JSON input\n\n💡 Quick Fix:\n\nOpen your PDF file\nTake a screenshot (⌘+Shift+4 on Mac, Windows+Shift+S on PC)\nUpload the screenshot image instead");
       } else {
         setError(err instanceof Error ? err.message : "Failed to scan invoice");
       }
