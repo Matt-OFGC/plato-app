@@ -150,6 +150,7 @@ export default async function RecipePage({ params }: Props) {
       items: section.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        price: item.price ? Number(item.price) : undefined,
         note: item.note || undefined,
         ingredient: {
           id: item.ingredient.id,
@@ -164,6 +165,7 @@ export default async function RecipePage({ params }: Props) {
     items: recipe.items.map(item => ({
       ...item,
       quantity: Number(item.quantity),
+      price: item.price ? Number(item.price) : undefined,
       note: item.note || undefined,
       ingredient: {
         id: item.ingredient.id,

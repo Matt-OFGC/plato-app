@@ -55,6 +55,7 @@ interface RecipeItem {
   ingredientId: number;
   quantity: string;
   unit: Unit;
+  price?: string;
   note?: string;
 }
 
@@ -105,6 +106,7 @@ interface RecipePageInlineCompleteProps {
         id: number;
         quantity: number;
         unit: string;
+        price?: number | null;
         note?: string | null;
         ingredient: {
           id: number;
@@ -120,6 +122,7 @@ interface RecipePageInlineCompleteProps {
       id: number;
       quantity: number;
       unit: string;
+      price?: number | null;
       note?: string;
       ingredient: {
         id: number;
@@ -207,6 +210,7 @@ export function RecipePageInlineComplete({
             ingredientId: item.ingredient.id,
             quantity: item.quantity.toString(),
             unit: item.unit as Unit,
+            price: item.price?.toString() || "",
             note: item.note || "",
           })),
         }))
@@ -952,6 +956,7 @@ function EditModeContent({
             ingredientId: item.ingredient.id,
             quantity: item.quantity.toString(),
             unit: item.unit as Unit,
+            price: item.price?.toString() || "",
             note: item.note || "",
           })),
         }))
@@ -967,6 +972,7 @@ function EditModeContent({
             ingredientId: item.ingredient.id,
             quantity: item.quantity.toString(),
             unit: item.unit as Unit,
+            price: item.price?.toString() || "",
             note: item.note || "",
           }))
         }]
@@ -1070,7 +1076,7 @@ function EditModeContent({
     }
     setSections(sections.map(s => 
       s.id === sectionId 
-        ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, note: "" }] }
+        ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, price: "", note: "" }] }
         : s
     ));
   };
@@ -1237,22 +1243,27 @@ function EditModeContent({
           <option value="l">l</option>
           <option value="each">each</option>
         </select>
-                            <input
-                              type="text"
-          value={item.note}
-          onChange={(e) => {
-            e.preventDefault();
-            onUpdate('note', e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
-          placeholder="Note (optional)"
-          className="col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-        />
+                            <div className="col-span-3 flex items-center gap-2">
+                              <span className="text-gray-500 font-medium">£</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={item.price || ""}
+                                onChange={(e) => {
+                                  e.preventDefault();
+                                  onUpdate('price', e.target.value);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }
+                                }}
+                                placeholder="0.00"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                              />
+                            </div>
         <button
           type="button"
           onClick={(e) => {

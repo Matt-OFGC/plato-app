@@ -42,7 +42,7 @@ export default async function RecipePrintPage({ params }: Props) {
 
   if (!recipe) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Recipe Not Found</h1>
           <Link href="/dashboard/recipes" className="text-emerald-600 hover:text-emerald-700">

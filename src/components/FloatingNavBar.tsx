@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTimers } from "@/contexts/TimerContext";
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from "@/lib/navigation-config";
 
@@ -39,11 +39,21 @@ export function FloatingNavBar({
 
   const timerCount = Object.keys(timers).length;
 
+  // Debug logging for mobile devices
+  useEffect(() => {
+    console.log('FloatingNavBar rendered:', {
+      pathname,
+      navigationItems,
+      displayNavItems: displayNavItems.length,
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server'
+    });
+  }, [pathname, navigationItems, displayNavItems]);
+
   return (
     <>
       {/* Floating Navigation Bar */}
       <nav className="fixed bottom-4 left-4 right-4 z-50 md:left-8 md:right-8 lg:left-12 lg:right-12 xl:left-16 xl:right-16 safe-area-bottom">
-        <div className={`floating-nav rounded-3xl px-4 py-2 mx-auto max-w-md ${timerCount > 0 ? 'animate-pulse-subtle' : ''}`}>
+        <div className={`floating-nav rounded-3xl px-4 py-2 mx-auto max-w-md ${timerCount > 0 ? 'animate-pulse-subtle' : ''}`} style={{ display: 'block', visibility: 'visible', backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '2px solid #10b981' }}>
           <div className="flex items-center justify-between">
             {/* Navigation Items */}
             <div className="flex items-center space-x-1 flex-1">

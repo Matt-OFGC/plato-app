@@ -165,6 +165,7 @@ model RecipeItem {
   quantity      Decimal
   unit          Unit
 
+  price         Decimal?   // Optional price override per unit for this recipe
   note          String?
 
   // Optional section assignment
@@ -355,6 +356,9 @@ model UserPreference {
   // Food cost percentage targets (industry standard: 25-35%)
   targetFoodCost  Decimal  @default(25.0)  // Target food cost %
   maxFoodCost     Decimal  @default(35.0)  // Maximum acceptable food cost %
+  
+  // Navigation preferences for floating nav bar
+  navigationItems Json?  // JSON array of selected navigation items (e.g., ["dashboard", "ingredients", "recipes", "recipe-mixer"])
 }
 
 model Subscription {

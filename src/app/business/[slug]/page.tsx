@@ -62,7 +62,7 @@ export default async function BusinessProfilePage({ params }: Props) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-start gap-6">
             {company.logoUrl ? (
               <img

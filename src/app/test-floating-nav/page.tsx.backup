@@ -303,7 +303,7 @@ function TestPageContent() {
 export default function TestFloatingNavPage() {
   return (
     <TimerProvider>
-      <TestPageContent />
+      <TestFloatingNavContent />
     </TimerProvider>
   );
 }

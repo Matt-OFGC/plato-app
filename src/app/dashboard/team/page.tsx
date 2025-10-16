@@ -27,7 +27,7 @@ export default async function TeamPage() {
     });
     
     return (
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
           <p className="text-gray-600 mt-2">Manage your team members, permissions, and billing</p>
@@ -54,7 +54,7 @@ export default async function TeamPage() {
   } catch (error) {
     console.error("Team page error:", error);
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Error in Team Page</h1>
           <p className="text-gray-600">There was an error loading the team page.</p>

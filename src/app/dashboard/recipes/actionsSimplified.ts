@@ -195,6 +195,7 @@ export async function createRecipeUnified(formData: FormData) {
               ingredientId: item.ingredientId,
               quantity: parseFloat(item.quantity),
               unit: item.unit,
+              price: item.price ? parseFloat(item.price) : null,
               note: item.note || null,
             })),
           });
@@ -213,6 +214,7 @@ export async function createRecipeUnified(formData: FormData) {
             ingredientId: item.ingredientId,
             quantity: parseFloat(item.quantity),
             unit: item.unit,
+            price: item.price ? parseFloat(item.price) : null,
             note: item.note || null,
           })),
         });
@@ -228,7 +230,7 @@ export async function createRecipeUnified(formData: FormData) {
       // This will be set in the recipe action, so we need to get the cost breakdown
       const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
         ? parseFloat(wholesalePriceStr) 
-        : (recipeData.sellingPrice || 0);
+        : 0;
 
       await prisma.wholesaleProduct.create({
         data: {
@@ -351,6 +353,7 @@ export async function updateRecipeUnified(formData: FormData) {
               ingredientId: item.ingredientId,
               quantity: parseFloat(item.quantity),
               unit: item.unit,
+              price: item.price ? parseFloat(item.price) : null,
               note: item.note || null,
             })),
           });
@@ -369,6 +372,7 @@ export async function updateRecipeUnified(formData: FormData) {
             ingredientId: item.ingredientId,
             quantity: parseFloat(item.quantity),
             unit: item.unit,
+            price: item.price ? parseFloat(item.price) : null,
             note: item.note || null,
           })),
         });
@@ -391,9 +395,9 @@ export async function updateRecipeUnified(formData: FormData) {
     });
 
     if (isWholesaleProduct) {
-      // Use wholesale price if provided, otherwise use selling price
+      // Use wholesale price if provided, otherwise default to 0
       // This should be price per unit (per slice/piece)
-      const priceToUse = wholesalePrice || parseFloat(sellingPrice || "0");
+      const priceToUse = wholesalePrice || 0;
       
       if (existingWholesaleProduct) {
         // Update existing wholesale product
