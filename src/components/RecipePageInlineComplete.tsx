@@ -166,8 +166,6 @@ export function RecipePageInlineComplete({
   // Lock/Unlock state
   const [isLocked, setIsLocked] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
   
   // Cooking mode state
   const [servings, setServings] = useState(recipe.yieldQuantity);
@@ -925,9 +923,6 @@ function EditModeContent({
   onSave 
 }: RecipePageInlineCompleteProps) {
   const [isSaving, setIsSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  
   
   // Editable recipe fields
   const [name, setName] = useState(recipe.name);
