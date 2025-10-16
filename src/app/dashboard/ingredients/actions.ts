@@ -187,10 +187,15 @@ export async function deleteIngredient(id: number) {
   
   await prisma.ingredient.delete({ where: { id } });
   
-  // Audit deletion
+  // Audit deletion (non-blocking)
   if (user && companyId) {
-    const { auditLog } = await import("@/lib/audit-log");
-    await auditLog.ingredientDeleted(user.id, id, existingIngredient.name, companyId);
+    try {
+      const { auditLog } = await import("@/lib/audit-log");
+      await auditLog.ingredientDeleted(user.id, id, existingIngredient.name, companyId);
+    } catch (auditError) {
+      console.error("Audit log error (non-blocking):", auditError);
+      // Don't fail the deletion if audit logging fails
+    }
   }
   
   revalidatePath("/ingredients");
