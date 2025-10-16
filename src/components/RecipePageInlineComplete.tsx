@@ -186,6 +186,10 @@ export function RecipePageInlineComplete({
   const [bakeTime, setBakeTime] = useState(recipe.bakeTime || "");
   const [bakeTemp, setBakeTemp] = useState(recipe.bakeTemp || "");
   
+  // Image upload state
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  
   // Pricing calculator
   const [sellPrice, setSellPrice] = useState<number>(0);
   const [showCogsInfo, setShowCogsInfo] = useState(false);
@@ -1332,19 +1336,68 @@ function EditModeContent({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Image</label>
+                {imageUrl ? (
+                  <div className="mb-3 relative">
+                    <img src={imageUrl} alt="Recipe" className="h-32 w-32 object-cover rounded-xl border border-gray-200" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageUrl("");
+                        setUploadError("");
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      // Client-side file size check (10MB)
+                      const maxSize = 10 * 1024 * 1024;
+                      if (file.size > maxSize) {
+                        setUploadError("File is too large. Maximum size is 10MB.");
+                        return;
+                      }
+                      
+                      setUploading(true);
+                      setUploadError("");
+                      
+                      try {
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        const res = await fetch("/api/upload", { method: "POST", body: fd });
+                        const data = await res.json();
+                        
+                        if (res.ok) {
+                          setImageUrl(data.url);
+                        } else {
+                          setUploadError(data.error || "Upload failed");
+                        }
+                      } catch (error) {
+                        setUploadError("Network error. Please try again.");
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                    disabled={uploading}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Maximum file size: 10MB (JPEG, PNG, GIF, WebP)</p>
+                {uploadError && (
+                  <p className="text-sm text-red-600 mt-2">{uploadError}</p>
+                )}
+                {uploading && (
+                  <p className="text-sm text-blue-600 mt-2">Uploading...</p>
+                )}
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
