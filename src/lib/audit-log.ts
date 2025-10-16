@@ -67,22 +67,15 @@ export async function createAuditLog({
   level = "INFO",
 }: AuditLogEntry): Promise<void> {
   try {
-    // Store in database (you'll need to create this table)
-    await prisma.$executeRaw`
-      INSERT INTO audit_logs (action, user_id, company_id, ip_address, user_agent, metadata, level, created_at)
-      VALUES (${action}, ${userId}, ${companyId}, ${ipAddress}, ${userAgent}, ${JSON.stringify(metadata)}, ${level}, NOW())
-      ON CONFLICT DO NOTHING
-    `.catch(() => {
-      // If table doesn't exist, just log to console for now
-      console.log('[AUDIT]', {
-        timestamp: new Date().toISOString(),
-        action,
-        userId,
-        companyId,
-        ipAddress,
-        metadata,
-        level,
-      });
+    // For now, just log to console since audit_logs table doesn't exist yet
+    console.log('[AUDIT]', {
+      timestamp: new Date().toISOString(),
+      action,
+      userId,
+      companyId,
+      ipAddress,
+      metadata,
+      level,
     });
   } catch (error) {
     // Never let audit logging break the main application
