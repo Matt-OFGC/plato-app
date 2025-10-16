@@ -593,7 +593,7 @@ export function RecipePageInlineCompleteV2({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl overflow-hidden">
+    <div className="h-screen flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
       {/* Header Container */}
       <div className="flex-shrink-0 px-6 pt-8 pb-2 border-l-2 border-r-2 border-gray-100">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
@@ -998,7 +998,7 @@ function WholeRecipeView({
   }, [allIngredients, ingredients]);
 
   return (
-    <div className="h-full p-6">
+    <div className="h-full p-6 overflow-y-auto">
       <div className="mb-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -1010,14 +1010,14 @@ function WholeRecipeView({
       </div>
 
       {/* Two Column Layout: Ingredients Left, Instructions Right */}
-      <div className="grid grid-cols-2 gap-6 h-[calc(100%-4rem)]">
+      <div className="grid grid-cols-2 gap-6 min-h-[calc(100%-4rem)]">
         {/* Left Column - Aggregated Ingredients */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
           </div>
-          <div className="space-y-4 flex-1 overflow-y-auto touch-pan-y">
+          <div className="space-y-4 flex-1 overflow-y-auto">
             {isLocked ? (
               // Locked view - show aggregated ingredients with section breakdown
               aggregatedIngredients.map((agg, index) => {
@@ -1195,7 +1195,7 @@ function WholeRecipeView({
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto touch-pan-y">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
             {isLocked ? (
               <div className="space-y-6">
                 {sections.map((section, index) => (
@@ -1410,7 +1410,7 @@ function RecipeCarousel({
       {/* Carousel Container */}
       <div 
         ref={carouselRef}
-        className="flex-1 overflow-hidden"
+        className="flex-1 overflow-x-hidden overflow-y-auto"
         onTouchStart={handleTouchStart}
       >
         <div className="flex h-full min-h-0" style={{ width: `${sections.length * 100}%` }}>
@@ -1633,7 +1633,7 @@ function StepCard({
               </button>
             )}
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto touch-pan-y">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
             <div className="space-y-2">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
@@ -1700,7 +1700,7 @@ function StepCard({
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto touch-pan-y">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
             {isLocked ? (
               <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                 {section.method || 'No instructions provided for this step.'}
