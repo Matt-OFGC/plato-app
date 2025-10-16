@@ -1448,6 +1448,7 @@ function RecipeCarousel({
   newlyAddedSection: string | null;
 }) {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const innerCarouselRef = useRef<HTMLDivElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const scrollToStep = (stepIndex: number) => {
@@ -1464,22 +1465,15 @@ function RecipeCarousel({
 
   // Sync transform position when currentStep changes
   useEffect(() => {
-    if (carouselRef.current) {
+    if (carouselRef.current && innerCarouselRef.current) {
       const container = carouselRef.current;
+      const innerContainer = innerCarouselRef.current;
       const cardWidth = container.clientWidth;
       const translateX = -currentStep * cardWidth;
       
       // Apply smooth transition with better easing
-      container.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      container.style.transform = `translateX(${translateX}px)`;
-      
-      // Debug logging
-      console.log('Carousel transform:', {
-        currentStep,
-        cardWidth,
-        translateX,
-        sectionsLength: sections.length
-      });
+      innerContainer.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      innerContainer.style.transform = `translateX(${translateX}px)`;
     }
   }, [currentStep, sections.length]);
 
@@ -1531,12 +1525,6 @@ function RecipeCarousel({
     document.addEventListener('touchend', handleTouchEnd);
   };
 
-  // Debug logging
-  console.log('RecipeCarousel render:', {
-    sectionsLength: sections.length,
-    currentStep,
-    sections: sections.map(s => ({ id: s.id, title: s.title }))
-  });
 
   return (
     <div className="h-full flex flex-col relative">
@@ -1591,7 +1579,7 @@ function RecipeCarousel({
           perspective: '1000px'
         }}
       >
-        <div className="flex h-full min-h-0" style={{ width: `${sections.length * 100}%` }}>
+        <div ref={innerCarouselRef} className="flex h-full min-h-0" style={{ width: `${sections.length * 100}%` }}>
           {sections.map((section, index) => (
             <div 
               key={section.id} 
