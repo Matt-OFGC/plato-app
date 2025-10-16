@@ -1304,33 +1304,40 @@ function RecipeCarousel({
   newlyAddedSection: string | null;
 }) {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const scrollToStep = (stepIndex: number) => {
-    if (carouselRef.current) {
-      const cardWidth = carouselRef.current.clientWidth;
-      carouselRef.current.scrollTo({
-        left: stepIndex * cardWidth,
-        behavior: 'smooth'
-      });
-    }
+    if (isTransitioning || stepIndex === currentStep) return;
+    
+    setIsTransitioning(true);
     setCurrentStep(stepIndex);
+    
+    // Reset transition flag after animation completes
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 400);
   };
 
-  // Sync scroll position when currentStep changes
+  // Sync transform position when currentStep changes
   useEffect(() => {
     if (carouselRef.current) {
-      const cardWidth = carouselRef.current.clientWidth;
-      carouselRef.current.scrollTo({
-        left: currentStep * cardWidth,
-        behavior: 'smooth'
-      });
+      const container = carouselRef.current;
+      const cardWidth = container.clientWidth;
+      const translateX = -currentStep * cardWidth;
+      
+      // Apply smooth transition with better easing
+      container.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      container.style.transform = `translateX(${translateX}px)`;
     }
   }, [currentStep]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isTransitioning) return;
+    
     const touch = e.touches[0];
     const startX = touch.clientX;
     const startY = touch.clientY;
+    const startTime = Date.now();
     
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
@@ -1338,7 +1345,7 @@ function RecipeCarousel({
       const deltaY = touch.clientY - startY;
       
       // Only prevent vertical scroll if this is clearly a horizontal swipe
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 20) {
         e.preventDefault();
       }
     };
@@ -1347,9 +1354,16 @@ function RecipeCarousel({
       const touch = e.changedTouches[0];
       const deltaX = touch.clientX - startX;
       const deltaY = touch.clientY - startY;
+      const deltaTime = Date.now() - startTime;
+      const velocity = Math.abs(deltaX) / deltaTime;
       
-      // More strict swipe detection - must be clearly horizontal and significant
-      if (Math.abs(deltaX) > 100 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
+      // Improved swipe detection with velocity consideration
+      const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 1.5;
+      const isSignificantDistance = Math.abs(deltaX) > 50;
+      const isQuickSwipe = velocity > 0.3; // pixels per ms
+      const isSlowSwipe = Math.abs(deltaX) > 150;
+      
+      if (isHorizontalSwipe && (isSignificantDistance && (isQuickSwipe || isSlowSwipe))) {
         if (deltaX > 0 && currentStep > 0) {
           scrollToStep(currentStep - 1);
         } else if (deltaX < 0 && currentStep < sections.length - 1) {
@@ -1410,15 +1424,24 @@ function RecipeCarousel({
       {/* Carousel Container */}
       <div 
         ref={carouselRef}
-        className="flex-1 overflow-x-hidden overflow-y-auto"
+        className="flex-1 overflow-hidden"
         onTouchStart={handleTouchStart}
+        style={{ 
+          willChange: 'transform',
+          backfaceVisibility: 'hidden',
+          perspective: '1000px'
+        }}
       >
         <div className="flex h-full min-h-0" style={{ width: `${sections.length * 100}%` }}>
           {sections.map((section, index) => (
             <div 
               key={section.id} 
               className="flex-shrink-0 h-full min-h-0"
-              style={{ width: `${100 / sections.length}%` }}
+              style={{ 
+                width: `${100 / sections.length}%`,
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden'
+              }}
             >
               <StepCard 
                 section={section}
@@ -1448,25 +1471,25 @@ function RecipeCarousel({
       </div>
                 
       {/* Navigation Arrows */}
-      <div className="absolute left-4 top-1/2 -translate-y-1/2">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
         <button 
           onClick={() => scrollToStep(Math.max(0, currentStep - 1))}
-          disabled={currentStep === 0}
-          className="w-16 h-16 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+          disabled={currentStep === 0 || isTransitioning}
+          className="w-14 h-14 rounded-full bg-white/95 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation hover:scale-105 active:scale-95"
         >
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
       </div>
                 
-      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
         <button
           onClick={() => scrollToStep(Math.min(sections.length - 1, currentStep + 1))}
-          disabled={currentStep === sections.length - 1}
-          className="w-16 h-16 rounded-full bg-white/90 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+          disabled={currentStep === sections.length - 1 || isTransitioning}
+          className="w-14 h-14 rounded-full bg-white/95 hover:bg-white shadow-lg border border-gray-200 flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed touch-manipulation hover:scale-105 active:scale-95"
         >
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
