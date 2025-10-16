@@ -29,7 +29,8 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
         originalUnit: true,
         packPrice: true,
         densityGPerMl: true,
-      }
+      },
+      take: 200 // Limit to first 200 ingredients for better performance
     }),
     prisma.category.findMany({ 
       where, 
