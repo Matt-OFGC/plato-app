@@ -593,7 +593,7 @@ export function RecipePageInlineCompleteV2({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
+    <div className="h-screen flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl overflow-hidden">
       {/* Header Container */}
       <div className="flex-shrink-0 px-6 pt-8 pb-2 border-l-2 border-r-2 border-gray-100">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
@@ -681,9 +681,9 @@ export function RecipePageInlineCompleteV2({
       </div>
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex-1 flex gap-8 min-h-0 pt-2 pb-12 px-8 border-l-2 border-r-2 border-gray-100">
-        {/* Left Panel - Recipe Overview (Fixed) */}
-        <div className="w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-y-auto">
+      <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 pb-12 px-4 md:px-6 lg:px-8 border-l-2 border-r-2 border-gray-100">
+        {/* Left Panel - Recipe Overview (Responsive) */}
+        <div className="w-64 md:w-72 lg:w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm overflow-y-auto">
           {/* Recipe Image */}
           {(recipe.imageUrl || imageUrl) && (
             <div className="mb-6">
@@ -1017,7 +1017,7 @@ function WholeRecipeView({
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
           </div>
-          <div className="space-y-4 flex-1 overflow-y-auto">
+          <div className="space-y-4 flex-1 overflow-y-auto touch-pan-y">
             {isLocked ? (
               // Locked view - show aggregated ingredients with section breakdown
               aggregatedIngredients.map((agg, index) => {
@@ -1195,7 +1195,7 @@ function WholeRecipeView({
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto touch-pan-y">
             {isLocked ? (
               <div className="space-y-6">
                 {sections.map((section, index) => (
@@ -1337,8 +1337,8 @@ function RecipeCarousel({
       const deltaX = touch.clientX - startX;
       const deltaY = touch.clientY - startY;
       
-      // Prevent vertical scroll during horizontal swipe
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Only prevent vertical scroll if this is clearly a horizontal swipe
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
         e.preventDefault();
       }
     };
@@ -1346,9 +1346,10 @@ function RecipeCarousel({
     const handleTouchEnd = (e: TouchEvent) => {
       const touch = e.changedTouches[0];
       const deltaX = touch.clientX - startX;
-      const velocity = Math.abs(deltaX);
+      const deltaY = touch.clientY - startY;
       
-      if (velocity > 50) { // Minimum swipe distance
+      // More strict swipe detection - must be clearly horizontal and significant
+      if (Math.abs(deltaX) > 100 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
         if (deltaX > 0 && currentStep > 0) {
           scrollToStep(currentStep - 1);
         } else if (deltaX < 0 && currentStep < sections.length - 1) {
@@ -1409,16 +1410,15 @@ function RecipeCarousel({
       {/* Carousel Container */}
       <div 
         ref={carouselRef}
-        className="flex-1 overflow-x-auto scroll-snap-x-mandatory scroll-smooth"
-        style={{ scrollSnapType: 'x mandatory' }}
+        className="flex-1 overflow-hidden"
         onTouchStart={handleTouchStart}
       >
-        <div className="flex h-full min-h-0">
+        <div className="flex h-full min-h-0" style={{ width: `${sections.length * 100}%` }}>
           {sections.map((section, index) => (
             <div 
               key={section.id} 
-              className="flex-shrink-0 w-full h-full min-h-0"
-              style={{ scrollSnapAlign: 'start' }}
+              className="flex-shrink-0 h-full min-h-0"
+              style={{ width: `${100 / sections.length}%` }}
             >
               <StepCard 
                 section={section}
@@ -1633,7 +1633,7 @@ function StepCard({
               </button>
             )}
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto touch-pan-y">
             <div className="space-y-2">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
@@ -1700,7 +1700,7 @@ function StepCard({
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto touch-pan-y">
             {isLocked ? (
               <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                 {section.method || 'No instructions provided for this step.'}
