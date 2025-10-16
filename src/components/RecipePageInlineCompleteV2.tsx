@@ -1472,8 +1472,16 @@ function RecipeCarousel({
       // Apply smooth transition with better easing
       container.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       container.style.transform = `translateX(${translateX}px)`;
+      
+      // Debug logging
+      console.log('Carousel transform:', {
+        currentStep,
+        cardWidth,
+        translateX,
+        sectionsLength: sections.length
+      });
     }
-  }, [currentStep]);
+  }, [currentStep, sections.length]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isTransitioning) return;
@@ -1522,6 +1530,13 @@ function RecipeCarousel({
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
   };
+
+  // Debug logging
+  console.log('RecipeCarousel render:', {
+    sectionsLength: sections.length,
+    currentStep,
+    sections: sections.map(s => ({ id: s.id, title: s.title }))
+  });
 
   return (
     <div className="h-full flex flex-col relative">
@@ -1580,9 +1595,8 @@ function RecipeCarousel({
           {sections.map((section, index) => (
             <div 
               key={section.id} 
-              className="flex-shrink-0 h-full min-h-0"
+              className="flex-shrink-0 h-full min-h-0 w-full"
               style={{ 
-                width: `${100 / sections.length}%`,
                 transform: 'translateZ(0)',
                 backfaceVisibility: 'hidden'
               }}
