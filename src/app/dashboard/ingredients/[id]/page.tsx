@@ -9,6 +9,12 @@ export const dynamic = 'force-dynamic';
 
 interface Props { params: Promise<{ id: string }> }
 
+// Server action for updating ingredient
+async function handleIngredientUpdate(id: number, formData: FormData) {
+  "use server";
+  await updateIngredient(id, formData);
+}
+
 export default async function EditIngredientPage({ params }: Props) {
   const { id: idParam } = await params;
   const id = Number(idParam);
@@ -44,10 +50,8 @@ export default async function EditIngredientPage({ params }: Props) {
     ? fromBase(Number(ing.packQuantity), originalUnit as Unit, ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined)
     : Number(ing.packQuantity);
 
-  async function action(formData: FormData) {
-    "use server";
-    await updateIngredient(id, formData);
-  }
+  // Create a bound function for the IngredientForm
+  const handleSubmit = handleIngredientUpdate.bind(null, id);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -70,7 +74,7 @@ export default async function EditIngredientPage({ params }: Props) {
             notes: ing.notes || "",
             allergens: ing.allergens || []
           }}
-          onSubmit={action}
+          onSubmit={handleSubmit}
         />
       </div>
     </div>
