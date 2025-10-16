@@ -294,7 +294,14 @@ export function RecipePageInlineComplete({
                 Print
                   </button>
                   <button
-                onClick={() => setIsLocked(!isLocked)}
+                onClick={async () => {
+                  if (isLocked) {
+                    setIsLocked(false);
+                  } else {
+                    // Save the recipe when "Save Changes" is clicked
+                    await handleSubmit(new Event('submit') as any);
+                  }
+                }}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
               >
                 {isLocked ? 'Edit Recipe' : 'Save Changes'}
