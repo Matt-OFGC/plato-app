@@ -71,13 +71,13 @@ function LoginForm() {
               className="h-12 w-auto"
             />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <h2 className="text-responsive-h2 text-gray-900">Welcome back</h2>
+          <p className="mt-2 text-responsive-body text-gray-600">
             Sign in to your account to continue
           </p>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="card-responsive shadow-xl">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
@@ -88,7 +88,7 @@ function LoginForm() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
               <input 
                 type="email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" 
+                className="input-responsive w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
@@ -103,7 +103,7 @@ function LoginForm() {
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="input-responsive w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div className="flex items-center justify-between">
@@ -129,7 +129,7 @@ function LoginForm() {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 px-4 rounded-lg hover:shadow-md transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-responsive-primary w-full"
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>

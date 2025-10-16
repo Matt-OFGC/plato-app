@@ -77,16 +77,16 @@ export default async function RecipesPage({ searchParams }: Props) {
   const categories = Array.from(new Set(recipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-8 flex items-center justify-between">
+    <div>
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">Recipes</h1>
-          <p className="text-[var(--muted-foreground)] mt-2">Create and manage your recipes with automatic cost calculation</p>
+          <h1 className="text-responsive-h2 text-[var(--foreground)]">Recipes</h1>
+          <p className="text-responsive-body text-[var(--muted-foreground)] mt-2">Create and manage your recipes with automatic cost calculation</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <SmartImporter type="recipes" />
-          <Link href="/dashboard/recipes/new" className="btn-primary flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/dashboard/recipes/new" className="btn-responsive-primary flex items-center justify-center gap-2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Create Recipe
@@ -94,7 +94,7 @@ export default async function RecipesPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <div className="mb-6 space-y-4">
+      <div className="mb-4 sm:mb-6 space-y-4">
         <SearchBar placeholder="Search recipes by name, description, or method..." />
         {categories.length > 0 && (
           <RecipeCategoryFilter categories={categories} selectedCategory={category} />
