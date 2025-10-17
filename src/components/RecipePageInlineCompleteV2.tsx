@@ -1142,8 +1142,9 @@ function WholeRecipeView({
   }, [allIngredients, ingredients]);
 
   return (
-    <div className="h-full p-6 overflow-y-auto">
-      <div className="mb-4">
+    <div className="h-full flex flex-col">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 p-6 pb-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
             📋
@@ -1153,8 +1154,10 @@ function WholeRecipeView({
         <p className="text-sm text-gray-600 mt-1">All ingredients needed for this recipe</p>
       </div>
 
-      {/* Two Column Layout: Ingredients Left, Instructions Right */}
-      <div className="grid grid-cols-2 gap-6 min-h-[calc(100%-4rem)]">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
+        {/* Two Column Layout: Ingredients Left, Instructions Right */}
+        <div className="grid grid-cols-2 gap-6">
         {/* Left Column - Aggregated Ingredients */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
@@ -1395,6 +1398,7 @@ function WholeRecipeView({
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>
