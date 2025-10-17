@@ -180,7 +180,11 @@ export default async function RecipePage({ params }: Props) {
     packUnit: ing.packUnit,
     packPrice: Number(ing.packPrice),
     densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : null,
-    allergens: ing.allergens ? ing.allergens.split(',').map(a => a.trim()).filter(a => a.length > 0) : [],
+    allergens: ing.allergens && typeof ing.allergens === 'string' 
+      ? ing.allergens.split(',').map(a => a.trim()).filter(a => a.length > 0) 
+      : Array.isArray(ing.allergens) 
+        ? ing.allergens 
+        : [],
   }));
 
   return (
