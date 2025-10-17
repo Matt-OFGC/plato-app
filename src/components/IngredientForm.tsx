@@ -36,38 +36,25 @@ const NUT_TYPES = [
 interface Supplier {
   id: number;
   name: string;
-  description?: string | null;
-  contactName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  website?: string | null;
   deliveryDays: string[];
-  deliveryNotes?: string | null;
-  accountLogin?: string | null;
-  accountPassword?: string | null;
-  accountNumber?: string | null;
-  address?: string | null;
-  city?: string | null;
-  postcode?: string | null;
-  country?: string | null;
-  currency?: string | null;
-  paymentTerms?: string | null;
-  minimumOrder?: number | null;
+  [key: string]: any; // Allow additional properties
 }
 
 interface IngredientFormProps {
-  companyId?: number;
+  companyId: number;
   suppliers?: Supplier[];
   initialData?: {
     name?: string;
-    supplier?: string;
-    supplierId?: number;
+    description?: string;
     packQuantity?: number;
     packUnit?: string;
     packPrice?: number;
+    yieldQuantity?: number;
+    yieldUnit?: string;
     densityGPerMl?: number;
-    notes?: string;
     allergens?: string[];
+    notes?: string;
+    supplierId?: number;
   };
   onSubmit: (formData: FormData) => void;
 }
@@ -117,8 +104,8 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
       setAllergens(prev => prev.filter(a => a !== previousOther));
     }
     // Add the new "other" allergen if it has a value
-    if (value.trim()) {
-      setAllergens(prev => [...prev, value.trim()]);
+    if (value && !allergens.includes(value)) {
+      setAllergens(prev => [...prev, value]);
     }
   };
 
@@ -142,133 +129,173 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8">
+    <div>
+      {/* Enhanced System Alert */}
+      <div className="bg-gradient-to-r from-red-500 to-yellow-500 text-white p-6 rounded-lg mb-6 border-4 border-black">
+        <div className="flex items-center gap-3">
+          <span className="text-4xl">🚨</span>
+          <div>
+            <h3 className="text-2xl font-bold">ENHANCED ALLERGEN SYSTEM IS ACTIVE! - VERSION 3.0</h3>
+            <p className="text-yellow-100">You now have access to specific nut type selection and improved allergen management.</p>
+          </div>
+        </div>
+      </div>
+      
       <form onSubmit={handleSubmit} className="space-y-6">
-        {companyId == null && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              No company found for your account; items will be created without company scoping.
-            </div>
-          </div>
-        )}
-        
+        {/* Name */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">Ingredient Name</label>
-          <input 
-            name="name" 
-            defaultValue={initialData?.name}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
-            placeholder="e.g., Cheddar Cheese"
-            required 
+          <label htmlFor="ingredient-name" className="block text-sm font-medium text-gray-900 mb-2">
+            Ingredient Name
+          </label>
+          <input
+            type="text"
+            id="ingredient-name"
+            name="name"
+            defaultValue={initialData?.name || ""}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., All-Purpose Flour"
           />
         </div>
-        
+
+        {/* Description */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">Supplier</label>
-          <SupplierSelector
-            suppliers={suppliers}
-            value={selectedSupplierId}
-            onChange={setSelectedSupplierId}
-            placeholder="Select or create supplier..."
-          />
+          <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
+            Description (Optional)
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={initialData?.description || ""}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., Bleached, enriched, pre-sifted"
+          ></textarea>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {/* Pack Quantity & Unit */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Pack Quantity</label>
-            <input 
-              type="number" 
-              step="any" 
-              name="packQuantity" 
-              defaultValue={initialData?.packQuantity}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
-              placeholder="5"
-              required 
+            <label htmlFor="packQuantity" className="block text-sm font-medium text-gray-900 mb-2">
+              Pack Quantity
+            </label>
+            <input
+              type="number"
+              id="packQuantity"
+              name="packQuantity"
+              step="0.01"
+              min="0"
+              defaultValue={initialData?.packQuantity || ""}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., 25"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Pack Unit</label>
-            <select 
-              name="packUnit" 
-              defaultValue={initialData?.packUnit || "kg"}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors"
-            >
-              <optgroup label="Weight/Mass">
-                <option value="g">Grams (g)</option>
-                <option value="kg">Kilograms (kg)</option>
-                <option value="mg">Milligrams (mg)</option>
-                <option value="lb">Pounds (lb)</option>
-                <option value="oz">Ounces (oz)</option>
-              </optgroup>
-              <optgroup label="Volume">
-                <option value="ml">Milliliters (ml)</option>
-                <option value="l">Liters (l)</option>
-                <option value="tsp">Teaspoons (tsp)</option>
-                <option value="tbsp">Tablespoons (tbsp)</option>
-                <option value="cup">Cups</option>
-                <option value="floz">Fluid Ounces (fl oz)</option>
-                <option value="pint">Pints</option>
-                <option value="quart">Quarts</option>
-                <option value="gallon">Gallons</option>
-              </optgroup>
-              <optgroup label="Count/Discrete">
-                <option value="each">Each</option>
-                <option value="slices">Slices</option>
-              </optgroup>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Pack Price (GBP)</label>
-            <input 
-              type="number" 
-              step="any" 
-              name="packPrice" 
-              defaultValue={initialData?.packPrice}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
-              placeholder="31.45"
-              required 
+            <label htmlFor="packUnit" className="block text-sm font-medium text-gray-900 mb-2">
+              Pack Unit
+            </label>
+            <input
+              type="text"
+              id="packUnit"
+              name="packUnit"
+              defaultValue={initialData?.packUnit || ""}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., kg, lbs, each"
             />
-          </div>
-        </div>
-        
-        <input type="hidden" name="currency" value="GBP" />
-        
-        <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">Density (g/ml) - Optional</label>
-          <p className="text-sm text-gray-600 mb-2">Used for converting between volume and weight measurements</p>
-          <input 
-            type="number" 
-            step="any" 
-            name="densityGPerMl" 
-            defaultValue={initialData?.densityGPerMl}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
-            placeholder="e.g., 0.95 for olive oil"
-          />
-          <div className="mt-3">
-            <UnitConversionHelp />
           </div>
         </div>
 
-        {/* Enhanced Allergen System */}
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
+        {/* Pack Price */}
+        <div>
+          <label htmlFor="packPrice" className="block text-sm font-medium text-gray-900 mb-2">
+            Pack Price
+          </label>
+          <input
+            type="number"
+            id="packPrice"
+            name="packPrice"
+            step="0.01"
+            min="0"
+            defaultValue={initialData?.packPrice || ""}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., 25.00"
+          />
+        </div>
+
+        {/* Yield Quantity & Unit */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="yieldQuantity" className="block text-sm font-medium text-gray-900 mb-2">
+              Yield Quantity (Optional)
+            </label>
+            <input
+              type="number"
+              id="yieldQuantity"
+              name="yieldQuantity"
+              step="0.01"
+              min="0"
+              defaultValue={initialData?.yieldQuantity || ""}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., 1"
+            />
+          </div>
+          <div>
+            <label htmlFor="yieldUnit" className="block text-sm font-medium text-gray-900 mb-2">
+              Yield Unit (Optional)
+            </label>
+            <input
+              type="text"
+              id="yieldUnit"
+              name="yieldUnit"
+              defaultValue={initialData?.yieldUnit || ""}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., kg, liter, each"
+            />
+          </div>
+        </div>
+
+        {/* Density */}
+        <div>
+          <label htmlFor="densityGPerMl" className="block text-sm font-medium text-gray-900 mb-2">
+            Density (g/ml) (Optional)
+            <UnitConversionHelp />
+          </label>
+          <input
+            type="number"
+            id="densityGPerMl"
+            name="densityGPerMl"
+            step="0.001"
+            min="0"
+            defaultValue={initialData?.densityGPerMl || ""}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., 1.0 (for water)"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Used for converting between weight and volume (e.g., ml to grams).
+          </p>
+        </div>
+
+        {/* Allergens */}
+        <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
             <span className="text-2xl">🚀</span>
             <label className="block text-lg font-bold text-green-800">
               ENHANCED ALLERGEN SYSTEM - NEW FEATURE!
             </label>
           </div>
           <p className="text-sm text-green-700 mb-4">
-            Select allergens for this ingredient. When you select "Nuts", you can specify exact nut types!
+            This is the new enhanced allergen system with specific nut type selection. 
+            If you can see this green box, the system is working!
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {ALLERGEN_OPTIONS.map((allergen) => (
               <label key={allergen} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  checked={allergen === "Other" ? showOtherInput : allergens.includes(allergen)}
+                  checked={allergens.includes(allergen) || (allergen === "Other" && showOtherInput)}
                   onChange={(e) => handleAllergenChange(allergen, e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
@@ -276,22 +303,24 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
               </label>
             ))}
           </div>
-          
+
           {/* Other Allergen Input */}
           {showOtherInput && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <label className="block text-sm font-medium text-blue-800 mb-2">
-                Specify Other Allergen:
+            <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
+              <label htmlFor="other-allergen" className="block text-sm font-medium text-blue-800 mb-2">
+                Specify "Other" Allergen:
               </label>
               <input
+                id="other-allergen"
+                name="otherAllergen"
                 type="text"
                 value={otherAllergen}
                 onChange={(e) => handleOtherAllergenChange(e.target.value)}
+                className="w-full px-4 py-3 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 placeholder="e.g., Lupin, Buckwheat, etc."
-                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <p className="text-xs text-blue-600 mt-1">
-                Enter any allergen not listed above
+              <p className="text-xs text-blue-700 mt-1">
+                Enter any allergen not listed above. This will be saved as a custom allergen.
               </p>
             </div>
           )}
@@ -299,15 +328,15 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
 
         {/* Specific Nut Types */}
         {allergens.includes("Nuts") && (
-          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border-4 border-yellow-400 rounded-xl p-6">
+          <div className="bg-yellow-100 border-4 border-yellow-400 rounded-lg p-6">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-3xl">🥜</span>
               <label className="block text-xl font-bold text-yellow-800">
-                SPECIFIC NUT TYPES - SELECT EXACT TYPES!
+                SPECIFIC NUT TYPES - ENHANCED FEATURE!
               </label>
             </div>
             <p className="text-lg text-yellow-700 mb-4 font-semibold">
-              🎉 This is the NEW enhanced feature! Select the specific types of nuts. 
+              🎉 This is the NEW enhanced feature! Select specific nut types below. 
               This will replace the generic "Nuts" entry with the specific nut types you choose.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -315,6 +344,8 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
                 <label key={nutType} className="flex items-center space-x-2 bg-white p-2 rounded border">
                   <input
                     type="checkbox"
+                    id={`nut-type-${nutType.toLowerCase().replace(/\s+/g, '-')}`}
+                    name={`nutType-${nutType}`}
                     checked={selectedNutTypes.includes(nutType)}
                     onChange={(e) => handleNutTypeChange(nutType, e.target.checked)}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -325,29 +356,40 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
             </div>
           </div>
         )}
-        
+
+        {/* Supplier */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">Notes</label>
-          <textarea 
-            name="notes" 
-            defaultValue={initialData?.notes}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
-            rows={3}
-            placeholder="Any additional notes about this ingredient..."
+          <label htmlFor="supplierId" className="block text-sm font-medium text-gray-900 mb-2">
+            Supplier (Optional)
+          </label>
+          <SupplierSelector
+            suppliers={suppliers}
+            value={selectedSupplierId}
+            onChange={setSelectedSupplierId}
           />
         </div>
-        
-        <div className="flex items-center gap-4 pt-4">
-          <button 
-            type="submit" 
-            className="bg-emerald-600 text-white px-6 py-3 rounded-xl hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Save Ingredient
-          </button>
+
+        {/* Notes */}
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-900 mb-2">
+            Notes (Optional)
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows={4}
+            defaultValue={initialData?.notes || ""}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="Any additional notes about this ingredient..."
+          ></textarea>
         </div>
+
+        <button
+          type="submit"
+          className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
+        >
+          Save Ingredient
+        </button>
       </form>
     </div>
   );

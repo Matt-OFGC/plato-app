@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { updateIngredient } from "../actions";
 import { fromBase, Unit } from "@/lib/units";
-import { IngredientForm } from "@/components/IngredientForm";
+import { IngredientForm } from "../../../components/IngredientForm";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
 export const dynamic = 'force-dynamic';

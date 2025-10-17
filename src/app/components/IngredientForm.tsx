@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Unit } from "@/lib/units";
 
 interface Supplier {
@@ -45,20 +45,35 @@ const ALLERGEN_OPTIONS = [
 ];
 
 const NUT_TYPES = [
+  "Acorns",
   "Almonds",
-  "Brazil nuts",
+  "Beech Nuts",
+  "Brazil Nuts",
+  "Butternuts (White Walnuts)",
   "Cashews",
-  "Hazelnuts",
-  "Macadamia nuts",
+  "Chestnuts",
+  "Chilean Hazelnuts",
+  "Chinese Chestnuts",
+  "Coconuts",
+  "Ginkgo Nuts",
+  "Hazelnuts (Filberts)",
+  "Karuka Nuts (Pandanus Nuts)",
+  "Macadamia Nuts",
+  "Marcona Almonds",
+  "Mongongo Nuts (Manketti Nuts)",
+  "Paradise Nuts (Sapucaia Nuts)",
+  "Peanuts",
   "Pecans",
+  "Pili Nuts",
+  "Pine Nuts",
   "Pistachios",
+  "Sacha Inchi (Inca Peanuts)",
+  "Tiger Nuts (Chufa)",
   "Walnuts",
-  "Mixed nuts"
+  "Mixed Nuts"
 ];
 
 export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: IngredientFormProps) {
-  console.log('🚨🚨🚨 ENHANCED ALLERGEN SYSTEM LOADED - VERSION 3.0 - ' + new Date().toISOString() + ' 🚨🚨🚨');
-  
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     supplier: initialData?.supplier || "",
@@ -75,6 +90,9 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
 
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>(formData.allergens);
   const [selectedNutTypes, setSelectedNutTypes] = useState<string[]>(formData.nutTypes);
+  const [nutSearchTerm, setNutSearchTerm] = useState("");
+  const [showNutDropdown, setShowNutDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -104,6 +122,37 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
     }
   };
 
+  const handleNutTypeSelect = (nutType: string) => {
+    if (!selectedNutTypes.includes(nutType)) {
+      setSelectedNutTypes(prev => [...prev, nutType]);
+    }
+    setNutSearchTerm("");
+    setShowNutDropdown(false);
+  };
+
+  const removeNutType = (nutType: string) => {
+    setSelectedNutTypes(prev => prev.filter(n => n !== nutType));
+  };
+
+  const filteredNutTypes = NUT_TYPES.filter(nutType =>
+    nutType.toLowerCase().includes(nutSearchTerm.toLowerCase()) &&
+    !selectedNutTypes.includes(nutType)
+  );
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowNutDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -132,19 +181,7 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
 
   return (
     <div>
-      {/* Enhanced System Alert */}
-      <div className="bg-gradient-to-r from-red-500 to-yellow-500 text-white p-6 rounded-lg mb-6 border-4 border-black">
-        <div className="flex items-center gap-3">
-          <span className="text-4xl">🚨</span>
-          <div>
-            <h3 className="text-2xl font-bold">ENHANCED ALLERGEN SYSTEM IS ACTIVE! - VERSION 3.0</h3>
-            <p className="text-yellow-100 text-lg">You now have access to specific nut type selection and improved allergen management.</p>
-            <p className="text-yellow-200 text-sm mt-2">If you can see this RED/YELLOW banner, the enhanced system is working!</p>
-          </div>
-        </div>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="ingredient-form" onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Name */}
         <div>
@@ -292,27 +329,28 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
       </div>
 
       {/* Allergens */}
-      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl">🚀</span>
-          <label className="block text-lg font-bold text-green-800">
-            ENHANCED ALLERGEN SYSTEM - NEW FEATURE!
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+            <span className="text-blue-600 text-xs">⚠</span>
+          </div>
+          <label className="text-lg font-semibold text-gray-900">
+            Allergen Information
           </label>
         </div>
-        <p className="text-sm text-green-700 mb-4">
-          This is the new enhanced allergen system with specific nut type selection. 
-          If you can see this green box, the system is working!
+        <p className="text-sm text-gray-600 mb-6">
+          Select all allergens present in this ingredient. When "Nuts" is selected, you'll be able to specify the exact nut types below.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {ALLERGEN_OPTIONS.map((allergen) => (
-            <label key={allergen} className="flex items-center space-x-2">
+            <label key={allergen} className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
               <input
                 type="checkbox"
                 checked={selectedAllergens.includes(allergen)}
                 onChange={(e) => handleAllergenChange(allergen, e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
               />
-              <span className="text-sm text-gray-700">{allergen}</span>
+              <span className="text-sm text-gray-700 font-medium">{allergen}</span>
             </label>
           ))}
         </div>
@@ -320,30 +358,88 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
 
       {/* Specific Nut Types */}
       {selectedAllergens.includes("Nuts") && (
-        <div className="bg-yellow-100 border-4 border-yellow-400 rounded-lg p-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-3xl">🥜</span>
-            <label className="block text-xl font-bold text-yellow-800">
-              SPECIFIC NUT TYPES - ENHANCED FEATURE!
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
+              <span className="text-amber-600 text-xs">🥜</span>
+            </div>
+            <label className="text-lg font-semibold text-amber-800">
+              Specific Nut Types
             </label>
           </div>
-          <p className="text-lg text-yellow-700 mb-4 font-semibold">
-            🎉 This is the NEW enhanced feature! Select specific nut types below. 
-            This will replace the generic "Nuts" entry with the specific nut types you choose.
+          <p className="text-sm text-amber-700 mb-6">
+            Search and select the specific types of nuts present. This will replace the generic "Nuts" entry with the specific nut types you choose.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {NUT_TYPES.map((nutType) => (
-              <label key={nutType} className="flex items-center space-x-2 bg-white p-2 rounded border">
-                <input
-                  type="checkbox"
-                  checked={selectedNutTypes.includes(nutType)}
-                  onChange={(e) => handleNutTypeChange(nutType, e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700 font-medium">{nutType}</span>
-              </label>
-            ))}
+          
+          {/* Searchable Dropdown */}
+          <div className="relative mb-4" ref={dropdownRef}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search for nut types..."
+                value={nutSearchTerm}
+                onChange={(e) => {
+                  setNutSearchTerm(e.target.value);
+                  setShowNutDropdown(true);
+                }}
+                onFocus={() => setShowNutDropdown(true)}
+                className="w-full px-4 py-3 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+            </div>
+            
+            {/* Dropdown Results */}
+            {showNutDropdown && nutSearchTerm && filteredNutTypes.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {filteredNutTypes.map((nutType) => (
+                  <button
+                    key={nutType}
+                    type="button"
+                    onClick={() => handleNutTypeSelect(nutType)}
+                    className="w-full px-4 py-3 text-left hover:bg-amber-50 focus:bg-amber-50 focus:outline-none border-b border-amber-100 last:border-b-0"
+                  >
+                    <span className="text-sm text-gray-700">{nutType}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {showNutDropdown && nutSearchTerm && filteredNutTypes.length === 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg p-4">
+                <p className="text-sm text-gray-500">No nut types found matching "{nutSearchTerm}"</p>
+              </div>
+            )}
           </div>
+
+          {/* Selected Nut Types */}
+          {selectedNutTypes.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-amber-800 mb-2">Selected Nut Types:</h4>
+              <div className="flex flex-wrap gap-2">
+                {selectedNutTypes.map((nutType) => (
+                  <span
+                    key={nutType}
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-medium"
+                  >
+                    {nutType}
+                    <button
+                      type="button"
+                      onClick={() => removeNutType(nutType)}
+                      className="ml-1 text-amber-600 hover:text-amber-800 focus:outline-none"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -363,15 +459,6 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
         />
       </div>
 
-      {/* Submit Button */}
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-        >
-          Save Ingredient
-        </button>
-      </div>
       </form>
     </div>
   );

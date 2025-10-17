@@ -26,6 +26,10 @@
   --popover-foreground: #1f2937;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  
+  /* Layout variables for sticky positioning */
+  --header-h: 72px; /* Header height for sticky positioning */
+  --bottomnav-h: 80px; /* Bottom navigation height for safe area */
 }
 
 .dark {

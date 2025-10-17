@@ -27,9 +27,10 @@ interface Ingredient {
 interface IngredientsViewProps {
   ingredients: Ingredient[];
   deleteIngredient: (id: number) => Promise<void>;
+  onEditIngredient?: (ingredient: Ingredient) => void;
 }
 
-export function IngredientsView({ ingredients, deleteIngredient }: IngredientsViewProps) {
+export function IngredientsView({ ingredients, deleteIngredient, onEditIngredient }: IngredientsViewProps) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleDelete = async (id: number) => {
@@ -116,12 +117,21 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Link
-                        href={`/dashboard/ingredients/${ingredient.id}`}
-                        className="text-blue-600 hover:text-blue-900 text-sm font-medium"
-                      >
-                        Edit
-                      </Link>
+                      {onEditIngredient ? (
+                        <button
+                          onClick={() => onEditIngredient(ingredient)}
+                          className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                      ) : (
+                        <Link
+                          href={`/dashboard/ingredients/${ingredient.id}`}
+                          className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                        >
+                          Edit
+                        </Link>
+                      )}
                       <button
                         onClick={() => handleDelete(ingredient.id)}
                         disabled={deletingId === ingredient.id}

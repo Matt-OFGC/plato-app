@@ -201,4 +201,18 @@ export async function deleteIngredient(id: number) {
   revalidatePath("/ingredients");
 }
 
+export async function getSuppliers() {
+  const { companyId } = await getCurrentUserAndCompany();
+  
+  const suppliersRaw = await prisma.supplier.findMany({
+    where: { companyId },
+    orderBy: { name: "asc" }
+  });
+
+  return suppliersRaw.map(supplier => ({
+    ...supplier,
+    minimumOrder: supplier.minimumOrder ? Number(supplier.minimumOrder) : null,
+  }));
+}
+
 

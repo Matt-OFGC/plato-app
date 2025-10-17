@@ -1,11 +1,7 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteIngredient } from "./actions";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { SearchBar } from "@/components/SearchBar";
-import { StalePriceAlerts } from "@/components/StalePriceAlerts";
-import { SmartImporter } from "@/components/SmartImporter";
-import { IngredientsView } from "@/components/IngredientsView";
+import { IngredientsPageClient } from "./IngredientsPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -57,46 +53,14 @@ export default async function IngredientsPage({ searchParams }: Props) {
   }));
 
   return (
-    <div>
-      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
-        <div>
-          <h1 className="text-responsive-h2 text-[var(--foreground)]">Ingredients</h1>
-          <p className="text-responsive-body text-[var(--muted-foreground)] mt-2">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <SmartImporter type="ingredients" />
-          <Link href="/dashboard/ingredients/new" className="btn-responsive-primary flex items-center justify-center gap-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Ingredient
-          </Link>
-        </div>
-      </div>
-
-      {/* Stale Price Alerts */}
-      <div className="mb-8">
-        <StalePriceAlerts ingredients={ingredients.map(ing => ({
-          id: ing.id,
-          name: ing.name,
-          lastPriceUpdate: ing.lastPriceUpdate,
-          packPrice: ing.packPrice,
-          supplier: ing.supplierRef?.name || ing.supplier || undefined,
-        }))} />
-      </div>
-
-      <div className="mb-6">
-        <SearchBar placeholder="Search ingredients by name, supplier, or notes..." />
-      </div>
-
-      <IngredientsView 
-        ingredients={ingredients} 
-        deleteIngredient={async (id: number) => {
-          'use server';
-          await deleteIngredient(id);
-        }} 
-      />
-    </div>
+    <IngredientsPageClient 
+      ingredients={ingredients} 
+      companyId={companyId || 0}
+      deleteIngredient={async (id: number) => {
+        'use server';
+        await deleteIngredient(id);
+      }} 
+    />
   );
 }
 

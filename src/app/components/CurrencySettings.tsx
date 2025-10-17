@@ -22,6 +22,7 @@ export function CurrencySettings({ initialCurrency }: CurrencySettingsProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ currency }),
       });
 
@@ -56,8 +57,10 @@ export function CurrencySettings({ initialCurrency }: CurrencySettingsProps) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[var(--foreground)] mb-2">Default Currency</label>
+          <label htmlFor="currency-select" className="block text-sm font-medium text-[var(--foreground)] mb-2">Default Currency</label>
           <select 
+            id="currency-select"
+            name="currency"
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"

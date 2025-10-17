@@ -6,11 +6,9 @@ import { CategoryManagerEnhanced } from "@/components/CategoryManagerEnhanced";
 import { ShelfLifeManagerEnhanced } from "@/components/ShelfLifeManagerEnhanced";
 import { StorageManagerEnhanced } from "@/components/StorageManagerEnhanced";
 import { SupplierManager } from "@/components/SupplierManager";
-import { DatabaseManager } from "@/components/DatabaseManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { TimerSettings } from "@/components/TimerSettings";
-import { NavigationSettingsClient } from "@/components/NavigationSettingsClient";
 import { CurrencySettings } from "@/app/components/CurrencySettings";
 import { FoodCostSettings } from "@/app/components/FoodCostSettings";
 
@@ -73,36 +71,6 @@ export default async function AccountPage() {
     minimumOrder: supplier.minimumOrder ? Number(supplier.minimumOrder) : null,
   }));
 
-  // Get all data for database management
-  const allIngredientsRaw = await prisma.ingredient.findMany({
-    where: { companyId },
-    include: { supplierRef: true },
-    orderBy: { name: "asc" }
-  });
-
-  const allRecipesRaw = await prisma.recipe.findMany({
-    where: { companyId },
-    include: { 
-      categoryRef: true,
-      storageRef: true,
-      shelfLifeRef: true
-    },
-    orderBy: { name: "asc" }
-  });
-
-  // Serialize data to convert Decimal to number for Client Components
-  const allIngredients = allIngredientsRaw.map(ing => ({
-    ...ing,
-    packQuantity: ing.packQuantity.toNumber(),
-    packPrice: ing.packPrice.toNumber(),
-    densityGPerMl: ing.densityGPerMl?.toNumber() || null,
-    supplierRef: ing.supplierRef ? {
-      ...ing.supplierRef,
-      minimumOrder: ing.supplierRef.minimumOrder ? Number(ing.supplierRef.minimumOrder) : null,
-    } : null,
-  }));
-
-  const allRecipes = allRecipesRaw;
 
   // Server actions removed - now handled by client-side components
 
@@ -112,22 +80,26 @@ export default async function AccountPage() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div>
+    <div className="mx-auto max-w-[1280px] px-5 pb-6">
+      {/* Header */}
+      <div className="mt-4">
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-2">Manage your account, pricing, and content organization</p>
       </div>
 
       {/* Subscription Status */}
-      <SubscriptionStatus />
+      <div className="mt-4">
+        <SubscriptionStatus />
+      </div>
 
-      {/* Tabbed Settings */}
-      <SettingsTabs>
+      {/* Tabbed Settings - Navigation tab removed */}
+      <div className="mt-3">
+        <SettingsTabs>
         {{
           pricing: (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Pricing & Targets</h2>
-              <div className="grid gap-6 lg:grid-cols-2">
+            <section aria-labelledby="pricing-targets" className="space-y-4">
+              <h2 id="pricing-targets" className="text-2xl font-bold text-gray-900 mb-4">Pricing & Targets</h2>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {/* Food Cost Targets */}
                 <FoodCostSettings 
                   initialTargetFoodCost={Number(userPreferences?.targetFoodCost) || 25}
@@ -139,14 +111,14 @@ export default async function AccountPage() {
                   initialCurrency={userPreferences?.currency || "GBP"}
                 />
               </div>
-            </div>
+            </section>
           ),
           
           content: (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Content Organization</h2>
-              <p className="text-sm text-gray-600 mb-6">Organize your recipes with categories and options. Drag items to reorder them.</p>
-              <div className="grid gap-6 lg:grid-cols-2">
+            <section aria-labelledby="content-organization" className="space-y-4">
+              <h2 id="content-organization" className="text-2xl font-bold text-gray-900 mb-4">Content Organization</h2>
+              <p className="text-sm text-gray-600 mb-4">Organize your recipes with categories and options. Drag items to reorder them.</p>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {/* Category Management */}
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
                   <CategoryManagerEnhanced categories={categories} />
@@ -162,51 +134,44 @@ export default async function AccountPage() {
                   <StorageManagerEnhanced storageOptions={storageOptions} />
                 </div>
               </div>
-            </div>
+            </section>
           ),
           
           suppliers: (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Suppliers & Information</h2>
+            <section aria-labelledby="suppliers-info" className="space-y-4">
+              <h2 id="suppliers-info" className="text-2xl font-bold text-gray-900 mb-4">Suppliers & Information</h2>
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <SupplierManager suppliers={suppliers} />
               </div>
-            </div>
+            </section>
           ),
           
           database: (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Database Management</h2>
+            <section aria-labelledby="database-management" className="space-y-4">
+              <h2 id="database-management" className="text-2xl font-bold text-gray-900 mb-4">Database Management</h2>
               <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <DatabaseManager 
-                  ingredients={allIngredients}
-                  recipes={allRecipes}
-                  suppliers={suppliers}
-                  categories={categories}
-                  shelfLifeOptions={shelfLifeOptions}
-                  storageOptions={storageOptions}
-                />
+                <div className="text-center py-8">
+                  <p className="text-gray-600">Database management features coming soon...</p>
+                </div>
               </div>
-            </div>
-          ),
-          
-          navigation: (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Navigation Preferences</h2>
-              <p className="text-sm text-gray-600 mb-6">Customize which navigation items appear in your floating navigation bar</p>
-              <NavigationSettingsClient />
-            </div>
+            </section>
           ),
           
           timers: (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Timer Settings</h2>
-              <p className="text-sm text-gray-600 mb-6">Customize how recipe timers alert you when they complete</p>
+            <section aria-labelledby="timer-settings" className="space-y-4">
+              <h2 id="timer-settings" className="text-2xl font-bold text-gray-900 mb-4">Timer Settings</h2>
+              <p className="text-sm text-gray-600 mb-4">Customize how recipe timers alert you when they complete</p>
               <TimerSettings />
-            </div>
+            </section>
           ),
         }}
-      </SettingsTabs>
+        </SettingsTabs>
+      </div>
+
+      {/* Scroll area with bottom-nav clearance */}
+      <div className="pb-[calc(var(--bottomnav-h,80px)+env(safe-area-inset-bottom,0px))]">
+        {/* Content is handled by SettingsTabs */}
+      </div>
     </div>
   );
 }

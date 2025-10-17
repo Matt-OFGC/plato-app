@@ -1,65 +1,99 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { IngredientModal } from "@/components/IngredientModal";
+import { IngredientsView } from "@/components/IngredientsView";
 import { SmartImporter } from "@/components/SmartImporter";
-import { InvoiceScanner } from "@/components/InvoiceScanner";
-import { useRouter } from "next/navigation";
+import { SearchBar } from "@/components/SearchBar";
+import { StalePriceAlerts } from "@/components/StalePriceAlerts";
+import { Unit } from "@/lib/units";
 
-export function IngredientsPageClient() {
-  const [showInvoiceScanner, setShowInvoiceScanner] = useState(false);
-  const router = useRouter();
+// Use the same Ingredient type as IngredientsView
+type Ingredient = Parameters<typeof IngredientsView>[0]['ingredients'][0];
 
-  const handleIngredientsExtracted = async (ingredients: any[]) => {
-    try {
-      // Create ingredients in batch
-      const response = await fetch("/api/ingredients/bulk", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ingredients }),
-      });
+interface IngredientsPageClientProps {
+  ingredients: Ingredient[];
+  deleteIngredient: (id: number) => Promise<void>;
+  companyId: number;
+}
 
-      if (!response.ok) {
-        throw new Error("Failed to create ingredients");
-      }
+export function IngredientsPageClient({ ingredients, deleteIngredient, companyId }: IngredientsPageClientProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  const [ingredientsList, setIngredientsList] = useState(ingredients);
 
-      // Refresh the page to show new ingredients
-      router.refresh();
-    } catch (error) {
-      console.error("Error creating ingredients:", error);
-      alert("Failed to import ingredients. Please try again.");
-    }
+  const handleNewIngredient = () => {
+    setEditingIngredient(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditIngredient = (ingredient: Ingredient) => {
+    setEditingIngredient(ingredient);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingIngredient(null);
+  };
+
+  const handleModalSuccess = () => {
+    // Refresh the page to get updated ingredients
+    window.location.reload();
   };
 
   return (
-    <>
-      <div className="flex items-center gap-3">
-        <SmartImporter type="ingredients" />
-        <button
-          onClick={() => setShowInvoiceScanner(true)}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Scan Invoice
-        </button>
-        <Link href="/dashboard/ingredients/new" className="btn-primary flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Ingredient
-        </Link>
+    <div>
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
+        <div>
+          <h1 className="text-responsive-h2 text-[var(--foreground)]">Ingredients</h1>
+          <p className="text-responsive-body text-[var(--muted-foreground)] mt-2">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <SmartImporter type="ingredients" />
+          <button 
+            onClick={handleNewIngredient}
+            className="btn-responsive-primary flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Ingredient
+          </button>
+        </div>
       </div>
 
-      {showInvoiceScanner && (
-        <InvoiceScanner
-          onIngredientsExtracted={handleIngredientsExtracted}
-          onClose={() => setShowInvoiceScanner(false)}
-        />
-      )}
-    </>
+      {/* Stale Price Alerts */}
+      <div className="mb-8">
+        <StalePriceAlerts ingredients={ingredientsList.map(ing => ({
+          id: ing.id,
+          name: ing.name,
+          lastPriceUpdate: ing.lastPriceUpdate || new Date(),
+          packPrice: ing.packPrice,
+          supplier: ing.supplierRef?.name || ing.supplier || undefined,
+        }))} />
+      </div>
+
+      <div className="mb-6">
+        <SearchBar placeholder="Search ingredients by name, supplier, or notes..." />
+      </div>
+
+      <IngredientsView 
+        ingredients={ingredientsList} 
+        deleteIngredient={deleteIngredient}
+      />
+
+      {/* Modal */}
+      <IngredientModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSuccess={handleModalSuccess}
+        companyId={companyId}
+        editIngredient={editingIngredient ? {
+          ...editingIngredient,
+          originalUnit: editingIngredient.originalUnit as Unit | null
+        } : null}
+      />
+    </div>
   );
 }

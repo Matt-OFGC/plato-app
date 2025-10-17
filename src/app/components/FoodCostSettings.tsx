@@ -24,6 +24,7 @@ export function FoodCostSettings({ initialTargetFoodCost, initialMaxFoodCost }: 
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ 
           targetFoodCost: parseFloat(targetFoodCost.toString()),
           maxFoodCost: parseFloat(maxFoodCost.toString())
@@ -62,11 +63,13 @@ export function FoodCostSettings({ initialTargetFoodCost, initialMaxFoodCost }: 
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
+          <label htmlFor="target-food-cost" className="block text-sm font-medium text-gray-900 mb-2">
             Target Food Cost %
             <span className="text-xs text-emerald-600 ml-2">Industry standard: 25%</span>
           </label>
           <input 
+            id="target-food-cost"
+            name="targetFoodCost"
             type="number" 
             step="1"
             min="10"
@@ -79,11 +82,13 @@ export function FoodCostSettings({ initialTargetFoodCost, initialMaxFoodCost }: 
           <p className="text-xs text-gray-500 mt-1">Your ideal food cost percentage (lower is better)</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
+          <label htmlFor="max-food-cost" className="block text-sm font-medium text-gray-900 mb-2">
             Maximum Food Cost %
             <span className="text-xs text-amber-600 ml-2">Typically 30-35%</span>
           </label>
           <input 
+            id="max-food-cost"
+            name="maxFoodCost"
             type="number" 
             step="1"
             min="20"
