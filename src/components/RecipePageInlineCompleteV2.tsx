@@ -1584,8 +1584,9 @@ function RecipeCarousel({
           {sections.map((section, index) => (
             <div 
               key={section.id} 
-              className="flex-shrink-0 h-full min-h-0 w-full"
+              className="flex-shrink-0 h-full min-h-0"
               style={{ 
+                width: `${100 / sections.length}%`,
                 transform: 'translateZ(0)',
                 backfaceVisibility: 'hidden'
               }}
@@ -1665,12 +1666,6 @@ function StepCard({
   isNewlyAdded: boolean;
   totalSections: number;
 }) {
-  // Debug: Log which section is being rendered
-  console.log(`StepCard rendering section ${index}:`, {
-    title: section.title,
-    method: section.method.substring(0, 50) + '...',
-    itemsCount: section.items.length
-  });
 
   return (
     <div className={`h-full p-4 transition-all duration-700 ease-out ${
