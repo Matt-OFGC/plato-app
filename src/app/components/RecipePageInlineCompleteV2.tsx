@@ -656,9 +656,9 @@ export function RecipePageInlineCompleteV2({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
+    <div className="h-screen flex flex-col bg-white">
       {/* Header Container */}
-      <div className="flex-shrink-0 px-6 pt-8 pb-2 border-l-2 border-r-2 border-gray-100">
+      <div className="flex-shrink-0 px-6 pt-8 pb-2">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-4">
@@ -799,7 +799,7 @@ export function RecipePageInlineCompleteV2({
       </div>
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 md:pt-3 lg:pt-2 pb-12 px-4 md:px-6 lg:px-8 border-l-2 border-r-2 border-gray-100 recipe-layout">
+      <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 md:pt-3 lg:pt-2 pb-12 px-4 md:px-6 lg:px-8 recipe-layout">
         {/* Left Panel - Recipe Overview (Responsive) */}
         <div className="w-32 md:w-36 lg:w-40 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
 
