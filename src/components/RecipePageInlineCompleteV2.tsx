@@ -604,21 +604,76 @@ export function RecipePageInlineCompleteV2({
       {/* Header Container */}
       <div className="flex-shrink-0 px-6 pt-8 pb-2 border-l-2 border-r-2 border-gray-100">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex flex-col justify-center gap-1 ml-16">
-              {isLocked ? (
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{name}</h1>
-              ) : (
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
-                  placeholder="Recipe name..."
-                />
-              )}
-              <div className="text-sm text-gray-500 font-medium">
-                Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center gap-4">
+              {/* Recipe Image in Header */}
+              <div className="flex-shrink-0 relative group">
+                {(recipe.imageUrl || imageUrl) ? (
+                  <img 
+                    src={imageUrl || recipe.imageUrl || ""} 
+                    alt={recipe.name} 
+                    className="w-16 h-16 object-cover rounded-lg shadow-sm"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+                {!isLocked && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <label className="bg-white text-gray-700 px-2 py-1 rounded text-xs cursor-pointer hover:bg-gray-100 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          setUploading(true);
+                          setUploadError("");
+                          
+                          try {
+                            const fd = new FormData();
+                            fd.append("file", file);
+                            const res = await fetch("/api/upload", { method: "POST", body: fd });
+                            const data = await res.json();
+                            
+                            if (res.ok) {
+                              setImageUrl(data.url);
+                            } else {
+                              setUploadError(data.error || "Upload failed");
+                            }
+                          } catch (error) {
+                            setUploadError("Network error. Please try again.");
+                          } finally {
+                            setUploading(false);
+                          }
+                        }}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                      {uploading ? '...' : (recipe.imageUrl || imageUrl) ? 'Edit' : 'Add'}
+                    </label>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col justify-center gap-1">
+                {isLocked ? (
+                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{name}</h1>
+                ) : (
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
+                    placeholder="Recipe name..."
+                  />
+                )}
+                <div className="text-sm text-gray-500 font-medium">
+                  Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
+                </div>
               </div>
             </div>
 
@@ -690,56 +745,7 @@ export function RecipePageInlineCompleteV2({
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 pb-12 px-4 md:px-6 lg:px-8 border-l-2 border-r-2 border-gray-100">
         {/* Left Panel - Recipe Overview (Responsive) */}
-        <div className="w-48 md:w-56 lg:w-64 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
-          {/* Recipe Image */}
-          {(recipe.imageUrl || imageUrl) && (
-            <div className="mb-6">
-              <div className="relative">
-                <img 
-                  src={imageUrl || recipe.imageUrl || ""} 
-                  alt={recipe.name} 
-                  className="w-full h-32 md:h-36 lg:h-40 object-cover rounded-xl shadow-md"
-                />
-                {!isLocked && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-xl flex items-center justify-center">
-                    <label className="bg-white text-gray-700 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          
-                          setUploading(true);
-                          setUploadError("");
-                          
-                          try {
-                            const fd = new FormData();
-                            fd.append("file", file);
-                            const res = await fetch("/api/upload", { method: "POST", body: fd });
-                            const data = await res.json();
-                            
-                            if (res.ok) {
-                              setImageUrl(data.url);
-                            } else {
-                              setUploadError(data.error || "Upload failed");
-                            }
-                          } catch (error) {
-                            setUploadError("Network error. Please try again.");
-                          } finally {
-                            setUploading(false);
-                          }
-                        }}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-                      {uploading ? 'Uploading...' : 'Change Image'}
-                    </label>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="w-32 md:w-36 lg:w-40 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
 
           {/* Servings Adjuster */}
           <div className="mb-4">

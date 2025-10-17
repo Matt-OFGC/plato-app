@@ -57,6 +57,8 @@ const NUT_TYPES = [
 ];
 
 export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: IngredientFormProps) {
+  console.log('IngredientForm component loaded with enhanced allergen system');
+  
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     supplier: initialData?.supplier || "",
@@ -279,7 +281,7 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
       {/* Allergens */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Allergens
+          Allergens (Enhanced System with Specific Nut Types)
         </label>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {ALLERGEN_OPTIONS.map((allergen) => (
@@ -298,10 +300,13 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
 
       {/* Specific Nut Types */}
       {selectedAllergens.includes("Nuts") && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Specific Nut Types
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <label className="block text-sm font-medium text-blue-800 mb-3">
+            🥜 Specific Nut Types (Enhanced Feature)
           </label>
+          <p className="text-sm text-blue-700 mb-3">
+            Select the specific types of nuts. This will replace the generic "Nuts" entry with specific nut types.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {NUT_TYPES.map((nutType) => (
               <label key={nutType} className="flex items-center space-x-2">

@@ -4,6 +4,7 @@ import { FloatingBackButton } from "@/components/FloatingBackButton";
 import { FloatingNavBar } from "@/components/FloatingNavBar";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { DashboardNavWrapper } from "@/components/DashboardNavWrapper";
 
 export const metadata: Metadata = {
   title: "Dashboard - Plato",
@@ -38,7 +39,6 @@ export default function DashboardLayout({
       <FloatingNavBar 
         navigationItems={["dashboard", "ingredients", "recipes", "recipe-mixer"]}
         enableScrollAnimation={true}
-        onMoreClick={() => console.log('More navigation clicked')}
       />
         </div>
       </KeyboardShortcutsProvider>
