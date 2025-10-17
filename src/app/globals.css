@@ -31,6 +31,9 @@
   --header-h: 72px; /* Header height for sticky positioning */
   --bottomnav-h: 80px; /* Bottom navigation height for safe area */
   
+  /* Recipe page scrolling variables */
+  --pane-max-h: calc(100vh - 200px); /* Default pane height */
+  
   /* =============================================================================
      RESPONSIVE DESIGN TOKENS
      ============================================================================= */

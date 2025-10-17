@@ -1133,6 +1133,14 @@ export function RecipePageInlineCompleteV2({
           </div>
         </div>
       </div>
+      
+      {/* Ingredient Modal */}
+      <IngredientModal
+        isOpen={isIngredientModalOpen}
+        onClose={handleCloseIngredientModal}
+        onSuccess={handleIngredientModalSuccess}
+        companyId={companyId}
+      />
     </div>
   );
 }
@@ -2117,16 +2125,16 @@ function SimpleRecipeCarousel({
       {/* Carousel Container */}
       <div 
         ref={carouselRef}
-        className="flex-1 overflow-x-auto scroll-snap-x-mandatory scroll-smooth"
+        className="flex-1 overflow-x-auto scroll-snap-x-mandatory scroll-smooth min-h-0"
         style={{ scrollSnapType: 'x mandatory' }}
       >
-        <div className="flex h-full">
+        <div className="flex h-full min-h-0">
           {/* Card 1: Ingredients & Instructions Combined */}
           <div 
-            className="flex-shrink-0 w-full h-full"
+            className="flex-shrink-0 w-full h-full min-h-0"
             style={{ scrollSnapAlign: 'start' }}
           >
-            <div className="h-full p-8">
+            <div className="h-full p-8 min-h-0">
               <div className="mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -2137,9 +2145,9 @@ function SimpleRecipeCarousel({
               </div>
                 
               {/* Two Column Layout: Ingredients Left, Instructions Right */}
-              <div className="grid grid-cols-2 gap-8 h-full">
+              <div className="grid grid-cols-2 gap-8 h-full min-h-0">
                 {/* Left Column - Ingredients */}
-                <div className="flex flex-col">
+                <div className="flex flex-col min-h-0">
                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
                     <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
                     <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
@@ -2186,7 +2194,7 @@ function SimpleRecipeCarousel({
                 </div>
 
                 {/* Right Column - Instructions */}
-                <div className="flex flex-col">
+                <div className="flex flex-col min-h-0">
                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
                     <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
                     <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
