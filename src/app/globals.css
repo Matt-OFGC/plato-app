@@ -1194,3 +1194,45 @@ body {
 .contextual-glow:hover::before {
   opacity: 1;
 }
+
+/* iPad-specific layout fixes for Recipe Page */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* 1. Reduce top spacing between header and main content */
+  .recipe-layout {
+    padding-top: 12px !important;
+    row-gap: 12px !important;
+  }
+
+  /* 2. Make both panels scrollable with smooth scrolling */
+  .ingredients-pane,
+  .instructions-pane {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Ensure smooth scrolling on iPad */
+  .ingredients-pane::-webkit-scrollbar,
+  .instructions-pane::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .ingredients-pane::-webkit-scrollbar-track,
+  .instructions-pane::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+
+  .ingredients-pane::-webkit-scrollbar-thumb,
+  .instructions-pane::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+
+  .ingredients-pane::-webkit-scrollbar-thumb:hover,
+  .instructions-pane::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}

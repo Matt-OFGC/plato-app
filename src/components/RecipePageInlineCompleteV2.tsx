@@ -743,7 +743,7 @@ export function RecipePageInlineCompleteV2({
       </div>
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 pb-12 px-4 md:px-6 lg:px-8 border-l-2 border-r-2 border-gray-100">
+      <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 md:pt-3 lg:pt-2 pb-12 px-4 md:px-6 lg:px-8 border-l-2 border-r-2 border-gray-100 recipe-layout">
         {/* Left Panel - Recipe Overview (Responsive) */}
         <div className="w-32 md:w-36 lg:w-40 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
 
@@ -1150,16 +1150,16 @@ function WholeRecipeView({
   return (
     <div className="h-full flex flex-col">
       {/* Scrollable Content - No Header */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 p-6">
         {/* Two Column Layout: Ingredients Left, Instructions Right */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6 h-full">
         {/* Left Column - Aggregated Ingredients */}
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 flex-shrink-0">
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
           </div>
-          <div className="space-y-3 flex-1 overflow-y-auto">
+          <div className="space-y-3 flex-1 overflow-y-auto md:max-h-[calc(100vh-200px)] ingredients-pane">
             {isLocked ? (
               // Locked view - show aggregated ingredients with section breakdown
               aggregatedIngredients.map((agg, index) => {
@@ -1333,11 +1333,11 @@ function WholeRecipeView({
 
         {/* Right Column - Complete Instructions */}
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 flex-shrink-0">
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 overflow-y-auto">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 overflow-y-auto md:max-h-[calc(100vh-200px)] instructions-pane">
             {isLocked ? (
               <div className="space-y-4">
                 {sections.map((section, index) => (

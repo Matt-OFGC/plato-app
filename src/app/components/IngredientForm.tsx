@@ -57,7 +57,7 @@ const NUT_TYPES = [
 ];
 
 export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: IngredientFormProps) {
-  console.log('IngredientForm component loaded with enhanced allergen system - Version 2.0 - ' + new Date().toISOString());
+  console.log('🚨🚨🚨 ENHANCED ALLERGEN SYSTEM LOADED - VERSION 3.0 - ' + new Date().toISOString() + ' 🚨🚨🚨');
   
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
@@ -133,12 +133,13 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
   return (
     <div>
       {/* Enhanced System Alert */}
-      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 rounded-lg mb-6">
+      <div className="bg-gradient-to-r from-red-500 to-yellow-500 text-white p-6 rounded-lg mb-6 border-4 border-black">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">🎉</span>
+          <span className="text-4xl">🚨</span>
           <div>
-            <h3 className="text-xl font-bold">ENHANCED ALLERGEN SYSTEM IS ACTIVE!</h3>
-            <p className="text-purple-100">You now have access to specific nut type selection and improved allergen management.</p>
+            <h3 className="text-2xl font-bold">ENHANCED ALLERGEN SYSTEM IS ACTIVE! - VERSION 3.0</h3>
+            <p className="text-yellow-100 text-lg">You now have access to specific nut type selection and improved allergen management.</p>
+            <p className="text-yellow-200 text-sm mt-2">If you can see this RED/YELLOW banner, the enhanced system is working!</p>
           </div>
         </div>
       </div>

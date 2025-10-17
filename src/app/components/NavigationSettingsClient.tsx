@@ -56,7 +56,8 @@ export function NavigationSettingsClient() {
     }
   };
 
-  const saveNavigationSettings = async () => {
+  const saveNavigationSettings = async (itemsToSave?: NavigationItem[]) => {
+    const items = itemsToSave || navigationItems;
     setIsSaving(true);
     setMessage(null);
 
@@ -66,13 +67,15 @@ export function NavigationSettingsClient() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ navigationItems }),
+        body: JSON.stringify({ navigationItems: items }),
       });
 
       const responseData = await response.json();
 
       if (response.ok) {
         setMessage({ type: 'success', text: 'Navigation preferences saved successfully!' });
+        // Clear the success message after 2 seconds
+        setTimeout(() => setMessage(null), 2000);
       } else {
         setMessage({ type: 'error', text: responseData.error || 'Failed to save navigation preferences' });
       }
@@ -85,11 +88,18 @@ export function NavigationSettingsClient() {
   };
 
   const toggleItem = (id: string) => {
-    setNavigationItems(prev => 
-      prev.map(item => 
+    setNavigationItems(prev => {
+      const updatedItems = prev.map(item => 
         item.id === id ? { ...item, enabled: !item.enabled } : item
-      )
-    );
+      );
+      
+      // Auto-save the changes
+      setTimeout(() => {
+        saveNavigationSettings(updatedItems);
+      }, 100);
+      
+      return updatedItems;
+    });
   };
 
   const moveItem = (id: string, direction: 'up' | 'down') => {
@@ -107,7 +117,14 @@ export function NavigationSettingsClient() {
       [items[currentIndex], items[newIndex]] = [items[newIndex], items[currentIndex]];
       
       // Update order values
-      return items.map((item, index) => ({ ...item, order: index + 1 }));
+      const updatedItems = items.map((item, index) => ({ ...item, order: index + 1 }));
+      
+      // Auto-save the changes
+      setTimeout(() => {
+        saveNavigationSettings(updatedItems);
+      }, 100);
+      
+      return updatedItems;
     });
   };
 
@@ -194,7 +211,7 @@ export function NavigationSettingsClient() {
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={saveNavigationSettings}
+          onClick={() => saveNavigationSettings()}
           disabled={isSaving}
           className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
