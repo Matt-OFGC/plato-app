@@ -42,6 +42,27 @@ export async function createRecipe(formData: FormData) {
   const data = parsed.data;
   const { companyId } = await getCurrentUserAndCompany();
 
+  // Fetch ingredient data for cost calculation and allergen information
+  const ingredientIds = data.items.map(item => item.ingredientId);
+  const ingredients = await prisma.ingredient.findMany({
+    where: {
+      id: { in: ingredientIds },
+      companyId: companyId ?? undefined,
+    },
+    select: {
+      id: true,
+      name: true,
+      packPrice: true,
+      packQuantity: true,
+      packUnit: true,
+      allergens: true,
+      currency: true,
+    },
+  });
+
+  // Create a map for quick ingredient lookup
+  const ingredientMap = new Map(ingredients.map(ing => [ing.id, ing]));
+
   await prisma.recipe.create({
     data: {
       name: data.name,
@@ -50,7 +71,29 @@ export async function createRecipe(formData: FormData) {
       imageUrl: data.imageUrl,
       companyId: companyId ?? undefined,
       items: {
-        create: data.items.map((it) => ({ ingredientId: it.ingredientId, quantity: it.quantity, unit: it.unit })),
+        create: data.items.map((it) => {
+          const ingredient = ingredientMap.get(it.ingredientId);
+          if (!ingredient) {
+            throw new Error(`Ingredient with ID ${it.ingredientId} not found`);
+          }
+
+          // Calculate cost based on ingredient's pack price and quantity needed
+          // Convert the recipe quantity to the same unit as the ingredient's pack unit
+          // For now, we'll store the basic data and let the frontend calculate costs
+          // The cost calculation logic should be in a utility function
+          return {
+            ingredientId: it.ingredientId,
+            quantity: it.quantity,
+            unit: it.unit,
+            // Store allergen information from the ingredient
+            allergens: ingredient.allergens,
+            // Store cost information for calculation
+            ingredientPackPrice: ingredient.packPrice,
+            ingredientPackQuantity: ingredient.packQuantity,
+            ingredientPackUnit: ingredient.packUnit,
+            ingredientCurrency: ingredient.currency,
+          };
+        }),
       },
     },
   });

@@ -4,6 +4,7 @@ import { RecipePageInlineCompleteV2 } from "@/components/RecipePageInlineComplet
 import { redirect } from "next/navigation";
 import { updateRecipeUnified } from "../actionsSimplified";
 import { calculateRecipeCost } from "@/lib/recipeCostCalculator";
+import { calculateTotalRecipeCost, calculateCostPerOutputUnit, getAllergensFromRecipeItems } from "@/lib/recipe-calculations";
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +93,7 @@ export default async function RecipePage({ params }: Props) {
     }),
   ]);
 
-  // Calculate cost breakdown
+  // Calculate cost breakdown using new utility functions
   let costBreakdown = {
     ingredientCosts: [],
     subRecipeCosts: [],
@@ -101,37 +102,27 @@ export default async function RecipePage({ params }: Props) {
   };
 
   try {
-    const recipeData = {
-      id: recipe.id,
-      name: recipe.name,
-      yieldQuantity: Number(recipe.yieldQuantity),
-      yieldUnit: recipe.yieldUnit as "g" | "ml" | "each",
-      ingredients: recipe.items.map(item => ({
-        ingredientId: item.ingredientId,
-        quantity: Number(item.quantity),
-        unit: item.unit as any,
-      })),
-      subRecipes: [],
-    };
-
-    const ingredientsData = ingredients.map(ing => ({
-      id: ing.id,
-      name: ing.name,
-      packQuantity: Number(ing.packQuantity),
-      packUnit: ing.packUnit as "g" | "ml" | "each",
-      packPrice: Number(ing.packPrice),
-      densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : null,
+    // Prepare recipe items with ingredient data for cost calculation
+    const recipeItemsWithIngredients = recipe.items.map(item => ({
+      quantity: Number(item.quantity),
+      unit: item.unit as any,
+      ingredient: {
+        packPrice: Number(item.ingredient.packPrice),
+        packQuantity: Number(item.ingredient.packQuantity),
+        packUnit: item.ingredient.packUnit as any,
+        densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
+      }
     }));
 
-    // Only fetch sub-recipes if this recipe actually has any (optimization)
-    const allRecipesData: any[] = []; // Empty for now since sub-recipes aren't being used
+    // Calculate total cost using new utility function
+    const totalCost = calculateTotalRecipeCost(recipeItemsWithIngredients);
+    const costPerOutputUnit = calculateCostPerOutputUnit(totalCost, Number(recipe.yieldQuantity), recipe.yieldUnit);
 
-    const fullCostBreakdown = calculateRecipeCost(recipeData, ingredientsData, allRecipesData);
     costBreakdown = {
       ingredientCosts: [],
       subRecipeCosts: [],
-      totalCost: fullCostBreakdown.totalCost,
-      costPerOutputUnit: fullCostBreakdown.costPerOutputUnit
+      totalCost,
+      costPerOutputUnit
     };
   } catch (error) {
     console.error('Cost calculation error:', error);
@@ -189,7 +180,7 @@ export default async function RecipePage({ params }: Props) {
     packUnit: ing.packUnit,
     packPrice: Number(ing.packPrice),
     densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : null,
-    allergens: ing.allergens || [],
+    allergens: ing.allergens ? ing.allergens.split(',').map(a => a.trim()).filter(a => a.length > 0) : [],
   }));
 
   return (
