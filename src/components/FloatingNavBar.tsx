@@ -5,19 +5,30 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTimers } from "@/contexts/TimerContext";
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from "@/lib/navigation-config";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 interface FloatingNavBarProps {
   navigationItems?: string[]; // Array of hrefs for selected nav items
   onMoreClick?: () => void;
+  enableScrollAnimation?: boolean; // Enable Apple-style scroll animations
 }
 
 export function FloatingNavBar({ 
   navigationItems = ["dashboard", "ingredients", "recipes", "recipe-mixer"],
-  onMoreClick 
+  onMoreClick,
+  enableScrollAnimation = true
 }: FloatingNavBarProps) {
   const pathname = usePathname();
   const { timers } = useTimers();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  
+  // Apple-style scroll animation
+  const { isVisible, isScrollingDown, hasScrolled } = useScrollAnimation({
+    threshold: 100,
+    hideDelay: 150,
+    showDelay: 100,
+    enabled: enableScrollAnimation
+  });
 
   // Filter nav items based on user selection
   const selectedNavItems = ALL_NAVIGATION_ITEMS.filter(item => 
@@ -43,8 +54,18 @@ export function FloatingNavBar({
   return (
     <>
       {/* Floating Navigation Bar */}
-      <nav className="fixed bottom-4 left-4 right-4 z-50 md:left-8 md:right-8 lg:left-12 lg:right-12 xl:left-16 xl:right-16 safe-area-bottom">
-        <div className={`floating-nav rounded-3xl px-3 sm:px-4 py-2.5 mx-auto max-w-md ${timerCount > 0 ? 'animate-pulse-subtle' : ''}`}>
+      <nav className={`fixed bottom-4 left-4 right-4 z-50 md:left-8 md:right-8 lg:left-12 lg:right-12 xl:left-16 xl:right-16 safe-area-bottom transition-all duration-300 ease-out ${
+        isVisible 
+          ? 'translate-y-0 opacity-100' 
+          : 'translate-y-full opacity-0'
+      }`}>
+        <div className={`floating-nav floating-nav-enhanced rounded-3xl px-3 sm:px-4 py-2.5 mx-auto max-w-md transition-all duration-300 ease-out ${
+          timerCount > 0 ? 'animate-pulse-subtle' : ''
+        } ${
+          hasScrolled && isScrollingDown 
+            ? 'scale-95 shadow-lg' 
+            : 'scale-100 shadow-md'
+        }`}>
           <div className="flex items-center justify-between">
             {/* Navigation Items */}
             <div className="flex items-center space-x-1 flex-1">

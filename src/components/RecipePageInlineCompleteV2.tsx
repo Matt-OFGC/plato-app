@@ -1149,9 +1149,9 @@ function WholeRecipeView({
           <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
             📋
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Complete Recipe</h2>
+          <h2 className="text-lg font-bold text-gray-900">Complete Recipe</h2>
         </div>
-        <p className="text-sm text-gray-600 mt-1">All ingredients needed for this recipe</p>
+        <p className="text-xs text-gray-600 mt-1">All ingredients needed for this recipe</p>
       </div>
 
       {/* Scrollable Content */}
@@ -1162,9 +1162,9 @@ function WholeRecipeView({
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-            <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
           </div>
-          <div className="space-y-4 flex-1 overflow-y-auto">
+          <div className="space-y-3 flex-1 overflow-y-auto">
             {isLocked ? (
               // Locked view - show aggregated ingredients with section breakdown
               aggregatedIngredients.map((agg, index) => {
@@ -1181,7 +1181,7 @@ function WholeRecipeView({
                     {/* Main ingredient header - clickable */}
                     <div 
                       onClick={() => agg.items.forEach(item => toggleItem(item.id))}
-                      className="flex items-center gap-4 p-6 cursor-pointer touch-manipulation"
+                      className="flex items-center gap-4 p-4 cursor-pointer touch-manipulation"
                     >
                       <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
                         isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
@@ -1194,12 +1194,12 @@ function WholeRecipeView({
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl font-bold text-gray-900">{scaledQuantity}</span>
-                          <span className="text-xl text-gray-600">{agg.unit}</span>
-                          <span className="text-xl text-gray-900">{agg.ingredient.name}</span>
+                          <span className="text-lg font-bold text-gray-900">{scaledQuantity}</span>
+                          <span className="text-base text-gray-600">{agg.unit}</span>
+                          <span className="text-base text-gray-900">{agg.ingredient.name}</span>
                         </div>
                         {agg.items.length > 1 && (
-                          <div className="text-sm text-gray-500 mt-1">
+                          <div className="text-xs text-gray-500 mt-1">
                             Used in {agg.items.length} section{agg.items.length > 1 ? 's' : ''}
                           </div>
                         )}
@@ -1208,9 +1208,9 @@ function WholeRecipeView({
                     
                     {/* Section breakdown - only show if used in multiple sections */}
                     {agg.items.length > 1 && (
-                      <div className="px-6 pb-4">
+                      <div className="px-4 pb-3">
                         <div className="border-t border-gray-200 pt-4">
-                          <div className="text-sm font-medium text-gray-600 mb-3">Split between sections:</div>
+                          <div className="text-xs font-medium text-gray-600 mb-3">Split between sections:</div>
                           <div className="space-y-2">
                             {agg.items.map((item, itemIndex) => {
                               const section = sections.find(s => s.items.some(i => i.id === item.id));
@@ -1221,10 +1221,10 @@ function WholeRecipeView({
                               const itemUnit = 'unit' in item ? item.unit : item.unit;
                               
                               return (
-                                <div key={item.id} className="flex items-center justify-between text-sm">
+                                <div key={item.id} className="flex items-center justify-between text-xs">
                                   <div className="flex items-center gap-2">
                                     <div className="w-4 h-4 bg-emerald-100 rounded-full flex items-center justify-center">
-                                      <span className="text-xs font-bold text-emerald-600">
+                                      <span className="text-[10px] font-bold text-emerald-600">
                                         {sections.findIndex(s => s.id === section.id) + 1}
                                       </span>
                                     </div>
@@ -1311,7 +1311,7 @@ function WholeRecipeView({
                     
                     {/* Subtle divider line (except for last section) */}
                     {sectionIndex < sections.length - 1 && (
-                      <div className="mt-6 mb-6 border-t border-gray-100"></div>
+                      <div className="mt-4 mb-4 border-t border-gray-100"></div>
                     )}
                   </div>
                 ))}
@@ -1340,29 +1340,29 @@ function WholeRecipeView({
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-            <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 overflow-y-auto">
             {isLocked ? (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {sections.map((section, index) => (
                   <div key={section.id} className="relative">
                     {/* Section Header */}
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3 mb-2">
                       <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                         {index + 1}
                       </div>
-                      <h4 className="text-lg font-semibold text-gray-800">{section.title}</h4>
+                      <h4 className="text-sm font-semibold text-gray-800">{section.title}</h4>
                     </div>
                     
                     {/* Section Instructions */}
-                    <div className="text-base leading-relaxed text-gray-700 whitespace-pre-wrap pl-9">
+                    <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap pl-9">
                       {section.method || 'No instructions provided for this step.'}
                     </div>
                     
                     {/* Subtle divider line (except for last section) */}
                     {index < sections.length - 1 && (
-                      <div className="mt-6 mb-6 border-t border-gray-100"></div>
+                      <div className="mt-4 mb-4 border-t border-gray-100"></div>
                     )}
                   </div>
                 ))}
@@ -1391,7 +1391,7 @@ function WholeRecipeView({
                     
                     {/* Subtle divider line (except for last section) */}
                     {index < sections.length - 1 && (
-                      <div className="mt-6 mb-6 border-t border-gray-100"></div>
+                      <div className="mt-4 mb-4 border-t border-gray-100"></div>
                     )}
                   </div>
                 ))}

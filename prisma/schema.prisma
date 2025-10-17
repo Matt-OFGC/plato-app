@@ -359,6 +359,9 @@ model UserPreference {
   
   // Navigation preferences for floating nav bar
   navigationItems Json?  // JSON array of selected navigation items (e.g., ["dashboard", "ingredients", "recipes", "recipe-mixer"])
+  
+  // Timer settings for recipe timers
+  timerSettings   Json?  // JSON object with timer alert preferences
 }
 
 model Subscription {

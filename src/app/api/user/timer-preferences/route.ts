@@ -9,18 +9,23 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's navigation preferences
+    // Get user's timer preferences
     const preferences = await prisma.userPreference.findUnique({
       where: { userId: user.id },
-      select: { navigationItems: true }
+      select: { timerSettings: true }
     });
 
     return NextResponse.json({
-      navigationItems: preferences?.navigationItems || null,
+      settings: preferences?.timerSettings || {
+        soundEnabled: true,
+        notificationEnabled: true,
+        soundVolume: 50,
+        notificationDuration: 5,
+      },
       success: true
     });
   } catch (error) {
-    console.error("Error fetching navigation preferences:", error);
+    console.error("Error fetching timer preferences:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -32,10 +37,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { navigationItems } = await request.json();
+    const { settings } = await request.json();
 
-    if (!navigationItems || !Array.isArray(navigationItems)) {
-      return NextResponse.json({ error: "Invalid navigation items" }, { status: 400 });
+    if (!settings || typeof settings !== 'object') {
+      return NextResponse.json({ error: "Invalid timer settings" }, { status: 400 });
     }
 
     // Update or create user preferences
@@ -43,17 +48,17 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
       create: {
         userId: user.id,
-        navigationItems: navigationItems,
+        timerSettings: settings,
         currency: "GBP" // Default currency
       },
       update: {
-        navigationItems: navigationItems
+        timerSettings: settings
       }
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error saving navigation preferences:", error);
+    console.error("Error saving timer preferences:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

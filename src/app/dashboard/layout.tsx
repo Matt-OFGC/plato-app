@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/SidebarImproved";
 import { FloatingBackButton } from "@/components/FloatingBackButton";
+import { FloatingNavBar } from "@/components/FloatingNavBar";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -32,6 +33,13 @@ export default function DashboardLayout({
       
       {/* Floating Back Button */}
       <FloatingBackButton />
+      
+      {/* Floating Navigation Bar with Apple-style scroll animations */}
+      <FloatingNavBar 
+        navigationItems={["dashboard", "ingredients", "recipes", "recipe-mixer"]}
+        enableScrollAnimation={true}
+        onMoreClick={() => console.log('More navigation clicked')}
+      />
         </div>
       </KeyboardShortcutsProvider>
     </ErrorBoundary>
