@@ -119,8 +119,7 @@ export function RecipeForm({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
               <div className="card-responsive">
                 <h3 className="text-responsive-h3 text-gray-900 mb-4">Basic Information</h3>
                 <div className="space-y-4">
@@ -286,101 +285,132 @@ export function RecipeForm({
           </div>
         </div>
 
+              {/* Ingredients Section - Compact Design */}
               <div className="card-responsive">
-                <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <h3 className="text-responsive-h3 text-gray-900">Ingredients</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Ingredients</h3>
                   <button 
                     type="button" 
                     onClick={handleAddRow} 
-                    className="btn-responsive-secondary flex items-center justify-center gap-2"
+                    className="btn-responsive-primary flex items-center gap-2 px-4 py-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Add Ingredient
+                    Add
                   </button>
                 </div>
-                <div className="space-y-3">
-                  {items.map((row) => (
-                    <div key={row.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-4 bg-gray-50 rounded-xl">
-                      <div className="sm:col-span-5">
-                        <SearchableSelect
-                          options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
-                          value={row.ingredientId}
-                          onChange={(value) => {
-                            const selectedIngredient = value ? ingredients.find(i => i.id === value) : null;
-                            const defaultUnit = selectedIngredient?.originalUnit || "g";
-                            setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, ingredientId: value, unit: r.unit || defaultUnit } : r)));
-                          }}
-                          placeholder="Select ingredient..."
-                        />
+                
+                {/* Compact Ingredients Table */}
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    <div className="col-span-6">Ingredient</div>
+                    <div className="col-span-2">Quantity</div>
+                    <div className="col-span-2">Unit</div>
+                    <div className="col-span-1">Cost</div>
+                    <div className="col-span-1"></div>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-100">
+                    {items.map((row, index) => (
+                      <div key={row.id} className="grid grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 transition-colors">
+                        <div className="col-span-6">
+                          <SearchableSelect
+                            options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
+                            value={row.ingredientId}
+                            onChange={(value) => {
+                              const selectedIngredient = value ? ingredients.find(i => i.id === value) : null;
+                              const defaultUnit = selectedIngredient?.originalUnit || "g";
+                              setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, ingredientId: value, unit: r.unit || defaultUnit } : r)));
+                            }}
+                            placeholder="Select ingredient..."
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <input
+                            type="number"
+                            step="any"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:border-purple-500 focus:ring-1 focus:ring-purple-200"
+                            value={row.quantity ?? ""}
+                            onChange={(e) => setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, quantity: e.target.value ? Number(e.target.value) : undefined } : r)))}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <select
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:border-purple-500 focus:ring-1 focus:ring-purple-200"
+                            value={row.unit ?? "g"}
+                            onChange={(e) => setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, unit: e.target.value as Unit } : r)))}
+                          >
+                            {[
+                              "g","kg","mg","lb","oz","ml","l","tsp","tbsp","cup","floz","each","slices"
+                            ].map((u) => (
+                              <option key={u} value={u}>{u}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-1 flex items-center">
+                          <span className="text-xs text-gray-500 font-medium">
+                            {row.ingredientId && row.quantity ? (
+                              (() => {
+                                const ingredient = ingredients.find(i => i.id === row.ingredientId);
+                                if (!ingredient) return "£0.00";
+                                // Simple cost calculation - in a real app, this would use the utility functions
+                                const cost = (row.quantity / ingredient.packQuantity) * ingredient.packPrice;
+                                return `£${cost.toFixed(2)}`;
+                              })()
+                            ) : "£0.00"}
+                          </span>
+                        </div>
+                        <div className="col-span-1 flex items-center justify-end">
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemove(row.id)} 
+                            className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                      <input
-                        type="number"
-                        step="any"
-                        className="sm:col-span-3 input-responsive focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-                        value={row.quantity ?? ""}
-                        onChange={(e) => setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, quantity: e.target.value ? Number(e.target.value) : undefined } : r)))}
-                        placeholder="Amount"
-                      />
-                      <select
-                        className="sm:col-span-3 input-responsive focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-                        value={row.unit ?? "g"}
-                        onChange={(e) => setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, unit: e.target.value as Unit } : r)))}
-                      >
-                        {[
-                          "g","kg","mg","lb","oz","ml","l","pint","quart","gallon","tsp","tbsp","cup","floz","each","slices"
-                        ].map((u) => (
-                          <option key={u} value={u}>{u}</option>
-                        ))}
-                      </select>
-                      <button 
-                        type="button" 
-                        onClick={() => handleRemove(row.id)} 
-                        className="sm:col-span-1 bg-red-100 text-red-600 px-3 py-2 rounded-xl hover:bg-red-200 transition-colors flex items-center justify-center touch-target"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Cost Summary */}
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Cost</div>
+                      <div className="text-lg font-bold text-gray-900">{formatCurrency(total)}</div>
                     </div>
-                  ))}
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Per {yieldUnit}</div>
+                      <div className="text-lg font-bold text-purple-600">{formatCurrency(perOutput)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Ingredients</div>
+                      <div className="text-lg font-bold text-gray-900">{items.length}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <input type="hidden" name="items" value="[]" />
+
+            {/* Instructions Section */}
+            <div className="card-responsive">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Instructions</h3>
+              <textarea
+                name="method"
+                rows={8}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 resize-none"
+                placeholder="Enter step-by-step instructions for your recipe..."
+              />
             </div>
           </div>
-
-          <aside className="lg:col-span-1">
-            <div className="card-responsive sticky top-8">
-              <h3 className="text-responsive-h3 text-gray-900 mb-4">Cost Analysis</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Subtotal</span>
-                  <span className="font-medium text-gray-900">{formatCurrency(subtotal)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Total Cost</span>
-                  <span className="font-semibold text-lg text-gray-900">{formatCurrency(total)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-gray-600">Per {yieldUnit}</span>
-                  <span className="font-medium text-purple-600">{formatCurrency(perOutput)}</span>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-blue-50 rounded-xl">
-                <p className="text-xs text-blue-800">
-                  💡 Costs are calculated automatically from your ingredient prices and densities. 
-                  Unit conversions happen seamlessly in the background.
-                </p>
-              </div>
-              <div className="mt-4">
-                <UnitConversionHelp />
-              </div>
-            </div>
-          </aside>
-        </div>
         </div>
       </form>
     </div>
