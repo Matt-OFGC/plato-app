@@ -20,6 +20,7 @@ export default function DebugPage() {
   const [routeTree, setRouteTree] = useState<RouteInfo[]>([]);
   const [duplicates, setDuplicates] = useState<DuplicateInfo[]>([]);
   const [cacheInfo, setCacheInfo] = useState<any>(null);
+  const [scrollInfo, setScrollInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,6 +79,37 @@ export default function DebugPage() {
           indexedDB: 'indexedDB' in window,
         };
         setCacheInfo(cacheData);
+
+        // Get scroll validation info
+        const scrollData = {
+          isIpadViewport: window.innerWidth >= 768 && window.innerWidth <= 1024,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          bodyOverflow: getComputedStyle(document.body).overflow,
+          htmlOverflow: getComputedStyle(document.documentElement).overflow,
+          paneVars: {
+            headerH: getComputedStyle(document.documentElement).getPropertyValue('--header-h'),
+            bottomNavH: getComputedStyle(document.documentElement).getPropertyValue('--bottomnav-h'),
+            paneMaxH: getComputedStyle(document.documentElement).getPropertyValue('--pane-max-h'),
+          },
+          scrollablePanes: []
+        };
+
+        // Check for scrollable panes
+        const panes = document.querySelectorAll('.ingredients-pane, .instructions-pane');
+        panes.forEach((pane, index) => {
+          const element = pane as HTMLElement;
+          (scrollData.scrollablePanes as any[]).push({
+            selector: element.className,
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            canScroll: element.scrollHeight > element.clientHeight,
+            maxHeight: getComputedStyle(element).maxHeight,
+            overflowY: getComputedStyle(element).overflowY
+          });
+        });
+
+        setScrollInfo(scrollData);
 
       } catch (error) {
         console.error('Error loading debug info:', error);
@@ -224,6 +256,81 @@ export default function DebugPage() {
                   <strong>Issue Found:</strong> Components are imported from <code>@/components/</code> but exist in <code>src/components/</code> instead of <code>src/app/components/</code>.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Scroll Validation Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">📱 iPad Scroll Validation</h2>
+            <div className="bg-gray-100 p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">iPad Viewport:</label>
+                  <p className={`font-mono text-sm ${scrollInfo?.isIpadViewport ? 'text-green-600' : 'text-red-600'}`}>
+                    {scrollInfo?.isIpadViewport ? '✅ Yes' : '❌ No'} ({scrollInfo?.viewportWidth}x{scrollInfo?.viewportHeight})
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Body Overflow:</label>
+                  <p className={`font-mono text-sm ${scrollInfo?.bodyOverflow === 'hidden' ? 'text-green-600' : 'text-red-600'}`}>
+                    {scrollInfo?.bodyOverflow === 'hidden' ? '✅ Hidden' : '❌ ' + scrollInfo?.bodyOverflow}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">HTML Overflow:</label>
+                  <p className={`font-mono text-sm ${scrollInfo?.htmlOverflow === 'hidden' ? 'text-green-600' : 'text-red-600'}`}>
+                    {scrollInfo?.htmlOverflow === 'hidden' ? '✅ Hidden' : '❌ ' + scrollInfo?.htmlOverflow}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Pane Max Height:</label>
+                  <p className="font-mono text-sm text-gray-800">{scrollInfo?.paneVars?.paneMaxH || 'Not set'}</p>
+                </div>
+              </div>
+              
+              {scrollInfo?.scrollablePanes && scrollInfo.scrollablePanes.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">Scrollable Panes</h3>
+                  <div className="space-y-2">
+                    {scrollInfo.scrollablePanes.map((pane: any, index: number) => (
+                      <div key={index} className="p-3 bg-white rounded border">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                          <div>
+                            <span className="font-medium">Pane {index + 1}:</span>
+                            <p className="font-mono text-xs">{pane.selector}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Can Scroll:</span>
+                            <p className={`font-mono text-xs ${pane.canScroll ? 'text-green-600' : 'text-red-600'}`}>
+                              {pane.canScroll ? '✅ Yes' : '❌ No'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Height:</span>
+                            <p className="font-mono text-xs">{pane.clientHeight}px / {pane.scrollHeight}px</p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Overflow:</span>
+                            <p className={`font-mono text-xs ${pane.overflowY === 'auto' ? 'text-green-600' : 'text-red-600'}`}>
+                              {pane.overflowY}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <button
+                onClick={() => {
+                  // Re-run scroll validation
+                  window.location.reload();
+                }}
+                className="mt-3 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+              >
+                Refresh Scroll Info
+              </button>
             </div>
           </div>
 

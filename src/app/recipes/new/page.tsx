@@ -26,7 +26,7 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="app-container">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">New Recipe</h1>

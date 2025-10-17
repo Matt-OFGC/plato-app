@@ -5,7 +5,7 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Navigation Bar */}
       <nav className="border-b border-gray-200 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="app-container">
           {/* Mobile Nav */}
           <div className="flex md:hidden justify-between items-center h-16">
             <a href="/login" className="text-gray-600 hover:text-gray-900 font-medium text-sm">
@@ -79,7 +79,7 @@ export default function Home() {
 
       {/* Hero Section - Problem/Solution Focused */}
       <div className="relative overflow-hidden bg-gradient-to-br from-green-50 via-white to-green-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-32">
+        <div className="app-container py-12 sm:py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Column - Copy */}
             <div>
@@ -195,10 +195,10 @@ export default function Home() {
 
       {/* Problem Statement Section */}
       <div className="py-12 sm:py-16 lg:py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="app-container">
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">You've worked too hard to lose your recipes</h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 app-container">
               Every food business faces the same challenges. We've built the solution.
             </p>
           </div>
@@ -266,7 +266,7 @@ export default function Home() {
 
       {/* Key Features Section */}
       <div id="features" className="py-12 sm:py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="app-container">
           {/* Feature 1 - Recipe Protection */}
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-16 lg:mb-32">
             <div>
@@ -520,7 +520,7 @@ export default function Home() {
 
       {/* Social Proof / Stats Section */}
       <div className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-emerald-600 to-emerald-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="app-container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center text-white">
             <div>
               <div className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2">1,000+</div>
@@ -544,7 +544,7 @@ export default function Home() {
 
       {/* Testimonials */}
       <div className="py-12 sm:py-16 lg:py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="app-container">
           <div className="text-center mb-8 sm:mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Loved by food professionals</h2>
             <p className="text-base sm:text-lg lg:text-xl text-gray-600">See why kitchens are switching to Plato</p>
@@ -622,7 +622,7 @@ export default function Home() {
 
       {/* How It Works */}
       <div className="py-12 sm:py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="app-container">
           <div className="text-center mb-8 sm:mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Get started in 3 simple steps</h2>
             <p className="text-base sm:text-lg lg:text-xl text-gray-600">Be up and running in under 5 minutes</p>
@@ -665,11 +665,11 @@ export default function Home() {
       {/* Final CTA */}
       <div className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE0YzMuMzEgMCA2IDIuNjkgNiA2cy0yLjY5IDYtNiA2LTYtMi42OS02LTYgMi42OS02IDYtNk0xMiA0MGMzLjMxIDAgNiAyLjY5IDYgNnMtMi42OSA2LTYgNi02LTIuNjktNi02IDIuNjktNiA2LTYiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-40"></div>
-        <div className="max-w-5xl mx-auto px-4 text-center relative z-10">
+        <div className="app-container text-center relative z-10">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
             Ready to protect your recipes and perfect your costs?
           </h2>
-          <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-emerald-100 mb-8 sm:mb-12 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-emerald-100 mb-8 sm:mb-12 app-container">
             Join over 1,000 professional kitchens who trust Plato to protect their competitive advantage 
             and optimize their profitability.
           </p>
@@ -717,7 +717,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="app-container">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">

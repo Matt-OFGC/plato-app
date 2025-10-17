@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCost } from "@/lib/units";
 import Link from "next/link";
+import { initPaneVars } from "../lib/paneHeight";
 import {
   DndContext,
   closestCenter,
@@ -163,6 +164,61 @@ export function RecipePageInlineCompleteV2({
 }: RecipePageInlineCompleteTestProps) {
   // Global timer context
   const { timers, startTimer, stopTimer, getTimer } = useTimers();
+  
+  // Initialize pane height variables for iPad scrolling
+  useEffect(() => {
+    initPaneVars();
+    
+    // Force apply iPad styles if in iPad viewport
+    const applyIpadStyles = () => {
+      const isIpad = window.innerWidth >= 768 && window.innerWidth <= 1024;
+      console.log('Viewport width:', window.innerWidth, 'Is iPad:', isIpad);
+      
+      if (isIpad) {
+        // Lock the page
+        document.documentElement.style.height = '100%';
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.height = '100%';
+        document.body.style.overflow = 'hidden';
+        
+        // Set pane heights - account for the large nav bar
+        const viewportHeight = window.innerHeight;
+        const navBarHeight = 100; // Account for the large bottom nav
+        const headerHeight = 150; // Account for the header
+        const paneHeight = `${viewportHeight - navBarHeight - headerHeight}px`;
+        console.log('Viewport height:', viewportHeight, 'Pane height:', paneHeight);
+        document.documentElement.style.setProperty('--pane-max-h', paneHeight);
+        
+        // Apply styles to panes with more specific targeting
+        const panes = document.querySelectorAll('.ingredients-pane, .instructions-pane');
+        console.log('Found panes:', panes.length);
+        
+        panes.forEach((pane: any) => {
+          pane.style.maxHeight = paneHeight;
+          pane.style.height = paneHeight;
+          pane.style.overflowY = 'auto';
+          pane.style.webkitOverflowScrolling = 'touch';
+          pane.style.border = '2px solid red'; // Debug border to see if styles are applied
+          console.log('Applied styles to pane:', pane.className);
+        });
+        
+        // Also target the parent containers
+        const flexContainers = document.querySelectorAll('.flex-col');
+        flexContainers.forEach((container: any) => {
+          container.style.height = '100%';
+          container.style.maxHeight = '100%';
+          container.style.overflow = 'hidden';
+        });
+      }
+    };
+    
+    applyIpadStyles();
+    window.addEventListener('resize', applyIpadStyles);
+    
+    return () => {
+      window.removeEventListener('resize', applyIpadStyles);
+    };
+  }, []);
   
   // Lock/Unlock state
   const [isLocked, setIsLocked] = useState(true);
@@ -761,7 +817,7 @@ export function RecipePageInlineCompleteV2({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
                   </svg>
                 </button>
-                <span className="text-3xl font-bold text-gray-900 min-w-[3rem] text-center">{servings}</span>
+                <span className="text-3xl font-bold text-gray-900 min-w-[3rem] sm:min-w-[4rem] text-center">{servings}</span>
                 <button 
                   onClick={() => setServings(servings + 1)}
                   className="w-12 h-12 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700 touch-manipulation"
@@ -813,7 +869,7 @@ export function RecipePageInlineCompleteV2({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
                         </svg>
                       </button>
-                      <span className="text-lg font-bold text-gray-900 min-w-[2rem] text-center">{slicesPerBatch}</span>
+                      <span className="text-lg font-bold text-gray-900 min-w-[2rem] sm:min-w-[3rem] text-center">{slicesPerBatch}</span>
                       <button 
                         onClick={() => setSlicesPerBatch(slicesPerBatch + 1)}
                         className="w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center transition-colors text-blue-700 touch-manipulation"
@@ -975,7 +1031,7 @@ export function RecipePageInlineCompleteV2({
               {/* Allergens Popup */}
               {showAllergensPopup && (
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
-                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] max-w-[250px]">
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] max-w-[250px] sm:min-w-[250px] sm:max-w-[300px]">
                     <div className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Allergens Present</div>
                     <div className="text-xs text-gray-700 space-y-1">
                       {allAllergens.map((allergen, index) => (
@@ -997,14 +1053,14 @@ export function RecipePageInlineCompleteV2({
             <div className="text-center">
               <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Notes</div>
               {isLocked ? (
-                <div className="text-xs text-blue-700 min-h-[1.5rem]">
+                <div className="text-xs text-blue-700 min-h-[1.5rem] sm:min-h-[2rem]">
                   {notes || 'No notes added'}
                 </div>
               ) : (
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full text-xs text-blue-700 bg-transparent border-none resize-none focus:outline-none min-h-[1.5rem]"
+                  className="w-full text-xs text-blue-700 bg-transparent border-none resize-none focus:outline-none min-h-[1.5rem] sm:min-h-[2rem]"
                   placeholder="Add recipe notes..."
                 />
               )}
@@ -1159,7 +1215,7 @@ function WholeRecipeView({
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
           </div>
-          <div className="space-y-3 flex-1 overflow-y-auto md:max-h-[calc(100vh-200px)] ingredients-pane">
+          <div className="space-y-3 flex-1 overflow-y-auto ingredients-pane">
             {isLocked ? (
               // Locked view - show aggregated ingredients with section breakdown
               aggregatedIngredients.map((agg, index) => {
@@ -1337,7 +1393,7 @@ function WholeRecipeView({
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 overflow-y-auto md:max-h-[calc(100vh-200px)] instructions-pane">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 overflow-y-auto instructions-pane">
             {isLocked ? (
               <div className="space-y-4">
                 {sections.map((section, index) => (
@@ -1379,7 +1435,7 @@ function WholeRecipeView({
                       <textarea
                         value={section.method || ''}
                         onChange={(e) => updateSection(section.id, 'method', e.target.value)}
-                        className="w-full text-base leading-relaxed text-gray-700 bg-transparent border-none resize-none focus:outline-none min-h-[8rem] p-3 bg-gray-50 rounded-lg border border-gray-200 focus:border-emerald-300 focus:bg-white transition-colors"
+                        className="w-full text-base leading-relaxed text-gray-700 bg-transparent border-none resize-none focus:outline-none min-h-[8rem] sm:min-h-[10rem] p-3 bg-gray-50 rounded-lg border border-gray-200 focus:border-emerald-300 focus:bg-white transition-colors"
                         placeholder={`Instructions for ${section.title}...`}
                       />
                     </div>
@@ -1545,7 +1601,7 @@ function RecipeCarousel({
                 <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center">
                   {index + 1}
                 </span>
-                <span className="max-w-[120px] truncate">{section.title}</span>
+                <span className="max-w-[120px] sm:max-w-[150px] truncate">{section.title}</span>
               </div>
             </button>
           ))}
@@ -1780,7 +1836,7 @@ function StepCard({
               </button>
             )}
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto ingredients-pane">
             <div className="space-y-2">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
@@ -1847,7 +1903,7 @@ function StepCard({
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto">
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto instructions-pane">
             {isLocked ? (
               <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                 {section.method || 'No instructions provided for this step.'}
@@ -2088,7 +2144,7 @@ function SimpleRecipeCarousel({
                     <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
                     <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
                   </div>
-                  <div className="space-y-4 flex-1 overflow-y-auto">
+                  <div className="space-y-4 flex-1 overflow-y-auto ingredients-pane">
                     {recipe.items.map((item: any) => {
                       const ingredient = ingredients.find((ing: any) => ing.id === item.ingredient.id);
                       if (!ingredient) return null;
@@ -2135,7 +2191,7 @@ function SimpleRecipeCarousel({
                     <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
                     <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
                   </div>
-                  <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto">
+                  <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto instructions-pane">
                     <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
                       {recipe.method || 'No instructions provided.'}
                     </div>

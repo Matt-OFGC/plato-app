@@ -111,7 +111,7 @@ function TestPageContent() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
         {/* Header */}
         <div className="bg-white shadow-sm border-b">
-          <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="app-container py-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Floating Navigation Bar Test
             </h1>
@@ -122,7 +122,7 @@ function TestPageContent() {
         </div>
 
         {/* Content Area */}
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="app-container py-8">
           {/* Test Timer */}
           <TestTimer />
 

@@ -30,6 +30,55 @@
   /* Layout variables for sticky positioning */
   --header-h: 72px; /* Header height for sticky positioning */
   --bottomnav-h: 80px; /* Bottom navigation height for safe area */
+  
+  /* =============================================================================
+     RESPONSIVE DESIGN TOKENS
+     ============================================================================= */
+  
+  /* Container and Layout */
+  --container-max: 1280px;
+  --container-max-lg: 1400px;
+  --container-max-xl: 1600px;
+  
+  /* Spacing Scale (rem-based) */
+  --gutter: 1rem;         /* 16px - base gutter */
+  --gutter-sm: 0.5rem;    /* 8px - small gutter */
+  --gutter-md: 0.75rem;   /* 12px - medium gutter */
+  --gutter-lg: 1.5rem;    /* 24px - large gutter */
+  --gutter-xl: 2rem;      /* 32px - extra large gutter */
+  
+  /* Typography Scale (rem-based) */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+  --text-5xl: 3rem;       /* 48px */
+  --text-6xl: 3.75rem;    /* 60px */
+  
+  /* Border Radius Scale */
+  --radius-sm: 0.375rem;  /* 6px */
+  --radius: 0.5rem;       /* 8px */
+  --radius-md: 0.75rem;   /* 12px */
+  --radius-lg: 1rem;      /* 16px */
+  --radius-xl: 1.5rem;    /* 24px */
+  
+  /* Shadow Scale */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* Breakpoints (for reference - use in media queries) */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 }
 
 .dark {
@@ -652,6 +701,367 @@ body {
 }
 
 /* =============================================================================
+   RESPONSIVE DESIGN SYSTEM
+   ============================================================================= */
+
+/* App Container - Fluid responsive container */
+.app-container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+@media (min-width: 640px) {
+  .app-container {
+    padding-left: var(--gutter-md);
+    padding-right: var(--gutter-md);
+  }
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    padding-left: var(--gutter-lg);
+    padding-right: var(--gutter-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-container {
+    padding-left: var(--gutter-xl);
+    padding-right: var(--gutter-xl);
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-container {
+    max-width: var(--container-max-lg);
+  }
+}
+
+@media (min-width: 1536px) {
+  .app-container {
+    max-width: var(--container-max-xl);
+  }
+}
+
+/* Responsive Grid System */
+.responsive-grid {
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid {
+    gap: var(--gutter-md);
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-grid {
+    gap: var(--gutter-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    gap: var(--gutter-xl);
+  }
+}
+
+/* Two-column responsive grid */
+.responsive-grid-2 {
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .responsive-grid-2 {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gutter-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid-2 {
+    gap: var(--gutter-xl);
+  }
+}
+
+/* Three-column responsive grid */
+.responsive-grid-3 {
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--gutter-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gutter-xl);
+  }
+}
+
+/* Four-column responsive grid */
+.responsive-grid-4 {
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--gutter-md);
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gutter-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--gutter-xl);
+  }
+}
+
+/* Responsive Flex Utilities */
+.responsive-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gutter);
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .responsive-flex {
+    gap: var(--gutter-md);
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-flex {
+    gap: var(--gutter-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-flex {
+    gap: var(--gutter-xl);
+  }
+}
+
+.responsive-flex-between {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gutter);
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 640px) {
+  .responsive-flex-between {
+    gap: var(--gutter-md);
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-flex-between {
+    gap: var(--gutter-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-flex-between {
+    gap: var(--gutter-xl);
+  }
+}
+
+/* Responsive Cards */
+.responsive-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--gutter);
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .responsive-card {
+    padding: var(--gutter-md);
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-card {
+    padding: var(--gutter-lg);
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-card {
+    padding: var(--gutter-xl);
+    border-radius: var(--radius-xl);
+  }
+}
+
+.responsive-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Responsive Typography */
+.responsive-text-h1 {
+  font-size: clamp(var(--text-3xl), 1rem + 2vw, var(--text-6xl));
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.responsive-text-h2 {
+  font-size: clamp(var(--text-2xl), 0.875rem + 1.5vw, var(--text-5xl));
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.responsive-text-h3 {
+  font-size: clamp(var(--text-xl), 0.75rem + 1vw, var(--text-4xl));
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.responsive-text-body {
+  font-size: clamp(var(--text-sm), 0.75rem + 0.5vw, var(--text-lg));
+  line-height: 1.6;
+}
+
+/* Responsive Buttons */
+.responsive-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  min-height: 48px;
+  padding: var(--gutter-md) var(--gutter-lg);
+  font-size: var(--text-base);
+}
+
+@media (min-width: 768px) {
+  .responsive-btn {
+    min-height: 44px;
+    padding: var(--gutter-sm) var(--gutter-md);
+    font-size: var(--text-sm);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-btn {
+    min-height: 40px;
+    padding: var(--gutter-sm) var(--gutter);
+    font-size: var(--text-sm);
+  }
+}
+
+.responsive-btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow);
+}
+
+.responsive-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.responsive-btn-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+}
+
+.responsive-btn-secondary:hover {
+  background: var(--muted);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Responsive Form Inputs */
+.responsive-input {
+  width: 100%;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--gutter-md) var(--gutter);
+  font-size: var(--text-base);
+  transition: all 0.2s ease-in-out;
+  min-height: 48px;
+}
+
+@media (min-width: 768px) {
+  .responsive-input {
+    font-size: var(--text-sm);
+    min-height: 44px;
+    padding: var(--gutter-sm) var(--gutter-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-input {
+    font-size: var(--text-sm);
+    min-height: 40px;
+    padding: var(--gutter-sm) var(--gutter);
+  }
+}
+
+.responsive-input:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px rgb(5 150 105 / 0.1);
+}
+
+/* Scrollable Panes */
+.scroll-pane {
+  max-height: calc(100vh - var(--header-h) - var(--bottomnav-h) - var(--gutter-xl));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 768px) {
+  .scroll-pane {
+    max-height: calc(100vh - var(--header-h) - var(--bottomnav-h) - var(--gutter-lg));
+  }
+}
+
+@media (min-width: 1024px) {
+  .scroll-pane {
+    max-height: calc(100vh - var(--header-h) - var(--bottomnav-h) - var(--gutter));
+  }
+}
+
+/* =============================================================================
    RESPONSIVE OPTIMIZATION UTILITIES
    ============================================================================= */
 
@@ -1201,20 +1611,96 @@ body {
 
 /* iPad-specific layout fixes for Recipe Page */
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* 1. Reduce top spacing between header and main content */
-  .recipe-layout {
-    padding-top: 12px !important;
-    row-gap: 12px !important;
+  /* 1) Lock the page - prevent body scroll */
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
-  /* 2. Make both panels scrollable with smooth scrolling */
+  /* 2) Content panes: only these may scroll */
   .ingredients-pane,
-  .instructions-pane {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
+  .instructions-pane,
+  .scroll-card {
+    max-height: calc(100vh - 300px) !important;
+    height: calc(100vh - 300px) !important;
+    overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Constrain the parent containers */
+  .recipe-layout {
+    height: calc(100vh - 200px) !important;
+    max-height: calc(100vh - 200px) !important;
+  }
+
+  /* Make sure the two-column layout is constrained */
+  .recipe-layout .grid {
+    height: 100% !important;
+  }
+
+  /* Constrain the flex containers */
+  .recipe-layout .flex-col {
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+
+  /* Constrain the main content area */
+  .flex-1 {
+    height: calc(100vh - 200px) !important;
+    max-height: calc(100vh - 200px) !important;
+    overflow: hidden !important;
+  }
+
+  /* Make sure the main content container is constrained */
+  .h-screen {
+    height: 100vh !important;
+    max-height: 100vh !important;
+  }
+
+  /* Make the floating nav bar smaller on iPad */
+  .floating-nav {
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .floating-nav-item {
+    padding: 6px 8px !important;
+  }
+
+  /* Reduce bottom navigation height */
+  .floating-nav-enhanced {
+    padding: 6px 10px !important;
+  }
+
+  /* Make sure no ancestor blocks scrolling */
+  .ingredients-pane *,
+  .instructions-pane * {
+    overscroll-behavior: auto;
+  }
+
+  /* 3) Tighter iPad spacing (use more space without changing layout) */
+  .container-responsive {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .recipe-layout {
+    column-gap: 16px !important;
+    row-gap: 12px !important;
+    padding-top: 12px !important;
+  }
+
+  .card, .panel {
+    padding: 14px 16px !important;
+  }
+
+  /* Reduce big outer margins around the grid */
+  .py-4, .py-6, .py-8 {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
   }
 
   /* Ensure smooth scrolling on iPad */

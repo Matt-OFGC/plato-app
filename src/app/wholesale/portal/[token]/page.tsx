@@ -183,7 +183,7 @@ export default function CustomerPortalPage() {
   if (error || !data) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto p-6">
+        <div className="text-center app-container max-w-md mx-auto p-6">
           <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
@@ -198,7 +198,7 @@ export default function CustomerPortalPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="app-container py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {data.company.logoUrl && (
@@ -242,7 +242,7 @@ export default function CustomerPortalPage() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="app-container py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Products */}
           <div className="lg:col-span-2 space-y-6">
