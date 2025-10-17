@@ -57,7 +57,7 @@ const NUT_TYPES = [
 ];
 
 export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: IngredientFormProps) {
-  console.log('IngredientForm component loaded with enhanced allergen system');
+  console.log('IngredientForm component loaded with enhanced allergen system - Version 2.0 - ' + new Date().toISOString());
   
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
@@ -131,8 +131,20 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      {/* Enhanced System Alert */}
+      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 rounded-lg mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">🎉</span>
+          <div>
+            <h3 className="text-xl font-bold">ENHANCED ALLERGEN SYSTEM IS ACTIVE!</h3>
+            <p className="text-purple-100">You now have access to specific nut type selection and improved allergen management.</p>
+          </div>
+        </div>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Name */}
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -279,10 +291,17 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
       </div>
 
       {/* Allergens */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Allergens (Enhanced System with Specific Nut Types)
-        </label>
+      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-2xl">🚀</span>
+          <label className="block text-lg font-bold text-green-800">
+            ENHANCED ALLERGEN SYSTEM - NEW FEATURE!
+          </label>
+        </div>
+        <p className="text-sm text-green-700 mb-4">
+          This is the new enhanced allergen system with specific nut type selection. 
+          If you can see this green box, the system is working!
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {ALLERGEN_OPTIONS.map((allergen) => (
             <label key={allergen} className="flex items-center space-x-2">
@@ -300,23 +319,27 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
 
       {/* Specific Nut Types */}
       {selectedAllergens.includes("Nuts") && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <label className="block text-sm font-medium text-blue-800 mb-3">
-            🥜 Specific Nut Types (Enhanced Feature)
-          </label>
-          <p className="text-sm text-blue-700 mb-3">
-            Select the specific types of nuts. This will replace the generic "Nuts" entry with specific nut types.
+        <div className="bg-yellow-100 border-4 border-yellow-400 rounded-lg p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-3xl">🥜</span>
+            <label className="block text-xl font-bold text-yellow-800">
+              SPECIFIC NUT TYPES - ENHANCED FEATURE!
+            </label>
+          </div>
+          <p className="text-lg text-yellow-700 mb-4 font-semibold">
+            🎉 This is the NEW enhanced feature! Select specific nut types below. 
+            This will replace the generic "Nuts" entry with the specific nut types you choose.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {NUT_TYPES.map((nutType) => (
-              <label key={nutType} className="flex items-center space-x-2">
+              <label key={nutType} className="flex items-center space-x-2 bg-white p-2 rounded border">
                 <input
                   type="checkbox"
                   checked={selectedNutTypes.includes(nutType)}
                   onChange={(e) => handleNutTypeChange(nutType, e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">{nutType}</span>
+                <span className="text-sm text-gray-700 font-medium">{nutType}</span>
               </label>
             ))}
           </div>
@@ -348,6 +371,7 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
           Save Ingredient
         </button>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }

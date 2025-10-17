@@ -612,10 +612,10 @@ export function RecipePageInlineCompleteV2({
                   <img 
                     src={imageUrl || recipe.imageUrl || ""} 
                     alt={recipe.name} 
-                    className="w-16 h-16 object-cover rounded-lg shadow-sm"
+                    className="w-20 h-16 object-cover rounded-lg shadow-sm"
                   />
                 ) : (
-                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <div className="w-20 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
                     <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -1149,19 +1149,8 @@ function WholeRecipeView({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header - Fixed */}
-      <div className="flex-shrink-0 p-6 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-            📋
-          </div>
-          <h2 className="text-lg font-bold text-gray-900">Complete Recipe</h2>
-        </div>
-        <p className="text-xs text-gray-600 mt-1">All ingredients needed for this recipe</p>
-      </div>
-
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      {/* Scrollable Content - No Header */}
+      <div className="flex-1 overflow-y-auto p-6">
         {/* Two Column Layout: Ingredients Left, Instructions Right */}
         <div className="grid grid-cols-2 gap-6">
         {/* Left Column - Aggregated Ingredients */}
@@ -1189,11 +1178,11 @@ function WholeRecipeView({
                       onClick={() => agg.items.forEach(item => toggleItem(item.id))}
                       className="flex items-center gap-4 p-4 cursor-pointer touch-manipulation"
                     >
-                      <div className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
+                      <div className={`w-8 h-8 rounded border-2 flex items-center justify-center touch-manipulation ${
                         isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
                       }`}>
                         {isChecked && (
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
