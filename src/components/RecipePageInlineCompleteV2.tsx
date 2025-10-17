@@ -1526,13 +1526,6 @@ function RecipeCarousel({
   };
 
 
-  // Debug: Log section details
-  console.log('Sections data:', sections.map(s => ({
-    id: s.id,
-    title: s.title,
-    method: s.method,
-    itemsCount: s.items.length
-  })));
 
   return (
     <div className="h-full flex flex-col relative">
@@ -1672,6 +1665,13 @@ function StepCard({
   isNewlyAdded: boolean;
   totalSections: number;
 }) {
+  // Debug: Log which section is being rendered
+  console.log(`StepCard rendering section ${index}:`, {
+    title: section.title,
+    method: section.method.substring(0, 50) + '...',
+    itemsCount: section.items.length
+  });
+
   return (
     <div className={`h-full p-4 transition-all duration-700 ease-out ${
       isNewlyAdded 
