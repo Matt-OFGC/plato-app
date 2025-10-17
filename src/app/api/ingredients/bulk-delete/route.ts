@@ -24,7 +24,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete ingredients that belong to the user's company
+    // First, check which ingredients are being used in recipes
+    const ingredientsInUse = await prisma.recipeItem.findMany({
+      where: {
+        ingredientId: { in: ids },
+      },
+      select: {
+        ingredientId: true,
+        ingredient: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Get unique ingredient IDs that are in use
+    const usedIngredientIds = [...new Set(ingredientsInUse.map(item => item.ingredientId))];
+    const usedIngredientNames = ingredientsInUse.map(item => item.ingredient.name);
+
+    // If any ingredients are in use, return an error
+    if (usedIngredientIds.length > 0) {
+      return NextResponse.json(
+        { 
+          error: "Cannot delete ingredients that are used in recipes",
+          usedIngredients: usedIngredientNames,
+          usedCount: usedIngredientIds.length,
+          message: `The following ingredients cannot be deleted because they are used in recipes: ${usedIngredientNames.join(', ')}`
+        },
+        { status: 400 }
+      );
+    }
+
+    // Delete ingredients that belong to the user's company and are not in use
     const result = await prisma.ingredient.deleteMany({
       where: {
         id: { in: ids },
