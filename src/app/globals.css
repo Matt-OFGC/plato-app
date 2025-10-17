@@ -1729,3 +1729,29 @@ body {
     background: #94a3b8;
   }
 }
+
+/* Recipe page specific styles for independent scrolling */
+.recipe-layout {
+  height: 100%;
+  overflow: hidden;
+}
+
+.ingredients-pane,
+.instructions-pane {
+  max-height: var(--pane-max-h);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Ensure the page doesn't scroll when recipe page is active */
+body.recipe-page-active {
+  height: 100vh;
+  overflow: hidden;
+}
+
+html.recipe-page-active {
+  height: 100vh;
+  overflow: hidden;
+}

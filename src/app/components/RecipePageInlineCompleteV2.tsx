@@ -165,58 +165,72 @@ export function RecipePageInlineCompleteV2({
   // Global timer context
   const { timers, startTimer, stopTimer, getTimer } = useTimers();
   
-  // Initialize pane height variables for iPad scrolling
+  // Initialize pane height variables for responsive scrolling
   useEffect(() => {
     initPaneVars();
     
-    // Force apply iPad styles if in iPad viewport
-    const applyIpadStyles = () => {
-      const isIpad = window.innerWidth >= 768 && window.innerWidth <= 1024;
-      console.log('Viewport width:', window.innerWidth, 'Is iPad:', isIpad);
+    // Apply responsive styles for all devices
+    const applyResponsiveStyles = () => {
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
       
-      if (isIpad) {
-        // Lock the page
-        document.documentElement.style.height = '100%';
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.height = '100%';
-        document.body.style.overflow = 'hidden';
-        
-        // Set pane heights - account for the large nav bar
-        const viewportHeight = window.innerHeight;
-        const navBarHeight = 100; // Account for the large bottom nav
-        const headerHeight = 150; // Account for the header
-        const paneHeight = `${viewportHeight - navBarHeight - headerHeight}px`;
-        console.log('Viewport height:', viewportHeight, 'Pane height:', paneHeight);
-        document.documentElement.style.setProperty('--pane-max-h', paneHeight);
-        
-        // Apply styles to panes with more specific targeting
-        const panes = document.querySelectorAll('.ingredients-pane, .instructions-pane');
-        console.log('Found panes:', panes.length);
-        
-        panes.forEach((pane: any) => {
-          pane.style.maxHeight = paneHeight;
-          pane.style.height = paneHeight;
-          pane.style.overflowY = 'auto';
-          pane.style.webkitOverflowScrolling = 'touch';
-          pane.style.border = '2px solid red'; // Debug border to see if styles are applied
-          console.log('Applied styles to pane:', pane.className);
-        });
-        
-        // Also target the parent containers
-        const flexContainers = document.querySelectorAll('.flex-col');
-        flexContainers.forEach((container: any) => {
-          container.style.height = '100%';
-          container.style.maxHeight = '100%';
-          container.style.overflow = 'hidden';
-        });
+      // Lock the page to prevent overall scrolling
+      document.documentElement.style.height = '100vh';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+      document.body.style.overflow = 'hidden';
+      
+      // Add CSS classes for additional styling
+      document.documentElement.classList.add('recipe-page-active');
+      document.body.classList.add('recipe-page-active');
+      
+      // Calculate available height for content panes
+      // Account for header, navigation, and padding
+      const headerHeight = 120; // Header container height
+      const navBarHeight = 80; // Bottom navigation height
+      const padding = 40; // Additional padding
+      const availableHeight = viewportHeight - headerHeight - navBarHeight - padding;
+      
+      console.log('Viewport:', viewportWidth, 'x', viewportHeight, 'Available height:', availableHeight);
+      
+      // Apply styles to panes for independent scrolling
+      const panes = document.querySelectorAll('.ingredients-pane, .instructions-pane');
+      console.log('Found panes:', panes.length);
+      
+      panes.forEach((pane: any) => {
+        pane.style.maxHeight = `${availableHeight}px`;
+        pane.style.height = `${availableHeight}px`;
+        pane.style.overflowY = 'auto';
+        pane.style.overflowX = 'hidden';
+        pane.style.webkitOverflowScrolling = 'touch';
+        pane.style.scrollBehavior = 'smooth';
+        console.log('Applied styles to pane:', pane.className, 'Height:', availableHeight);
+      });
+      
+      // Ensure parent containers don't scroll
+      const flexContainers = document.querySelectorAll('.flex-col');
+      flexContainers.forEach((container: any) => {
+        container.style.height = '100%';
+        container.style.maxHeight = '100%';
+        container.style.overflow = 'hidden';
+      });
+      
+      // Lock the main content area
+      const mainContent = document.querySelector('.recipe-layout');
+      if (mainContent) {
+        (mainContent as HTMLElement).style.height = '100%';
+        (mainContent as HTMLElement).style.overflow = 'hidden';
       }
     };
     
-    applyIpadStyles();
-    window.addEventListener('resize', applyIpadStyles);
+    applyResponsiveStyles();
+    window.addEventListener('resize', applyResponsiveStyles);
     
     return () => {
-      window.removeEventListener('resize', applyIpadStyles);
+      window.removeEventListener('resize', applyResponsiveStyles);
+      // Clean up classes when component unmounts
+      document.documentElement.classList.remove('recipe-page-active');
+      document.body.classList.remove('recipe-page-active');
     };
   }, []);
   
