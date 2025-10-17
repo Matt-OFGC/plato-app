@@ -19,3 +19,5 @@ export function initPaneVars() {
   window.addEventListener('resize', setPaneVars);
   window.addEventListener('orientationchange', setPaneVars);
 }
+
+
