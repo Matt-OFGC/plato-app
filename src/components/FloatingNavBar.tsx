@@ -44,7 +44,7 @@ export function FloatingNavBar({
     <>
       {/* Floating Navigation Bar */}
       <nav className="fixed bottom-4 left-4 right-4 z-50 md:left-8 md:right-8 lg:left-12 lg:right-12 xl:left-16 xl:right-16 safe-area-bottom">
-        <div className={`floating-nav rounded-3xl px-3 sm:px-4 py-2 mx-auto max-w-md ${timerCount > 0 ? 'animate-pulse-subtle' : ''}`}>
+        <div className={`floating-nav rounded-3xl px-3 sm:px-4 py-2.5 mx-auto max-w-md ${timerCount > 0 ? 'animate-pulse-subtle' : ''}`}>
           <div className="flex items-center justify-between">
             {/* Navigation Items */}
             <div className="flex items-center space-x-1 flex-1">
@@ -78,7 +78,7 @@ export function FloatingNavBar({
                     }`}>
                       {item.icon}
                     </div>
-                    <span className={`text-xs font-medium mt-1 truncate max-w-[60px] transition-all duration-300 ${
+                    <span className={`text-[10px] font-medium mt-1 truncate max-w-[70px] transition-all duration-300 ${
                       isHovered ? 'text-gray-800 font-semibold' : ''
                     }`}>
                       {item.shortLabel}
@@ -114,7 +114,7 @@ export function FloatingNavBar({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </div>
-                <span className={`text-xs font-medium mt-1 transition-all duration-300 ${
+                <span className={`text-[10px] font-medium mt-1 transition-all duration-300 ${
                   hoveredItem === 'more' ? 'text-gray-800 font-semibold' : ''
                 }`}>
                   More
