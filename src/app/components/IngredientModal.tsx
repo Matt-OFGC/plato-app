@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IngredientForm } from "@/components/IngredientForm";
-import { createIngredient, updateIngredient, getSuppliers } from "../dashboard/ingredients/actions";
+import { IngredientForm } from "./IngredientForm";
+import { createIngredient, updateIngredient, getSuppliers } from "@/app/dashboard/ingredients/actions";
 import { fromBase, Unit } from "@/lib/units";
 
 interface Supplier {
   id: number;
   name: string;
-  minimumOrder: number | null;
+  deliveryDays: string[];
+  [key: string]: any; // Allow additional properties
 }
 
 interface IngredientModalProps {
@@ -27,7 +28,7 @@ interface IngredientModalProps {
     packPrice: number;
     currency: string;
     densityGPerMl?: number | null;
-    allergens: string[];
+    allergens?: string[];
     notes?: string | null;
   } | null;
 }
@@ -45,13 +46,7 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
   const loadSuppliers = async () => {
     try {
       const suppliersData = await getSuppliers();
-      // Map to the simpler Supplier interface expected by IngredientForm
-      const mappedSuppliers = suppliersData.map(supplier => ({
-        id: supplier.id,
-        name: supplier.name,
-        minimumOrder: supplier.minimumOrder,
-      }));
-      setSuppliers(mappedSuppliers);
+      setSuppliers(suppliersData);
     } catch (error) {
       console.error("Error loading suppliers:", error);
     }
@@ -84,29 +79,24 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop with blur effect */}
+      {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-white/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={handleClose}
       />
       
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200">
+        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {editIngredient ? "Edit Ingredient" : "New Ingredient"}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {editIngredient ? "Update ingredient details and allergen information" : "Add a new ingredient to your inventory"}
-              </p>
-            </div>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {editIngredient ? "Edit Ingredient" : "New Ingredient"}
+            </h2>
             <button
               onClick={handleClose}
               disabled={loading}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 disabled:opacity-50 transition-colors"
+              className="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 disabled:opacity-50"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -118,30 +108,28 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
           <div className="p-6">
             <IngredientForm
               companyId={companyId}
-              suppliers={suppliers as any}
+              suppliers={suppliers}
               onSubmit={handleSubmit}
               initialData={editIngredient ? {
                 name: editIngredient.name,
-                supplier: editIngredient.supplier || "",
                 supplierId: editIngredient.supplierId || undefined,
                 packQuantity: editIngredient.packQuantity,
                 packUnit: editIngredient.originalUnit || (editIngredient.packUnit as Unit),
                 packPrice: editIngredient.packPrice,
-                currency: editIngredient.currency,
-                densityGPerMl: editIngredient.densityGPerMl,
-                allergens: editIngredient.allergens,
+                densityGPerMl: editIngredient.densityGPerMl || undefined,
+                allergens: editIngredient.allergens || [],
                 notes: editIngredient.notes || "",
-              } as any : undefined}
+              } : undefined}
             />
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50/50">
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
             <button
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -149,7 +137,7 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
               type="submit"
               form="ingredient-form"
               disabled={loading}
-              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Saving..." : editIngredient ? "Update Ingredient" : "Create Ingredient"}
             </button>

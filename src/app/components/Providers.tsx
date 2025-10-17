@@ -1,7 +1,7 @@
 "use client";
 
 import { TimerProvider } from "@/contexts/TimerContext";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeProvider } from "./ThemeProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

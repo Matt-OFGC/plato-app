@@ -7,7 +7,9 @@
     "build": "prisma generate && next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "diagnose:ui": "node scripts/diagnose-ui.mjs",
+    "clean:caches": "rimraf .next dist build node_modules/.vite"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

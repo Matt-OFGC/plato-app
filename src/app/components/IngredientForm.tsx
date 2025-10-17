@@ -1,115 +1,89 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Unit } from "@/lib/units";
-
-interface Supplier {
-  id: number;
-  name: string;
-  minimumOrder: number | null;
-}
-
-interface IngredientFormProps {
-  companyId?: number;
-  suppliers: Supplier[];
-  onSubmit: (formData: FormData) => void | Promise<void>;
-  initialData?: {
-    name?: string;
-    supplier?: string;
-    supplierId?: number;
-    packQuantity?: number;
-    packUnit?: Unit;
-    packPrice?: number;
-    currency?: string;
-    densityGPerMl?: number | null;
-    allergens?: string[];
-    notes?: string;
-  };
-}
+import { useState } from "react";
+import { UnitConversionHelp } from "./UnitConversionHelp";
+import { SupplierSelector } from "./SupplierSelector";
 
 const ALLERGEN_OPTIONS = [
   "Celery",
-  "Cereals containing gluten",
-  "Crustaceans",
+  "Gluten",
   "Eggs",
   "Fish",
-  "Lupin",
   "Milk",
   "Molluscs",
   "Mustard",
   "Nuts",
   "Peanuts",
-  "Sesame seeds",
+  "Sesame",
   "Soya",
-  "Sulphur dioxide/sulphites"
+  "Sulphites",
+  "Other"
 ];
 
 const NUT_TYPES = [
-  "Acorns",
   "Almonds",
-  "Beech Nuts",
-  "Brazil Nuts",
-  "Butternuts (White Walnuts)",
+  "Brazil nuts",
   "Cashews",
-  "Chestnuts",
-  "Chilean Hazelnuts",
-  "Chinese Chestnuts",
-  "Coconuts",
-  "Ginkgo Nuts",
-  "Hazelnuts (Filberts)",
-  "Karuka Nuts (Pandanus Nuts)",
-  "Macadamia Nuts",
-  "Marcona Almonds",
-  "Mongongo Nuts (Manketti Nuts)",
-  "Paradise Nuts (Sapucaia Nuts)",
-  "Peanuts",
+  "Hazelnuts",
+  "Macadamia nuts",
   "Pecans",
-  "Pili Nuts",
-  "Pine Nuts",
+  "Pine nuts",
   "Pistachios",
-  "Sacha Inchi (Inca Peanuts)",
-  "Tiger Nuts (Chufa)",
   "Walnuts",
-  "Mixed Nuts"
+  "Mixed nuts"
 ];
 
-export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: IngredientFormProps) {
-  const [formData, setFormData] = useState({
-    name: initialData?.name || "",
-    supplier: initialData?.supplier || "",
-    supplierId: initialData?.supplierId || "",
-    packQuantity: initialData?.packQuantity || 1,
-    packUnit: initialData?.packUnit || "g" as Unit,
-    packPrice: initialData?.packPrice || 0,
-    currency: initialData?.currency || "GBP",
-    densityGPerMl: initialData?.densityGPerMl || "",
-    allergens: initialData?.allergens || [],
-    nutTypes: [] as string[],
-    notes: initialData?.notes || "",
-  });
+interface Supplier {
+  id: number;
+  name: string;
+  deliveryDays: string[];
+  [key: string]: any; // Allow additional properties
+}
 
-  const [selectedAllergens, setSelectedAllergens] = useState<string[]>(formData.allergens);
-  const [selectedNutTypes, setSelectedNutTypes] = useState<string[]>(formData.nutTypes);
-  const [nutSearchTerm, setNutSearchTerm] = useState("");
-  const [showNutDropdown, setShowNutDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value
-    }));
+interface IngredientFormProps {
+  companyId: number;
+  suppliers?: Supplier[];
+  initialData?: {
+    name?: string;
+    description?: string;
+    packQuantity?: number;
+    packUnit?: string;
+    packPrice?: number;
+    yieldQuantity?: number;
+    yieldUnit?: string;
+    densityGPerMl?: number;
+    allergens?: string[];
+    notes?: string;
+    supplierId?: number;
   };
+  onSubmit: (formData: FormData) => void;
+}
+
+export function IngredientForm({ companyId, suppliers = [], initialData, onSubmit }: IngredientFormProps) {
+  const [allergens, setAllergens] = useState<string[]>(initialData?.allergens || []);
+  const [selectedNutTypes, setSelectedNutTypes] = useState<string[]>([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(initialData?.supplierId || null);
+  const [otherAllergen, setOtherAllergen] = useState<string>("");
+  const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
 
   const handleAllergenChange = (allergen: string, checked: boolean) => {
     if (checked) {
-      setSelectedAllergens(prev => [...prev, allergen]);
+      if (allergen === "Other") {
+        setShowOtherInput(true);
+      } else {
+        setAllergens(prev => [...prev, allergen]);
+      }
     } else {
-      setSelectedAllergens(prev => prev.filter(a => a !== allergen));
-      // If "Nuts" is unchecked, also clear nut types
-      if (allergen === "Nuts") {
-        setSelectedNutTypes([]);
+      if (allergen === "Other") {
+        setShowOtherInput(false);
+        setOtherAllergen("");
+        setAllergens(prev => prev.filter(a => a !== otherAllergen));
+      } else {
+        setAllergens(prev => prev.filter(a => a !== allergen));
+        // If "Nuts" is unchecked, also clear nut types
+        if (allergen === "Nuts") {
+          setSelectedNutTypes([]);
+        }
       }
     }
   };
@@ -122,343 +96,300 @@ export function IngredientForm({ companyId, suppliers, onSubmit, initialData }: 
     }
   };
 
-  const handleNutTypeSelect = (nutType: string) => {
-    if (!selectedNutTypes.includes(nutType)) {
-      setSelectedNutTypes(prev => [...prev, nutType]);
+  const handleOtherAllergenChange = (value: string) => {
+    setOtherAllergen(value);
+    // Remove the previous "other" allergen if it exists
+    const previousOther = allergens.find(a => !ALLERGEN_OPTIONS.includes(a) && a !== "Other");
+    if (previousOther) {
+      setAllergens(prev => prev.filter(a => a !== previousOther));
     }
-    setNutSearchTerm("");
-    setShowNutDropdown(false);
+    // Add the new "other" allergen if it has a value
+    if (value && !allergens.includes(value)) {
+      setAllergens(prev => [...prev, value]);
+    }
   };
 
-  const removeNutType = (nutType: string) => {
-    setSelectedNutTypes(prev => prev.filter(n => n !== nutType));
-  };
-
-  const filteredNutTypes = NUT_TYPES.filter(nutType =>
-    nutType.toLowerCase().includes(nutSearchTerm.toLowerCase()) &&
-    !selectedNutTypes.includes(nutType)
-  );
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowNutDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
+    ev.preventDefault();
     
     // Combine allergens and nut types
-    const allAllergens = [...selectedAllergens];
+    const allAllergens = [...allergens];
     if (selectedNutTypes.length > 0) {
       // Replace "Nuts" with specific nut types
       const allergensWithoutNuts = allAllergens.filter(a => a !== "Nuts");
       allAllergens.splice(0, allAllergens.length, ...allergensWithoutNuts, ...selectedNutTypes);
     }
-
-    const formDataObj = new FormData();
-    formDataObj.append("name", formData.name);
-    formDataObj.append("supplier", formData.supplier);
-    formDataObj.append("supplierId", formData.supplierId.toString());
-    formDataObj.append("packQuantity", formData.packQuantity.toString());
-    formDataObj.append("packUnit", formData.packUnit);
-    formDataObj.append("packPrice", formData.packPrice.toString());
-    formDataObj.append("currency", formData.currency);
-    formDataObj.append("densityGPerMl", formData.densityGPerMl.toString());
-    formDataObj.append("allergens", JSON.stringify(allAllergens));
-    formDataObj.append("notes", formData.notes);
-
-    onSubmit(formDataObj);
+    
+    const formData = new FormData(ev.currentTarget);
+    formData.set("allergens", JSON.stringify(allAllergens));
+    if (selectedSupplierId) {
+      formData.set("supplierId", selectedSupplierId.toString());
+    }
+    onSubmit(formData);
   };
 
   return (
     <div>
-      <form id="ingredient-form" onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Enhanced System Alert */}
+      <div className="bg-gradient-to-r from-red-500 to-yellow-500 text-white p-6 rounded-lg mb-6 border-4 border-black">
+        <div className="flex items-center gap-3">
+          <span className="text-4xl">🚨</span>
+          <div>
+            <h3 className="text-2xl font-bold">ENHANCED ALLERGEN SYSTEM IS ACTIVE! - VERSION 3.0</h3>
+            <p className="text-yellow-100">You now have access to specific nut type selection and improved allergen management.</p>
+          </div>
+        </div>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Name */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-            Ingredient Name *
+          <label htmlFor="ingredient-name" className="block text-sm font-medium text-gray-900 mb-2">
+            Ingredient Name
           </label>
           <input
             type="text"
-            id="name"
+            id="ingredient-name"
             name="name"
-            value={formData.name}
-            onChange={handleInputChange}
+            defaultValue={initialData?.name || ""}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="e.g., Organic Flour"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., All-Purpose Flour"
           />
         </div>
 
-        {/* Supplier */}
+        {/* Description */}
         <div>
-          <label htmlFor="supplier" className="block text-sm font-medium text-gray-700 mb-2">
-            Supplier
+          <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
+            Description (Optional)
           </label>
-          <select
-            id="supplierId"
-            name="supplierId"
-            value={formData.supplierId}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Select a supplier</option>
-            {suppliers.map((supplier) => (
-              <option key={supplier.id} value={supplier.id}>
-                {supplier.name}
-              </option>
-            ))}
-          </select>
+          <textarea
+            id="description"
+            name="description"
+            rows={3}
+            defaultValue={initialData?.description || ""}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., Bleached, enriched, pre-sifted"
+          ></textarea>
         </div>
 
-        {/* Pack Quantity */}
-        <div>
-          <label htmlFor="packQuantity" className="block text-sm font-medium text-gray-700 mb-2">
-            Pack Quantity *
-          </label>
-          <input
-            type="number"
-            id="packQuantity"
-            name="packQuantity"
-            value={formData.packQuantity}
-            onChange={handleInputChange}
-            required
-            min="0.01"
-            step="0.01"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* Pack Unit */}
-        <div>
-          <label htmlFor="packUnit" className="block text-sm font-medium text-gray-700 mb-2">
-            Pack Unit *
-          </label>
-          <select
-            id="packUnit"
-            name="packUnit"
-            value={formData.packUnit}
-            onChange={handleInputChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="g">Grams (g)</option>
-            <option value="kg">Kilograms (kg)</option>
-            <option value="mg">Milligrams (mg)</option>
-            <option value="lb">Pounds (lb)</option>
-            <option value="oz">Ounces (oz)</option>
-            <option value="ml">Milliliters (ml)</option>
-            <option value="l">Liters (l)</option>
-            <option value="tsp">Teaspoons (tsp)</option>
-            <option value="tbsp">Tablespoons (tbsp)</option>
-            <option value="cup">Cups</option>
-            <option value="floz">Fluid Ounces (fl oz)</option>
-            <option value="pint">Pints</option>
-            <option value="quart">Quarts</option>
-            <option value="gallon">Gallons</option>
-            <option value="each">Each</option>
-            <option value="slices">Slices</option>
-          </select>
+        {/* Pack Quantity & Unit */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="packQuantity" className="block text-sm font-medium text-gray-900 mb-2">
+              Pack Quantity
+            </label>
+            <input
+              type="number"
+              id="packQuantity"
+              name="packQuantity"
+              step="0.01"
+              min="0"
+              defaultValue={initialData?.packQuantity || ""}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., 25"
+            />
+          </div>
+          <div>
+            <label htmlFor="packUnit" className="block text-sm font-medium text-gray-900 mb-2">
+              Pack Unit
+            </label>
+            <input
+              type="text"
+              id="packUnit"
+              name="packUnit"
+              defaultValue={initialData?.packUnit || ""}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., kg, lbs, each"
+            />
+          </div>
         </div>
 
         {/* Pack Price */}
         <div>
-          <label htmlFor="packPrice" className="block text-sm font-medium text-gray-700 mb-2">
-            Pack Price *
+          <label htmlFor="packPrice" className="block text-sm font-medium text-gray-900 mb-2">
+            Pack Price
           </label>
           <input
             type="number"
             id="packPrice"
             name="packPrice"
-            value={formData.packPrice}
-            onChange={handleInputChange}
-            required
-            min="0"
             step="0.01"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            min="0"
+            defaultValue={initialData?.packPrice || ""}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., 25.00"
           />
         </div>
 
-        {/* Currency */}
-        <div>
-          <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">
-            Currency *
-          </label>
-          <select
-            id="currency"
-            name="currency"
-            value={formData.currency}
-            onChange={handleInputChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="GBP">GBP (£)</option>
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-          </select>
+        {/* Yield Quantity & Unit */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="yieldQuantity" className="block text-sm font-medium text-gray-900 mb-2">
+              Yield Quantity (Optional)
+            </label>
+            <input
+              type="number"
+              id="yieldQuantity"
+              name="yieldQuantity"
+              step="0.01"
+              min="0"
+              defaultValue={initialData?.yieldQuantity || ""}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., 1"
+            />
+          </div>
+          <div>
+            <label htmlFor="yieldUnit" className="block text-sm font-medium text-gray-900 mb-2">
+              Yield Unit (Optional)
+            </label>
+            <input
+              type="text"
+              id="yieldUnit"
+              name="yieldUnit"
+              defaultValue={initialData?.yieldUnit || ""}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="e.g., kg, liter, each"
+            />
+          </div>
         </div>
 
         {/* Density */}
         <div>
-          <label htmlFor="densityGPerMl" className="block text-sm font-medium text-gray-700 mb-2">
-            Density (g/ml)
+          <label htmlFor="densityGPerMl" className="block text-sm font-medium text-gray-900 mb-2">
+            Density (g/ml) (Optional)
+            <UnitConversionHelp />
           </label>
           <input
             type="number"
             id="densityGPerMl"
             name="densityGPerMl"
-            value={formData.densityGPerMl}
-            onChange={handleInputChange}
-            min="0"
             step="0.001"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="e.g., 1.0 for water"
+            min="0"
+            defaultValue={initialData?.densityGPerMl || ""}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="e.g., 1.0 (for water)"
           />
-          <p className="text-xs text-gray-500 mt-1">Leave empty if not applicable</p>
-        </div>
-      </div>
-
-      {/* Allergens */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-            <span className="text-blue-600 text-xs">⚠</span>
-          </div>
-          <label className="text-lg font-semibold text-gray-900">
-            Allergen Information
-          </label>
-        </div>
-        <p className="text-sm text-gray-600 mb-6">
-          Select all allergens present in this ingredient. When "Nuts" is selected, you'll be able to specify the exact nut types below.
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {ALLERGEN_OPTIONS.map((allergen) => (
-            <label key={allergen} className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedAllergens.includes(allergen)}
-                onChange={(e) => handleAllergenChange(allergen, e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
-              />
-              <span className="text-sm text-gray-700 font-medium">{allergen}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Specific Nut Types */}
-      {selectedAllergens.includes("Nuts") && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
-              <span className="text-amber-600 text-xs">🥜</span>
-            </div>
-            <label className="text-lg font-semibold text-amber-800">
-              Specific Nut Types
-            </label>
-          </div>
-          <p className="text-sm text-amber-700 mb-6">
-            Search and select the specific types of nuts present. This will replace the generic "Nuts" entry with the specific nut types you choose.
+          <p className="text-xs text-gray-500 mt-1">
+            Used for converting between weight and volume (e.g., ml to grams).
           </p>
-          
-          {/* Searchable Dropdown */}
-          <div className="relative mb-4" ref={dropdownRef}>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search for nut types..."
-                value={nutSearchTerm}
-                onChange={(e) => {
-                  setNutSearchTerm(e.target.value);
-                  setShowNutDropdown(true);
-                }}
-                onFocus={() => setShowNutDropdown(true)}
-                className="w-full px-4 py-3 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </div>
-            </div>
-            
-            {/* Dropdown Results */}
-            {showNutDropdown && nutSearchTerm && filteredNutTypes.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {filteredNutTypes.map((nutType) => (
-                  <button
-                    key={nutType}
-                    type="button"
-                    onClick={() => handleNutTypeSelect(nutType)}
-                    className="w-full px-4 py-3 text-left hover:bg-amber-50 focus:bg-amber-50 focus:outline-none border-b border-amber-100 last:border-b-0"
-                  >
-                    <span className="text-sm text-gray-700">{nutType}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            
-            {showNutDropdown && nutSearchTerm && filteredNutTypes.length === 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-amber-200 rounded-lg shadow-lg p-4">
-                <p className="text-sm text-gray-500">No nut types found matching "{nutSearchTerm}"</p>
-              </div>
-            )}
+        </div>
+
+        {/* Allergens */}
+        <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">🚀</span>
+            <label className="block text-lg font-bold text-green-800">
+              ENHANCED ALLERGEN SYSTEM - NEW FEATURE!
+            </label>
+          </div>
+          <p className="text-sm text-green-700 mb-4">
+            This is the new enhanced allergen system with specific nut type selection. 
+            If you can see this green box, the system is working!
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {ALLERGEN_OPTIONS.map((allergen) => (
+              <label key={allergen} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={allergens.includes(allergen) || (allergen === "Other" && showOtherInput)}
+                  onChange={(e) => handleAllergenChange(allergen, e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">{allergen}</span>
+              </label>
+            ))}
           </div>
 
-          {/* Selected Nut Types */}
-          {selectedNutTypes.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-amber-800 mb-2">Selected Nut Types:</h4>
-              <div className="flex flex-wrap gap-2">
-                {selectedNutTypes.map((nutType) => (
-                  <span
-                    key={nutType}
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-medium"
-                  >
-                    {nutType}
-                    <button
-                      type="button"
-                      onClick={() => removeNutType(nutType)}
-                      className="ml-1 text-amber-600 hover:text-amber-800 focus:outline-none"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-              </div>
+          {/* Other Allergen Input */}
+          {showOtherInput && (
+            <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
+              <label htmlFor="other-allergen" className="block text-sm font-medium text-blue-800 mb-2">
+                Specify "Other" Allergen:
+              </label>
+              <input
+                id="other-allergen"
+                name="otherAllergen"
+                type="text"
+                value={otherAllergen}
+                onChange={(e) => handleOtherAllergenChange(e.target.value)}
+                className="w-full px-4 py-3 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="e.g., Lupin, Buckwheat, etc."
+              />
+              <p className="text-xs text-blue-700 mt-1">
+                Enter any allergen not listed above. This will be saved as a custom allergen.
+              </p>
             </div>
           )}
         </div>
-      )}
 
-      {/* Notes */}
-      <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-          Notes
-        </label>
-        <textarea
-          id="notes"
-          name="notes"
-          value={formData.notes}
-          onChange={handleInputChange}
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Additional notes about this ingredient..."
-        />
-      </div>
+        {/* Specific Nut Types */}
+        {allergens.includes("Nuts") && (
+          <div className="bg-yellow-100 border-4 border-yellow-400 rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-3xl">🥜</span>
+              <label className="block text-xl font-bold text-yellow-800">
+                SPECIFIC NUT TYPES - ENHANCED FEATURE!
+              </label>
+            </div>
+            <p className="text-lg text-yellow-700 mb-4 font-semibold">
+              🎉 This is the NEW enhanced feature! Select specific nut types below. 
+              This will replace the generic "Nuts" entry with the specific nut types you choose.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {NUT_TYPES.map((nutType) => (
+                <label key={nutType} className="flex items-center space-x-2 bg-white p-2 rounded border">
+                  <input
+                    type="checkbox"
+                    id={`nut-type-${nutType.toLowerCase().replace(/\s+/g, '-')}`}
+                    name={`nutType-${nutType}`}
+                    checked={selectedNutTypes.includes(nutType)}
+                    onChange={(e) => handleNutTypeChange(nutType, e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 font-medium">{nutType}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
+        {/* Supplier */}
+        <div>
+          <label htmlFor="supplierId" className="block text-sm font-medium text-gray-900 mb-2">
+            Supplier (Optional)
+          </label>
+          <SupplierSelector
+            suppliers={suppliers}
+            value={selectedSupplierId}
+            onChange={setSelectedSupplierId}
+          />
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-900 mb-2">
+            Notes (Optional)
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows={4}
+            defaultValue={initialData?.notes || ""}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+            placeholder="Any additional notes about this ingredient..."
+          ></textarea>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
+        >
+          Save Ingredient
+        </button>
       </form>
     </div>
   );

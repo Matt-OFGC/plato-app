@@ -1,173 +1,129 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useTimers } from "@/contexts/TimerContext";
 
 export function TimerSettings() {
-  const [settings, setSettings] = useState({
-    soundEnabled: true,
-    notificationEnabled: true,
-    soundVolume: 50,
-    notificationDuration: 5,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const { settings, updateSettings } = useTimers();
 
-  useEffect(() => {
-    loadTimerSettings();
-  }, []);
-
-  const loadTimerSettings = async () => {
+  const playTestSound = () => {
     try {
-      const response = await fetch('/api/user/timer-preferences');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.settings) {
-          setSettings(data.settings);
-        }
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      switch (settings.ringtone) {
+        case 'beep':
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(settings.volume * 0.3, audioContext.currentTime);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.2);
+          break;
+        case 'chime':
+          oscillator.frequency.value = 523;
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(settings.volume * 0.3, audioContext.currentTime);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.2);
+          setTimeout(() => {
+            const osc2 = audioContext.createOscillator();
+            const gain2 = audioContext.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.frequency.value = 659;
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(settings.volume * 0.3, audioContext.currentTime);
+            osc2.start();
+            osc2.stop(audioContext.currentTime + 0.3);
+          }, 200);
+          break;
+        case 'bell':
+          oscillator.frequency.value = 1000;
+          oscillator.type = 'triangle';
+          gainNode.gain.setValueAtTime(settings.volume * 0.4, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.5);
+          break;
       }
-    } catch (error) {
-      console.error('Error loading timer settings:', error);
-    } finally {
-      setIsLoading(false);
+    } catch (e) {
+      console.error('Audio test failed');
     }
   };
-
-  const saveTimerSettings = async () => {
-    setIsSaving(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch('/api/user/timer-preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ settings }),
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Timer settings saved successfully!' });
-      } else {
-        const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Failed to save timer settings' });
-      }
-    } catch (error) {
-      console.error('Error saving timer settings:', error);
-      setMessage({ type: 'error', text: 'Failed to save timer settings. Please try again.' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setSettings(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : (type === 'range' ? parseInt(value) : value)
-    }));
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      {message && (
-        <div className={`p-4 rounded-lg ${
-          message.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-800' 
-            : 'bg-red-50 border border-red-200 text-red-800'
-        }`}>
-          {message.text}
+    <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">Timer Notifications</h3>
+      <p className="text-sm text-gray-600 mb-6">Customize how timer alerts sound when they complete</p>
+      
+      <div className="space-y-6">
+        {/* Volume Control */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-3">
+            Alert Volume: <span className="text-emerald-600 font-semibold">{Math.round(settings.volume * 100)}%</span>
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={settings.volume * 100}
+            onChange={(e) => updateSettings({ volume: parseInt(e.target.value) / 100 })}
+            className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Silent</span>
+            <span>Loud</span>
+          </div>
         </div>
-      )}
-
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Timer Alert Settings</h3>
         
-        <div className="space-y-6">
-          {/* Sound Settings */}
-          <div>
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                name="soundEnabled"
-                checked={settings.soundEnabled}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm font-medium text-gray-700">Enable sound alerts</span>
-            </label>
-          </div>
-
-          {settings.soundEnabled && (
-            <div>
-              <label htmlFor="soundVolume" className="block text-sm font-medium text-gray-700 mb-2">
-                Sound Volume: {settings.soundVolume}%
+        {/* Ringtone Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-3">Alert Sound</label>
+          <div className="space-y-3">
+            {(['beep', 'chime', 'bell'] as const).map((tone) => (
+              <label key={tone} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="ringtone"
+                  value={tone}
+                  checked={settings.ringtone === tone}
+                  onChange={(e) => updateSettings({ ringtone: e.target.value as any })}
+                  className="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-900 capitalize block">{tone}</span>
+                  <span className="text-xs text-gray-500">
+                    {tone === 'beep' && 'Simple single tone - quick and subtle'}
+                    {tone === 'chime' && 'Pleasant two-tone melody - friendly reminder'}
+                    {tone === 'bell' && 'Resonant bell sound - attention-grabbing'}
+                  </span>
+                </div>
               </label>
-              <input
-                type="range"
-                id="soundVolume"
-                name="soundVolume"
-                min="0"
-                max="100"
-                value={settings.soundVolume}
-                onChange={handleInputChange}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-          )}
-
-          {/* Notification Settings */}
-          <div>
-            <label className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                name="notificationEnabled"
-                checked={settings.notificationEnabled}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <span className="text-sm font-medium text-gray-700">Enable browser notifications</span>
-            </label>
+            ))}
           </div>
-
-          {settings.notificationEnabled && (
-            <div>
-              <label htmlFor="notificationDuration" className="block text-sm font-medium text-gray-700 mb-2">
-                Notification Duration: {settings.notificationDuration} seconds
-              </label>
-              <input
-                type="range"
-                id="notificationDuration"
-                name="notificationDuration"
-                min="1"
-                max="30"
-                value={settings.notificationDuration}
-                onChange={handleInputChange}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-          )}
         </div>
-      </div>
-
-      <div className="flex justify-end">
+        
+        {/* Test Sound Button */}
         <button
+          onClick={playTestSound}
           type="button"
-          onClick={saveTimerSettings}
-          disabled={isSaving}
-          className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-medium flex items-center justify-center gap-2"
         >
-          {isSaving ? 'Saving...' : 'Save Timer Settings'}
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+          Test Alert Sound
         </button>
+        
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-xs text-blue-800">
+            <strong>💡 Tip:</strong> Your browser may block sounds on first load. Click "Test Alert Sound" to enable audio, then your timer notifications will work perfectly!
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+

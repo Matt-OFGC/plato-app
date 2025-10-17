@@ -3,64 +3,53 @@
 import { useState } from "react";
 
 interface PasswordInputProps {
+  id?: string;
+  name?: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  name?: string;
   placeholder?: string;
-  autoComplete?: "current-password" | "new-password";
-  "aria-label"?: string;
   required?: boolean;
-  minLength?: number;
+  disabled?: boolean;
   className?: string;
-  id?: string;
 }
 
 export function PasswordInput({
+  id,
+  name,
   value,
   onChange,
-  name,
   placeholder,
-  autoComplete,
-  "aria-label": ariaLabel,
-  required,
-  minLength,
-  className = "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors",
-  id,
+  required = false,
+  disabled = false,
+  className = "",
 }: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false);
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
 
   return (
     <div className="relative">
       <input
         id={id}
-        type={showPassword ? "text" : "password"}
         name={name}
+        type={showPassword ? "text" : "password"}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        autoComplete={autoComplete}
-        aria-label={ariaLabel}
         required={required}
-        minLength={minLength}
-        className={className}
+        disabled={disabled}
+        className={`block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm ${className}`}
       />
       <button
         type="button"
-        onClick={togglePasswordVisibility}
         className="absolute inset-y-0 right-0 pr-3 flex items-center"
-        aria-pressed={showPassword}
-        aria-label={showPassword ? "Hide password" : "Show password"}
+        onClick={() => setShowPassword(!showPassword)}
+        disabled={disabled}
       >
         {showPassword ? (
           <svg
             className="h-5 w-5 text-gray-400 hover:text-gray-600"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
+            viewBox="0 0 24 24"
           >
             <path
               strokeLinecap="round"
@@ -73,8 +62,8 @@ export function PasswordInput({
           <svg
             className="h-5 w-5 text-gray-400 hover:text-gray-600"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
+            viewBox="0 0 24 24"
           >
             <path
               strokeLinecap="round"

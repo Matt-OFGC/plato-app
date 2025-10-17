@@ -22,7 +22,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { SearchableSelect } from "@/components/SearchableSelect";
+import { SearchableSelect } from "./SearchableSelect";
 import { useTimers } from "@/contexts/TimerContext";
 
 interface Ingredient {
@@ -150,7 +150,7 @@ interface RecipePageInlineCompleteTestProps {
   onSave: (data: FormData) => Promise<void>;
 }
 
-export function RecipePageInlineComplete({
+export function RecipePageInlineCompleteTest({
   recipe,
   costBreakdown,
   ingredients,
@@ -329,10 +329,9 @@ export function RecipePageInlineComplete({
       e.preventDefault();
       e.stopPropagation();
     }
-    console.log('Adding ingredient to section:', sectionId, 'Available ingredients:', ingredients.length);
     setSections(sections.map(s => 
       s.id === sectionId 
-        ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: ingredients.length > 0 ? ingredients[0].id : 0, quantity: "1", unit: "g" as Unit, price: "", note: "" }] }
+        ? { ...s, items: [...s.items, { id: `item-${Date.now()}`, ingredientId: 0, quantity: "", unit: "g" as Unit, price: "", note: "" }] }
         : s
     ));
   };
@@ -564,18 +563,18 @@ export function RecipePageInlineComplete({
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50 -mx-4 -my-8 border-4 border-gray-200 rounded-2xl m-4 shadow-2xl">
       {/* Header Container */}
-      <div className="flex-shrink-0 px-6 pt-8 pb-2 border-l-2 border-r-2 border-gray-100">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between h-16">
+      <div className="flex-shrink-0 px-6 pt-12 pb-2 border-l-2 border-r-2 border-gray-100">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between h-20">
             <div className="flex flex-col justify-center gap-1 ml-16">
               {isLocked ? (
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{name}</h1>
               ) : (
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
+                  className="text-3xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
                   placeholder="Recipe name..."
                 />
               )}
@@ -768,7 +767,7 @@ export function RecipePageInlineComplete({
         {/* Right Panel - Recipe Steps Carousel with Inline Editing */}
         <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           {useSections ? (
-              <RecipeCarousel
+            <RecipeCarouselTest 
               sections={sections}
               checkedItems={checkedItems}
               toggleItem={toggleItem}
@@ -811,7 +810,7 @@ export function RecipePageInlineComplete({
 }
 
 // Carousel Component for Recipes with Sections (with inline editing)
-function RecipeCarousel({ 
+function RecipeCarouselTest({ 
   sections, 
   checkedItems, 
   toggleItem, 
@@ -946,7 +945,7 @@ function RecipeCarousel({
               className="flex-shrink-0 w-full h-full"
               style={{ scrollSnapAlign: 'start' }}
             >
-              <StepCard 
+              <StepCardTest 
                 section={section}
                 index={index}
                 checkedItems={checkedItems}
@@ -1002,7 +1001,7 @@ function RecipeCarousel({
 }
 
 // Step Card Component (with inline editing)
-function StepCard({ 
+function StepCardTest({ 
   section, 
   index, 
   checkedItems, 
@@ -1203,7 +1202,7 @@ function StepCard({
                   
                   // Show new edit mode design when unlocked
                   return (
-                    <SortableIngredientItem
+                    <SortableIngredientItemTEST
                       key={item.id}
                       item={item}
                       sectionId={section.id}
@@ -1245,7 +1244,7 @@ function StepCard({
 }
 
 // SortableIngredientItem Component - Updated with better alignment and visual design
-function SortableIngredientItem({ 
+function SortableIngredientItemTEST({ 
   item, 
   sectionId, 
   ingredients,
@@ -1276,7 +1275,7 @@ function SortableIngredientItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white border-2 border-gray-200 rounded-xl p-4 mb-4 mx-2 transition-all duration-200 shadow-sm hover:shadow-md ${
+      className={`bg-white border-2 border-gray-200 rounded-xl p-4 mb-4 transition-all duration-200 shadow-sm hover:shadow-md ${
         isDragging ? 'opacity-50 shadow-lg' : ''
       }`}
     >
@@ -1293,15 +1292,15 @@ function SortableIngredientItem({
         </div>
 
         {/* Ingredient Fields */}
-        <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+        <div className="flex-1 grid grid-cols-12 gap-3 items-center">
           {/* Ingredient Search/Selection */}
-          <div className="col-span-5">
+          <div className="col-span-4">
             <SearchableSelect
-              value={item.ingredientId}
-              onChange={(value) => onUpdate('ingredientId', value)}
+              value={item.ingredientId ? item.ingredientId.toString() : ''}
+              onChange={(value) => onUpdate('ingredientId', parseInt(value) || 0)}
               placeholder="Select ingredient..."
               options={ingredients.map(ing => ({
-                id: ing.id,
+                value: ing.id.toString(),
                 name: ing.name
               }))}
               className="text-sm"
@@ -1315,7 +1314,7 @@ function SortableIngredientItem({
               step="0.1"
               value={item.quantity}
               onChange={(e) => onUpdate('quantity', e.target.value)}
-              className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
               placeholder="1.0"
             />
           </div>
@@ -1325,7 +1324,7 @@ function SortableIngredientItem({
             <select
               value={item.unit}
               onChange={(e) => onUpdate('unit', e.target.value)}
-              className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
             >
               <option value="">Unit</option>
               <option value="cup">cup</option>
@@ -1343,16 +1342,16 @@ function SortableIngredientItem({
             </select>
           </div>
 
-          {/* Price - Smaller */}
-          <div className="col-span-2">
+          {/* Price */}
+          <div className="col-span-3">
             <div className="relative">
-              <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">£</span>
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">£</span>
               <input
                 type="number"
                 step="0.01"
                 value={item.price || ''}
                 onChange={(e) => onUpdate('price', e.target.value)}
-                className="w-full pl-6 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
                 placeholder="0.00"
               />
             </div>

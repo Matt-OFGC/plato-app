@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { AdminSession } from "@/lib/admin-auth";
-import { FileUpload } from "@/components/FileUpload";
-import { AdminUserManager } from "@/components/AdminUserManager";
-import { AdminCompanyManager } from "@/components/AdminCompanyManager";
-import { SystemStatus } from "@/components/SystemStatus";
+import { FileUpload } from "./FileUpload";
+import { AdminUserManager } from "./AdminUserManager";
+import { AdminCompanyManager } from "./AdminCompanyManager";
+import { SystemStatus } from "./SystemStatus";
 
 interface SystemAdminDashboardProps {
   session: AdminSession;

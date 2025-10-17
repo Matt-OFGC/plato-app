@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { NavigationSettings } from "@/components/NavigationSettings";
+import { NavigationSettings } from "./NavigationSettings";
 
 export function NavigationSettingsClient() {
   const [currentItems, setCurrentItems] = useState<string[]>(["dashboard", "ingredients", "recipes", "recipe-mixer"]);

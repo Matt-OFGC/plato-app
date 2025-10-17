@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FloatingNavBar } from "@/components/FloatingNavBar";
+import { FloatingNavBar } from "./FloatingNavBar";
 import { ALL_NAVIGATION_ITEMS } from "@/lib/navigation-config";
 
 export function Sidebar() {

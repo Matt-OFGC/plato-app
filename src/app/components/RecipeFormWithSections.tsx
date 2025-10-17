@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { computeIngredientUsageCost, computeRecipeCost, computeCostPerOutputUnit, Unit } from "@/lib/units";
 import { formatCurrency } from "@/lib/currency";
-import { UnitConversionHelp } from "@/components/UnitConversionHelp";
+import { UnitConversionHelp } from "./UnitConversionHelp";
 import {
   DndContext,
   closestCenter,

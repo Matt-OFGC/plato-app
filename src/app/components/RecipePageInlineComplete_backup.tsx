@@ -22,7 +22,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { SearchableSelect } from "@/components/SearchableSelect";
+import { SearchableSelect } from "./SearchableSelect";
 import { useTimers } from "@/contexts/TimerContext";
 
 interface Ingredient {

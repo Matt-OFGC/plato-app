@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FloatingNavBar } from "@/components/FloatingNavBar";
+import { FloatingNavBar } from "./FloatingNavBar";
 
 // Fixed navigation items - no customization
 const FIXED_NAVIGATION_ITEMS = ["dashboard", "ingredients", "recipes", "production"];
