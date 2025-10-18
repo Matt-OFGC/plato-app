@@ -7,7 +7,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { z } from "zod";
 
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
-const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "each", "slices"]);
+const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
 
 const recipeSchema = z.object({
   name: z.string().min(1),

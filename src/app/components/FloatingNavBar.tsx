@@ -53,22 +53,22 @@ export function FloatingNavBar({
 
   return (
     <>
-      {/* Floating Navigation Bar */}
-      <nav className={`fixed bottom-4 left-4 right-4 z-50 md:left-8 md:right-8 lg:left-12 lg:right-12 xl:left-16 xl:right-16 safe-area-bottom transition-all duration-300 ease-out ${
+      {/* Floating Navigation Bar - Left Side */}
+      <nav className={`fixed left-4 top-1/2 -translate-y-1/2 z-50 md:left-6 lg:left-8 xl:left-10 safe-area-left transition-all duration-300 ease-out ${
         isVisible 
-          ? 'translate-y-0 opacity-100' 
-          : 'translate-y-full opacity-0'
+          ? 'translate-x-0 opacity-100' 
+          : '-translate-x-full opacity-0'
       }`}>
-        <div className={`floating-nav floating-nav-enhanced rounded-3xl px-3 sm:px-4 py-2.5 mx-auto max-w-md transition-all duration-300 ease-out ${
+        <div className={`floating-nav floating-nav-enhanced rounded-3xl px-2.5 py-3 mx-auto max-h-md transition-all duration-300 ease-out ${
           timerCount > 0 ? 'animate-pulse-subtle' : ''
         } ${
           hasScrolled && isScrollingDown 
             ? 'scale-95 shadow-lg' 
             : 'scale-100 shadow-md'
         }`}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-center justify-between h-full">
             {/* Navigation Items */}
-            <div className="flex items-center space-x-1 flex-1">
+            <div className="flex flex-col items-center space-y-1 flex-1">
               {displayNavItems.map((item, index) => {
                 const active = isActive(item.href);
                 const isHovered = hoveredItem === item.href;
@@ -78,7 +78,7 @@ export function FloatingNavBar({
                     href={item.href}
                     onMouseEnter={() => setHoveredItem(item.href)}
                     onMouseLeave={() => setHoveredItem(null)}
-                    className={`floating-nav-item flex-1 flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-2xl transition-all duration-300 ease-out group relative touch-target ${
+                    className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative touch-target w-12 h-12 ${
                       active 
                         ? "floating-nav-active text-black shadow-lg scale-105" 
                         : `text-gray-500 hover:text-gray-700 hover:bg-gray-100/50 ${
@@ -99,7 +99,7 @@ export function FloatingNavBar({
                     }`}>
                       {item.icon}
                     </div>
-                    <span className={`text-[10px] font-medium mt-1 truncate max-w-[70px] transition-all duration-300 ${
+                    <span className={`text-[8px] font-medium mt-0.5 truncate max-w-[40px] transition-all duration-300 ${
                       isHovered ? 'text-gray-800 font-semibold' : ''
                     }`}>
                       {item.shortLabel}
@@ -118,7 +118,7 @@ export function FloatingNavBar({
                 onClick={() => onMoreClick?.()}
                 onMouseEnter={() => setHoveredItem('more')}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`floating-nav-item flex-1 flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative ${
+                className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative w-12 h-12 ${
                   hoveredItem === 'more' 
                     ? 'text-gray-700 bg-gray-100/50 scale-105 shadow-md' 
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
@@ -135,7 +135,7 @@ export function FloatingNavBar({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                   </svg>
                 </div>
-                <span className={`text-[10px] font-medium mt-1 transition-all duration-300 ${
+                <span className={`text-[8px] font-medium mt-0.5 transition-all duration-300 ${
                   hoveredItem === 'more' ? 'text-gray-800 font-semibold' : ''
                 }`}>
                   More
@@ -148,12 +148,12 @@ export function FloatingNavBar({
 
             {/* Timer Badge */}
             {timerCount > 0 && (
-              <div className="ml-2 flex-shrink-0">
+              <div className="mt-2 flex-shrink-0">
                 <div className="relative">
                   <button 
                     onMouseEnter={() => setHoveredItem('timer')}
                     onMouseLeave={() => setHoveredItem(null)}
-                    className={`floating-nav-item p-2 rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 transition-all duration-300 group relative overflow-hidden ${
+                    className={`floating-nav-item p-2 rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 transition-all duration-300 group relative overflow-hidden w-12 h-12 ${
                       hoveredItem === 'timer' ? 'scale-110 shadow-lg' : ''
                     }`}
                     style={{

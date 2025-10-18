@@ -8,7 +8,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
 
-const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices"]);
+const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
 
 const ingredientSchema = z.object({
@@ -38,7 +38,7 @@ export async function createIngredient(formData: FormData) {
     const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
     if (!parsed.success) {
       console.error("Validation error:", parsed.error);
-      redirect("/ingredients?error=validation");
+      redirect("/dashboard/ingredients?error=validation");
     }
 
     const data = parsed.data;
@@ -47,7 +47,7 @@ export async function createIngredient(formData: FormData) {
     
     // Check subscription limits
     if (userId && !(await canAddIngredient(userId))) {
-      redirect("/ingredients?error=limit_reached&type=ingredient");
+      redirect("/dashboard/ingredients?error=limit_reached&type=ingredient");
     }
     
     // Check if ingredient with this name already exists for this company
@@ -59,7 +59,7 @@ export async function createIngredient(formData: FormData) {
     });
 
     if (existingIngredient) {
-      redirect(`/ingredients/new?error=duplicate_name&name=${encodeURIComponent(data.name)}`);
+      redirect(`/dashboard/ingredients/new?error=duplicate_name&name=${encodeURIComponent(data.name)}`);
     }
     
     // Convert the user-selected unit to a base unit for storage
@@ -93,15 +93,15 @@ export async function createIngredient(formData: FormData) {
           await updateIngredientCount(userId, 1);
         }
         
-        revalidatePath("/ingredients");
-        redirect("/ingredients");
+        revalidatePath("/dashboard/ingredients");
+        redirect("/dashboard/ingredients");
   } catch (error) {
     console.error("Error in createIngredient:", error);
     // Check if it's a unique constraint error
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      redirect("/ingredients/new?error=duplicate_name");
+      redirect("/dashboard/ingredients/new?error=duplicate_name");
     }
-    redirect("/ingredients?error=server_error");
+    redirect("/dashboard/ingredients?error=server_error");
   }
 }
 
@@ -109,7 +109,7 @@ export async function updateIngredient(id: number, formData: FormData) {
   const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     console.error("Ingredient validation error:", parsed.error);
-    redirect("/ingredients?error=validation");
+    redirect("/dashboard/ingredients?error=validation");
   }
   const data = parsed.data;
   
@@ -163,7 +163,7 @@ export async function updateIngredient(id: number, formData: FormData) {
         ...(priceChanged && { lastPriceUpdate: new Date() }),
       },
     });
-    revalidatePath("/ingredients");
+    revalidatePath("/dashboard/ingredients");
     redirect("/dashboard/ingredients");
   } catch (error) {
     console.error("Error updating ingredient:", error);
@@ -198,7 +198,7 @@ export async function deleteIngredient(id: number) {
     }
   }
   
-  revalidatePath("/ingredients");
+  revalidatePath("/dashboard/ingredients");
 }
 
 export async function getSuppliers() {

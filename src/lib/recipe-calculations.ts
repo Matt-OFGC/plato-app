@@ -82,6 +82,43 @@ export function fromBaseToUnit(
           return value / 453.592;
         case "oz":
           return value / 28.3495;
+        case "ml":
+          // Convert grams to ml using density (default to water density: 1g/ml)
+          if (densityGPerMl) {
+            return value / densityGPerMl;
+          }
+          // Default to water density if no density provided
+          return value / 1.0;
+        case "l":
+          // Convert grams to liters using density
+          if (densityGPerMl) {
+            return value / densityGPerMl / 1000;
+          }
+          return value / 1000; // Default to water density
+        case "tsp":
+          // Convert grams to tsp using density
+          if (densityGPerMl) {
+            return (value / densityGPerMl) / 4.92892;
+          }
+          return value / 4.92892; // Default to water density
+        case "tbsp":
+          // Convert grams to tbsp using density
+          if (densityGPerMl) {
+            return (value / densityGPerMl) / 14.7868;
+          }
+          return value / 14.7868; // Default to water density
+        case "cup":
+          // Convert grams to cup using density
+          if (densityGPerMl) {
+            return (value / densityGPerMl) / 236.588;
+          }
+          return value / 236.588; // Default to water density
+        case "floz":
+          // Convert grams to floz using density
+          if (densityGPerMl) {
+            return (value / densityGPerMl) / 29.5735;
+          }
+          return value / 29.5735; // Default to water density
         default:
           throw new Error(`Cannot convert from g to ${targetUnit}`);
       }
@@ -100,6 +137,37 @@ export function fromBaseToUnit(
           return value / 236.588;
         case "floz":
           return value / 29.5735;
+        case "g":
+          // Convert ml to grams using density (default to water density: 1g/ml)
+          if (densityGPerMl) {
+            return value * densityGPerMl;
+          }
+          // Default to water density if no density provided
+          return value * 1.0;
+        case "kg":
+          // Convert ml to kg using density
+          if (densityGPerMl) {
+            return (value * densityGPerMl) / 1000;
+          }
+          return value / 1000; // Default to water density
+        case "mg":
+          // Convert ml to mg using density
+          if (densityGPerMl) {
+            return value * densityGPerMl * 1000;
+          }
+          return value * 1000; // Default to water density
+        case "lb":
+          // Convert ml to lb using density
+          if (densityGPerMl) {
+            return (value * densityGPerMl) / 453.592;
+          }
+          return value / 453.592; // Default to water density
+        case "oz":
+          // Convert ml to oz using density
+          if (densityGPerMl) {
+            return (value * densityGPerMl) / 28.3495;
+          }
+          return value / 28.3495; // Default to water density
         default:
           throw new Error(`Cannot convert from ml to ${targetUnit}`);
       }

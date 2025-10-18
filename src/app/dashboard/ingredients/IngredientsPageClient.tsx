@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { IngredientModal } from "@/components/IngredientModal";
 import { IngredientsView } from "@/components/IngredientsView";
 import { SmartImporter } from "@/components/SmartImporter";
@@ -18,6 +19,7 @@ interface IngredientsPageClientProps {
 }
 
 export function IngredientsPageClient({ ingredients, deleteIngredient, companyId }: IngredientsPageClientProps) {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [ingredientsList, setIngredientsList] = useState(ingredients);
@@ -38,8 +40,8 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
   };
 
   const handleModalSuccess = () => {
-    // Refresh the page to get updated ingredients
-    window.location.reload();
+    // Refresh the page to get updated ingredients using Next.js router
+    router.refresh();
   };
 
   return (

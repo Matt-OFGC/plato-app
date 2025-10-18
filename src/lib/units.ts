@@ -15,9 +15,14 @@ export type Unit =
   | "cup"
   | "floz"
   | "each"
-  | "slices";
+  | "slices"
+  | "pinch"
+  | "dash"
+  | "large"
+  | "medium"
+  | "small";
 
-type UnitKind = "mass" | "volume" | "each" | "slices";
+type UnitKind = "mass" | "volume" | "each" | "slices" | "pinch" | "dash" | "size";
 
 const MASS_TO_G: Record<"g" | "kg" | "mg" | "lb" | "oz", number> = {
   g: 1,
@@ -38,6 +43,19 @@ const VOLUME_TO_ML: Record<"ml" | "l" | "tsp" | "tbsp" | "cup" | "floz" | "pint"
   pint: 568.26125, // UK imperial pint
   quart: 1136.5225, // UK imperial quart (2 pints)
   gallon: 4546.09, // UK imperial gallon (8 pints)
+};
+
+// Small volume measurements
+const PINCH_TO_ML: Record<"pinch" | "dash", number> = {
+  pinch: 0.5, // approximately 1/8 tsp
+  dash: 0.25, // approximately 1/16 tsp
+};
+
+// Size-based measurements (approximate weights)
+const SIZE_TO_G: Record<"large" | "medium" | "small", number> = {
+  large: 100, // approximate weight for large items like eggs, onions
+  medium: 60, // approximate weight for medium items
+  small: 30, // approximate weight for small items
 };
 
 // Discrete items - slices are treated as discrete items
@@ -63,6 +81,11 @@ const UNIT_KIND: Record<Unit, UnitKind> = {
   floz: "volume",
   each: "each",
   slices: "slices",
+  pinch: "pinch",
+  dash: "dash",
+  large: "size",
+  medium: "size",
+  small: "size",
 };
 
 export function toBase(quantity: number, unit: Unit, densityGPerMl?: number): { amount: number; base: BaseUnit } {
@@ -72,6 +95,17 @@ export function toBase(quantity: number, unit: Unit, densityGPerMl?: number): { 
 
   if (kind === "mass") {
     const amountG = MASS_TO_G[unit as keyof typeof MASS_TO_G] * quantity;
+    return { amount: amountG, base: "g" };
+  }
+
+  if (kind === "pinch" || kind === "dash") {
+    const amountMl = PINCH_TO_ML[unit as keyof typeof PINCH_TO_ML] * quantity;
+    if (densityGPerMl == null) return { amount: amountMl, base: "ml" };
+    return { amount: amountMl * densityGPerMl, base: "g" };
+  }
+
+  if (kind === "size") {
+    const amountG = SIZE_TO_G[unit as keyof typeof SIZE_TO_G] * quantity;
     return { amount: amountG, base: "g" };
   }
 
@@ -88,6 +122,18 @@ export function fromBase(amount: number, target: Unit, densityGPerMl?: number): 
 
   if (kind === "mass") {
     const per = MASS_TO_G[target as keyof typeof MASS_TO_G];
+    return amount / per;
+  }
+
+  if (kind === "pinch" || kind === "dash") {
+    const perMl = PINCH_TO_ML[target as keyof typeof PINCH_TO_ML];
+    // if amount is in grams but converting to volume and density provided, convert g -> ml first
+    const amountMl = densityGPerMl ? amount / densityGPerMl : amount;
+    return amountMl / perMl;
+  }
+
+  if (kind === "size") {
+    const per = SIZE_TO_G[target as keyof typeof SIZE_TO_G];
     return amount / per;
   }
 
@@ -169,12 +215,176 @@ export function computeRecipeCost(params: {
   return subtotal;
 }
 
+// Enhanced recipe cost calculation with automatic density lookup
+export function computeRecipeCostWithDensity(params: {
+  items: Array<{
+    quantity: number;
+    unit: Unit;
+    ingredient: {
+      name: string;
+      packQuantity: number;
+      packUnit: BaseUnit;
+      packPrice: number;
+      densityGPerMl?: number | null;
+    };
+  }>;
+}): number {
+  const subtotal = params.items.reduce((sum, item) => {
+    return sum +
+      computeIngredientUsageCostWithDensity({
+        usageQuantity: item.quantity,
+        usageUnit: item.unit,
+        ingredient: item.ingredient,
+      });
+  }, 0);
+  return subtotal;
+}
+
 export function computeCostPerOutputUnit(params: {
   totalCost: number;
   yieldQuantity: number;
 }): number {
   if (params.yieldQuantity <= 0) return params.totalCost;
   return params.totalCost / params.yieldQuantity;
+}
+
+// Comprehensive ingredient density database for accurate volume-to-weight conversions
+export const INGREDIENT_DENSITIES: Record<string, number> = {
+  // Baking ingredients (grams per ml)
+  "flour": 0.6,
+  "plain flour": 0.6,
+  "all-purpose flour": 0.6,
+  "bread flour": 0.6,
+  "cake flour": 0.5,
+  "self-raising flour": 0.6,
+  "whole wheat flour": 0.6,
+  "sugar": 0.85,
+  "granulated sugar": 0.85,
+  "caster sugar": 0.85,
+  "brown sugar": 0.8,
+  "icing sugar": 0.6,
+  "powdered sugar": 0.6,
+  "baking powder": 0.8,
+  "baking soda": 0.87,
+  "bicarbonate of soda": 0.87,
+  "salt": 1.2,
+  "table salt": 1.2,
+  "sea salt": 1.1,
+  "cocoa powder": 0.4,
+  "cornstarch": 0.6,
+  "corn flour": 0.6,
+  "coconut flour": 0.4,
+  "almond flour": 0.4,
+  "ground almonds": 0.4,
+  
+  // Dairy products
+  "milk": 1.03,
+  "whole milk": 1.03,
+  "skim milk": 1.03,
+  "butter": 0.91,
+  "margarine": 0.91,
+  "cream": 1.0,
+  "heavy cream": 1.0,
+  "double cream": 1.0,
+  "single cream": 1.0,
+  "yogurt": 1.05,
+  "greek yogurt": 1.05,
+  "cream cheese": 1.0,
+  "sour cream": 1.0,
+  
+  // Oils and fats
+  "vegetable oil": 0.92,
+  "olive oil": 0.92,
+  "coconut oil": 0.92,
+  "sunflower oil": 0.92,
+  "rapeseed oil": 0.92,
+  "sesame oil": 0.92,
+  
+  // Nuts and seeds
+  "almonds": 0.6,
+  "walnuts": 0.6,
+  "pecans": 0.6,
+  "hazelnuts": 0.6,
+  "peanuts": 0.6,
+  "cashews": 0.6,
+  "pistachios": 0.6,
+  "sesame seeds": 0.6,
+  "poppy seeds": 0.6,
+  "chia seeds": 0.6,
+  "flax seeds": 0.6,
+  
+  // Spices and herbs
+  "cinnamon": 0.4,
+  "ginger": 0.4,
+  "nutmeg": 0.4,
+  "cloves": 0.4,
+  "cardamom": 0.4,
+  "vanilla": 0.4,
+  "paprika": 0.4,
+  "cumin": 0.4,
+  "coriander": 0.4,
+  "oregano": 0.1,
+  "basil": 0.1,
+  "thyme": 0.1,
+  "rosemary": 0.1,
+  "parsley": 0.1,
+  
+  // Other common ingredients
+  "honey": 1.4,
+  "maple syrup": 1.3,
+  "molasses": 1.4,
+  "golden syrup": 1.4,
+  "jam": 1.3,
+  "jelly": 1.3,
+  "peanut butter": 1.0,
+  "almond butter": 1.0,
+  "tahini": 1.0,
+  "vinegar": 1.0,
+  "balsamic vinegar": 1.0,
+  "lemon juice": 1.0,
+  "lime juice": 1.0,
+  "orange juice": 1.0,
+  "tomato paste": 1.2,
+  "tomato puree": 1.0,
+  "coconut milk": 1.0,
+  "coconut cream": 1.0,
+};
+
+// Function to get ingredient density by name (case-insensitive)
+export function getIngredientDensity(ingredientName: string): number | undefined {
+  const normalizedName = ingredientName.toLowerCase().trim();
+  return INGREDIENT_DENSITIES[normalizedName];
+}
+
+// Enhanced cost calculation with automatic density lookup
+export function computeIngredientUsageCostWithDensity(params: {
+  usageQuantity: number;
+  usageUnit: Unit;
+  ingredient: {
+    name: string;
+    packQuantity: number;
+    packUnit: BaseUnit;
+    packPrice: number;
+    densityGPerMl?: number | null;
+  } | null;
+}): number {
+  const { usageQuantity, usageUnit, ingredient } = params;
+  
+  if (!ingredient) return 0;
+  
+  // Use provided density or look it up from the database
+  const density = ingredient.densityGPerMl || getIngredientDensity(ingredient.name);
+  
+  return computeIngredientUsageCost({
+    usageQuantity,
+    usageUnit,
+    ingredient: {
+      packQuantity: ingredient.packQuantity,
+      packUnit: ingredient.packUnit,
+      packPrice: ingredient.packPrice,
+      densityGPerMl: density || undefined,
+    }
+  });
 }
 
 

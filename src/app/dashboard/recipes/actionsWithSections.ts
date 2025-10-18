@@ -8,7 +8,7 @@ import { z } from "zod";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
-const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices"]);
+const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
 
 const recipeSectionSchema = z.object({
   id: z.string(),

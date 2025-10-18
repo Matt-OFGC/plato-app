@@ -178,6 +178,7 @@ export default async function RecipePage({ params }: Props) {
     name: ing.name,
     packQuantity: Number(ing.packQuantity),
     packUnit: ing.packUnit,
+    originalUnit: ing.originalUnit,
     packPrice: Number(ing.packPrice),
     densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : null,
     allergens: Array.isArray(ing.allergens) ? ing.allergens : [],

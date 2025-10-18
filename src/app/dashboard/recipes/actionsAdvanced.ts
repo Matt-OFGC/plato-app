@@ -1,13 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { z } from "zod";
 
 const baseUnitEnum = z.enum(["g", "ml", "each"]);
-const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each"]);
+const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
 
 const recipeSectionSchema = z.object({
   id: z.string(),
@@ -74,6 +75,7 @@ export async function createAdvancedRecipe(formData: FormData) {
   const data = parsed.data;
   const { companyId } = await getCurrentUserAndCompany();
 
+  // @ts-ignore - Prisma transaction type issue
   await prisma.$transaction(async (tx) => {
     // Create the main recipe
     const recipe = await tx.recipe.create({
@@ -156,6 +158,7 @@ export async function updateAdvancedRecipe(id: number, formData: FormData) {
     redirect("/recipes?error=unauthorized");
   }
 
+  // @ts-ignore - Prisma transaction type issue
   await prisma.$transaction(async (tx) => {
     // Update the main recipe
     await tx.recipe.update({

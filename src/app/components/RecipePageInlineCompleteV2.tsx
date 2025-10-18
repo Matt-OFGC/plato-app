@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
-import { computeIngredientUsageCost } from "@/lib/units";
+import { computeIngredientUsageCostWithDensity, BaseUnit } from "@/lib/units";
 import Link from "next/link";
 import { initPaneVars } from "../lib/paneHeight";
 import {
@@ -188,8 +188,8 @@ export function RecipePageInlineCompleteV2({
       // Account for header, navigation, and padding
       const headerHeight = 120; // Header container height
       const navBarHeight = 80; // Bottom navigation height
-      const padding = 40; // Additional padding
-      const availableHeight = viewportHeight - headerHeight - navBarHeight - padding;
+      const padding = 60; // Additional padding for better spacing
+      const availableHeight = Math.max(400, viewportHeight - headerHeight - navBarHeight - padding);
       
       console.log('Viewport:', viewportWidth, 'x', viewportHeight, 'Available height:', availableHeight);
       
@@ -198,13 +198,13 @@ export function RecipePageInlineCompleteV2({
       console.log('Found panes:', panes.length);
       
       panes.forEach((pane: any) => {
+        // Only set max-height, let flex handle the rest
         pane.style.maxHeight = `${availableHeight}px`;
-        pane.style.height = `${availableHeight}px`;
         pane.style.overflowY = 'auto';
         pane.style.overflowX = 'hidden';
         pane.style.webkitOverflowScrolling = 'touch';
         pane.style.scrollBehavior = 'smooth';
-        console.log('Applied styles to pane:', pane.className, 'Height:', availableHeight);
+        console.log('Applied styles to pane:', pane.className, 'Max Height:', availableHeight);
       });
       
       // Ensure parent containers don't scroll
@@ -279,13 +279,24 @@ export function RecipePageInlineCompleteV2({
   
   // View mode state - true = carousel view, false = whole recipe view
   const [isCarouselView, setIsCarouselView] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Handle view mode change and reset to first section
   const handleViewModeChange = (newIsCarouselView: boolean) => {
-    setIsCarouselView(newIsCarouselView);
-    if (newIsCarouselView) {
-      // When switching to carousel view, go to first section
-      setCurrentStep(0);
+    if (newIsCarouselView && !isCarouselView) {
+      // Smooth transition from whole recipe view to carousel view
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentStep(0);
+        setIsCarouselView(true);
+        setIsTransitioning(false);
+      }, 300);
+    } else {
+      setIsCarouselView(newIsCarouselView);
+      if (newIsCarouselView) {
+        // When switching to carousel view, go to first section
+        setCurrentStep(0);
+      }
     }
   };
   
@@ -323,6 +334,40 @@ export function RecipePageInlineCompleteV2({
   const displayBakeTemp = useSections && sections.length > 0
     ? Math.max(...sections.map(s => parseInt(s.bakeTemp) || 0))
     : parseInt(bakeTemp.toString()) || 0;
+
+  // Calculate current recipe cost based on all sections
+  const currentRecipeCost = useMemo(() => {
+    const allItems = sections.flatMap(section => 
+      section.items.map(item => {
+        const ingredient = ingredients.find(ing => ing.id === item.ingredientId);
+        if (!ingredient || !item.quantity || !item.unit) return null;
+        
+        try {
+          return computeIngredientUsageCostWithDensity({
+            usageQuantity: parseFloat(item.quantity),
+            usageUnit: item.unit,
+            ingredient: {
+              name: ingredient.name,
+              packQuantity: ingredient.packQuantity,
+              packUnit: ingredient.packUnit as BaseUnit,
+              packPrice: ingredient.packPrice,
+              densityGPerMl: ingredient.densityGPerMl || undefined,
+            }
+          });
+        } catch (error) {
+          console.error('Error calculating cost for item:', item, error);
+          return 0;
+        }
+      }).filter(Boolean)
+    );
+    
+    return allItems.reduce((total, cost) => (total || 0) + (cost || 0), 0);
+  }, [sections, ingredients]);
+
+  const currentCostPerUnit = useMemo(() => {
+    if (recipe.yieldQuantity <= 0 || !currentRecipeCost) return 0;
+    return currentRecipeCost / recipe.yieldQuantity;
+  }, [currentRecipeCost, recipe.yieldQuantity]);
 
   // Get all ingredients for progress calculation
   const allIngredients = useMemo(() => {
@@ -453,13 +498,67 @@ export function RecipePageInlineCompleteV2({
     ));
   };
 
-  const updateSectionItem = (sectionId: string, itemId: string, field: string, value: any) => {
-    setSections(sections.map(s => 
-      s.id === sectionId 
-        ? { ...s, items: s.items.map(item => item.id === itemId ? { ...item, [field]: value } : item) }
-        : s
-    ));
-  };
+  const updateSectionItem = useCallback((sectionId: string, itemId: string, field: string, value: any) => {
+    console.log('updateSectionItem called:', { sectionId, itemId, field, value });
+    setSections(prevSections => {
+      const currentSection = prevSections.find(s => s.id === sectionId);
+      const isLastItem = currentSection && currentSection.items[currentSection.items.length - 1].id === itemId;
+      console.log('Is last item:', isLastItem, 'Section items count:', currentSection?.items.length);
+      // Use a more efficient update that doesn't recreate the entire sections array
+      const newSections = [...prevSections];
+      const sectionIndex = newSections.findIndex(s => s.id === sectionId);
+      
+      if (sectionIndex === -1) return prevSections;
+      
+      const section = newSections[sectionIndex];
+      const itemIndex = section.items.findIndex(item => item.id === itemId);
+      
+      if (itemIndex === -1) return prevSections;
+      
+      // Create new section with updated items
+      const newItems = [...section.items];
+      const updatedItem = { ...newItems[itemIndex], [field]: value };
+      
+      // When ingredient is selected, set the default unit from the ingredient
+      if (field === 'ingredientId' && value) {
+        const selectedIngredient = ingredients.find(ing => ing.id === value);
+        if (selectedIngredient && selectedIngredient.originalUnit) {
+          updatedItem.unit = selectedIngredient.originalUnit as Unit;
+        }
+      }
+      
+      // Auto-calculate price when ingredient or unit changes
+      // Skip cost calculation for quantity changes to prevent input focus loss
+      if (field === 'ingredientId' || field === 'unit') {
+        const ingredient = ingredients.find(ing => ing.id === updatedItem.ingredientId);
+        if (ingredient && updatedItem.quantity && updatedItem.unit && 
+            updatedItem.quantity !== '' && updatedItem.unit) {
+          try {
+            const calculatedPrice = computeIngredientUsageCostWithDensity({
+              usageQuantity: parseFloat(updatedItem.quantity),
+              usageUnit: updatedItem.unit,
+              ingredient: {
+                name: ingredient.name,
+                packQuantity: ingredient.packQuantity,
+                packUnit: ingredient.packUnit as BaseUnit,
+                packPrice: ingredient.packPrice,
+                densityGPerMl: ingredient.densityGPerMl || undefined,
+              }
+            });
+            updatedItem.price = calculatedPrice.toFixed(2);
+          } catch (error) {
+            console.error('Error calculating ingredient cost:', error);
+            updatedItem.price = '0.00';
+          }
+        }
+      }
+      
+      newItems[itemIndex] = updatedItem;
+      newSections[sectionIndex] = { ...section, items: newItems };
+      
+      return newSections;
+    });
+  }, [ingredients]);
 
   // Drag and drop handlers
   const handleDragEnd = (event: DragEndEvent) => {
@@ -520,14 +619,29 @@ export function RecipePageInlineCompleteV2({
   const SortableIngredientItem = ({ 
     item, 
     sectionId, 
+    ingredients,
     onUpdate, 
     onRemove 
   }: { 
     item: any; 
     sectionId?: string; 
+    ingredients: Ingredient[];
     onUpdate: (field: string, value: any) => void;
     onRemove: () => void;
   }) => {
+    // Local state for quantity input to prevent re-renders during typing
+    const [localQuantity, setLocalQuantity] = useState(item.quantity);
+    
+    // Update local state when item quantity changes from outside
+    useEffect(() => {
+      setLocalQuantity(item.quantity);
+    }, [item.quantity]);
+    
+    // Reset local quantity when ingredient changes
+    useEffect(() => {
+      setLocalQuantity(item.quantity);
+    }, [item.ingredientId]);
+    
     const {
       attributes,
       listeners,
@@ -596,16 +710,50 @@ export function RecipePageInlineCompleteV2({
             <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-4">
                 <SearchableSelect
+                  key={`ingredient-select-${item.id}`}
                   options={ingredients.map(ing => ({ id: ing.id, name: ing.name }))}
                   value={item.ingredientId}
-                  onChange={(value) => onUpdate('ingredientId', value)}
+                  onChange={(value) => {
+                    console.log('Ingredient changed:', value, 'for item:', item.id);
+                    onUpdate('ingredientId', value);
+                  }}
                   placeholder="Search ingredients..."
                 />
               </div>
               <input
                 type="number"
-                value={item.quantity}
-                onChange={(e) => onUpdate('quantity', e.target.value)}
+                value={localQuantity}
+                onChange={(e) => {
+                  // Only update local state during typing - no global state update
+                  setLocalQuantity(e.target.value);
+                }}
+                onBlur={(e) => {
+                  // Update global state and calculate cost when user finishes typing
+                  const value = e.target.value;
+                  onUpdate('quantity', value);
+                  
+                  if (value && !isNaN(parseFloat(value)) && parseFloat(value) > 0) {
+                    const ingredient = ingredients.find(ing => ing.id === item.ingredientId);
+                    if (ingredient && item.unit) {
+                      try {
+                        const calculatedPrice = computeIngredientUsageCostWithDensity({
+                          usageQuantity: parseFloat(value),
+                          usageUnit: item.unit,
+                          ingredient: {
+                            name: ingredient.name,
+                            packQuantity: ingredient.packQuantity,
+                            packUnit: ingredient.packUnit as BaseUnit,
+                            packPrice: ingredient.packPrice,
+                            densityGPerMl: ingredient.densityGPerMl || undefined,
+                          }
+                        });
+                        onUpdate('price', calculatedPrice.toFixed(2));
+                      } catch (error) {
+                        console.error('Error calculating ingredient cost:', error);
+                      }
+                    }
+                  }
+                }}
                 placeholder="Qty"
                 className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
               />
@@ -614,11 +762,36 @@ export function RecipePageInlineCompleteV2({
                 onChange={(e) => onUpdate('unit', e.target.value)}
                 className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-                <option value="ml">ml</option>
-                <option value="l">l</option>
-                <option value="each">each</option>
+                <option value="">Unit</option>
+                <optgroup label="Weight/Mass">
+                  <option value="g">g (grams)</option>
+                  <option value="kg">kg (kilograms)</option>
+                  <option value="mg">mg (milligrams)</option>
+                  <option value="lb">lb (pounds)</option>
+                  <option value="oz">oz (ounces)</option>
+                </optgroup>
+                <optgroup label="Volume (Liquid)">
+                  <option value="ml">ml (milliliters)</option>
+                  <option value="l">l (liters)</option>
+                  <option value="tsp">tsp (teaspoons)</option>
+                  <option value="tbsp">tbsp (tablespoons)</option>
+                  <option value="cup">cup</option>
+                  <option value="floz">fl oz (fluid ounces)</option>
+                  <option value="pint">pint</option>
+                  <option value="quart">quart</option>
+                  <option value="gallon">gallon</option>
+                  <option value="pinch">pinch</option>
+                  <option value="dash">dash</option>
+                </optgroup>
+                <optgroup label="Count/Discrete">
+                  <option value="each">each</option>
+                  <option value="slices">slices</option>
+                </optgroup>
+                <optgroup label="Size-based">
+                  <option value="large">large</option>
+                  <option value="medium">medium</option>
+                  <option value="small">small</option>
+                </optgroup>
               </select>
               <div className="col-span-3 flex items-center gap-2">
                 <span className="text-gray-500 font-medium">£</span>
@@ -791,7 +964,7 @@ export function RecipePageInlineCompleteV2({
                     : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
                 }`}
               >
-                {isLocked ? '🔒 Locked' : '🔓 Editing'}
+                {isLocked ? 'Edit Recipe' : '🔓 Editing'}
               </button>
               
               {!isLocked && (
@@ -964,7 +1137,7 @@ export function RecipePageInlineCompleteV2({
               
               {/* Total Cost */}
               <div className="mb-3">
-                <div className="text-lg font-bold text-emerald-700 mb-1">{formatCurrency(costBreakdown.totalCost)}</div>
+                <div className="text-lg font-bold text-emerald-700 mb-1">{formatCurrency(currentRecipeCost || 0)}</div>
                 <div className="text-xs text-emerald-600">Total Cost</div>
               </div>
               
@@ -972,8 +1145,8 @@ export function RecipePageInlineCompleteV2({
               <div className="mb-3">
                 <div className="text-xl font-bold text-gray-900 mb-1">
                   {isBatchRecipe 
-                    ? formatCurrency(costBreakdown.totalCost / slicesPerBatch)
-                    : formatCurrency(costBreakdown.costPerOutputUnit)
+                    ? formatCurrency((currentRecipeCost || 0) / slicesPerBatch)
+                    : formatCurrency(currentCostPerUnit || 0)
                   }
                 </div>
                 <div className="text-xs text-gray-600">
@@ -1000,8 +1173,8 @@ export function RecipePageInlineCompleteV2({
                 <div className="mb-2">
                   {(() => {
                     const cogsPercentage = isBatchRecipe 
-                      ? ((costBreakdown.totalCost / slicesPerBatch) / sellPrice) * 100
-                      : (costBreakdown.costPerOutputUnit / sellPrice) * 100;
+                      ? (((currentRecipeCost || 0) / slicesPerBatch) / sellPrice) * 100
+                      : ((currentCostPerUnit || 0) / sellPrice) * 100;
                     
                     const isGoodCogs = cogsPercentage <= 25;
                     const isBadCogs = cogsPercentage >= 30;
@@ -1018,7 +1191,7 @@ export function RecipePageInlineCompleteV2({
               
               {/* Traditional per unit cost */}
               <div className="text-xs text-gray-500 border-t border-gray-200 pt-2 mt-2">
-                <div className="text-sm font-medium text-gray-700">{formatCurrency(costBreakdown.costPerOutputUnit)}</div>
+                <div className="text-sm font-medium text-gray-700">{formatCurrency(currentCostPerUnit)}</div>
                 <div className="text-xs">Per {recipe.yieldUnit}</div>
               </div>
             </div>
@@ -1084,118 +1257,102 @@ export function RecipePageInlineCompleteV2({
                 
         {/* Right Panel - Recipe Steps Carousel with Inline Editing */}
         <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
-          <div className={`transition-all duration-500 ease-in-out ${isCarouselView ? 'transform scale-100 opacity-100' : 'transform scale-95 opacity-90'}`}>
+          <div className={`transition-all duration-500 ease-in-out ${
+            isTransitioning 
+              ? 'transform scale-95 opacity-75' 
+              : isCarouselView 
+                ? 'transform scale-100 opacity-100' 
+                : 'transform scale-95 opacity-90'
+          }`}>
             {isCarouselView ? (
             useSections ? (
-              <RecipeCarousel
-                sections={sections}
-                checkedItems={checkedItems}
-                toggleItem={toggleItem}
-                getTimer={getTimer}
-                startTimer={startTimer}
-                recipe={recipe}
-                ingredients={ingredients}
-                servings={servings}
-                currentStep={currentStep}
-                setCurrentStep={setCurrentStep}
-                isLocked={isLocked}
-                updateSection={updateSection}
-                addSectionItem={addSectionItem}
-                removeSectionItem={removeSectionItem}
-                updateSectionItem={updateSectionItem}
-                sensors={sensors}
-                handleDragEnd={handleDragEnd}
-                SortableIngredientItem={SortableIngredientItem}
-                addSection={addSection}
-                removeSection={removeSection}
-                newlyAddedSection={newlyAddedSection}
-              />
+              <div className={`transition-all duration-300 ease-out ${
+                isTransitioning ? 'transform translate-x-2 opacity-0' : 'transform translate-x-0 opacity-100'
+              }`}>
+                <RecipeCarousel
+                  sections={sections}
+                  checkedItems={checkedItems}
+                  toggleItem={toggleItem}
+                  getTimer={getTimer}
+                  startTimer={startTimer}
+                  recipe={recipe}
+                  ingredients={ingredients}
+                  servings={servings}
+                  currentStep={currentStep}
+                  setCurrentStep={setCurrentStep}
+                  isLocked={isLocked}
+                  updateSection={updateSection}
+                  addSectionItem={addSectionItem}
+                  removeSectionItem={removeSectionItem}
+                  updateSectionItem={updateSectionItem}
+                  sensors={sensors}
+                  handleDragEnd={handleDragEnd}
+                  SortableIngredientItem={SortableIngredientItem}
+                  addSection={addSection}
+                  removeSection={removeSection}
+                  newlyAddedSection={newlyAddedSection}
+                />
+              </div>
             ) : (
-              <SimpleRecipeCarousel 
-                recipe={recipe}
-                checkedItems={checkedItems}
-                toggleItem={toggleItem}
-                getTimer={getTimer}
-                startTimer={startTimer}
-                ingredients={ingredients}
-                servings={servings}
-                currentStep={currentStep}
-                setCurrentStep={setCurrentStep}
-              />
+              <div className={`transition-all duration-300 ease-out ${
+                isTransitioning ? 'transform translate-x-2 opacity-0' : 'transform translate-x-0 opacity-100'
+              }`}>
+                <SimpleRecipeCarousel 
+                  recipe={recipe}
+                  checkedItems={checkedItems}
+                  toggleItem={toggleItem}
+                  getTimer={getTimer}
+                  startTimer={startTimer}
+                  ingredients={ingredients}
+                  servings={servings}
+                  currentStep={currentStep}
+                  setCurrentStep={setCurrentStep}
+                />
+              </div>
             )
           ) : (
-            <WholeRecipeView
-              recipe={recipe}
-              checkedItems={checkedItems}
-              toggleItem={toggleItem}
-              ingredients={ingredients}
-              servings={servings}
-              isLocked={isLocked}
-              allIngredients={allIngredients}
-              sections={sections}
-              updateSection={updateSection}
-              addSectionItem={addSectionItem}
-              removeSectionItem={removeSectionItem}
-              updateSectionItem={updateSectionItem}
-              sensors={sensors}
-              handleDragEnd={handleDragEnd}
-              SortableIngredientItem={SortableIngredientItem}
-              method={method}
-              setMethod={setMethod}
-            />
+            <div className={`transition-all duration-300 ease-out ${
+              isTransitioning ? 'transform -translate-x-2 opacity-0' : 'transform translate-x-0 opacity-100'
+            }`}>
+              <WholeRecipeView
+                recipe={recipe}
+                checkedItems={checkedItems}
+                toggleItem={toggleItem}
+                ingredients={ingredients}
+                servings={servings}
+                allIngredients={allIngredients}
+                sections={sections}
+                method={method}
+              />
+            </div>
           )}
           </div>
         </div>
       </div>
       
-      {/* Ingredient Modal */}
-      <IngredientModal
-        isOpen={isIngredientModalOpen}
-        onClose={handleCloseIngredientModal}
-        onSuccess={handleIngredientModalSuccess}
-        companyId={companyId}
-      />
     </div>
   );
 }
 
-// Whole Recipe View Component
+// Whole Recipe View Component (Read-Only)
 function WholeRecipeView({
   recipe,
   checkedItems,
   toggleItem,
   ingredients,
   servings,
-  isLocked,
   allIngredients,
   sections,
-  updateSection,
-  addSectionItem,
-  removeSectionItem,
-  updateSectionItem,
-  sensors,
-  handleDragEnd,
-  SortableIngredientItem,
-  method,
-  setMethod
+  method
 }: {
   recipe: any;
   checkedItems: Set<string>;
   toggleItem: (itemId: string) => void;
   ingredients: Ingredient[];
   servings: number;
-  isLocked: boolean;
   allIngredients: any[];
   sections: RecipeSection[];
-  updateSection: (sectionId: string, field: string, value: any) => void;
-  addSectionItem: (sectionId: string, e?: React.MouseEvent) => void;
-  removeSectionItem: (sectionId: string, itemId: string) => void;
-  updateSectionItem: (sectionId: string, itemId: string, field: string, value: any) => void;
-  sensors: any;
-  handleDragEnd: (event: DragEndEvent) => void;
-  SortableIngredientItem: any;
   method: string;
-  setMethod: (method: string) => void;
 }) {
   // Aggregate ingredients by combining quantities of same ingredient
   const aggregatedIngredients = useMemo(() => {
@@ -1238,9 +1395,8 @@ function WholeRecipeView({
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
           </div>
           <div className="space-y-3 flex-1 overflow-y-auto ingredients-pane">
-            {isLocked ? (
-              // Locked view - show aggregated ingredients with section breakdown
-              aggregatedIngredients.map((agg, index) => {
+            {/* Read-only view - show aggregated ingredients with section breakdown */}
+            {aggregatedIngredients.map((agg, index) => {
                 const scaledQuantity = (agg.totalQuantity * (servings / recipe.yieldQuantity)).toFixed(1);
                 const isChecked = agg.items.some(item => checkedItems.has(item.id));
                 
@@ -1316,96 +1472,7 @@ function WholeRecipeView({
                   </div>
                 );
               })
-            ) : (
-              // Unlocked view - show ingredients grouped by section with dividers
-              <div className="space-y-8 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-                {sections.map((section, sectionIndex) => (
-                  <div key={section.id} className="relative">
-                    {/* Section Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                          {sectionIndex + 1}
-                        </div>
-                        <h4 className="text-lg font-semibold text-gray-800">{section.title}</h4>
-                        <span className="text-sm text-gray-500">({section.items.length} ingredients)</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => addSectionItem(section.id, e)}
-                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          Add Ingredient
-                        </button>
-                        {sections.length > 1 && (
-                          <button
-                            onClick={(e) => {
-                              // Remove section functionality - you'll need to implement this
-                              console.log('Remove section:', section.id);
-                            }}
-                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors flex items-center gap-1"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete Section
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Section Ingredients */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                        <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                          <div className="space-y-3">
-                            {section.items.map((item) => {
-                              const ingredient = ingredients.find(ing => ing.id === item.ingredientId);
-                              if (!ingredient) return null;
-                              
-                              return (
-                                <SortableIngredientItem
-                                  key={item.id}
-                                  item={item}
-                                  sectionId={section.id}
-                                  ingredients={ingredients}
-                                  onUpdate={(field: string, value: any) => updateSectionItem(section.id, item.id, field, value)}
-                                  onRemove={() => removeSectionItem(section.id, item.id)}
-                                />
-                              );
-                            })}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
-                    </div>
-                    
-                    {/* Subtle divider line (except for last section) */}
-                    {sectionIndex < sections.length - 1 && (
-                      <div className="mt-4 mb-4 border-t border-gray-100"></div>
-                    )}
-                  </div>
-                ))}
-                
-                {/* Add New Section Button */}
-                <div className="pt-4 pb-6 border-t border-gray-200">
-                  <button
-                    onClick={() => {
-                      // Add section functionality - you'll need to implement this
-                      console.log('Add new section');
-                    }}
-                    className="w-full px-4 py-3 bg-emerald-50 border-2 border-dashed border-emerald-200 rounded-lg text-emerald-600 hover:bg-emerald-100 hover:border-emerald-300 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add New Section
-                  </button>
-                </div>
-              </div>
-            )}
+            }
           </div>
         </div>
 
@@ -1415,61 +1482,31 @@ function WholeRecipeView({
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 overflow-y-auto instructions-pane">
-            {isLocked ? (
-              <div className="space-y-4">
-                {sections.map((section, index) => (
-                  <div key={section.id} className="relative">
-                    {/* Section Header */}
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {index + 1}
-                      </div>
-                      <h4 className="text-sm font-semibold text-gray-800">{section.title}</h4>
+          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto instructions-pane">
+            {/* Seamless instructions view */}
+            <div className="space-y-6">
+              {sections.map((section, index) => (
+                <div key={section.id} className="relative">
+                  {/* Section Header - Subtle */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs font-semibold">
+                      {index + 1}
                     </div>
-                    
-                    {/* Section Instructions */}
-                    <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap pl-9">
-                      {section.method || 'No instructions provided for this step.'}
-                    </div>
-                    
-                    {/* Subtle divider line (except for last section) */}
-                    {index < sections.length - 1 && (
-                      <div className="mt-4 mb-4 border-t border-gray-100"></div>
-                    )}
+                    <h4 className="text-sm font-medium text-emerald-700 uppercase tracking-wide">{section.title}</h4>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {sections.map((section, index) => (
-                  <div key={section.id} className="relative">
-                    {/* Section Header */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {index + 1}
-                      </div>
-                      <h4 className="text-lg font-semibold text-gray-800">{section.title}</h4>
-                    </div>
-                    
-                    {/* Editable Section Instructions */}
-                    <div className="pl-9">
-                      <textarea
-                        value={section.method || ''}
-                        onChange={(e) => updateSection(section.id, 'method', e.target.value)}
-                        className="w-full text-base leading-relaxed text-gray-700 bg-transparent border-none resize-none focus:outline-none min-h-[8rem] sm:min-h-[10rem] p-3 bg-gray-50 rounded-lg border border-gray-200 focus:border-emerald-300 focus:bg-white transition-colors"
-                        placeholder={`Instructions for ${section.title}...`}
-                      />
-                    </div>
-                    
-                    {/* Subtle divider line (except for last section) */}
-                    {index < sections.length - 1 && (
-                      <div className="mt-4 mb-4 border-t border-gray-100"></div>
-                    )}
+                  
+                  {/* Section Instructions - Seamless */}
+                  <div className="text-base leading-relaxed text-gray-800 whitespace-pre-wrap pl-8 break-words overflow-wrap-anywhere">
+                    {section.method || 'No instructions provided for this step.'}
                   </div>
-                ))}
-              </div>
-            )}
+                  
+                  {/* Subtle divider line (except for last section) */}
+                  {index < sections.length - 1 && (
+                    <div className="mt-6 mb-2 border-t border-gray-200"></div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         </div>
@@ -1745,13 +1782,13 @@ function StepCard({
 }) {
 
   return (
-    <div className={`h-full p-4 transition-all duration-700 ease-out ${
+    <div className={`h-full p-4 transition-all duration-700 ease-out flex flex-col ${
       isNewlyAdded 
         ? 'animate-pulse bg-gradient-to-br from-emerald-50 to-blue-50 border-2 border-emerald-200 rounded-xl shadow-lg transform scale-105' 
         : ''
     }`}>
       {/* Compact Step Header */}
-      <div className="mb-3">
+      <div className="mb-3 flex-shrink-0">
         <div className="flex items-center gap-3 mb-2">
           {/* Delete Section Button - on the left side of the step number */}
           {!isLocked && totalSections > 1 && (
@@ -1838,9 +1875,9 @@ function StepCard({
       </div>
                       
       {/* Two Column Layout: Ingredients Left, Instructions Right */}
-      <div className="grid grid-cols-2 gap-4 h-full">
+      <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
         {/* Left Column - Ingredients */}
-        <div className="flex flex-col">
+        <div className="flex flex-col min-h-0 h-full">
           <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
@@ -1858,17 +1895,20 @@ function StepCard({
               </button>
             )}
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto ingredients-pane">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto ingredients-pane h-96">
             <div className="space-y-2">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                {section.items.map((item) => {
+                {section.items.map((item, itemIndex) => {
                   // Find the ingredient data
                   const ingredient = ingredients.find((ing: any) => ing.id === item.ingredientId);
                   if (!ingredient) return null;
                   
                   const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
                   const isChecked = checkedItems.has(item.id);
+                  const isLastItem = itemIndex === section.items.length - 1;
+                  
+                  console.log('Rendering item:', item.id, 'index:', itemIndex, 'isLast:', isLastItem, 'ingredientId:', item.ingredientId);
                   
                   // Show original view mode design when locked
                   if (isLocked) {
@@ -1904,7 +1944,7 @@ function StepCard({
                   // Show new edit mode design when unlocked
                   return (
                     <SortableIngredientItem
-                      key={item.id}
+                      key={`${section.id}-${item.id}`}
                       item={item}
                       sectionId={section.id}
                       ingredients={ingredients}
@@ -1920,21 +1960,21 @@ function StepCard({
         </div>
         
         {/* Right Column - Instructions */}
-        <div className="flex flex-col">
+        <div className="flex flex-col min-h-0 h-full">
           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
             <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
             <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto instructions-pane">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto instructions-pane h-96">
             {isLocked ? (
-              <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap">
+              <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap h-full overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg p-3 break-words overflow-wrap-anywhere">
                 {section.method || 'No instructions provided for this step.'}
               </div>
             ) : (
               <textarea
                 value={section.method}
                 onChange={(e) => updateSection(section.id, 'method', e.target.value)}
-                className="w-full h-full text-lg leading-relaxed text-gray-700 bg-transparent border-none resize-none focus:outline-none"
+                className="w-full text-lg leading-relaxed text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-3 resize-none focus:outline-none focus:border-emerald-300 focus:bg-white transition-colors min-h-[200px] max-h-full overflow-y-auto whitespace-pre-wrap break-words"
                 placeholder="Instructions for this step..."
               />
             )}
@@ -1945,148 +1985,6 @@ function StepCard({
   );
 }
 
-// SortableIngredientItem Component - Updated with better alignment and visual design
-function SortableIngredientItem({ 
-  item, 
-  sectionId, 
-  ingredients,
-  onUpdate, 
-  onRemove 
-}: {
-  item: RecipeItem;
-  sectionId: string;
-  ingredients: Ingredient[];
-  onUpdate: (field: string, value: any) => void;
-  onRemove: () => void;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`bg-white border-2 border-gray-200 rounded-xl p-4 mb-4 mx-2 transition-all duration-200 shadow-sm hover:shadow-md ${
-        isDragging ? 'opacity-50 shadow-lg' : ''
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        {/* Drag Handle */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded"
-        >
-          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-          </svg>
-        </div>
-
-        {/* Ingredient Fields */}
-        <div className="flex-1 grid grid-cols-12 gap-2 items-center">
-          {/* Ingredient Search/Selection */}
-          <div className="col-span-5">
-            <SearchableSelect
-              value={item.ingredientId}
-              onChange={(value) => onUpdate('ingredientId', value)}
-              placeholder="Select ingredient..."
-              options={ingredients.map(ing => ({
-                id: ing.id,
-                name: ing.name
-              }))}
-              className="text-sm"
-            />
-          </div>
-
-          {/* Quantity */}
-          <div className="col-span-2">
-            <input
-              type="number"
-              step="0.1"
-              value={item.quantity}
-              onChange={(e) => onUpdate('quantity', e.target.value)}
-              className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
-              placeholder="1.0"
-            />
-          </div>
-
-          {/* Unit */}
-          <div className="col-span-2">
-            <select
-              value={item.unit}
-              onChange={(e) => onUpdate('unit', e.target.value)}
-              className="w-full px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
-            >
-              <option value="">Unit</option>
-              <option value="cup">cup</option>
-              <option value="tsp">tsp</option>
-              <option value="tbsp">tbsp</option>
-              <option value="g">g</option>
-              <option value="kg">kg</option>
-              <option value="ml">ml</option>
-              <option value="l">l</option>
-              <option value="oz">oz</option>
-              <option value="lb">lb</option>
-              <option value="large">large</option>
-              <option value="medium">medium</option>
-              <option value="small">small</option>
-            </select>
-          </div>
-
-          {/* Price - Smaller */}
-          <div className="col-span-2">
-            <div className="relative">
-              <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">£</span>
-              <input
-                type="number"
-                step="0.01"
-                value={item.price || ''}
-                onChange={(e) => onUpdate('price', e.target.value)}
-                className="w-full pl-6 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-center"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          {/* Delete Button */}
-          <div className="col-span-1 flex justify-center">
-            <button
-              onClick={onRemove}
-              className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-              title="Delete ingredient"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Note Field */}
-      <div className="mt-3">
-        <input
-          type="text"
-          value={item.note || ''}
-          onChange={(e) => onUpdate('note', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
-          placeholder="Note (optional)"
-        />
-      </div>
-    </div>
-  );
-}
 
 // Simple Carousel for Recipes without Sections (keep original)
 function SimpleRecipeCarousel({ 

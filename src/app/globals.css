@@ -111,7 +111,7 @@
   --destructive-foreground: #ffffff;
 }
 
-@theme inline {
+/* @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
@@ -136,7 +136,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
+} */
 
 /* Modern SaaS-inspired styling */
 body {
@@ -1743,6 +1743,84 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+}
+
+/* Ensure ingredients and instructions panes have proper height constraints */
+.ingredients-pane,
+.instructions-pane {
+  max-height: var(--pane-max-h) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth !important;
+}
+
+/* Ensure textareas have proper sizing and scrolling */
+.ingredients-pane textarea,
+.instructions-pane textarea {
+  min-height: 120px !important;
+  max-height: 100% !important;
+  resize: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  height: 100% !important;
+}
+
+/* Text wrapping for instruction text boxes */
+.instructions-pane div,
+.instructions-pane textarea,
+.recipe-layout .instructions-pane div,
+.recipe-layout .instructions-pane textarea {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  hyphens: auto !important;
+}
+
+/* Make scrollbars always visible for panes, textareas and instruction text */
+.ingredients-pane::-webkit-scrollbar,
+.instructions-pane::-webkit-scrollbar,
+.ingredients-pane textarea::-webkit-scrollbar,
+.instructions-pane textarea::-webkit-scrollbar,
+.instructions-pane div::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ingredients-pane::-webkit-scrollbar-track,
+.instructions-pane::-webkit-scrollbar-track,
+.ingredients-pane textarea::-webkit-scrollbar-track,
+.instructions-pane textarea::-webkit-scrollbar-track,
+.instructions-pane div::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.ingredients-pane::-webkit-scrollbar-thumb,
+.instructions-pane::-webkit-scrollbar-thumb,
+.ingredients-pane textarea::-webkit-scrollbar-thumb,
+.instructions-pane textarea::-webkit-scrollbar-thumb,
+.instructions-pane div::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.ingredients-pane::-webkit-scrollbar-thumb:hover,
+.instructions-pane::-webkit-scrollbar-thumb:hover,
+.ingredients-pane textarea::-webkit-scrollbar-thumb:hover,
+.instructions-pane textarea::-webkit-scrollbar-thumb:hover,
+.instructions-pane div::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Fix for textarea display issues */
+textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 /* Ensure the page doesn't scroll when recipe page is active */

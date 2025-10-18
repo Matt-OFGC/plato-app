@@ -18,12 +18,14 @@ export function UnitConversionHelp() {
     },
     {
       category: "Volume (Liquid)",
-      units: ["ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon"],
+      units: ["ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "pinch", "dash"],
       examples: [
         "1 l = 1000 ml",
         "1 cup = 250 ml",
         "1 tbsp = 15 ml",
         "1 tsp = 5 ml",
+        "1 pinch = 0.5 ml",
+        "1 dash = 0.25 ml",
         "1 floz = 28.41 ml (UK)",
         "1 pint = 568.26 ml (UK)",
         "1 gallon = 4546.09 ml (UK)"
@@ -35,6 +37,15 @@ export function UnitConversionHelp() {
       examples: [
         "Used for discrete items like eggs, apples, etc.",
         "Slices for items like bread, cake, cheese, etc."
+      ]
+    },
+    {
+      category: "Size-based",
+      units: ["large", "medium", "small"],
+      examples: [
+        "Large ≈ 100g (eggs, onions, etc.)",
+        "Medium ≈ 60g (standard size items)",
+        "Small ≈ 30g (smaller items)"
       ]
     }
   ];

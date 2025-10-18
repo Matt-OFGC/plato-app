@@ -40,6 +40,11 @@ enum Unit {
   floz
   each
   slices
+  pinch
+  dash
+  large
+  medium
+  small
 }
 
 model Ingredient {

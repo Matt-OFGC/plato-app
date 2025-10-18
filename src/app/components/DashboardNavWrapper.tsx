@@ -90,7 +90,7 @@ export function DashboardNavWrapper() {
       {/* More Menu Overlay - Glassy Design with Green Tint */}
       {showMoreMenu && (
         <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" onClick={() => setShowMoreMenu(false)}>
-          <div className="fixed bottom-20 left-4 right-4 md:left-8 md:right-8 lg:left-12 lg:right-12 xl:left-16 xl:right-16">
+          <div className="fixed left-20 top-1/2 -translate-y-1/2 right-4 md:left-24 md:right-8 lg:left-28 lg:right-12 xl:left-32 xl:right-16">
             {/* Glassy container matching the floating nav bar style with green tint */}
             <div className="floating-nav-enhanced rounded-3xl p-6 shadow-2xl max-w-md mx-auto">
               <h3 className="text-lg font-semibold text-gray-900 mb-6 text-center">More</h3>

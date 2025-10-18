@@ -2,8 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { formatCurrency } from "@/lib/currency";
-import { Unit } from "@/generated/prisma";
-import { computeIngredientUsageCost } from "@/lib/units";
+import { computeIngredientUsageCostWithDensity, BaseUnit, Unit } from "@/lib/units";
 import { SearchableSelect } from "./SearchableSelect";
 import {
   DndContext,
@@ -28,6 +27,7 @@ interface Ingredient {
   name: string;
   packQuantity: number;
   packUnit: string;
+  originalUnit?: string | null;
   packPrice: number;
   densityGPerMl?: number | null;
 }
@@ -94,14 +94,15 @@ function SortableIngredientItem({
 
   const ingredient = ingredients.find((i) => i.id === item.ingredientId);
   const cost = ingredient
-    ? computeIngredientUsageCost({
+    ? computeIngredientUsageCostWithDensity({
         usageQuantity: parseFloat(item.quantity) || 0,
         usageUnit: item.unit,
         ingredient: {
           packQuantity: ingredient.packQuantity,
-          packUnit: ingredient.packUnit as any,
+          packUnit: ingredient.packUnit as BaseUnit,
           packPrice: ingredient.packPrice,
           densityGPerMl: ingredient.densityGPerMl || undefined,
+          name: ingredient.name,
         },
       })
     : 0;
@@ -229,14 +230,15 @@ export function RecipeCreateForm({
     itemsToCalc.forEach(item => {
       const ingredient = ingredients.find(i => i.id === item.ingredientId);
       if (ingredient && item.quantity && parseFloat(item.quantity) > 0) {
-        const cost = computeIngredientUsageCost({
+        const cost = computeIngredientUsageCostWithDensity({
           usageQuantity: parseFloat(item.quantity) || 0,
           usageUnit: item.unit,
           ingredient: {
             packQuantity: ingredient.packQuantity,
-            packUnit: ingredient.packUnit as any,
+            packUnit: ingredient.packUnit as BaseUnit,
             packPrice: ingredient.packPrice,
             densityGPerMl: ingredient.densityGPerMl || undefined,
+            name: ingredient.name,
           }
         });
         total += cost;
@@ -926,7 +928,20 @@ export function RecipeCreateForm({
                                 onUpdate={(id, field, value) => {
                                   setSections(sections.map(s => {
                                     if (s.id === section.id) {
-                                      return { ...s, items: s.items.map(i => i.id === id ? { ...i, [field]: value } : i) };
+                                      return { ...s, items: s.items.map(i => {
+                                        if (i.id === id) {
+                                          const updatedItem = { ...i, [field]: value };
+                                          // Set originalUnit when ingredientId changes
+                                          if (field === 'ingredientId') {
+                                            const selectedIngredient = ingredients.find(ing => ing.id === value);
+                                            if (selectedIngredient && selectedIngredient.originalUnit) {
+                                              updatedItem.unit = selectedIngredient.originalUnit as Unit;
+                                            }
+                                          }
+                                          return updatedItem;
+                                        }
+                                        return i;
+                                      }) };
                                     }
                                     return s;
                                   }));
@@ -960,7 +975,20 @@ export function RecipeCreateForm({
                           item={item}
                           ingredients={ingredients}
                           onUpdate={(id, field, value) => {
-                            setItems(items.map(i => i.id === id ? { ...i, [field]: value } : i));
+                            setItems(items.map(i => {
+                              if (i.id === id) {
+                                const updatedItem = { ...i, [field]: value };
+                                // Set originalUnit when ingredientId changes
+                                if (field === 'ingredientId') {
+                                  const selectedIngredient = ingredients.find(ing => ing.id === value);
+                                  if (selectedIngredient && selectedIngredient.originalUnit) {
+                                    updatedItem.unit = selectedIngredient.originalUnit as Unit;
+                                  }
+                                }
+                                return updatedItem;
+                              }
+                              return i;
+                            }));
                           }}
                           onRemove={removeIngredient}
                         />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { computeIngredientUsageCost, computeRecipeCost, computeCostPerOutputUnit, Unit } from "@/lib/units";
+import { computeIngredientUsageCostWithDensity, computeRecipeCostWithDensity, computeCostPerOutputUnit, Unit, BaseUnit } from "@/lib/units";
 import { formatCurrency } from "@/lib/currency";
 import { UnitConversionHelp } from "./UnitConversionHelp";
 import { CostBreakdownChart } from "./CostBreakdownChart";
@@ -182,7 +182,16 @@ export function UnifiedRecipeForm({
     return result;
   }, [sections, ingredients]);
 
-  const subtotal = useMemo(() => computeRecipeCost({ items: detailedItems }), [detailedItems]);
+  const subtotal = useMemo(() => {
+    const itemsWithNames = detailedItems.map(item => ({
+      ...item,
+      ingredient: {
+        ...item.ingredient,
+        name: ingredients.find(ing => ing.id === item.ingredientId)?.name || 'Unknown'
+      }
+    }));
+    return computeRecipeCostWithDensity({ items: itemsWithNames });
+  }, [detailedItems, ingredients]);
   const total = subtotal;
   const perOutput = useMemo(() => {
     const qty = yieldQuantity || 1;
@@ -887,10 +896,11 @@ export function UnifiedRecipeForm({
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {detailedItems.map((item, index) => {
                   const ingredient = ingredients.find(i => i.id === item.ingredientId);
-                  const cost = computeIngredientUsageCost({
+                  const cost = computeIngredientUsageCostWithDensity({
                     usageQuantity: item.quantity,
                     usageUnit: item.unit,
                     ingredient: {
+                      name: ingredient?.name || 'Unknown',
                       packQuantity: item.ingredient.packQuantity,
                       packUnit: item.ingredient.packUnit,
                       packPrice: item.ingredient.packPrice,
@@ -921,6 +931,7 @@ export function UnifiedRecipeForm({
                       return {
                         quantity: item.quantity,
                         unit: item.unit,
+                        ingredientId: item.ingredientId,
                         ingredient: {
                           packQuantity: ing?.packQuantity || 0,
                           packUnit: ing?.packUnit || "g",
@@ -929,7 +940,14 @@ export function UnifiedRecipeForm({
                         },
                       };
                     });
-                  const sectionCost = computeRecipeCost({ items: sectionItems });
+                  const sectionItemsWithNames = sectionItems.map(item => ({
+                    ...item,
+                    ingredient: {
+                      ...item.ingredient,
+                      name: ingredients.find(ing => ing.id === item.ingredientId)?.name || 'Unknown'
+                    }
+                  }));
+                  const sectionCost = computeRecipeCostWithDensity({ items: sectionItemsWithNames });
                   return (
                     <div key={section.id} className="flex justify-between items-center text-xs py-1">
                       <span className="text-gray-600 truncate">{section.title}</span>
@@ -1257,10 +1275,11 @@ function SortableItem({
         const ingredient = ingredients.find(i => i.id === item.ingredientId);
         if (!ingredient) return null;
         
-        const cost = computeIngredientUsageCost({
+        const cost = computeIngredientUsageCostWithDensity({
           usageQuantity: item.quantity,
           usageUnit: item.unit,
           ingredient: {
+            name: ingredient.name,
             packQuantity: ingredient.packQuantity,
             packUnit: ingredient.packUnit,
             packPrice: ingredient.packPrice,

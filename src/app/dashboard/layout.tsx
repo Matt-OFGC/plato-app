@@ -23,7 +23,7 @@ export default function DashboardLayout({
           <Sidebar />
           
           {/* Main Content Area */}
-      <main className="flex-1 pb-24 safe-area-inset-bottom">
+      <main className="flex-1 pl-20 md:pl-24 lg:pl-28 xl:pl-32 safe-area-inset-left">
         <div className="container-responsive">
           <div className="py-4 sm:py-6 md:py-8">
             {children}

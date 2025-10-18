@@ -141,7 +141,7 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
         </div>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form id="ingredient-form" onSubmit={handleSubmit} className="space-y-6">
         {/* Name */}
         <div>
           <label htmlFor="ingredient-name" className="block text-sm font-medium text-gray-900 mb-2">
@@ -195,15 +195,44 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
             <label htmlFor="packUnit" className="block text-sm font-medium text-gray-900 mb-2">
               Pack Unit
             </label>
-            <input
-              type="text"
+            <select
               id="packUnit"
               name="packUnit"
               defaultValue={initialData?.packUnit || ""}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-              placeholder="e.g., kg, lbs, each"
-            />
+            >
+              <option value="">Select a unit...</option>
+              <optgroup label="Weight/Mass">
+                <option value="g">g (grams)</option>
+                <option value="kg">kg (kilograms)</option>
+                <option value="mg">mg (milligrams)</option>
+                <option value="lb">lb (pounds)</option>
+                <option value="oz">oz (ounces)</option>
+              </optgroup>
+              <optgroup label="Volume (Liquid)">
+                <option value="ml">ml (milliliters)</option>
+                <option value="l">l (liters)</option>
+                <option value="tsp">tsp (teaspoons)</option>
+                <option value="tbsp">tbsp (tablespoons)</option>
+                <option value="cup">cup</option>
+                <option value="floz">fl oz (fluid ounces)</option>
+                <option value="pint">pint</option>
+                <option value="quart">quart</option>
+                <option value="gallon">gallon</option>
+                <option value="pinch">pinch</option>
+                <option value="dash">dash</option>
+              </optgroup>
+              <optgroup label="Count/Discrete">
+                <option value="each">each</option>
+                <option value="slices">slices</option>
+              </optgroup>
+              <optgroup label="Size-based">
+                <option value="large">large</option>
+                <option value="medium">medium</option>
+                <option value="small">small</option>
+              </optgroup>
+            </select>
           </div>
         </div>
 
@@ -221,7 +250,7 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
             defaultValue={initialData?.packPrice || ""}
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            placeholder="e.g., 25.00"
+            placeholder="e.g., 25.00 (use 0 for free ingredients like water)"
           />
         </div>
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { RecipePrintView } from "@/components/RecipePrintView";
-import { computeRecipeCost, computeIngredientUsageCost } from "@/lib/units";
+import { computeRecipeCostWithDensity, computeIngredientUsageCostWithDensity } from "@/lib/units";
 
 export const dynamic = 'force-dynamic';
 
@@ -60,10 +60,11 @@ export default async function RecipePrintPage({ params }: Props) {
     ingredient: {
       name: item.ingredient.name,
     },
-    cost: computeIngredientUsageCost({
+    cost: computeIngredientUsageCostWithDensity({
       usageQuantity: Number(item.quantity),
       usageUnit: item.unit,
       ingredient: {
+        name: item.ingredient.name,
         packQuantity: Number(item.ingredient.packQuantity),
         packUnit: item.ingredient.packUnit,
         packPrice: Number(item.ingredient.packPrice),
@@ -83,10 +84,11 @@ export default async function RecipePrintPage({ params }: Props) {
       ingredient: {
         name: item.ingredient.name,
       },
-      cost: computeIngredientUsageCost({
+      cost: computeIngredientUsageCostWithDensity({
         usageQuantity: Number(item.quantity),
         usageUnit: item.unit,
         ingredient: {
+          name: item.ingredient.name,
           packQuantity: Number(item.ingredient.packQuantity),
           packUnit: item.ingredient.packUnit,
           packPrice: Number(item.ingredient.packPrice),
@@ -97,11 +99,12 @@ export default async function RecipePrintPage({ params }: Props) {
   }));
 
   // Calculate total cost
-  const totalCost = computeRecipeCost({
+  const totalCost = computeRecipeCostWithDensity({
     items: recipe.items.map(item => ({
       quantity: Number(item.quantity),
       unit: item.unit,
       ingredient: {
+        name: item.ingredient.name,
         packQuantity: Number(item.ingredient.packQuantity),
         packUnit: item.ingredient.packUnit,
         packPrice: Number(item.ingredient.packPrice),
@@ -125,8 +128,8 @@ export default async function RecipePrintPage({ params }: Props) {
     shelfLife: recipe.shelfLifeRef?.name || recipe.shelfLife || undefined,
     category: recipe.categoryRef?.name || recipe.category || undefined,
     method: recipe.method || undefined,
-    currentPrice: recipe.currentPrice ? Number(recipe.currentPrice) : undefined,
-    targetMargin: recipe.targetMargin ? Number(recipe.targetMargin) : undefined,
+    currentPrice: undefined,
+    targetMargin: undefined,
     sections: sectionsWithCosts,
     items: itemsWithCosts,
     totalCost,
