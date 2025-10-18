@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { createRecipeWithSections } from "../actionsWithSections";
+import { createRecipeWithSections } from "../../dashboard/recipes/actionsWithSections";
 import { UnifiedRecipeForm } from "@/components/UnifiedRecipeForm";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
