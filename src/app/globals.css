@@ -1480,6 +1480,12 @@ body {
   padding-left: env(safe-area-inset-left);
 }
 
+/* Prevent content being hidden under sidebar; content has base left padding; sidebar overlays on top */
+@media (min-width: 768px) {
+  body.sidebar-collapsed main { padding-left: 4rem; }
+  body.sidebar-expanded main { padding-left: 16rem; }
+}
+
 .safe-area-inset-right {
   padding-right: env(safe-area-inset-right);
 }
@@ -1752,6 +1758,17 @@ body {
 .recipe-layout {
   height: 100%;
   overflow: hidden;
+}
+
+/* Responsive adjustments for recipe page layout */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* iPad: give more width to right pane, widen left sidebar panel */
+  .recipe-layout { column-gap: 16px; }
+}
+
+@media (max-width: 640px) {
+  /* iPhone: stack panels; shrink paddings and headers */
+  .recipe-layout { display: block; padding-left: 8px !important; padding-right: 8px !important; }
 }
 
 .ingredients-pane,

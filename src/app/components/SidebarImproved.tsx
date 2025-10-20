@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS } from "@/lib/navigation-config";
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const pathname = usePathname();
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   // Lock scroll and add global class for background parallax when drawer opens on mobile
@@ -24,6 +28,25 @@ export function Sidebar() {
     };
   }, [isOpen]);
   const [navigationItems, setNavigationItems] = useState<string[]>(["dashboard", "ingredients", "recipes", "recipe-mixer"]);
+
+  // Persist collapsed/pinned
+  useEffect(() => {
+    try {
+      const savedPinned = localStorage.getItem('sidebar_pinned');
+      if (savedPinned) setPinned(savedPinned === 'true');
+      const savedCollapsed = localStorage.getItem('sidebar_collapsed');
+      if (savedCollapsed) setCollapsed(savedCollapsed === 'true');
+    } catch {}
+  }, []);
+  useEffect(() => { try { localStorage.setItem('sidebar_pinned', String(pinned)); } catch {} }, [pinned]);
+  useEffect(() => { try { localStorage.setItem('sidebar_collapsed', String(collapsed)); } catch {} }, [collapsed]);
+
+  // Apply body class to adjust main padding so pages don't hide behind sidebar
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    document.body.classList.toggle('sidebar-collapsed', collapsed && !pinned);
+    document.body.classList.toggle('sidebar-expanded', !(collapsed && !pinned));
+  }, [collapsed, pinned]);
 
   // Fetch navigation preferences
   useEffect(() => {
@@ -52,23 +75,31 @@ export function Sidebar() {
       </button>
 
       {/* Fixed compact sidebar on md+; hidden on mobile */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 group/sidebar z-40">
-        <div className="w-16 lg:w-64 group-hover/sidebar:w-56 2xl:group-hover/sidebar:w-64 transition-all duration-200 ease-out h-full flex flex-col items-center py-3">
-          {/* Brand / collapse toggle */}
-          <button onClick={() => setIsOpen(true)} className="w-12 h-12 rounded-xl floating-nav-enhanced text-gray-700 hover:scale-[1.02] transition-all">
-            <svg className="w-5 h-5 m-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
-          </button>
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40">
+        <div className={`${(collapsed && !pinned) ? 'w-16' : 'w-64'} transition-all duration-300 ease-out h-full flex flex-col py-3 bg-white/90 backdrop-blur-md border-r border-gray-200 shadow-sm`}>
+          {/* Header controls */}
+          <div className="flex items-center justify-between px-2">
+            <button onClick={() => setCollapsed(!collapsed)} className="w-10 h-10 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition" title={collapsed ? 'Expand' : 'Collapse'}>
+              {collapsed ? (
+                <svg className="w-4 h-4 m-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+              ) : (
+                <svg className="w-4 h-4 m-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+              )}
+            </button>
+            {/* Removed the 3-stripe image; only the collapse button remains as requested */}
+          </div>
 
-          {/* Vertical icon list */}
-          <nav className="mt-3 space-y-2 w-12 lg:w-full px-2">
-            {ALL_NAVIGATION_ITEMS.map((item) => (
-              <a key={item.value} href={item.href} className="group/item h-12 rounded-xl flex items-center justify-center lg:justify-start gap-3 bg-white/50 border border-white/60 hover:bg-emerald-50/50 hover:border-emerald-200/70 transition-all shadow-sm px-3">
-                <div className="text-gray-700 group-hover/item:text-emerald-700">{item.icon}</div>
-                <span className="hidden lg:inline-block text-sm font-medium text-gray-800 opacity-0 group-hover/sidebar:opacity-100 transition-opacity">
-                  {item.label}
-                </span>
-              </a>
-            ))}
+          {/* List */}
+          <nav className="mt-2 space-y-1 px-2">
+            {ALL_NAVIGATION_ITEMS.map((item) => {
+              const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+              return (
+                <a key={item.value} href={item.href} className={`group flex items-center gap-3 rounded-md px-2 ${active ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-100 text-gray-700'} transition-colors h-10`}>
+                  <div className={`w-8 h-8 rounded-md flex items-center justify-center ${active ? 'text-emerald-700' : 'text-gray-700'}`}>{item.icon}</div>
+                  <span className={`${(collapsed && !pinned) ? 'opacity-0 w-0' : 'opacity-100 w-auto'} transition-all text-sm font-medium whitespace-nowrap`}>{item.label}</span>
+                </a>
+              );
+            })}
           </nav>
         </div>
       </aside>

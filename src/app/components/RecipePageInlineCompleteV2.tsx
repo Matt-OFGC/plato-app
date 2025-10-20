@@ -859,9 +859,9 @@ export function RecipePageInlineCompleteV2({
   return (
     <div className="h-screen flex flex-col bg-white w-full max-w-none">
       {/* Header Container */}
-      <div className="flex-shrink-0 px-6 pt-8 pb-2">
+      <div className="flex-shrink-0 px-3 md:px-6 pt-4 md:pt-8 pb-2">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-16 md:h-20">
             <div className="flex items-center gap-4">
               {/* Recipe Image in Header */}
               <div className="flex-shrink-0 relative group">
@@ -916,9 +916,9 @@ export function RecipePageInlineCompleteV2({
                   </div>
                 )}
               </div>
-              <div className="flex flex-col justify-center gap-1">
+              <div className="flex flex-col justify-center gap-1 min-w-0">
                 {isLocked ? (
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{name}</h1>
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight truncate">{name}</h1>
                 ) : (
                   <input
                     type="text"
@@ -1008,7 +1008,7 @@ export function RecipePageInlineCompleteV2({
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-3 md:gap-6 lg:gap-8 min-h-0 pt-2 md:pt-3 lg:pt-2 pb-12 px-2 md:px-6 lg:px-8 recipe-layout">
         {/* Left Panel - Recipe Overview (Responsive) */}
-        <div className="w-32 md:w-36 lg:w-40 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
+        <div className="w-28 md:w-64 lg:w-72 xl:w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
 
           {/* Servings Adjuster */}
           <div className="mb-4">

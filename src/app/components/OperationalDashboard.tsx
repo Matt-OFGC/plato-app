@@ -78,14 +78,26 @@ export function OperationalDashboard({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Header */}
+      {/* Top Bar - Responsive, shows active user */}
+      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl px-3 sm:px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-semibold">
+            {(userName?.[0] || 'U').toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm sm:text-base font-semibold text-gray-900 truncate">{userName ? userName : 'Signed in'}</div>
+            <div className="text-xs text-gray-500 truncate">{new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+          </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-2">
+          <span className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">Personalised dashboard</span>
+        </div>
+      </div>
+
+      {/* Welcome */}
       <div className="spacing-responsive-compact">
-        <h1 className="text-responsive-h1 text-gray-900 mb-2">
-          Welcome back{userName ? `, ${userName}` : ""}! 👋
-        </h1>
-        <p className="text-responsive-body text-gray-600">
-          {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </p>
+        <h1 className="text-responsive-h1 text-gray-900 mb-2">Welcome back{userName ? `, ${userName}` : ''}! 👋</h1>
+        <p className="text-responsive-body text-gray-600">Keep an eye on production and tasks at a glance</p>
       </div>
 
       {/* Quick Stats Bar */}
