@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTimers } from "@/contexts/TimerContext";
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from "@/lib/navigation-config";
-import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 interface FloatingNavBarProps {
   navigationItems?: string[]; // Array of hrefs for selected nav items
@@ -16,19 +15,17 @@ interface FloatingNavBarProps {
 export function FloatingNavBar({ 
   navigationItems = ["dashboard", "ingredients", "recipes", "recipe-mixer"],
   onMoreClick,
-  enableScrollAnimation = true
+  enableScrollAnimation = false
 }: FloatingNavBarProps) {
   const pathname = usePathname();
   const { timers } = useTimers();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   
   // Apple-style scroll animation
-  const { isVisible, isScrollingDown, hasScrolled } = useScrollAnimation({
-    threshold: 100,
-    hideDelay: 150,
-    showDelay: 100,
-    enabled: enableScrollAnimation
-  });
+  // Always visible: disable scroll hide/show
+  const isVisible = true;
+  const isScrollingDown = false;
+  const hasScrolled = false;
 
   // Filter nav items based on user selection
   const selectedNavItems = ALL_NAVIGATION_ITEMS.filter(item => 
@@ -53,13 +50,13 @@ export function FloatingNavBar({
 
   return (
     <>
-      {/* Floating Navigation Bar - Left Side */}
-      <nav className={`fixed left-4 top-1/2 -translate-y-1/2 z-50 md:left-6 lg:left-8 xl:left-10 safe-area-left transition-all duration-300 ease-out ${
+      {/* Fixed slim left rail for md+ */}
+      <nav className={`hidden md:block fixed left-1 top-1/2 -translate-y-1/2 z-50 md:left-2 lg:left-3 xl:left-4 safe-area-left transition-all duration-300 ease-out ${
         isVisible 
           ? 'translate-x-0 opacity-100' 
           : '-translate-x-full opacity-0'
       }`}>
-        <div className={`floating-nav floating-nav-enhanced rounded-3xl px-2.5 py-3 mx-auto max-h-md transition-all duration-300 ease-out ${
+        <div className={`floating-nav floating-nav-enhanced rounded-3xl px-2 py-2.5 mx-auto max-h-md transition-all duration-300 ease-out ${
           timerCount > 0 ? 'animate-pulse-subtle' : ''
         } ${
           hasScrolled && isScrollingDown 
@@ -78,7 +75,7 @@ export function FloatingNavBar({
                     href={item.href}
                     onMouseEnter={() => setHoveredItem(item.href)}
                     onMouseLeave={() => setHoveredItem(null)}
-                    className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative touch-target w-12 h-12 ${
+                    className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative touch-target w-11 h-11 ${
                       active 
                         ? "floating-nav-active text-black shadow-lg scale-105" 
                         : `text-gray-500 hover:text-gray-700 hover:bg-gray-100/50 ${
@@ -99,7 +96,7 @@ export function FloatingNavBar({
                     }`}>
                       {item.icon}
                     </div>
-                    <span className={`text-[8px] font-medium mt-0.5 truncate max-w-[40px] transition-all duration-300 ${
+                    <span className={`text-[9px] font-medium mt-0.5 truncate max-w-[44px] transition-all duration-300 ${
                       isHovered ? 'text-gray-800 font-semibold' : ''
                     }`}>
                       {item.shortLabel}
@@ -118,7 +115,7 @@ export function FloatingNavBar({
                 onClick={() => onMoreClick?.()}
                 onMouseEnter={() => setHoveredItem('more')}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative w-12 h-12 ${
+                className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative w-11 h-11 ${
                   hoveredItem === 'more' 
                     ? 'text-gray-700 bg-gray-100/50 scale-105 shadow-md' 
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'

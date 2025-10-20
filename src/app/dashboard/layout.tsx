@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/SidebarImproved";
-import { FloatingBackButton } from "@/components/FloatingBackButton";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { DashboardNavWrapper } from "@/components/DashboardNavWrapper";
 
 export const metadata: Metadata = {
   title: "Dashboard - Plato",
@@ -22,8 +20,8 @@ export default function DashboardLayout({
           {/* Sidebar Navigation */}
           <Sidebar />
           
-          {/* Main Content Area */}
-      <main className="flex-1 pl-20 md:pl-24 lg:pl-28 xl:pl-32 safe-area-inset-left">
+      {/* Main Content Area */}
+      <main className="flex-1 pl-4 md:pl-16 lg:pl-20 xl:pl-24 safe-area-inset-left">
         <div className="container-responsive">
           <div className="py-4 sm:py-6 md:py-8">
             {children}
@@ -31,11 +29,7 @@ export default function DashboardLayout({
         </div>
       </main>
       
-      {/* Floating Back Button */}
-      <FloatingBackButton />
-      
-      {/* Floating Navigation Bar with More Menu */}
-      <DashboardNavWrapper />
+      {/* Floating back button removed to avoid overlapping the sidebar */}
         </div>
       </KeyboardShortcutsProvider>
     </ErrorBoundary>

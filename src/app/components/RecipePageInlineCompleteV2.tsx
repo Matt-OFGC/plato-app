@@ -268,8 +268,18 @@ export function RecipePageInlineCompleteV2({
   const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.price || "");
   
   // Batch recipe state
-  const [isBatchRecipe, setIsBatchRecipe] = useState(false);
-  const [slicesPerBatch, setSlicesPerBatch] = useState(8);
+  const [isBatchRecipe, setIsBatchRecipe] = useState(recipe.yieldUnit === 'slices');
+  const [slicesPerBatch, setSlicesPerBatch] = useState(
+    recipe.yieldUnit === 'slices' ? Number(recipe.yieldQuantity) || 8 : 8
+  );
+
+  // Keep yield in sync with batch mode for accurate saving and scaling
+  useEffect(() => {
+    if (isBatchRecipe) {
+      if (yieldUnit !== 'slices') setYieldUnit('slices');
+      if (yieldQuantity !== slicesPerBatch) setYieldQuantity(slicesPerBatch);
+    }
+  }, [isBatchRecipe, slicesPerBatch]);
   
   // Allergens popup state
   const [showAllergensPopup, setShowAllergensPopup] = useState(false);
@@ -595,8 +605,12 @@ export function RecipePageInlineCompleteV2({
       formData.append('description', description);
       formData.append('imageUrl', imageUrl);
       formData.append('method', method);
-      formData.append('yieldQuantity', yieldQuantity.toString());
-      formData.append('yieldUnit', yieldUnit);
+      // Ensure yield reflects batch settings
+      const effectiveYieldQuantity = isBatchRecipe ? slicesPerBatch : yieldQuantity;
+      const effectiveYieldUnit = isBatchRecipe ? 'slices' : yieldUnit;
+      formData.append('yieldQuantity', effectiveYieldQuantity.toString());
+      formData.append('yieldUnit', effectiveYieldUnit);
+      formData.append('portionsPerBatch', isBatchRecipe ? slicesPerBatch.toString() : '');
       formData.append('categoryId', categoryId.toString());
       formData.append('shelfLifeId', shelfLifeId.toString());
       formData.append('storageId', storageId.toString());
@@ -666,7 +680,7 @@ export function RecipePageInlineCompleteV2({
       <div
         ref={setNodeRef}
         style={style}
-        className={`flex items-center gap-4 p-6 rounded-lg transition-colors touch-manipulation ${
+        className={`flex items-center gap-3 p-4 rounded-lg transition-colors touch-manipulation ${
           isLocked ? 'cursor-pointer' : ''
         } ${
           checkedItems.has(item.id) ? 'bg-emerald-50 border border-emerald-200' : 'bg-white hover:bg-gray-50'
@@ -707,7 +721,7 @@ export function RecipePageInlineCompleteV2({
               <span className="text-xl text-gray-900">{ingredient?.name || 'Unknown ingredient'}</span>
             </div>
           ) : (
-            <div className="grid grid-cols-12 gap-3 items-center">
+            <div className="grid grid-cols-12 gap-2 md:gap-3 items-center">
               <div className="col-span-4">
                 <SearchableSelect
                   key={`ingredient-select-${item.id}`}
@@ -755,12 +769,12 @@ export function RecipePageInlineCompleteV2({
                   }
                 }}
                 placeholder="Qty"
-                className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className="col-span-2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
               />
               <select
                 value={item.unit}
                 onChange={(e) => onUpdate('unit', e.target.value)}
-                className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className="col-span-2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
               >
                 <option value="">Unit</option>
                 <optgroup label="Weight/Mass">
@@ -793,7 +807,7 @@ export function RecipePageInlineCompleteV2({
                   <option value="small">small</option>
                 </optgroup>
               </select>
-              <div className="col-span-3 flex items-center gap-2">
+              <div className="col-span-3 flex items-center gap-1 md:gap-2">
                 <span className="text-gray-500 font-medium">£</span>
                 <input
                   type="number"
@@ -802,7 +816,7 @@ export function RecipePageInlineCompleteV2({
                   value={item.price || ""}
                   onChange={(e) => onUpdate('price', e.target.value)}
                   placeholder="0.00"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="flex-1 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
                 />
               </div>
             </div>
@@ -843,7 +857,7 @@ export function RecipePageInlineCompleteV2({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-screen flex flex-col bg-white w-full max-w-none">
       {/* Header Container */}
       <div className="flex-shrink-0 px-6 pt-8 pb-2">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
@@ -957,7 +971,13 @@ export function RecipePageInlineCompleteV2({
         </div>
 
               <button
-                onClick={() => setIsLocked(!isLocked)}
+                onClick={() => {
+                  if (isLocked) {
+                    // When entering edit mode, automatically switch to carousel view
+                    setIsCarouselView(true);
+                  }
+                  setIsLocked(!isLocked);
+                }}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-sm ${
                   isLocked 
                     ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200' 
@@ -986,7 +1006,7 @@ export function RecipePageInlineCompleteV2({
       </div>
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex-1 flex gap-4 md:gap-6 lg:gap-8 min-h-0 pt-2 md:pt-3 lg:pt-2 pb-12 px-4 md:px-6 lg:px-8 recipe-layout">
+      <div className="flex-1 flex gap-3 md:gap-6 lg:gap-8 min-h-0 pt-2 md:pt-3 lg:pt-2 pb-12 px-2 md:px-6 lg:px-8 recipe-layout">
         {/* Left Panel - Recipe Overview (Responsive) */}
         <div className="w-32 md:w-36 lg:w-40 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
 

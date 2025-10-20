@@ -271,6 +271,8 @@ export async function updateRecipeUnified(formData: FormData) {
     const bakeTime = formData.get("bakeTime") ? parseInt(formData.get("bakeTime") as string) : null;
     const bakeTemp = formData.get("bakeTemp") ? parseInt(formData.get("bakeTemp") as string) : null;
     const useSections = formData.get("useSections") === "true";
+    const portionsPerBatchStr = formData.get("portionsPerBatch") as string | null;
+    const portionsPerBatch = portionsPerBatchStr && portionsPerBatchStr.trim() !== "" ? parseInt(portionsPerBatchStr) : null;
 
     // Server-side validation
     if (!recipeId || isNaN(recipeId)) {
@@ -309,6 +311,7 @@ export async function updateRecipeUnified(formData: FormData) {
       storageId: storageId || null,
       bakeTime: bakeTime || null,
       bakeTemp: bakeTemp || null,
+      portionsPerBatch: portionsPerBatch,
     };
 
     // Only update name if it's different
