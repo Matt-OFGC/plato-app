@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { createRecipeWithSections } from "../../dashboard/recipes/actionsWithSections";
+import { createRecipeUnified } from "../../dashboard/recipes/actionsSimplified";
 import { UnifiedRecipeForm } from "@/components/UnifiedRecipeForm";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
@@ -22,7 +22,7 @@ export default async function NewRecipePage({ searchParams }: NewRecipePageProps
 
   async function action(formData: FormData) {
     "use server";
-    await createRecipeWithSections(formData);
+    await createRecipeUnified(formData);
   }
 
   return (
