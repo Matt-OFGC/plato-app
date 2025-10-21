@@ -222,7 +222,7 @@ export default function IngredientsPanel({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden h-fit max-h-[800px] flex flex-col">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center gap-3 z-10">
         <div className="w-1 h-6 bg-emerald-600 rounded-sm" />
@@ -333,65 +333,40 @@ export default function IngredientsPanel({
                             <option value="each">each</option>
                           </select>
                           
-                          <div className="flex-1 relative z-10">
-                            <div className="relative">
-                              <input
-                                type="text"
-                                value={ingredientSearch[ingredient.id] ?? ingredient.name}
-                                onChange={(e) => {
-                                  handleSearchChange(ingredient.id, e.target.value);
-                                  handleIngredientChange(ingredient.id, "name", e.target.value);
-                                }}
-                                onFocus={() => {
-                                  if (!ingredientSearch[ingredient.id]) {
-                                    handleSearchChange(ingredient.id, ingredient.name);
-                                  }
-                                }}
-                                onBlur={() => {
-                                  // Clear search after a short delay to allow clicks on dropdown items
-                                  setTimeout(() => {
-                                    const newSearch = { ...ingredientSearch };
-                                    delete newSearch[ingredient.id];
-                                    setIngredientSearch(newSearch);
-                                    const newResults = { ...searchResults };
-                                    delete newResults[ingredient.id];
-                                    setSearchResults(newResults);
-                                  }, 200);
-                                }}
-                                className="w-full px-3 py-1.5 pr-8 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-                                placeholder="Search or select ingredient..."
-                              />
-                              <svg 
-                                className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </div>
+                          <div className="flex-1 relative">
+                            <input
+                              type="text"
+                              value={ingredientSearch[ingredient.id] ?? ingredient.name}
+                              onChange={(e) => {
+                                handleSearchChange(ingredient.id, e.target.value);
+                                handleIngredientChange(ingredient.id, "name", e.target.value);
+                              }}
+                              onFocus={() => {
+                                if (!ingredientSearch[ingredient.id]) {
+                                  handleSearchChange(ingredient.id, ingredient.name);
+                                }
+                              }}
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              placeholder="Search ingredients..."
+                            />
                             
-                            {/* Searchable dropdown - shows all ingredients initially, filters as you type */}
-                            {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0) || ingredientSearch[ingredient.id]?.length === 0 ? (
-                              <div className="absolute left-0 right-0 z-50 mt-1 bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
-                                <div className="py-1">
-                                  {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : COMMON_INGREDIENTS).map((result, idx) => (
-                                    <button
-                                      key={idx}
-                                      onClick={() => handleSelectIngredient(ingredient.id, result)}
-                                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-emerald-50 flex items-center justify-between group transition-colors border-b border-gray-100 last:border-b-0"
-                                    >
-                                      <span className="font-medium text-gray-900 group-hover:text-emerald-700">
-                                        {result.name}
-                                      </span>
-                                      <span className="text-xs text-gray-500 group-hover:text-emerald-600 font-medium">
-                                        {result.unit} • £{result.costPerUnit.toFixed(3)}/{result.unit}
-                                      </span>
-                                    </button>
-                                  ))}
-                                </div>
+                            {/* Search dropdown */}
+                            {searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 && (
+                              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {searchResults[ingredient.id].map((result, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => handleSelectIngredient(ingredient.id, result)}
+                                    className="w-full px-3 py-2 text-left text-sm hover:bg-emerald-50 flex items-center justify-between group"
+                                  >
+                                    <span className="font-medium text-gray-900">{result.name}</span>
+                                    <span className="text-xs text-gray-500 group-hover:text-emerald-600">
+                                      {result.unit} • £{result.costPerUnit.toFixed(3)}/{result.unit}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
-                            ) : null}
+                            )}
                           </div>
                           
                           <button
