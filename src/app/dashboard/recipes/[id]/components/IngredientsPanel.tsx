@@ -226,7 +226,7 @@ export default function IngredientsPanel({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[300px] max-h-[800px] flex flex-col">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px] max-h-[800px] flex flex-col">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center gap-3 z-10">
         <div className="w-1 h-6 bg-emerald-600 rounded-sm" />
