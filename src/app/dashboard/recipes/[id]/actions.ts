@@ -62,12 +62,18 @@ export async function saveRecipeChanges(data: {
       },
     });
 
-    // 2. Delete existing sections (this will cascade delete items if configured)
+    // 2. First, unlink all recipe items from sections to preserve them
+    await prisma.recipeItem.updateMany({
+      where: { recipeId: data.recipeId },
+      data: { sectionId: null }
+    });
+
+    // 3. Delete existing sections (items are now preserved)
     await prisma.recipeSection.deleteMany({
       where: { recipeId: data.recipeId }
     });
 
-    // 3. Create new sections with instructions
+    // 4. Create new sections with instructions
     for (let i = 0; i < data.steps.length; i++) {
       const step = data.steps[i];
       
@@ -93,7 +99,8 @@ export async function saveRecipeChanges(data: {
     return { success: true };
   } catch (error) {
     console.error("Error saving recipe:", error);
-    return { success: false, error: "Failed to save changes" };
+    const errorMessage = error instanceof Error ? error.message : "Failed to save changes";
+    return { success: false, error: errorMessage };
   }
 }
 
