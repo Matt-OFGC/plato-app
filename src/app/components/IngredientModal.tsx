@@ -36,12 +36,21 @@ interface IngredientModalProps {
 export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIngredient }: IngredientModalProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     if (isOpen) {
       loadSuppliers();
+      // Prevent background scroll when modal open
+      document.body.style.overflow = 'hidden';
+    } else if (mounted) {
+      document.body.style.overflow = '';
     }
-  }, [isOpen]);
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, mounted]);
 
   const loadSuppliers = async () => {
     try {

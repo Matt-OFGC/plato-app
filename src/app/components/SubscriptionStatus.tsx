@@ -42,8 +42,11 @@ export function SubscriptionStatus() {
 
   const handleUpgrade = async () => {
     try {
+      // Default upgrade to Professional monthly unless overridden elsewhere
       const response = await fetch("/api/subscription/checkout", {
         method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: 'professional', interval: 'month' }),
       });
       const data = await response.json();
       if (data.url) {

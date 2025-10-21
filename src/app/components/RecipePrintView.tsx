@@ -49,6 +49,11 @@ export function RecipePrintView({ recipe, currency = "GBP" }: RecipePrintViewPro
   const [printMode, setPrintMode] = useState<"kitchen" | "cost">("kitchen");
 
   const handlePrint = () => {
+    // Ensure print content is visible before print
+    try {
+      const root = document.querySelector('.print-content') as HTMLElement | null;
+      if (root) root.style.display = 'block';
+    } catch {}
     window.print();
   };
 

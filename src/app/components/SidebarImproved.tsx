@@ -74,8 +74,8 @@ export function Sidebar() {
         <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
 
-      {/* Fixed compact sidebar on md+; hidden on mobile */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40">
+      {/* Fixed compact sidebar on md+; hidden on mobile. Use sticky containment to keep it stationary */}
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 will-change-transform [position:sticky] md:[position:fixed]">
         <div className={`${(collapsed && !pinned) ? 'w-16' : 'w-64'} transition-all duration-300 ease-out h-full flex flex-col py-3 bg-white/90 backdrop-blur-md border-r border-gray-200 shadow-sm`}>
           {/* Header controls */}
           <div className="flex items-center justify-between px-2">

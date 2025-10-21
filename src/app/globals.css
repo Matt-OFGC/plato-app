@@ -369,6 +369,13 @@ body {
     display: none !important;
   }
 
+  /* Allow full-width printing */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
   /* Reset page margins */
   @page {
     margin: 0.5in;

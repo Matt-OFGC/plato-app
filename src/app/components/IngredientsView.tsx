@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ViewToggle } from "./ViewToggle";
 import { formatCurrency } from "@/lib/currency";
 import { fromBase, Unit } from "@/lib/units";
@@ -25,11 +26,13 @@ interface Ingredient {
 
 interface IngredientsViewProps {
   ingredients: Ingredient[];
-  deleteIngredient: any; // Server action
+  deleteIngredient: (id: number) => Promise<void>; // Server action
 }
 
 export function IngredientsView({ ingredients, deleteIngredient }: IngredientsViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   if (ingredients.length === 0) {
     return (
@@ -41,7 +44,7 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
         </div>
         <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">No ingredients yet</h3>
         <p className="text-[var(--muted-foreground)] mb-6">Get started by adding your first ingredient</p>
-        <Link href="/dashboard/ingredients/new" className="btn-primary">
+        <Link href="/dashboard/ingredients?new=1" className="btn-primary">
           Add First Ingredient
         </Link>
       </div>
@@ -139,14 +142,23 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
                   >
                     Edit
                   </Link>
-                  <form action={deleteIngredient.bind(null, ing.id)} className="inline">
-                    <button 
-                      type="submit" 
-                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
-                    >
-                      Delete
-                    </button>
-                  </form>
+                  <button 
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => {
+                      if (!confirm("Delete this ingredient? This cannot be undone.")) return;
+                      startTransition(async () => {
+                        try {
+                          await deleteIngredient(ing.id);
+                        } finally {
+                          router.refresh();
+                        }
+                      });
+                    }}
+                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm disabled:opacity-50"
+                  >
+                    {isPending ? 'Deleting…' : 'Delete'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -203,14 +215,23 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
                         >
                           Edit
                         </Link>
-                        <form action={deleteIngredient.bind(null, ing.id)} className="inline">
-                          <button 
-                            type="submit" 
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </button>
-                        </form>
+                        <button 
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => {
+                            if (!confirm("Delete this ingredient? This cannot be undone.")) return;
+                            startTransition(async () => {
+                              try {
+                                await deleteIngredient(ing.id);
+                              } finally {
+                                router.refresh();
+                              }
+                            });
+                          }}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {isPending ? 'Deleting…' : 'Delete'}
+                        </button>
                       </td>
                     </tr>
                   );

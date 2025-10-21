@@ -67,17 +67,17 @@ export default async function RecipePage({ params }: Props) {
     }),
     prisma.category.findMany({ 
       where, 
-      orderBy: { name: "asc" },
+      orderBy: { order: "asc" },
       select: { id: true, name: true }
     }),
     prisma.shelfLifeOption.findMany({ 
       where, 
-      orderBy: { name: "asc" },
+      orderBy: { order: "asc" },
       select: { id: true, name: true }
     }),
     prisma.storageOption.findMany({ 
       where, 
-      orderBy: { name: "asc" },
+      orderBy: { order: "asc" },
       select: { id: true, name: true }
     }),
     prisma.wholesaleProduct.findFirst({
