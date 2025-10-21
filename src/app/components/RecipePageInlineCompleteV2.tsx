@@ -249,9 +249,9 @@ export function RecipePageInlineCompleteV2({
   const [method, setMethod] = useState(recipe.method || "");
   const [yieldQuantity, setYieldQuantity] = useState(recipe.yieldQuantity);
   const [yieldUnit, setYieldUnit] = useState(recipe.yieldUnit);
-  const [categoryId, setCategoryId] = useState(recipe.categoryId || "");
-  const [shelfLifeId, setShelfLifeId] = useState(recipe.shelfLifeId || "");
-  const [storageId, setStorageId] = useState(recipe.storageId || "");
+  const [categoryId, setCategoryId] = useState<number | "">(recipe.categoryId || "");
+  const [shelfLifeId, setShelfLifeId] = useState<number | "">(recipe.shelfLifeId || "");
+  const [storageId, setStorageId] = useState<number | "">(recipe.storageId || "");
   const [bakeTime, setBakeTime] = useState(recipe.bakeTime || "");
   const [bakeTemp, setBakeTemp] = useState(recipe.bakeTemp || "");
   
@@ -627,9 +627,9 @@ export function RecipePageInlineCompleteV2({
       formData.append('yieldQuantity', effectiveYieldQuantity.toString());
       formData.append('yieldUnit', effectiveYieldUnit);
       formData.append('portionsPerBatch', isBatchRecipe ? slicesPerBatch.toString() : '');
-      formData.append('categoryId', categoryId.toString());
-      formData.append('shelfLifeId', shelfLifeId.toString());
-      formData.append('storageId', storageId.toString());
+      formData.append('categoryId', categoryId ? String(categoryId) : '');
+      formData.append('shelfLifeId', shelfLifeId ? String(shelfLifeId) : '');
+      formData.append('storageId', storageId ? String(storageId) : '');
       formData.append('useSections', 'true');
       formData.append('isWholesaleProduct', isWholesaleProduct.toString());
       formData.append('wholesalePrice', wholesalePrice);
@@ -946,9 +946,9 @@ export function RecipePageInlineCompleteV2({
                     placeholder="Recipe name..."
                   />
                 )}
-                <div className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-medium truncate">
-                  {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
-                </div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-medium truncate">
+                {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
+              </div>
               </div>
             </div>
 
@@ -1038,6 +1038,43 @@ export function RecipePageInlineCompleteV2({
                 </svg>
                 <span className="hidden sm:inline">Print</span>
               </Link>
+              {!isLocked && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={categoryId || ''}
+                    onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')}
+                    className="px-2 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
+                    title="Recipe Category"
+                  >
+                    <option value="">No category</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={shelfLifeId || ''}
+                    onChange={(e) => setShelfLifeId(e.target.value ? Number(e.target.value) : '')}
+                    className="px-2 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
+                    title="Shelf life"
+                  >
+                    <option value="">No shelf life</option>
+                    {shelfLifeOptions.map((o) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={storageId || ''}
+                    onChange={(e) => setStorageId(e.target.value ? Number(e.target.value) : '')}
+                    className="px-2 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
+                    title="Storage condition"
+                  >
+                    <option value="">No storage</option>
+                    {storageOptions.map((o) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1452,6 +1489,9 @@ function WholeRecipeView({
   sections: RecipeSection[];
   method: string;
 }) {
+  // Mobile tab state
+  const [mobileTab, setMobileTab] = useState<'ingredients' | 'instructions'>('ingredients');
+  
   // Aggregate ingredients by combining quantities of same ingredient
   const aggregatedIngredients = useMemo(() => {
     const ingredientMap = new Map<number, { ingredient: Ingredient; totalQuantity: number; unit: string; items: any[] }>();
@@ -1482,10 +1522,36 @@ function WholeRecipeView({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Scrollable Content - No Header */}
-      <div className="flex-1 p-6">
-        {/* Responsive Layout: Single column on mobile, two columns on tablet+ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 h-full recipe-two-col">
+      {/* Mobile Tab Switcher */}
+      <div className="md:hidden px-4 pt-3 pb-2">
+        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+          <button
+            onClick={() => setMobileTab('ingredients')}
+            className={`flex-1 px-4 py-3 rounded-lg font-semibold text-sm transition-all touch-manipulation ${
+              mobileTab === 'ingredients'
+                ? 'bg-emerald-500 text-white shadow-sm'
+                : 'text-gray-600'
+            }`}
+          >
+            Ingredients
+          </button>
+          <button
+            onClick={() => setMobileTab('instructions')}
+            className={`flex-1 px-4 py-3 rounded-lg font-semibold text-sm transition-all touch-manipulation ${
+              mobileTab === 'instructions'
+                ? 'bg-blue-500 text-white shadow-sm'
+                : 'text-gray-600'
+            }`}
+          >
+            Instructions
+          </button>
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 p-4 md:p-6 overflow-hidden">
+        {/* Desktop: Two columns */}
+        <div className="hidden md:grid md:grid-cols-2 gap-6 h-full recipe-two-col">
         {/* Left Column - Aggregated Ingredients */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-3 md:mb-4 pb-2 border-b border-gray-200 flex-shrink-0">
@@ -1607,6 +1673,75 @@ function WholeRecipeView({
             </div>
           </div>
         </div>
+        </div>
+
+        {/* Mobile: Tabbed Content */}
+        <div className="md:hidden h-full overflow-y-auto">
+          {mobileTab === 'ingredients' ? (
+            <div className="space-y-3">
+              {aggregatedIngredients.map((agg, index) => {
+                const scaledQuantity = (agg.totalQuantity * (servings / recipe.yieldQuantity)).toFixed(1);
+                const isChecked = agg.items.some(item => checkedItems.has(item.id));
+                
+                return (
+                  <div 
+                    key={agg.ingredient.id}
+                    onClick={() => agg.items.forEach(item => toggleItem(item.id))}
+                    className={`rounded-xl transition-all touch-manipulation cursor-pointer ${
+                      isChecked ? 'bg-emerald-50 border-2 border-emerald-300 shadow-sm' : 'bg-white border-2 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 p-4">
+                      <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center touch-manipulation flex-shrink-0 ${
+                        isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
+                      }`}>
+                        {isChecked && (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="text-xl font-bold text-gray-900">{scaledQuantity}</span>
+                          <span className="text-base text-gray-600">{agg.unit}</span>
+                          <span className="text-lg text-gray-900 font-medium">{agg.ingredient.name}</span>
+                        </div>
+                        {agg.items.length > 1 && (
+                          <div className="text-sm text-gray-500 mt-1">
+                            Used in {agg.items.length} section{agg.items.length > 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+              <div className="space-y-6">
+                {sections.map((section, index) => (
+                  <div key={section.id}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        {index + 1}
+                      </div>
+                      <h4 className="text-base font-bold text-emerald-700">{section.title}</h4>
+                    </div>
+                    
+                    <div className="text-base leading-relaxed text-gray-800 whitespace-pre-wrap break-words pl-10">
+                      {section.method || 'No instructions provided for this step.'}
+                    </div>
+                    
+                    {index < sections.length - 1 && (
+                      <div className="mt-6 mb-2 border-t-2 border-gray-200"></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1878,9 +2013,11 @@ function StepCard({
   isNewlyAdded: boolean;
   totalSections: number;
 }) {
+  // Mobile tab state for switching between ingredients and instructions
+  const [mobileTab, setMobileTab] = useState<'ingredients' | 'instructions'>('ingredients');
 
   return (
-    <div className={`h-full p-4 transition-all duration-700 ease-out flex flex-col ${
+    <div className={`h-full p-2 sm:p-3 md:p-4 transition-all duration-700 ease-out flex flex-col ${
       isNewlyAdded 
         ? 'animate-pulse bg-gradient-to-br from-emerald-50 to-blue-50 border-2 border-emerald-200 rounded-xl shadow-lg transform scale-105' 
         : ''
@@ -1972,27 +2109,55 @@ function StepCard({
         )}
       </div>
                       
-      {/* Responsive Layout: Stack on mobile, side-by-side on tablet+ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 flex-1 min-h-0">
-        {/* Left Column - Ingredients */}
-        <div className="flex flex-col min-h-0 h-full">
-          <div className="flex items-center justify-between mb-2 sm:mb-3 pb-2 border-b border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 sm:h-6 bg-emerald-500 rounded-full"></div>
-              <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
-            </div>
-            {!isLocked && (
-              <button
-                onClick={(e) => addSectionItem(section.id, e)}
-                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Ingredient
-              </button>
-            )}
+      {/* Mobile: Tabs, Desktop: Side-by-side */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {/* Mobile Tab Switcher */}
+        <div className="md:hidden mb-3">
+          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setMobileTab('ingredients')}
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold text-sm transition-all touch-manipulation ${
+                mobileTab === 'ingredients'
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-gray-600'
+              }`}
+            >
+              Ingredients ({section.items.length})
+            </button>
+            <button
+              onClick={() => setMobileTab('instructions')}
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold text-sm transition-all touch-manipulation ${
+                mobileTab === 'instructions'
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'text-gray-600'
+              }`}
+            >
+              Instructions
+            </button>
           </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="hidden md:grid md:grid-cols-2 gap-4 flex-1 min-h-0">
+          {/* Desktop: Left Column - Ingredients */}
+          <div className="flex flex-col min-h-0 h-full">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
+              </div>
+              {!isLocked && (
+                <button
+                  onClick={(e) => addSectionItem(section.id, e)}
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Ingredient
+                </button>
+              )}
+            </div>
           <div className="bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto ingredients-pane h-96">
             <div className="space-y-2">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -2079,6 +2244,105 @@ function StepCard({
               />
             )}
           </div>
+        </div>
+        </div>
+
+        {/* Mobile: Tabbed Content */}
+        <div className="md:hidden flex-1 min-h-0 overflow-hidden flex flex-col">
+          {mobileTab === 'ingredients' ? (
+            <div className="flex-1 overflow-y-auto">
+              {/* Mobile Ingredients Header */}
+              {!isLocked && (
+                <div className="mb-3 flex justify-end">
+                  <button
+                    onClick={(e) => addSectionItem(section.id, e)}
+                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1 touch-manipulation"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add
+                  </button>
+                </div>
+              )}
+              
+              {/* Mobile Ingredients List */}
+              <div className="space-y-3">
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                    {section.items.map((item, itemIndex) => {
+                      const ingredient = ingredients.find((ing: any) => ing.id === item.ingredientId);
+                      if (!ingredient) return null;
+                      
+                      const scaledQuantity = (parseFloat(item.quantity) * (servings / recipe.yieldQuantity)).toFixed(1);
+                      const isChecked = checkedItems.has(item.id);
+                      
+                      if (isLocked) {
+                        return (
+                          <div 
+                            key={item.id}
+                            onClick={() => toggleItem(item.id)}
+                            className={`flex items-center gap-3 p-4 rounded-xl transition-all touch-manipulation cursor-pointer min-h-[56px] ${
+                              isChecked ? 'bg-emerald-50 border-2 border-emerald-300 shadow-sm' : 'bg-white border-2 border-gray-200'
+                            }`}
+                          >
+                            <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center touch-manipulation flex-shrink-0 ${
+                              isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
+                            }`}>
+                              {isChecked && (
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 flex-wrap">
+                                <span className="text-xl font-bold text-gray-900">{scaledQuantity}</span>
+                                <span className="text-base text-gray-600">{item.unit}</span>
+                                <span className="text-lg text-gray-900 font-medium">{ingredient.name}</span>
+                              </div>
+                              {item.note && (
+                                <div className="text-sm text-gray-500 mt-1">{item.note}</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <SortableIngredientItem
+                          key={`${section.id}-${item.id}`}
+                          item={item}
+                          sectionId={section.id}
+                          ingredients={ingredients}
+                          onUpdate={(field: string, value: any) => updateSectionItem(section.id, item.id, field, value)}
+                          onRemove={() => removeSectionItem(section.id, item.id)}
+                        />
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              {/* Mobile Instructions */}
+              <div className="bg-white rounded-xl border-2 border-gray-200 p-4 min-h-full">
+                {isLocked ? (
+                  <div className="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
+                    {section.method || 'No instructions provided for this step.'}
+                  </div>
+                ) : (
+                  <textarea
+                    value={section.method}
+                    onChange={(e) => updateSection(section.id, 'method', e.target.value)}
+                    className="w-full text-base leading-relaxed text-gray-700 bg-transparent border-none resize-none focus:outline-none min-h-[300px]"
+                    placeholder="Instructions for this step..."
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
