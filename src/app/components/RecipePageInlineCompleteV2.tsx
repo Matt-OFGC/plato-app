@@ -873,30 +873,30 @@ export function RecipePageInlineCompleteV2({
   };
 
   return (
-    <div className={`h-screen flex flex-col bg-white w-full max-w-none ${isTablet ? 'ipad-scale' : ''}`}>
-      {/* Header Container */}
-      <div className="flex-shrink-0 px-3 md:px-6 pt-4 md:pt-8 pb-2">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            <div className="flex items-center gap-4">
-              {/* Recipe Image in Header */}
+    <div className={`h-screen flex flex-col bg-white w-full max-w-none recipe-safe-frame ${isTablet ? 'ipad-scale' : ''}`}>
+      {/* Mobile-Optimized Header */}
+      <div className="flex-shrink-0 px-2 sm:px-3 md:px-6 pt-2 sm:pt-4 md:pt-8 pb-2">
+        <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 p-2 sm:p-3 md:p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0 flex-1">
+              {/* Recipe Image - Responsive sizing */}
               <div className="flex-shrink-0 relative group">
                 {(recipe.imageUrl || imageUrl) ? (
                   <img 
                     src={imageUrl || recipe.imageUrl || ""} 
                     alt={recipe.name} 
-                    className="w-20 h-16 object-cover rounded-lg shadow-sm"
+                    className="w-12 h-12 sm:w-16 sm:h-14 md:w-20 md:h-16 object-cover rounded-lg shadow-sm"
                   />
                 ) : (
-                  <div className="w-20 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 sm:w-16 sm:h-14 md:w-20 md:h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
                 )}
                 {!isLocked && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <label className="bg-white text-gray-700 px-2 py-1 rounded text-xs cursor-pointer hover:bg-gray-100 transition-colors">
+                    <label className="bg-white text-gray-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs cursor-pointer hover:bg-gray-100 transition-colors">
                       <input
                         type="file"
                         accept="image/*"
@@ -932,59 +932,60 @@ export function RecipePageInlineCompleteV2({
                   </div>
                 )}
               </div>
-              <div className="flex flex-col justify-center gap-1 min-w-0">
+              
+              {/* Recipe Title and Meta - Responsive */}
+              <div className="flex flex-col justify-center gap-0.5 sm:gap-1 min-w-0 flex-1">
                 {isLocked ? (
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight truncate">{name}</h1>
+                  <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 tracking-tight truncate">{name}</h1>
                 ) : (
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
+                    className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none w-full"
                     placeholder="Recipe name..."
                   />
                 )}
-                <div className="text-sm text-gray-500 font-medium">
-                  Recipe • {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
+                <div className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-medium truncate">
+                  {recipe.category?.name || 'Uncategorized'} • {recipe.yieldQuantity} {recipe.yieldUnit}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-        {/* View Mode Toggle - Segmented Control Style */}
-        <div className="flex items-center">
-          <div className="inline-flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
-            {/* Whole Recipe Option */}
-            <button
-              onClick={() => handleViewModeChange(false)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                !isCarouselView
-                  ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Whole Recipe
-            </button>
-            
-            {/* Carousel Option */}
-            <button
-              onClick={() => handleViewModeChange(true)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                isCarouselView
-                  ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              Carousel
-            </button>
-          </div>
-        </div>
+            {/* Action Buttons - Responsive and touch-friendly */}
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 flex-wrap">
+              {/* View Mode Toggle - Icon-only on mobile, with text on tablet+ */}
+              <div className="inline-flex items-center bg-gray-100 rounded-lg p-0.5 sm:p-1 border border-gray-200">
+                <button
+                  onClick={() => handleViewModeChange(false)}
+                  className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-2 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 touch-manipulation ${
+                    !isCarouselView
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                  title="Whole Recipe View"
+                >
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Whole</span>
+                </button>
+                
+                <button
+                  onClick={() => handleViewModeChange(true)}
+                  className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-2 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 touch-manipulation ${
+                    isCarouselView
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                  title="Carousel View"
+                >
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Steps</span>
+                </button>
+              </div>
 
               <button
                 onClick={() => {

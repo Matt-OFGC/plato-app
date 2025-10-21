@@ -1512,6 +1512,21 @@ body {
   padding: 0 1rem;
 }
 
+/* Safe visual frame for recipe pages across devices */
+.recipe-safe-frame {
+  margin-left: max(12px, env(safe-area-inset-left));
+  margin-right: max(12px, env(safe-area-inset-right));
+}
+
+@media (min-width: 1024px) {
+  .recipe-safe-frame { max-width: 1320px; margin-left: auto; margin-right: auto; }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* iPad: visual frame matches red rectangle guidance */
+  .recipe-safe-frame { max-width: 1100px; margin-left: 16px; margin-right: 16px; }
+}
+
 @media (min-width: 640px) {
   .container-responsive {
     padding: 0 1.5rem;
