@@ -41,8 +41,8 @@ export default function InstructionsPanel({
   const handleAddStep = () => {
     const newStep: RecipeStep = {
       id: `step-${Date.now()}`,
-      title: `Step ${steps.length + 1}`,
-      instructions: ["Enter instructions here..."],
+      title: "",  // Empty string so placeholder shows
+      instructions: [],  // Empty array so placeholder shows
     };
     onStepsChange([...steps, newStep]);
   };

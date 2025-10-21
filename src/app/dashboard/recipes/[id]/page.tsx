@@ -76,10 +76,10 @@ export default async function RecipePage({ params }: Props) {
     }),
   ]);
 
-  // Helper function to clean instruction text (remove leading numbers like "1. ")
+  // Helper function to clean instruction text (remove leading numbers like "1. ", "1)", "1 -", etc.)
   const cleanInstructionLine = (line: string): string => {
-    // Remove leading numbers with dots (e.g., "1. ", "2. ", etc.)
-    return line.replace(/^\d+\.\s*/, '').trim();
+    // Remove leading numbers with dots, parentheses, or dashes (e.g., "1. ", "2) ", "3 - ", etc.)
+    return line.replace(/^\s*\d+[\.\)\-\:]\s*/, '').trim();
   };
 
   // Transform database recipe to match the new UI format
