@@ -120,7 +120,7 @@ export default async function RecipePage({ params }: Props) {
         }] as RecipeStep[],
     
     // Transform items to ingredients
-    // Only load ingredients that are associated with sections (steps)
+    // Prefer section-specific ingredients, but fallback to flat items for cost calculation
     ingredients: recipe.sections.length > 0 && recipe.sections.some(s => s.items.length > 0)
       ? recipe.sections.flatMap((section) => 
           section.items.map((item) => {
@@ -139,7 +139,21 @@ export default async function RecipePage({ params }: Props) {
             } as Ingredient;
           })
         )
-      : [], // Start with empty array if no section-specific ingredients
+      : recipe.items.map((item) => {
+          // Fallback to flat items (old format) - these won't show in edit view but will be in cost calc
+          const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
+            ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
+            : undefined;
+          
+          return {
+            id: `item-${item.id}`,
+            name: item.ingredient.name,
+            unit: item.unit as Ingredient["unit"],
+            quantity: Number(item.quantity),
+            costPerUnit,
+            // No stepId - won't show in ingredients panel but will be used for cost
+          } as Ingredient;
+        }),
   };
 
   // Transform ingredients for dropdown
