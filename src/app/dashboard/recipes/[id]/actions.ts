@@ -62,18 +62,20 @@ export async function saveRecipeChanges(data: {
       },
     });
 
-    // 2. First, unlink all recipe items from sections to preserve them
-    await prisma.recipeItem.updateMany({
-      where: { recipeId: data.recipeId },
-      data: { sectionId: null }
+    // 2. Delete recipe items that are in sections (they'll be recreated)
+    await prisma.recipeItem.deleteMany({
+      where: { 
+        recipeId: data.recipeId,
+        sectionId: { not: null }
+      }
     });
 
-    // 3. Delete existing sections (items are now preserved)
+    // 3. Delete existing sections
     await prisma.recipeSection.deleteMany({
       where: { recipeId: data.recipeId }
     });
 
-    // 4. Create new sections with instructions
+    // 4. Create new sections with instructions and ingredients
     for (let i = 0; i < data.steps.length; i++) {
       const step = data.steps[i];
       // Filter out empty lines when saving, then join
@@ -82,12 +84,13 @@ export async function saveRecipeChanges(data: {
         .join('\n')
         .trim();
       
-      await prisma.recipeSection.create({
+      // Create the section
+      const newSection = await prisma.recipeSection.create({
         data: {
           recipeId: data.recipeId,
           title: step.title || `Step ${i + 1}`,
           description: step.title || null,
-          method: methodText || null, // Use null if empty instead of empty string
+          method: methodText || null,
           order: i,
           bakeTemp: step.temperatureC || null,
           bakeTime: step.durationMin || null,
@@ -95,10 +98,33 @@ export async function saveRecipeChanges(data: {
           // hasTimer: step.hasTimer || false,
         }
       });
-    }
 
-    // Note: Ingredient updates not implemented yet
-    // Would require creating/updating recipeItems with proper ingredient references
+      // 5. Add ingredients to this section
+      const stepIngredients = data.ingredients.filter(ing => ing.stepId === step.id);
+      
+      for (const ing of stepIngredients) {
+        // Find the ingredient in the database by name
+        const dbIngredient = await prisma.ingredient.findFirst({
+          where: { 
+            name: ing.name,
+            companyId 
+          }
+        });
+
+        if (dbIngredient) {
+          // Create recipe item linked to this section
+          await prisma.recipeItem.create({
+            data: {
+              recipeId: data.recipeId,
+              ingredientId: dbIngredient.id,
+              quantity: ing.quantity,
+              unit: ing.unit as any, // Type assertion needed for Prisma enum
+              sectionId: newSection.id,
+            }
+          });
+        }
+      }
+    }
 
     revalidatePath(`/dashboard/recipes/${data.recipeId}`);
     
