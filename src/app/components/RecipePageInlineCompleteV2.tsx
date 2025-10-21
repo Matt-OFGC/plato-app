@@ -1492,6 +1492,12 @@ function WholeRecipeView({
   // Mobile tab state
   const [mobileTab, setMobileTab] = useState<'ingredients' | 'instructions'>('ingredients');
   
+  // DEBUG: Log when component mounts and tab changes
+  useEffect(() => {
+    console.log('🔥 WholeRecipeView MOBILE TAB COMPONENT LOADED - V2 with tabs!');
+    console.log('📱 Current mobile tab:', mobileTab);
+  }, [mobileTab]);
+  
   // Aggregate ingredients by combining quantities of same ingredient
   const aggregatedIngredients = useMemo(() => {
     const ingredientMap = new Map<number, { ingredient: Ingredient; totalQuantity: number; unit: string; items: any[] }>();
@@ -1522,6 +1528,13 @@ function WholeRecipeView({
 
   return (
     <div className="h-full flex flex-col">
+      {/* DEBUG BANNER - Remove after confirming it works */}
+      <div className="md:hidden px-4 pt-2">
+        <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 rounded-lg text-xs font-bold animate-pulse">
+          🚀 NEW MOBILE VERSION - TABS ACTIVE V2.1
+        </div>
+      </div>
+
       {/* Mobile Tab Switcher */}
       <div className="md:hidden px-4 pt-3 pb-2">
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
@@ -2016,6 +2029,12 @@ function StepCard({
   // Mobile tab state for switching between ingredients and instructions
   const [mobileTab, setMobileTab] = useState<'ingredients' | 'instructions'>('ingredients');
 
+  // DEBUG: Log when component mounts and tab changes
+  useEffect(() => {
+    console.log('🔥 StepCard MOBILE TAB COMPONENT LOADED - V2 with tabs!');
+    console.log('📱 Current mobile tab:', mobileTab);
+  }, [mobileTab]);
+
   return (
     <div className={`h-full p-2 sm:p-3 md:p-4 transition-all duration-700 ease-out flex flex-col ${
       isNewlyAdded 
@@ -2111,6 +2130,13 @@ function StepCard({
                       
       {/* Mobile: Tabs, Desktop: Side-by-side */}
       <div className="flex-1 min-h-0 flex flex-col">
+        {/* DEBUG BANNER - Remove after confirming it works */}
+        <div className="md:hidden mb-2">
+          <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 rounded-lg text-xs font-bold animate-pulse">
+            🚀 MOBILE TABS V2.1 - STEP VIEW
+          </div>
+        </div>
+
         {/* Mobile Tab Switcher */}
         <div className="md:hidden mb-3">
           <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
