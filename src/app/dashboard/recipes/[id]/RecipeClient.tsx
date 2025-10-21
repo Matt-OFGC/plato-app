@@ -153,7 +153,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             )}
             
             <CostAnalysis
-              recipe={recipe}
+              ingredients={localIngredients}
               servings={servings}
               baseServings={recipe.baseServings}
               recipeType={recipeType}
