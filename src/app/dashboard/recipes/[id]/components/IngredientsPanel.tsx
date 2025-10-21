@@ -275,6 +275,7 @@ export default function IngredientsPanel({
               const isChecked = checklist.checked[ingredient.id] || false;
               const aggIngredient = ingredient as AggregatedIngredient;
               const isMultiStep = (aggIngredient.stepIds?.length || 0) > 1;
+              const hasDropdownOpen = searchResults[ingredient.id] || ingredientSearch[ingredient.id]?.length === 0;
 
               return (
                 <div
@@ -294,6 +295,8 @@ export default function IngredientsPanel({
                     draggedId && draggedId !== ingredient.id
                       ? "border-2 border-dashed border-gray-300 rounded-lg"
                       : ""
+                  } ${
+                    hasDropdownOpen ? "relative z-[100]" : ""
                   }`}
                 >
                   {/* Checkbox */}
@@ -337,7 +340,7 @@ export default function IngredientsPanel({
                             <option value="each">each</option>
                           </select>
                           
-                          <div className="flex-1 relative z-10">
+                          <div className="flex-1 relative">
                             <div className="relative">
                               <input
                                 type="text"
@@ -377,7 +380,7 @@ export default function IngredientsPanel({
                             
                             {/* Searchable dropdown - shows all ingredients initially, filters as you type */}
                             {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0) || ingredientSearch[ingredient.id]?.length === 0 ? (
-                              <div className="absolute left-0 right-0 z-50 mt-1 bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
+                              <div className="absolute left-0 right-0 z-[110] mt-1 bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
                                 <div className="py-1">
                                   {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : COMMON_INGREDIENTS).map((result, idx) => (
                                     <button
