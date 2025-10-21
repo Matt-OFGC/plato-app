@@ -1911,3 +1911,43 @@ html.recipe-page-active {
   height: 100vh;
   overflow: hidden;
 }
+
+/* =============================================================================
+   FULL-SCREEN RECIPE PAGE OVERRIDES
+   Make the live recipe page take the full viewport within the dashboard,
+   bypassing container paddings, safe-area left padding and max-width caps.
+   ============================================================================= */
+
+/* Remove left padding added by dashboard <main> when recipe page is active */
+body.recipe-page-active main {
+  padding-left: 0 !important;
+}
+
+/* Make container full-bleed and remove inner vertical padding wrapper */
+body.recipe-page-active .container-responsive {
+  max-width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* The first wrapper inside container adds py-4/sm:py-6/md:py-8; zero it out */
+body.recipe-page-active .container-responsive > div {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove any max-width clamp on the recipe frame for desktops/iPad */
+body.recipe-page-active .recipe-safe-frame {
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* On iPad range, ensure general clamps don't affect the active recipe page */
+@media (min-width: 768px) and (max-width: 1024px) {
+  body.recipe-page-active .flex-1 {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+  }
+}
