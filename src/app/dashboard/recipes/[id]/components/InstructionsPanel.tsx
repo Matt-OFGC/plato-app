@@ -28,7 +28,8 @@ export default function InstructionsPanel({
       : steps;
 
   const handleInstructionsEdit = (stepId: string, value: string) => {
-    const lines = value.split("\n").filter(line => line.trim() !== "");
+    // Split by newlines but keep ALL lines (including empty ones for better typing experience)
+    const lines = value.split("\n");
     
     // Update the actual steps so changes propagate to parent
     const newSteps = steps.map((s) =>
@@ -261,7 +262,7 @@ export default function InstructionsPanel({
                   />
                 ) : (
                   <ol className="list-decimal list-inside space-y-3 text-gray-700 leading-relaxed">
-                    {step.instructions.map((instruction, i) => (
+                    {step.instructions.filter(line => line.trim() !== "").map((instruction, i) => (
                       <li key={i} className="text-base">
                         {instruction}
                       </li>

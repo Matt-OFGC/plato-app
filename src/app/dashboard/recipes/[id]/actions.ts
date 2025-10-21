@@ -76,7 +76,11 @@ export async function saveRecipeChanges(data: {
     // 4. Create new sections with instructions
     for (let i = 0; i < data.steps.length; i++) {
       const step = data.steps[i];
-      const methodText = step.instructions.join('\n').trim();
+      // Filter out empty lines when saving, then join
+      const methodText = step.instructions
+        .filter(line => line.trim() !== "")
+        .join('\n')
+        .trim();
       
       await prisma.recipeSection.create({
         data: {

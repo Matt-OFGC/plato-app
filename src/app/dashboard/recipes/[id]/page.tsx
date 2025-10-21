@@ -76,6 +76,12 @@ export default async function RecipePage({ params }: Props) {
     }),
   ]);
 
+  // Helper function to clean instruction text (remove leading numbers like "1. ")
+  const cleanInstructionLine = (line: string): string => {
+    // Remove leading numbers with dots (e.g., "1. ", "2. ", etc.)
+    return line.replace(/^\d+\.\s*/, '').trim();
+  };
+
   // Transform database recipe to match the new UI format
   const transformedRecipe: RecipeMock = {
     id: recipe.id.toString(),
@@ -98,8 +104,9 @@ export default async function RecipePage({ params }: Props) {
           temperatureC: section.bakeTemp ? Number(section.bakeTemp) : undefined,
           durationMin: section.bakeTime ? Number(section.bakeTime) : undefined,
           hasTimer: section.hasTimer,
-          instructions: section.method ? section.method.split('\n').filter(Boolean) : 
-                       section.description ? [section.description] : [],
+          instructions: section.method 
+            ? section.method.split('\n').filter(Boolean).map(cleanInstructionLine)
+            : section.description ? [cleanInstructionLine(section.description)] : [],
         })) as RecipeStep[]
       : [{
           id: '1',
@@ -107,11 +114,13 @@ export default async function RecipePage({ params }: Props) {
           temperatureC: 180, // Demo data
           durationMin: 25,   // Demo data
           hasTimer: true,    // Demo data
-          instructions: recipe.method ? recipe.method.split('\n').filter(Boolean) : [],
+          instructions: recipe.method 
+            ? recipe.method.split('\n').filter(Boolean).map(cleanInstructionLine)
+            : [],
         }] as RecipeStep[],
     
     // Transform items to ingredients
-    // Use section items if they exist, otherwise use flat items
+    // Only load ingredients that are associated with sections (steps)
     ingredients: recipe.sections.length > 0 && recipe.sections.some(s => s.items.length > 0)
       ? recipe.sections.flatMap((section) => 
           section.items.map((item) => {
@@ -130,20 +139,7 @@ export default async function RecipePage({ params }: Props) {
             } as Ingredient;
           })
         )
-      : recipe.items.map((item) => {
-          const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
-            ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
-            : undefined;
-          
-          return {
-            id: `item-${item.id}`,
-            name: item.ingredient.name,
-            unit: item.unit as Ingredient["unit"],
-            quantity: Number(item.quantity),
-            costPerUnit,
-            // No stepId for flat items
-          } as Ingredient;
-        }),
+      : [], // Start with empty array if no section-specific ingredients
   };
 
   // Transform ingredients for dropdown
