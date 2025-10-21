@@ -207,7 +207,7 @@ export default function IngredientsPanel({
     
     const newIngredient: Ingredient = {
       id: `ing-${Date.now()}`,
-      name: "New Ingredient",
+      name: "",
       unit: "g",
       quantity: 100,
       stepId: currentStepId,
@@ -434,7 +434,7 @@ export default function IngredientsPanel({
                                 : "text-gray-700"
                             }`}
                           >
-                            {ingredient.name}
+                            {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
                           </div>
                           
                           {/* Cost per line in view modes */}
