@@ -1,7 +1,6 @@
 "use client";
 
 import { RecipeStep } from "@/app/lib/mocks/recipe";
-import { useState } from "react";
 import TimerButton from "./TimerButton";
 
 interface InstructionsPanelProps {
@@ -21,9 +20,6 @@ export default function InstructionsPanel({
   onStepsChange,
   onActiveStepChange,
 }: InstructionsPanelProps) {
-  const [editedInstructions, setEditedInstructions] = useState<
-    Record<string, string[]>
-  >({});
 
   // Filter steps based on view mode
   const displayedSteps =
@@ -32,11 +28,13 @@ export default function InstructionsPanel({
       : steps;
 
   const handleInstructionsEdit = (stepId: string, value: string) => {
-    const lines = value.split("\n").map((line) => line.trim()).filter(Boolean);
-    setEditedInstructions((prev) => ({
-      ...prev,
-      [stepId]: lines,
-    }));
+    const lines = value.split("\n").filter(line => line.trim() !== "");
+    
+    // Update the actual steps so changes propagate to parent
+    const newSteps = steps.map((s) =>
+      s.id === stepId ? { ...s, instructions: lines } : s
+    );
+    onStepsChange(newSteps);
   };
 
   const handleAddStep = () => {
@@ -254,14 +252,8 @@ export default function InstructionsPanel({
                 {viewMode === "edit" ? (
                   <textarea
                     className="w-full border border-gray-300 rounded-lg p-3 text-sm leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    rows={Math.max(
-                      4,
-                      (editedInstructions[step.id] || step.instructions).length + 1
-                    )}
-                    value={
-                      editedInstructions[step.id]?.join("\n") ||
-                      step.instructions.map((line, i) => `${i + 1}. ${line}`).join("\n")
-                    }
+                    rows={Math.max(4, step.instructions.length + 1)}
+                    value={step.instructions.join("\n")}
                     onChange={(e) =>
                       handleInstructionsEdit(step.id, e.target.value)
                     }
