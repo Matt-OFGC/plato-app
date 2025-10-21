@@ -290,6 +290,22 @@ export function RecipePageInlineCompleteV2({
   // View mode state - true = carousel view, false = whole recipe view
   const [isCarouselView, setIsCarouselView] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  // Detect iPad/tablet viewport for scaling
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 768px) and (max-width: 1024px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      const matches = 'matches' in e ? e.matches : (e as MediaQueryList).matches;
+      setIsTablet(matches);
+    };
+    handler(mq as any);
+    mq.addEventListener ? mq.addEventListener('change', handler as any) : mq.addListener(handler as any);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener('change', handler as any) : mq.removeListener(handler as any);
+    };
+  }, []);
 
   // Handle view mode change and reset to first section
   const handleViewModeChange = (newIsCarouselView: boolean) => {
@@ -857,7 +873,7 @@ export function RecipePageInlineCompleteV2({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white w-full max-w-none">
+    <div className={`h-screen flex flex-col bg-white w-full max-w-none ${isTablet ? 'ipad-scale' : ''}`}>
       {/* Header Container */}
       <div className="flex-shrink-0 px-3 md:px-6 pt-4 md:pt-8 pb-2">
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
@@ -1008,7 +1024,7 @@ export function RecipePageInlineCompleteV2({
       {/* Main Content - 3 Column Layout */}
       <div className="flex-1 flex gap-3 md:gap-6 lg:gap-8 min-h-0 pt-2 md:pt-3 lg:pt-2 pb-12 px-2 md:px-6 lg:px-8 recipe-layout">
         {/* Left Panel - Recipe Overview (Responsive) */}
-        <div className="w-28 md:w-64 lg:w-72 xl:w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
+        <div className="hidden sm:block w-28 md:w-56 lg:w-72 xl:w-80 flex-shrink-0 bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm overflow-y-auto">
 
           {/* Servings Adjuster */}
           <div className="mb-4">
@@ -1284,6 +1300,23 @@ export function RecipePageInlineCompleteV2({
                 ? 'transform scale-100 opacity-100' 
                 : 'transform scale-95 opacity-90'
           }`}>
+            {/* Mobile-only compact servings bar */}
+            <div className="sm:hidden px-3 pt-3">
+              <div className="flex items-center gap-3">
+                <div className="text-xs font-semibold text-gray-600">Servings</div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setServings(Math.max(1, servings - 1))}
+                    className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700"
+                  >−</button>
+                  <span className="min-w-[2rem] text-center font-bold">{servings}</span>
+                  <button 
+                    onClick={() => setServings(servings + 1)}
+                    className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700"
+                  >+</button>
+                </div>
+              </div>
+            </div>
             {isCarouselView ? (
             useSections ? (
               <div className={`transition-all duration-300 ease-out ${
@@ -1407,7 +1440,7 @@ function WholeRecipeView({
       {/* Scrollable Content - No Header */}
       <div className="flex-1 p-6">
         {/* Two Column Layout: Ingredients Left, Instructions Right */}
-        <div className="grid grid-cols-2 gap-6 h-full">
+        <div className="grid grid-cols-2 gap-6 h-full recipe-two-col">
         {/* Left Column - Aggregated Ingredients */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 flex-shrink-0">

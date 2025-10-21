@@ -1762,13 +1762,34 @@ body {
 
 /* Responsive adjustments for recipe page layout */
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* iPad: give more width to right pane, widen left sidebar panel */
-  .recipe-layout { column-gap: 16px; }
+  /* iPad: balanced spacing, slightly tighter gutters */
+  .recipe-layout { column-gap: 12px; }
+  .recipe-two-col { grid-template-columns: 0.92fr 1.08fr !important; }
+  /* Use full device width for app content on iPad */
+  .container-responsive { max-width: 100% !important; }
+  /* Reduce outer gutters a bit more */
+  main > .container-responsive { padding-left: 12px !important; padding-right: 12px !important; }
+  /* Global scale-up for recipe page, clamped within viewport */
+  .ipad-scale { 
+    transform: scale(1.15); 
+    transform-origin: top center; 
+  }
+  /* Clamp to viewport by providing a scaled container that scrolls */
+  .ipad-scale .recipe-layout { 
+    max-height: calc(100vh - 140px); 
+    overflow: hidden; 
+  }
+  .ipad-scale .ingredients-pane, 
+  .ipad-scale .instructions-pane { 
+    max-height: calc(100vh - 220px) !important; 
+  }
 }
 
 @media (max-width: 640px) {
   /* iPhone: stack panels; shrink paddings and headers */
   .recipe-layout { display: block; padding-left: 8px !important; padding-right: 8px !important; }
+  .recipe-two-col { grid-template-columns: 1fr !important; }
+  .ingredients-pane, .instructions-pane { max-height: none !important; }
 }
 
 .ingredients-pane,
