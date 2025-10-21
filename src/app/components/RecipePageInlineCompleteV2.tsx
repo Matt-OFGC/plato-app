@@ -873,7 +873,7 @@ export function RecipePageInlineCompleteV2({
   };
 
   return (
-    <div className={`h-screen flex flex-col bg-white w-full max-w-none recipe-safe-frame ${isTablet ? 'ipad-scale' : ''}`}>
+    <div className={`h-screen flex flex-col bg-white w-full max-w-none overflow-x-hidden recipe-safe-frame ${isTablet ? 'ipad-scale' : ''}`}>
       {/* Mobile-Optimized Header */}
       <div className="flex-shrink-0 px-2 sm:px-3 md:px-6 pt-2 sm:pt-4 md:pt-8 pb-2">
         <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 p-2 sm:p-3 md:p-4 shadow-sm">
@@ -1688,10 +1688,10 @@ function WholeRecipeView({
         </div>
         </div>
 
-        {/* Mobile: Tabbed Content */}
-        <div className="md:hidden h-full overflow-y-auto">
+        {/* Mobile: Tabbed Content - FULL WIDTH SCROLLABLE LIST */}
+        <div className="md:hidden h-full overflow-y-auto w-full">
           {mobileTab === 'ingredients' ? (
-            <div className="space-y-3">
+            <div className="space-y-3 w-full">
               {aggregatedIngredients.map((agg, index) => {
                 const scaledQuantity = (agg.totalQuantity * (servings / recipe.yieldQuantity)).toFixed(1);
                 const isChecked = agg.items.some(item => checkedItems.has(item.id));
@@ -1700,28 +1700,25 @@ function WholeRecipeView({
                   <div 
                     key={agg.ingredient.id}
                     onClick={() => agg.items.forEach(item => toggleItem(item.id))}
-                    className={`rounded-xl transition-all touch-manipulation cursor-pointer ${
+                    className={`rounded-xl transition-all touch-manipulation cursor-pointer w-full ${
                       isChecked ? 'bg-emerald-50 border-2 border-emerald-300 shadow-sm' : 'bg-white border-2 border-gray-200'
                     }`}
                   >
-                    <div className="flex items-center gap-3 p-4">
-                      <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center touch-manipulation flex-shrink-0 ${
+                    <div className="flex items-start gap-3 p-4 w-full">
+                      <div className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center touch-manipulation flex-shrink-0 ${
                         isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
                       }`}>
                         {isChecked && (
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="text-xl font-bold text-gray-900">{scaledQuantity}</span>
-                          <span className="text-base text-gray-600">{agg.unit}</span>
-                          <span className="text-lg text-gray-900 font-medium">{agg.ingredient.name}</span>
-                        </div>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="text-2xl font-bold text-gray-900 mb-1">{scaledQuantity} {agg.unit}</div>
+                        <div className="text-lg text-gray-700 font-medium break-words">{agg.ingredient.name}</div>
                         {agg.items.length > 1 && (
-                          <div className="text-sm text-gray-500 mt-1">
+                          <div className="text-sm text-gray-500 mt-2">
                             Used in {agg.items.length} section{agg.items.length > 1 ? 's' : ''}
                           </div>
                         )}
@@ -1732,18 +1729,18 @@ function WholeRecipeView({
               })}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
-              <div className="space-y-6">
+            <div className="bg-white rounded-xl border-2 border-gray-200 p-4 w-full overflow-hidden">
+              <div className="space-y-6 w-full">
                 {sections.map((section, index) => (
-                  <div key={section.id}>
+                  <div key={section.id} className="w-full">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-base font-bold flex-shrink-0">
                         {index + 1}
                       </div>
-                      <h4 className="text-base font-bold text-emerald-700">{section.title}</h4>
+                      <h4 className="text-lg font-bold text-emerald-700 break-words flex-1">{section.title}</h4>
                     </div>
                     
-                    <div className="text-base leading-relaxed text-gray-800 whitespace-pre-wrap break-words pl-10">
+                    <div className="text-xl leading-relaxed text-gray-800 whitespace-pre-wrap break-words w-full pl-11">
                       {section.method || 'No instructions provided for this step.'}
                     </div>
                     
@@ -2292,8 +2289,8 @@ function StepCard({
                 </div>
               )}
               
-              {/* Mobile Ingredients List */}
-              <div className="space-y-3">
+              {/* Mobile Ingredients List - FULL WIDTH CONTAINED */}
+              <div className="space-y-3 w-full">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={section.items.map(item => item.id)} strategy={verticalListSortingStrategy}>
                     {section.items.map((item, itemIndex) => {
@@ -2308,27 +2305,24 @@ function StepCard({
                           <div 
                             key={item.id}
                             onClick={() => toggleItem(item.id)}
-                            className={`flex items-center gap-3 p-4 rounded-xl transition-all touch-manipulation cursor-pointer min-h-[56px] ${
+                            className={`flex items-start gap-3 p-4 rounded-xl transition-all touch-manipulation cursor-pointer min-h-[60px] w-full ${
                               isChecked ? 'bg-emerald-50 border-2 border-emerald-300 shadow-sm' : 'bg-white border-2 border-gray-200'
                             }`}
                           >
-                            <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center touch-manipulation flex-shrink-0 ${
+                            <div className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center touch-manipulation flex-shrink-0 ${
                               isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
                             }`}>
                               {isChecked && (
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-baseline gap-2 flex-wrap">
-                                <span className="text-xl font-bold text-gray-900">{scaledQuantity}</span>
-                                <span className="text-base text-gray-600">{item.unit}</span>
-                                <span className="text-lg text-gray-900 font-medium">{ingredient.name}</span>
-                              </div>
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              <div className="text-2xl font-bold text-gray-900 mb-1">{scaledQuantity} {item.unit}</div>
+                              <div className="text-lg text-gray-700 font-medium break-words">{ingredient.name}</div>
                               {item.note && (
-                                <div className="text-sm text-gray-500 mt-1">{item.note}</div>
+                                <div className="text-sm text-gray-500 mt-2 break-words">{item.note}</div>
                               )}
                             </div>
                           </div>
@@ -2351,18 +2345,18 @@ function StepCard({
               </div>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
-              {/* Mobile Instructions */}
-              <div className="bg-white rounded-xl border-2 border-gray-200 p-4 min-h-full">
+            <div className="flex-1 overflow-y-auto w-full">
+              {/* Mobile Instructions - FULL WIDTH CONTAINED */}
+              <div className="bg-white rounded-xl border-2 border-gray-200 p-4 min-h-full w-full overflow-hidden">
                 {isLocked ? (
-                  <div className="text-lg leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
+                  <div className="text-xl leading-relaxed text-gray-800 whitespace-pre-wrap break-words w-full">
                     {section.method || 'No instructions provided for this step.'}
                   </div>
                 ) : (
                   <textarea
                     value={section.method}
                     onChange={(e) => updateSection(section.id, 'method', e.target.value)}
-                    className="w-full text-base leading-relaxed text-gray-700 bg-transparent border-none resize-none focus:outline-none min-h-[300px]"
+                    className="w-full text-lg leading-relaxed text-gray-700 bg-transparent border-none resize-none focus:outline-none min-h-[300px]"
                     placeholder="Instructions for this step..."
                   />
                 )}
