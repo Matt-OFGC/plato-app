@@ -123,8 +123,12 @@ export default function IngredientsPanel({
         if (field === "name") {
           return { ...ing, name: value };
         } else if (field === "quantity") {
+          // Allow empty string to show placeholder, otherwise parse the number
+          if (value === "") {
+            return { ...ing, quantity: 0 };
+          }
           const numValue = parseFloat(value);
-          return { ...ing, quantity: isNaN(numValue) ? ing.quantity : numValue };
+          return { ...ing, quantity: isNaN(numValue) ? 0 : numValue };
         } else if (field === "unit") {
           return { ...ing, unit: value as Ingredient["unit"] };
         }
@@ -209,7 +213,7 @@ export default function IngredientsPanel({
       id: `ing-${Date.now()}`,
       name: "",
       unit: "g",
-      quantity: 100,
+      quantity: 0, // Start with 0 so placeholder shows
       stepId: currentStepId,
     };
     
@@ -310,7 +314,7 @@ export default function IngredientsPanel({
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={ingredient.quantity}
+                            value={ingredient.quantity || ""}
                             onChange={(e) =>
                               handleIngredientChange(ingredient.id, "quantity", e.target.value)
                             }
