@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ViewToggle } from "./ViewToggle";
 
 type ViewMode = 'grid' | 'list';
+type SortField = 'name' | 'category' | 'yield' | 'sellPrice' | 'cogs' | 'totalSteps' | 'totalTime';
+type SortDirection = 'asc' | 'desc';
 
 interface Recipe {
   id: number;
@@ -17,7 +19,11 @@ interface Recipe {
   bakeTemp: number | null;
   storage: string | null;
   categoryRef: { name: string; color: string | null } | null;
-  items: { id: number }[];
+  items: any[];
+  sellingPrice: number | null;
+  cogsPercentage: number | null;
+  totalSteps: number;
+  totalTime: number | null;
 }
 
 interface RecipesViewProps {
@@ -26,6 +32,83 @@ interface RecipesViewProps {
 
 export function RecipesView({ recipes }: RecipesViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+  
+  const sortedRecipes = useMemo(() => {
+    return [...recipes].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (sortField) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'category':
+          aValue = a.categoryRef?.name?.toLowerCase() || '';
+          bValue = b.categoryRef?.name?.toLowerCase() || '';
+          break;
+        case 'yield':
+          aValue = parseFloat(a.yieldQuantity) || 0;
+          bValue = parseFloat(b.yieldQuantity) || 0;
+          break;
+        case 'sellPrice':
+          aValue = a.sellingPrice || 0;
+          bValue = b.sellingPrice || 0;
+          break;
+        case 'cogs':
+          aValue = a.cogsPercentage || 999; // Put null at end
+          bValue = b.cogsPercentage || 999;
+          break;
+        case 'totalSteps':
+          aValue = a.totalSteps;
+          bValue = b.totalSteps;
+          break;
+        case 'totalTime':
+          aValue = a.totalTime || 0;
+          bValue = b.totalTime || 0;
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [recipes, sortField, sortDirection]);
+  
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDirection === 'asc' ? (
+      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
 
   if (recipes.length === 0) {
     return (
@@ -59,7 +142,7 @@ export function RecipesView({ recipes }: RecipesViewProps) {
 
       {viewMode === 'grid' ? (
         <div className="grid-responsive-mobile">
-          {recipes.map((r) => (
+          {sortedRecipes.map((r) => (
             <div key={r.id} className="card-responsive hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
               {/* Recipe Image Placeholder */}
               <Link href={`/dashboard/recipes/${r.id}`} className="block">
@@ -160,16 +243,74 @@ export function RecipesView({ recipes }: RecipesViewProps) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yield</th>
-                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingredients</th>
-                  <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time/Temp</th>
+                  <th 
+                    className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Name
+                      <SortIcon field="name" />
+                    </div>
+                  </th>
+                  <th 
+                    className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('category')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Category
+                      <SortIcon field="category" />
+                    </div>
+                  </th>
+                  <th 
+                    className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('yield')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Yield
+                      <SortIcon field="yield" />
+                    </div>
+                  </th>
+                  <th 
+                    className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('sellPrice')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Sell Price
+                      <SortIcon field="sellPrice" />
+                    </div>
+                  </th>
+                  <th 
+                    className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('cogs')}
+                  >
+                    <div className="flex items-center gap-2">
+                      COGS %
+                      <SortIcon field="cogs" />
+                    </div>
+                  </th>
+                  <th 
+                    className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('totalSteps')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Steps
+                      <SortIcon field="totalSteps" />
+                    </div>
+                  </th>
+                  <th 
+                    className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('totalTime')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Total Time
+                      <SortIcon field="totalTime" />
+                    </div>
+                  </th>
                   <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {recipes.map((r) => (
+                {sortedRecipes.map((r) => (
                   <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-3 sm:px-6 py-4">
                       <Link href={`/dashboard/recipes/${r.id}`} className="flex items-center gap-3 group">
@@ -212,13 +353,28 @@ export function RecipesView({ recipes }: RecipesViewProps) {
                     <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {String(r.yieldQuantity)} {r.yieldUnit}
                     </td>
-                    <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {r.items.length} item{r.items.length !== 1 ? 's' : ''}
+                    <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {r.sellingPrice ? `£${r.sellingPrice.toFixed(2)}` : '-'}
                     </td>
-                    <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-xs text-gray-600">
-                      {r.bakeTime && <div>{r.bakeTime}min</div>}
-                      {r.bakeTemp && <div>{r.bakeTemp}°C</div>}
-                      {!r.bakeTime && !r.bakeTemp && '-'}
+                    <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm">
+                      {r.cogsPercentage !== null ? (
+                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                          r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
+                          r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
+                          r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {r.cogsPercentage.toFixed(1)}%
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                      {r.totalSteps}
+                    </td>
+                    <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {r.totalTime ? `${r.totalTime}min` : '-'}
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link 

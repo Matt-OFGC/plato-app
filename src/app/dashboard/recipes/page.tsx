@@ -53,6 +53,7 @@ export default async function RecipesPage({ searchParams }: Props) {
       bakeTime: true,
       bakeTemp: true,
       storage: true,
+      sellingPrice: true,
       categoryRef: {
         select: {
           name: true,
@@ -62,16 +63,54 @@ export default async function RecipesPage({ searchParams }: Props) {
       items: {
         select: {
           id: true,
+          quantity: true,
+          ingredient: {
+            select: {
+              packPrice: true,
+              packQuantity: true,
+            }
+          }
         }
       },
+      sections: {
+        select: {
+          id: true,
+          bakeTime: true,
+        }
+      }
     }
   });
   
-  // Serialize Decimal fields for client component
-  const recipes = recipesRaw.map(r => ({
-    ...r,
-    yieldQuantity: r.yieldQuantity.toString(),
-  }));
+  // Serialize Decimal fields and calculate derived values for client component
+  const recipes = recipesRaw.map(r => {
+    // Calculate total cost
+    const totalCost = r.items.reduce((sum, item) => {
+      const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
+        ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
+        : 0;
+      return sum + (Number(item.quantity) * costPerUnit);
+    }, 0);
+    
+    // Calculate COGS percentage
+    const cogsPercentage = r.sellingPrice && Number(r.sellingPrice) > 0
+      ? (totalCost / Number(r.sellingPrice)) * 100
+      : null;
+    
+    // Calculate total time from all sections
+    const totalTime = r.sections.reduce((sum, section) => {
+      return sum + (section.bakeTime ? Number(section.bakeTime) : 0);
+    }, 0);
+    
+    return {
+      ...r,
+      yieldQuantity: r.yieldQuantity.toString(),
+      sellingPrice: r.sellingPrice ? Number(r.sellingPrice) : null,
+      totalCost,
+      cogsPercentage,
+      totalSteps: r.sections.length,
+      totalTime: totalTime > 0 ? totalTime : null,
+    };
+  });
   
   // Get categories from the already fetched recipes (no extra query needed)
   const categories = Array.from(new Set(recipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();
