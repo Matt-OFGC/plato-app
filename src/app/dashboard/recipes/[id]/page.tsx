@@ -46,8 +46,8 @@ export default async function RecipePage({ params }: Props) {
     redirect("/dashboard/recipes");
   }
 
-  // Fetch categories, storage and shelf life options for dropdowns
-  const [categories, storageOptions, shelfLifeOptions] = await Promise.all([
+  // Fetch categories, storage, shelf life options, and ingredients for dropdowns
+  const [categories, storageOptions, shelfLifeOptions, availableIngredients] = await Promise.all([
     prisma.category.findMany({
       where: { companyId },
       orderBy: { order: "asc" },
@@ -62,6 +62,17 @@ export default async function RecipePage({ params }: Props) {
       where: { companyId },
       orderBy: { order: "asc" },
       select: { id: true, name: true }
+    }),
+    prisma.ingredient.findMany({
+      where: { companyId },
+      orderBy: { name: "asc" },
+      select: { 
+        id: true, 
+        name: true, 
+        packUnit: true,
+        packPrice: true,
+        packQuantity: true
+      }
     }),
   ]);
 
@@ -135,6 +146,19 @@ export default async function RecipePage({ params }: Props) {
         }),
   };
 
+  // Transform ingredients for dropdown
+  const ingredientsForDropdown = availableIngredients.map(ing => {
+    const costPerUnit = ing.packPrice && ing.packQuantity
+      ? Number(ing.packPrice) / Number(ing.packQuantity)
+      : 0;
+    return {
+      id: ing.id,
+      name: ing.name,
+      unit: ing.packUnit,
+      costPerUnit,
+    };
+  });
+
   return (
     <RecipeClient 
       recipe={transformedRecipe} 
@@ -142,6 +166,7 @@ export default async function RecipePage({ params }: Props) {
       storageOptions={storageOptions}
       shelfLifeOptions={shelfLifeOptions}
       recipeId={recipe.id}
+      availableIngredients={ingredientsForDropdown}
     />
   );
 }

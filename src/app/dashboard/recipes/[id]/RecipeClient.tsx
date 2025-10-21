@@ -23,9 +23,10 @@ interface Props {
   storageOptions: { id: number; name: string }[];
   shelfLifeOptions: { id: number; name: string }[];
   recipeId: number;
+  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number }>;
 }
 
-export default function RecipeRedesignClient({ recipe, categories, storageOptions, shelfLifeOptions, recipeId }: Props) {
+export default function RecipeRedesignClient({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("steps");
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const { servings, setServings } = useServings(recipe.id, recipe.baseServings);
@@ -187,17 +188,18 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
 
             {/* Two Column Layout for Ingredients & Instructions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Ingredients */}
-              <IngredientsPanel
-                ingredients={localIngredients}
-                steps={localSteps}
-                servings={servings}
-                baseServings={recipe.baseServings}
-                viewMode={viewMode}
-                activeStepIndex={activeStepIndex}
-                checklist={checklist}
-                onIngredientsChange={setLocalIngredients}
-              />
+            {/* Ingredients */}
+            <IngredientsPanel
+              ingredients={localIngredients}
+              steps={localSteps}
+              servings={servings}
+              baseServings={recipe.baseServings}
+              viewMode={viewMode}
+              activeStepIndex={activeStepIndex}
+              checklist={checklist}
+              onIngredientsChange={setLocalIngredients}
+              availableIngredients={availableIngredients}
+            />
 
               {/* Instructions */}
               <InstructionsPanel

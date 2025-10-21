@@ -17,6 +17,7 @@ interface IngredientsPanelProps {
     clear: () => void;
   };
   onIngredientsChange: (ingredients: Ingredient[]) => void;
+  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number }>;
 }
 
 type AggregatedIngredient = Ingredient & {
@@ -34,6 +35,7 @@ export default function IngredientsPanel({
   activeStepIndex,
   checklist,
   onIngredientsChange,
+  availableIngredients,
 }: IngredientsPanelProps) {
   // Filter ingredients based on view mode
   const displayedIngredients = React.useMemo(() => {
@@ -138,38 +140,14 @@ export default function IngredientsPanel({
     onIngredientsChange(newIngredients);
   };
 
-  // Common ingredients database (mock - in real app would come from API)
-  const COMMON_INGREDIENTS = [
-    { name: "Stork", unit: "g" as const, costPerUnit: 0.005 },
-    { name: "Butter", unit: "g" as const, costPerUnit: 0.008 },
-    { name: "Caster Sugar", unit: "g" as const, costPerUnit: 0.0025 },
-    { name: "Granulated Sugar", unit: "g" as const, costPerUnit: 0.002 },
-    { name: "Brown Sugar", unit: "g" as const, costPerUnit: 0.003 },
-    { name: "Icing Sugar", unit: "g" as const, costPerUnit: 0.002 },
-    { name: "Self Raising Flour", unit: "g" as const, costPerUnit: 0.0018 },
-    { name: "Plain Flour", unit: "g" as const, costPerUnit: 0.0015 },
-    { name: "Whole Egg", unit: "each" as const, costPerUnit: 0.22 },
-    { name: "Egg White", unit: "each" as const, costPerUnit: 0.10 },
-    { name: "Egg Yolk", unit: "each" as const, costPerUnit: 0.12 },
-    { name: "Vanilla Extract", unit: "tbsp" as const, costPerUnit: 0.3 },
-    { name: "Baking Powder", unit: "tbsp" as const, costPerUnit: 0.05 },
-    { name: "Baking Soda", unit: "tsp" as const, costPerUnit: 0.03 },
-    { name: "Salt", unit: "tsp" as const, costPerUnit: 0.01 },
-    { name: "Milk", unit: "ml" as const, costPerUnit: 0.001 },
-    { name: "Cream", unit: "ml" as const, costPerUnit: 0.003 },
-    { name: "Chocolate", unit: "g" as const, costPerUnit: 0.01 },
-    { name: "Cocoa Powder", unit: "g" as const, costPerUnit: 0.008 },
-    { name: "Sprinkles", unit: "g" as const, costPerUnit: 0.01 },
-  ];
-
   const [ingredientSearch, setIngredientSearch] = React.useState<Record<string, string>>({});
-  const [searchResults, setSearchResults] = React.useState<Record<string, typeof COMMON_INGREDIENTS>>({});
+  const [searchResults, setSearchResults] = React.useState<Record<string, typeof availableIngredients>>({});
 
   const handleSearchChange = (id: string, searchTerm: string) => {
     setIngredientSearch({ ...ingredientSearch, [id]: searchTerm });
     
     if (searchTerm.length > 0) {
-      const filtered = COMMON_INGREDIENTS.filter(ing =>
+      const filtered = availableIngredients.filter(ing =>
         ing.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setSearchResults({ ...searchResults, [id]: filtered });
@@ -180,13 +158,13 @@ export default function IngredientsPanel({
     }
   };
 
-  const handleSelectIngredient = (id: string, ingredientData: typeof COMMON_INGREDIENTS[0]) => {
+  const handleSelectIngredient = (id: string, ingredientData: typeof availableIngredients[0]) => {
     const newIngredients = ingredients.map((ing) => {
       if (ing.id === id) {
         return { 
           ...ing, 
           name: ingredientData.name,
-          unit: ingredientData.unit,
+          unit: ingredientData.unit as Ingredient["unit"],
           costPerUnit: ingredientData.costPerUnit
         };
       }
@@ -382,7 +360,7 @@ export default function IngredientsPanel({
                             {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0) || ingredientSearch[ingredient.id]?.length === 0 ? (
                               <div className="absolute left-0 right-0 z-[110] mt-1 bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
                                 <div className="py-1">
-                                  {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : COMMON_INGREDIENTS).map((result, idx) => (
+                                  {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : availableIngredients).map((result, idx) => (
                                     <button
                                       key={idx}
                                       onClick={() => handleSelectIngredient(ingredient.id, result)}

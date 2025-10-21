@@ -87,7 +87,8 @@ export async function saveRecipeChanges(data: {
           order: i,
           bakeTemp: step.temperatureC || null,
           bakeTime: step.durationMin || null,
-          hasTimer: step.hasTimer || false,
+          // hasTimer field commented out until database is updated
+          // hasTimer: step.hasTimer || false,
         }
       });
     }
