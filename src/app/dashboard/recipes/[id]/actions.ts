@@ -76,13 +76,14 @@ export async function saveRecipeChanges(data: {
     // 4. Create new sections with instructions
     for (let i = 0; i < data.steps.length; i++) {
       const step = data.steps[i];
+      const methodText = step.instructions.join('\n').trim();
       
       await prisma.recipeSection.create({
         data: {
           recipeId: data.recipeId,
           title: step.title || `Step ${i + 1}`,
           description: step.title || null,
-          method: step.instructions.join('\n'),
+          method: methodText || null, // Use null if empty instead of empty string
           order: i,
           bakeTemp: step.temperatureC || null,
           bakeTime: step.durationMin || null,
