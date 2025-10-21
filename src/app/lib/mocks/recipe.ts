@@ -29,6 +29,7 @@ export type RecipeMock = {
   allergens?: string[];
   storage?: string;
   shelfLife?: string;
+  sellPrice?: number;
 };
 
 const DEFAULT_RECIPE: RecipeMock = {

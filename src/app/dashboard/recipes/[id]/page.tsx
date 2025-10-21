@@ -93,6 +93,7 @@ export default async function RecipePage({ params }: Props) {
     storage: recipe.storage || undefined,
     shelfLife: recipe.shelfLife || undefined,
     notes: (recipe as any).notes || undefined,
+    sellPrice: (recipe as any).sellingPrice ? Number((recipe as any).sellingPrice) : undefined,
     
     // Transform sections to steps
     // If no sections, create a single step from the recipe method

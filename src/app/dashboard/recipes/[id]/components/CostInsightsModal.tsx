@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface CostInsightsModalProps {
   isOpen: boolean;
@@ -9,6 +9,8 @@ interface CostInsightsModalProps {
   costPerServing: number;
   recipeType: "single" | "batch";
   slicesPerBatch: number;
+  sellPrice: number;
+  onSellPriceChange: (price: number) => void;
 }
 
 export default function CostInsightsModal({
@@ -18,8 +20,15 @@ export default function CostInsightsModal({
   costPerServing,
   recipeType,
   slicesPerBatch,
+  sellPrice,
+  onSellPriceChange,
 }: CostInsightsModalProps) {
-  const [sellPrice, setSellPrice] = useState(costPerServing * 3);
+  const [inputValue, setInputValue] = useState(sellPrice.toString());
+  
+  // Update input value when sellPrice prop changes
+  useEffect(() => {
+    setInputValue(sellPrice.toFixed(2));
+  }, [sellPrice]);
 
   if (!isOpen) return null;
 
@@ -90,16 +99,32 @@ export default function CostInsightsModal({
             {/* Sell Price Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Target Sell Price (£)
+                Target Sell Price
               </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={sellPrice.toFixed(2)}
-                onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
-                className="w-full px-4 py-3 text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
-              />
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">£</span>
+                <input
+                  type="text"
+                  placeholder="0.00"
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    const parsed = parseFloat(e.target.value);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      onSellPriceChange(parsed);
+                    }
+                  }}
+                  onBlur={() => {
+                    const parsed = parseFloat(inputValue);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      setInputValue(parsed.toFixed(2));
+                    } else {
+                      setInputValue(sellPrice.toFixed(2));
+                    }
+                  }}
+                  className="w-full pl-9 pr-4 py-3 text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                />
+              </div>
             </div>
 
             {/* Quick Markup Buttons */}
@@ -107,7 +132,10 @@ export default function CostInsightsModal({
               {[2, 2.5, 3, 4].map((multiplier) => (
                 <button
                   key={multiplier}
-                  onClick={() => setSellPrice(costPerServing * multiplier)}
+                  onClick={() => {
+                    const newPrice = costPerServing * multiplier;
+                    onSellPriceChange(newPrice);
+                  }}
                   className="px-3 py-2 text-sm font-medium bg-gray-100 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg transition-colors"
                 >
                   {multiplier}x

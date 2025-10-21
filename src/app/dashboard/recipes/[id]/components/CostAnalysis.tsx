@@ -16,6 +16,8 @@ interface CostAnalysisProps {
   baseServings: number;
   recipeType: "single" | "batch";
   slicesPerBatch: number;
+  sellPrice: number;
+  onSellPriceChange: (price: number) => void;
 }
 
 export default function CostAnalysis({
@@ -24,8 +26,11 @@ export default function CostAnalysis({
   baseServings,
   recipeType,
   slicesPerBatch,
+  sellPrice,
+  onSellPriceChange,
 }: CostAnalysisProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(sellPrice.toString());
 
   const totalCost = useMemo(() => {
     return calcTotalCost(ingredients, baseServings, servings);
@@ -35,17 +40,10 @@ export default function CostAnalysis({
     ? totalCost / slicesPerBatch 
     : totalCost;
   
-  // Editable sell price with default 3x markup
-  const [sellPrice, setSellPrice] = useState(costPerServing * 3);
-  const prevCostRef = useRef(costPerServing);
-  
-  // Update sell price when cost per serving changes significantly (auto-adjust to 3x)
+  // Update input value when sellPrice prop changes
   useEffect(() => {
-    if (Math.abs(prevCostRef.current - costPerServing) > 0.01 && costPerServing > 0) {
-      setSellPrice(costPerServing * 3);
-      prevCostRef.current = costPerServing;
-    }
-  }, [costPerServing]);
+    setInputValue(sellPrice.toFixed(2));
+  }, [sellPrice]);
 
   // Calculate COGS percentage
   const cogsPercentage = sellPrice > 0 ? (costPerServing / sellPrice) * 100 : 0;
@@ -106,16 +104,29 @@ export default function CostAnalysis({
           {/* Editable Sell Price */}
           <div className="pt-1">
             <label className="block text-sm text-gray-600 mb-2">
-              Sell Price (£)
+              Sell Price
             </label>
             <div className="flex items-center gap-2">
               <span className="text-lg text-gray-400">£</span>
               <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={sellPrice.toFixed(2)}
-                onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
+                type="text"
+                placeholder="0.00"
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed >= 0) {
+                    onSellPriceChange(parsed);
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = parseFloat(inputValue);
+                  if (!isNaN(parsed) && parsed >= 0) {
+                    setInputValue(parsed.toFixed(2));
+                  } else {
+                    setInputValue(sellPrice.toFixed(2));
+                  }
+                }}
                 className="flex-1 px-3 py-2 text-base font-semibold border-2 border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
               />
             </div>
@@ -152,6 +163,8 @@ export default function CostAnalysis({
         costPerServing={costPerServing}
         recipeType={recipeType}
         slicesPerBatch={slicesPerBatch}
+        sellPrice={sellPrice}
+        onSellPriceChange={onSellPriceChange}
       />
     </>
   );

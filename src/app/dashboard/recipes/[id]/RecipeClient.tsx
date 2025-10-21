@@ -1,7 +1,7 @@
 "use client";
 
 import { RecipeMock } from "@/app/lib/mocks/recipe";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/app/lib/useLocalChecklist";
 import { saveRecipeChanges } from "./actions";
 import RecipeHeader from "./components/RecipeHeader";
@@ -39,6 +39,14 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   const [storage, setStorage] = useState(recipe.storage || "");
   const [shelfLife, setShelfLife] = useState(recipe.shelfLife || "");
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Calculate initial cost per serving for default sell price
+  const initialCostPerServing = useMemo(() => {
+    const totalCost = localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0);
+    return recipeType === "batch" ? totalCost / slicesPerBatch : totalCost;
+  }, []);
+  
+  const [sellPrice, setSellPrice] = useState(recipe.sellPrice || initialCostPerServing * 3);
 
   // Sync servings with slicesPerBatch when in batch mode
   const handleRecipeTypeChange = (type: "single" | "batch") => {
@@ -73,6 +81,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
         category,
         storage,
         shelfLife,
+        sellPrice,
         ingredients: localIngredients,
         steps: localSteps,
       });
@@ -158,6 +167,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
               baseServings={recipe.baseServings}
               recipeType={recipeType}
               slicesPerBatch={slicesPerBatch}
+              sellPrice={sellPrice}
+              onSellPriceChange={setSellPrice}
             />
             
             <RecipeMetadata

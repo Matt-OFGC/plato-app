@@ -9,6 +9,7 @@ export async function saveRecipeChanges(data: {
   category?: string;
   storage?: string;
   shelfLife?: string;
+  sellPrice?: number;
   ingredients: Array<{
     id: string;
     name: string;
@@ -59,6 +60,8 @@ export async function saveRecipeChanges(data: {
         storageId: storageOption?.id || null,
         shelfLife: data.shelfLife || null,
         shelfLifeId: shelfLifeOption?.id || null,
+        sellingPrice: data.sellPrice || null,
+        lastPriceUpdate: data.sellPrice ? new Date() : undefined,
       },
     });
 
