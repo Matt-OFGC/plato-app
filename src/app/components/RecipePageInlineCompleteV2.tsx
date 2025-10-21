@@ -990,33 +990,54 @@ export function RecipePageInlineCompleteV2({
               <button
                 onClick={() => {
                   if (isLocked) {
-                    // When entering edit mode, automatically switch to carousel view
                     setIsCarouselView(true);
                   }
                   setIsLocked(!isLocked);
                 }}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 shadow-sm ${
+                className={`px-2 sm:px-3 md:px-4 py-2 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm touch-manipulation min-h-[44px] sm:min-h-0 ${
                   isLocked 
                     ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200' 
                     : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
                 }`}
               >
-                {isLocked ? 'Edit Recipe' : '🔓 Editing'}
+                {isLocked ? (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span className="hidden sm:inline">Edit</span>
+                  </span>
+                ) : (
+                  <span>🔓 <span className="hidden sm:inline">Editing</span></span>
+                )}
               </button>
               
               {!isLocked && (
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
+                  className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 touch-manipulation min-h-[44px] sm:min-h-0"
                 >
-                  {isSaving ? 'Saving...' : 'Save Recipe'}
+                  {isSaving ? '...' : (
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="hidden sm:inline">Save</span>
+                    </span>
+                  )}
                 </button>
               )}
               
-              <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">
-                Print
-              </button>
+              <Link 
+                href={`/dashboard/recipes/${recipe.id}/print`}
+                className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-xs sm:text-sm font-medium touch-manipulation min-h-[44px] sm:min-h-0 flex items-center gap-1"
+              >
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span className="hidden sm:inline">Print</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -1301,21 +1322,44 @@ export function RecipePageInlineCompleteV2({
                 ? 'transform scale-100 opacity-100' 
                 : 'transform scale-95 opacity-90'
           }`}>
-            {/* Mobile-only compact servings bar */}
-            <div className="sm:hidden px-3 pt-3">
-              <div className="flex items-center gap-3">
-                <div className="text-xs font-semibold text-gray-600">Servings</div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setServings(Math.max(1, servings - 1))}
-                    className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700"
-                  >−</button>
-                  <span className="min-w-[2rem] text-center font-bold">{servings}</span>
-                  <button 
-                    onClick={() => setServings(servings + 1)}
-                    className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700"
-                  >+</button>
+            {/* Mobile-only compact servings and cost bar */}
+            <div className="md:hidden px-3 pt-3 pb-2">
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-3">
+                <div className="flex items-center justify-between gap-3">
+                  {/* Servings Adjuster */}
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs font-semibold text-gray-600">Servings:</div>
+                    <button 
+                      onClick={() => setServings(Math.max(1, servings - 1))}
+                      className="w-10 h-10 rounded-lg bg-emerald-500 text-white touch-manipulation flex items-center justify-center font-bold text-lg active:bg-emerald-600"
+                    >−</button>
+                    <span className="min-w-[2.5rem] text-center font-bold text-lg">{servings}</span>
+                    <button 
+                      onClick={() => setServings(servings + 1)}
+                      className="w-10 h-10 rounded-lg bg-emerald-500 text-white touch-manipulation flex items-center justify-center font-bold text-lg active:bg-emerald-600"
+                    >+</button>
+                  </div>
+                  
+                  {/* Cost Info */}
+                  <div className="text-right">
+                    <div className="text-xs text-emerald-600 font-medium">Cost per {recipe.yieldUnit}</div>
+                    <div className="text-lg font-bold text-emerald-700">
+                      {formatCurrency(isBatchRecipe ? (currentRecipeCost || 0) / slicesPerBatch : currentCostPerUnit || 0)}
+                    </div>
+                  </div>
                 </div>
+                
+                {/* Allergens indicator on mobile */}
+                {allAllergens.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-emerald-200">
+                    <div className="flex items-center gap-2 text-xs text-red-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <span className="font-semibold">Contains allergens: {allAllergens.slice(0, 3).join(', ')}{allAllergens.length > 3 ? ` +${allAllergens.length - 3} more` : ''}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             {isCarouselView ? (
@@ -1440,13 +1484,13 @@ function WholeRecipeView({
     <div className="h-full flex flex-col">
       {/* Scrollable Content - No Header */}
       <div className="flex-1 p-6">
-        {/* Two Column Layout: Ingredients Left, Instructions Right */}
-        <div className="grid grid-cols-2 gap-6 h-full recipe-two-col">
+        {/* Responsive Layout: Single column on mobile, two columns on tablet+ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 h-full recipe-two-col">
         {/* Left Column - Aggregated Ingredients */}
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 flex-shrink-0">
-            <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
+          <div className="flex items-center gap-2 mb-3 md:mb-4 pb-2 border-b border-gray-200 flex-shrink-0">
+            <div className="w-1 h-5 md:h-6 bg-emerald-500 rounded-full"></div>
+            <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
           </div>
           <div className="space-y-3 flex-1 overflow-y-auto ingredients-pane">
             {/* Read-only view - show aggregated ingredients with section breakdown */}
@@ -1476,13 +1520,13 @@ function WholeRecipeView({
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-gray-900">{scaledQuantity}</span>
-                          <span className="text-base text-gray-600">{agg.unit}</span>
-                          <span className="text-base text-gray-900">{agg.ingredient.name}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-base sm:text-lg md:text-xl font-bold text-gray-900">{scaledQuantity}</span>
+                          <span className="text-sm sm:text-base md:text-lg text-gray-600">{agg.unit}</span>
+                          <span className="text-sm sm:text-base md:text-lg text-gray-900">{agg.ingredient.name}</span>
                         </div>
                         {agg.items.length > 1 && (
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs sm:text-sm text-gray-500 mt-1">
                             Used in {agg.items.length} section{agg.items.length > 1 ? 's' : ''}
                           </div>
                         )}
@@ -1532,9 +1576,9 @@ function WholeRecipeView({
 
         {/* Right Column - Complete Instructions */}
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200 flex-shrink-0">
-            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
+          <div className="flex items-center gap-2 mb-3 md:mb-4 pb-2 border-b border-gray-200 flex-shrink-0">
+            <div className="w-1 h-5 md:h-6 bg-blue-500 rounded-full"></div>
+            <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
           <div className="flex-1 bg-white border border-gray-200 rounded-lg p-6 overflow-y-auto instructions-pane">
             {/* Seamless instructions view */}
@@ -1857,18 +1901,18 @@ function StepCard({
             </button>
           )}
           
-          <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm sm:text-base font-bold">
             {index + 1}
           </div>
           
           {isLocked ? (
-            <h2 className="text-xl font-bold text-gray-900">{section.title}</h2>
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">{section.title}</h2>
           ) : (
             <input
               type="text"
               value={section.title}
               onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-              className="text-xl font-bold text-gray-900 bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
+              className="text-base sm:text-lg md:text-xl font-bold text-gray-900 bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none"
               placeholder="Step title..."
             />
           )}
@@ -1928,14 +1972,14 @@ function StepCard({
         )}
       </div>
                       
-      {/* Two Column Layout: Ingredients Left, Instructions Right */}
-      <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+      {/* Responsive Layout: Stack on mobile, side-by-side on tablet+ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 flex-1 min-h-0">
         {/* Left Column - Ingredients */}
         <div className="flex flex-col min-h-0 h-full">
-          <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-2 sm:mb-3 pb-2 border-b border-gray-200">
             <div className="flex items-center gap-2">
-              <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-              <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
+              <div className="w-1 h-5 sm:h-6 bg-emerald-500 rounded-full"></div>
+              <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 uppercase tracking-wide">Ingredients</h3>
             </div>
             {!isLocked && (
               <button
@@ -1970,25 +2014,27 @@ function StepCard({
                       <div 
                         key={item.id}
                         onClick={() => toggleItem(item.id)}
-                        className={`flex items-center gap-3 p-3 rounded-lg transition-colors touch-manipulation cursor-pointer bg-gray-50 hover:bg-gray-100`}
+                        className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-colors touch-manipulation cursor-pointer min-h-[44px] ${
+                          isChecked ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 hover:bg-gray-100'
+                        }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center touch-manipulation ${
+                        <div className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center touch-manipulation flex-shrink-0 ${
                           isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'
                         }`}>
                           {isChecked && (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-gray-900">{scaledQuantity}</span>
-                            <span className="text-base text-gray-600">{item.unit}</span>
-                            <span className="text-base text-gray-900">{ingredient.name}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span className="text-base sm:text-lg font-bold text-gray-900">{scaledQuantity}</span>
+                            <span className="text-sm sm:text-base text-gray-600">{item.unit}</span>
+                            <span className="text-sm sm:text-base text-gray-900">{ingredient.name}</span>
                           </div>
                           {item.note && (
-                            <div className="text-xs text-gray-500 mt-1">{item.note}</div>
+                            <div className="text-xs sm:text-sm text-gray-500 mt-1">{item.note}</div>
                           )}
                         </div>
                       </div>
@@ -2015,20 +2061,20 @@ function StepCard({
         
         {/* Right Column - Instructions */}
         <div className="flex flex-col min-h-0 h-full">
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
-            <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-            <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
+          <div className="flex items-center gap-2 mb-2 sm:mb-3 pb-2 border-b border-gray-200">
+            <div className="w-1 h-5 sm:h-6 bg-blue-500 rounded-full"></div>
+            <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 uppercase tracking-wide">Instructions</h3>
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-4 overflow-y-auto instructions-pane h-96">
+          <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 md:p-4 overflow-y-auto instructions-pane h-96">
             {isLocked ? (
-              <div className="text-lg leading-relaxed text-gray-700 whitespace-pre-wrap h-full overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg p-3 break-words overflow-wrap-anywhere">
+              <div className="text-sm sm:text-base md:text-lg leading-relaxed text-gray-700 whitespace-pre-wrap h-full overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 break-words overflow-wrap-anywhere">
                 {section.method || 'No instructions provided for this step.'}
               </div>
             ) : (
               <textarea
                 value={section.method}
                 onChange={(e) => updateSection(section.id, 'method', e.target.value)}
-                className="w-full text-lg leading-relaxed text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-3 resize-none focus:outline-none focus:border-emerald-300 focus:bg-white transition-colors min-h-[200px] max-h-full overflow-y-auto whitespace-pre-wrap break-words"
+                className="w-full text-sm sm:text-base md:text-lg leading-relaxed text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 resize-none focus:outline-none focus:border-emerald-300 focus:bg-white transition-colors min-h-[200px] max-h-full overflow-y-auto whitespace-pre-wrap break-words"
                 placeholder="Instructions for this step..."
               />
             )}
@@ -2110,8 +2156,8 @@ function SimpleRecipeCarousel({
                 </div>
               </div>
                 
-              {/* Two Column Layout: Ingredients Left, Instructions Right */}
-              <div className="grid grid-cols-2 gap-8 h-full min-h-0">
+              {/* Responsive Layout: Stack on mobile, two columns on tablet+ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 h-full min-h-0">
                 {/* Left Column - Ingredients */}
                 <div className="flex flex-col min-h-0">
                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
