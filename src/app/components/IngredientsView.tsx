@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ViewToggle } from "./ViewToggle";
 import { formatCurrency } from "@/lib/currency";
@@ -27,9 +26,11 @@ interface Ingredient {
 interface IngredientsViewProps {
   ingredients: Ingredient[];
   deleteIngredient: (id: number) => Promise<void>; // Server action
+  onEdit?: (ingredient: Ingredient) => void; // Callback for editing
+  onNew?: () => void; // Callback for creating new ingredient
 }
 
-export function IngredientsView({ ingredients, deleteIngredient }: IngredientsViewProps) {
+export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }: IngredientsViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -44,9 +45,12 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
         </div>
         <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">No ingredients yet</h3>
         <p className="text-[var(--muted-foreground)] mb-6">Get started by adding your first ingredient</p>
-        <Link href="/dashboard/ingredients?new=1" className="btn-primary">
+        <button 
+          onClick={() => onNew?.()}
+          className="btn-primary"
+        >
           Add First Ingredient
-        </Link>
+        </button>
       </div>
     );
   }
@@ -78,9 +82,12 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
               {/* Ingredient Info */}
               <div className="space-y-3">
                 <div>
-                  <Link href={`/dashboard/ingredients/${ing.id}`} className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">
+                  <button 
+                    onClick={() => onEdit?.(ing)}
+                    className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors text-left"
+                  >
                     {ing.name}
-                  </Link>
+                  </button>
                   {(ing.supplierRef || ing.supplier) && (
                     <p className="text-sm text-gray-600 mt-1">
                       Supplier: {ing.supplierRef?.name || ing.supplier}
@@ -136,12 +143,12 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-2">
-                  <Link 
-                    href={`/dashboard/ingredients/${ing.id}`}
+                  <button
+                    onClick={() => onEdit?.(ing)}
                     className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium text-center"
                   >
                     Edit
-                  </Link>
+                  </button>
                   <button 
                     type="button"
                     disabled={isPending}
@@ -190,9 +197,12 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
                   return (
                     <tr key={ing.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Link href={`/dashboard/ingredients/${ing.id}`} className="text-sm font-medium text-gray-900 hover:text-emerald-600">
+                        <button 
+                          onClick={() => onEdit?.(ing)}
+                          className="text-sm font-medium text-gray-900 hover:text-emerald-600 text-left"
+                        >
                           {ing.name}
-                        </Link>
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {ing.supplierRef?.name || ing.supplier || '-'}
@@ -209,12 +219,12 @@ export function IngredientsView({ ingredients, deleteIngredient }: IngredientsVi
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link 
-                          href={`/dashboard/ingredients/${ing.id}`}
+                        <button
+                          onClick={() => onEdit?.(ing)}
                           className="text-emerald-600 hover:text-emerald-900 mr-4"
                         >
                           Edit
-                        </Link>
+                        </button>
                         <button 
                           type="button"
                           disabled={isPending}

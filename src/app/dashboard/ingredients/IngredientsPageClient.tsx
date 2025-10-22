@@ -83,6 +83,8 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
       <IngredientsView 
         ingredients={ingredientsList} 
         deleteIngredient={deleteIngredient}
+        onEdit={handleEditIngredient}
+        onNew={handleNewIngredient}
       />
 
       {/* Modal */}

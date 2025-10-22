@@ -29,6 +29,7 @@ interface IngredientModalProps {
     currency: string;
     densityGPerMl?: number | null;
     allergens?: string[];
+    customConversions?: string | null;
     notes?: string | null;
   } | null;
 }
@@ -127,6 +128,7 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
                 packPrice: editIngredient.packPrice,
                 densityGPerMl: editIngredient.densityGPerMl || undefined,
                 allergens: editIngredient.allergens || [],
+                customConversions: editIngredient.customConversions || undefined,
                 notes: editIngredient.notes || "",
               } : undefined}
             />
