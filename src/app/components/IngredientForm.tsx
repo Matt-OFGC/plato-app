@@ -550,13 +550,6 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
             placeholder="Any additional notes about this ingredient..."
           ></textarea>
         </div>
-
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
-        >
-          Save Ingredient
-        </button>
       </form>
     </div>
   );
