@@ -172,7 +172,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
           )}
 
           {/* Ingredients & Instructions - Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2 max-h-[calc(100vh-350px)]">
             {/* Ingredients */}
             <IngredientsPanel
               ingredients={localIngredients}
