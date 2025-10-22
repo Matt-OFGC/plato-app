@@ -40,7 +40,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   const [shelfLife, setShelfLife] = useState(recipe.shelfLife || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
-  const [isAllergenInfoExpanded, setIsAllergenInfoExpanded] = useState(false);
+  const [isAllergenModalOpen, setIsAllergenModalOpen] = useState(false);
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   const [description, setDescription] = useState(recipe.notes || "");
   
@@ -185,14 +185,16 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
           <title>Allergen Information - ${recipe.title}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-            h1 { color: #1f2937; border-bottom: 3px solid #10b981; padding-bottom: 10px; }
+            h1 { color: #1f2937; border-bottom: 3px solid #10b981; padding-bottom: 10px; margin-bottom: 5px; }
             h2 { color: #374151; margin-top: 30px; }
             .header { text-align: center; margin-bottom: 40px; }
+            .header img { max-width: 200px; max-height: 200px; border-radius: 8px; margin: 20px auto; display: block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
             .section { margin: 20px 0; padding: 15px; border-left: 4px solid #e5e7eb; }
             .allergen-badge { display: inline-block; background: #fee2e2; color: #991b1b; padding: 4px 12px; margin: 4px; border-radius: 4px; font-size: 14px; }
             .dietary-badge { display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; margin: 4px; border-radius: 4px; font-size: 14px; }
             .description { background: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0; line-height: 1.6; }
             .warning { background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0; }
+            .cross-contamination { background: #fef2f2; padding: 15px; border-left: 4px solid #dc2626; margin: 20px 0; font-size: 13px; }
             .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px; }
             @media print { .no-print { display: none; } }
           </style>
@@ -200,7 +202,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
         <body>
           <div class="header">
             <h1>${recipe.title}</h1>
-            <p style="color: #6b7280; font-size: 14px;">Allergen Information Sheet</p>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 5px;">Allergen Information Sheet</p>
+            ${recipe.imageUrl ? `<img src="${recipe.imageUrl}" alt="${recipe.title}" onerror="this.style.display='none'" />` : ''}
           </div>
           
           ${description ? `
@@ -225,10 +228,15 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             </div>
           ` : `
             <div class="section">
-              <h2>✓ No Common Allergens</h2>
-              <p style="color: #059669;">This product does not contain any common allergens.</p>
+              <h2>✓ No Common Allergens Detected</h2>
+              <p style="color: #059669;">This product does not contain any of the 14 major allergens.</p>
             </div>
           `}
+          
+          <div class="cross-contamination">
+            <strong>⚠️ Cross-Contamination Warning:</strong><br>
+            This product is prepared in a kitchen that handles all 14 major allergens including cereals containing gluten, crustaceans, eggs, fish, peanuts, soybeans, milk, nuts, celery, mustard, sesame, sulphites, lupin, and molluscs. While we take precautions to prevent cross-contact, we cannot guarantee that any product is completely free from allergens.
+          </div>
           
           ${dietaryLabels.length > 0 ? `
             <div class="section">
@@ -254,6 +262,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
           <div class="footer">
             <p>Generated on ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             <p>This information is based on ingredient data and should be verified before distribution.</p>
+            <p style="margin-top: 10px; font-size: 11px;">Always inform customers of potential allergen risks.</p>
           </div>
           
           <div class="no-print" style="text-align: center; margin-top: 30px;">
@@ -554,18 +563,18 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                       </>
                     )}
                     
-                    {/* Info Button */}
-                    {(allergens.length > 0 || dietaryLabels.length > 0) && (
-                      <button
-                        onClick={() => setIsAllergenInfoExpanded(!isAllergenInfoExpanded)}
-                        className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-600"
-                        title="View detailed allergen and dietary information"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
-                    )}
+               {/* Info Button */}
+               {(allergens.length > 0 || dietaryLabels.length > 0) && (
+                 <button
+                   onClick={() => setIsAllergenModalOpen(true)}
+                   className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-600"
+                   title="View detailed allergen and dietary information"
+                 >
+                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   </svg>
+                 </button>
+               )}
                     
                     {storage && (
                       <>
@@ -610,65 +619,6 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                     )}
                   </div>
                   
-                  {/* Expandable Allergen/Dietary Info Box */}
-                  {isAllergenInfoExpanded && (allergens.length > 0 || dietaryLabels.length > 0) && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      {allergens.length > 0 && (
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <h4 className="text-xs font-semibold text-gray-700">Allergens ({allergens.length})</h4>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {allergens.map((allergen, idx) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                                {allergen}
-                              </span>
-                            ))}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2 italic">
-                            Contains allergens from ingredients. Please inform customers with allergies.
-                          </p>
-                        </div>
-                      )}
-                      
-                      {dietaryLabels.length > 0 && (
-                        <div className={allergens.length > 0 ? "mb-3" : ""}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <h4 className="text-xs font-semibold text-gray-700">Dietary Classifications</h4>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {dietaryLabels.map((label, idx) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                ✓ {label}
-                              </span>
-                            ))}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2 italic">
-                            Auto-detected from ingredient allergen data. Suitable for customers with these dietary preferences.
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Print Button */}
-                      <div className="pt-3 border-t border-gray-200">
-                        <button
-                          onClick={handlePrintAllergenSheet}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                          </svg>
-                          Print Allergen Sheet for Wholesalers
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -778,6 +728,125 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                     Done
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Allergen Information Modal */}
+      {isAllergenModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsAllergenModalOpen(false)}
+          />
+          
+          {/* Modal */}
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-2xl border border-gray-200">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Allergen & Dietary Information</h2>
+                <button
+                  onClick={() => setIsAllergenModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 max-h-[70vh] overflow-y-auto">
+                {/* Allergens Section */}
+                {allergens.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <h3 className="text-lg font-semibold text-gray-900">Allergens ({allergens.length})</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {allergens.map((allergen, idx) => (
+                        <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-red-100 text-red-800">
+                          {allergen}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-600 italic">
+                      Contains allergens from ingredients. Please inform customers with allergies.
+                    </p>
+                  </div>
+                )}
+
+                {/* Dietary Labels Section */}
+                {dietaryLabels.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <h3 className="text-lg font-semibold text-gray-900">Dietary Classifications</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {dietaryLabels.map((label, idx) => (
+                        <span key={idx} className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                          ✓ {label}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-600 italic">
+                      Auto-detected from ingredient allergen data. Suitable for customers with these dietary preferences.
+                    </p>
+                  </div>
+                )}
+
+                {/* Cross-Contamination Warning */}
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <h4 className="font-semibold text-red-900 mb-1">Cross-Contamination Warning</h4>
+                      <p className="text-sm text-red-800 leading-relaxed">
+                        This product is prepared in a kitchen that handles all 14 major allergens including cereals containing gluten, crustaceans, eggs, fish, peanuts, soybeans, milk, nuts, celery, mustard, sesame, sulphites, lupin, and molluscs. While we take precautions to prevent cross-contact, we cannot guarantee that any product is completely free from allergens.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Info */}
+                {(storage || shelfLife) && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Storage & Shelf Life</h4>
+                    {storage && <p className="text-sm text-gray-700 mb-1"><strong>Storage:</strong> {storage}</p>}
+                    {shelfLife && <p className="text-sm text-gray-700"><strong>Shelf Life:</strong> {shelfLife}</p>}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={() => setIsAllergenModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handlePrintAllergenSheet}
+                  className="flex items-center gap-2 px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print Allergen Sheet
+                </button>
               </div>
             </div>
           </div>
