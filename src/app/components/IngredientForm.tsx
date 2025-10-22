@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { UnitConversionHelp } from "./UnitConversionHelp";
 import { SupplierSelector } from "./SupplierSelector";
 
@@ -40,6 +40,12 @@ interface Supplier {
   [key: string]: any; // Allow additional properties
 }
 
+interface CustomConversion {
+  unit: string;
+  value: number;
+  targetUnit: string;
+}
+
 interface IngredientFormProps {
   companyId: number;
   suppliers?: Supplier[];
@@ -55,6 +61,7 @@ interface IngredientFormProps {
     allergens?: string[];
     notes?: string;
     supplierId?: number;
+    customConversions?: string;
   };
   onSubmit: (formData: FormData) => void;
 }
@@ -65,6 +72,24 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(initialData?.supplierId || null);
   const [otherAllergen, setOtherAllergen] = useState<string>("");
   const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
+  
+  // Parse initial custom conversions
+  const initialConversions: CustomConversion[] = initialData?.customConversions 
+    ? (() => {
+        try {
+          const parsed = JSON.parse(initialData.customConversions);
+          return Object.entries(parsed).map(([unit, data]: [string, any]) => ({
+            unit,
+            value: data.value,
+            targetUnit: data.unit
+          }));
+        } catch {
+          return [];
+        }
+      })()
+    : [];
+  
+  const [customConversions, setCustomConversions] = useState<CustomConversion[]>(initialConversions);
 
   const handleAllergenChange = (allergen: string, checked: boolean) => {
     if (checked) {
@@ -109,6 +134,20 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
     }
   };
 
+  const addCustomConversion = () => {
+    setCustomConversions(prev => [...prev, { unit: "tsp", value: 1, targetUnit: "ml" }]);
+  };
+
+  const removeCustomConversion = (index: number) => {
+    setCustomConversions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateCustomConversion = (index: number, field: keyof CustomConversion, value: string | number) => {
+    setCustomConversions(prev => prev.map((conv, i) => 
+      i === index ? { ...conv, [field]: value } : conv
+    ));
+  };
+
   const handleSubmit = (ev: React.FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
     
@@ -120,8 +159,17 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
       allAllergens.splice(0, allAllergens.length, ...allergensWithoutNuts, ...selectedNutTypes);
     }
     
+    // Convert custom conversions to JSON format: { "tsp": { "value": 5, "unit": "ml" } }
+    const conversionsObject = customConversions.reduce((acc, conv) => {
+      if (conv.unit && conv.value && conv.targetUnit) {
+        acc[conv.unit] = { value: conv.value, unit: conv.targetUnit };
+      }
+      return acc;
+    }, {} as Record<string, { value: number; unit: string }>);
+    
     const formData = new FormData(ev.currentTarget);
     formData.set("allergens", JSON.stringify(allAllergens));
+    formData.set("customConversions", JSON.stringify(conversionsObject));
     if (selectedSupplierId) {
       formData.set("supplierId", selectedSupplierId.toString());
     }
@@ -305,6 +353,95 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
           <p className="text-xs text-gray-500 mt-1">
             Used for converting between weight and volume (e.g., ml to grams).
           </p>
+        </div>
+
+        {/* Custom Unit Conversions */}
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <label className="block text-lg font-bold text-blue-800">
+                Custom Unit Conversions (Optional)
+              </label>
+              <p className="text-sm text-blue-700 mt-1">
+                Define how recipe units (tsp, tbsp, cup, etc.) convert to your purchase unit. 
+                Example: If you buy vanilla extract in 100ml bottles but recipes use teaspoons, 
+                you can specify "1 tsp = 5 ml" here.
+              </p>
+            </div>
+          </div>
+
+          {customConversions.length > 0 && (
+            <div className="space-y-3 mb-4">
+              {customConversions.map((conversion, index) => (
+                <div key={index} className="flex gap-2 items-center bg-white p-3 rounded-lg border border-blue-200">
+                  <span className="text-sm font-medium text-gray-700">1</span>
+                  <select
+                    value={conversion.unit}
+                    onChange={(e) => updateCustomConversion(index, 'unit', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="tsp">tsp</option>
+                    <option value="tbsp">tbsp</option>
+                    <option value="cup">cup</option>
+                    <option value="floz">fl oz</option>
+                    <option value="pint">pint</option>
+                    <option value="oz">oz</option>
+                    <option value="lb">lb</option>
+                  </select>
+                  <span className="text-sm font-medium text-gray-700">=</span>
+                  <input
+                    type="number"
+                    value={conversion.value}
+                    onChange={(e) => updateCustomConversion(index, 'value', parseFloat(e.target.value) || 0)}
+                    step="0.01"
+                    min="0"
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="5"
+                  />
+                  <select
+                    value={conversion.targetUnit}
+                    onChange={(e) => updateCustomConversion(index, 'targetUnit', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="ml">ml</option>
+                    <option value="l">l</option>
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="oz">oz</option>
+                    <option value="lb">lb</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeCustomConversion(index)}
+                    className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Remove conversion"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={addCustomConversion}
+            className="flex items-center gap-2 px-4 py-2 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors border-2 border-dashed border-blue-300"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Conversion Rule
+          </button>
+          
+          {customConversions.length === 0 && (
+            <p className="text-xs text-blue-600 mt-3 italic">
+              💡 Tip: Add conversion rules if you buy this ingredient in one unit (like ml or g) 
+              but use it in recipes with different units (like tsp or cups).
+            </p>
+          )}
         </div>
 
         {/* Allergens */}
