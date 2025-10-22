@@ -69,7 +69,6 @@ export default async function EditIngredientPage({ params }: Props) {
             supplierId: ing.supplierId || undefined,
             packQuantity: originalQuantity,
             packUnit: ing.originalUnit || ing.packUnit,
-            customConversions: ing.customConversions || undefined,
             packPrice: Number(ing.packPrice),
             densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined,
             notes: ing.notes || "",

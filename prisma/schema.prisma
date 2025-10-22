@@ -71,11 +71,6 @@ model Ingredient {
   // Density in g/ml to enable volume↔mass conversions when needed
   densityGPerMl   Decimal?
 
-  // Custom unit conversions for recipe usage
-  // JSON format: { "tsp": { "value": 5, "unit": "ml" }, "tbsp": { "value": 15, "unit": "ml" } }
-  // Allows users to define how much 1 tsp/tbsp/etc equals in their purchase unit
-  customConversions String? // JSON object of custom unit conversions
-
   // Allergens information
   allergens       String[]  @default([]) // Array of allergen strings
 
