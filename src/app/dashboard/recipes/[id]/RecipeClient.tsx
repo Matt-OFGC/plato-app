@@ -122,7 +122,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col pb-20">
       {/* Top Header - Compact */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-[1600px] mx-auto px-6 py-2">
@@ -199,8 +199,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
         </div>
       </div>
 
-      {/* Bottom Info Bar - Separate Container Cards */}
-      <div className="bg-gray-50 border-t-2 border-gray-200 py-1.5">
+      {/* Bottom Info Bar - Separate Container Cards - FIXED TO BOTTOM */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-50 border-t-2 border-gray-200 py-1.5 z-40">
         <div className="max-w-[1600px] mx-auto px-6">
           <div className="flex items-center gap-3 flex-wrap">
             
