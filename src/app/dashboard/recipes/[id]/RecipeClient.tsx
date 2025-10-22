@@ -86,7 +86,6 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
       });
 
       if (result.success) {
-        alert("✅ Changes saved successfully!");
         // Switch back to steps view after saving
         setViewMode("steps");
       } else {
