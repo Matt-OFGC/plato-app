@@ -18,6 +18,7 @@ interface Recipe {
   bakeTime: number | null;
   bakeTemp: number | null;
   storage: string | null;
+  category: string | null;
   categoryRef: { name: string; color: string | null } | null;
   items: any[];
   sellingPrice: number | null;
@@ -57,8 +58,8 @@ export function RecipesView({ recipes }: RecipesViewProps) {
           bValue = b.name.toLowerCase();
           break;
         case 'category':
-          aValue = a.categoryRef?.name?.toLowerCase() || '';
-          bValue = b.categoryRef?.name?.toLowerCase() || '';
+          aValue = (a.categoryRef?.name || a.category || '').toLowerCase();
+          bValue = (b.categoryRef?.name || b.category || '').toLowerCase();
           break;
         case 'yield':
           aValue = parseFloat(a.yieldQuantity) || 0;
@@ -337,16 +338,16 @@ export function RecipesView({ recipes }: RecipesViewProps) {
                       </Link>
                     </td>
                     <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
-                      {r.categoryRef && (
+                      {(r.categoryRef || r.category) && (
                         <span 
                           className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium" 
                           style={{ 
-                            backgroundColor: `${r.categoryRef.color || '#3B82F6'}20` as any, 
-                            color: (r.categoryRef.color || '#3B82F6') as any 
+                            backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
+                            color: (r.categoryRef?.color || '#3B82F6') as any 
                           }}
                         >
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: (r.categoryRef.color || '#3B82F6') as any }} />
-                          {r.categoryRef.name}
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
+                          {r.categoryRef?.name || r.category}
                         </span>
                       )}
                     </td>

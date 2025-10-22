@@ -4,6 +4,40 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { revalidatePath } from "next/cache";
 
+export async function saveSellPrice(recipeId: number, sellPrice: number) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+
+    // Verify recipe belongs to user's company
+    const recipe = await prisma.recipe.findUnique({
+      where: { id: recipeId },
+      select: { companyId: true }
+    });
+
+    if (!recipe || recipe.companyId !== companyId) {
+      throw new Error("Unauthorized");
+    }
+
+    // Update just the selling price
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: {
+        sellingPrice: sellPrice,
+        lastPriceUpdate: new Date(),
+      },
+    });
+
+    revalidatePath(`/dashboard/recipes/${recipeId}`);
+    revalidatePath('/dashboard/recipes');
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving sell price:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to save sell price";
+    return { success: false, error: errorMessage };
+  }
+}
+
 export async function saveRecipeChanges(data: {
   recipeId: number;
   category?: string;

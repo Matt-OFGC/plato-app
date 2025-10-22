@@ -1,7 +1,7 @@
 "use client";
 
 import { calcTotalCost } from "@/app/lib/recipe-scaling";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState } from "react";
 import CostInsightsModal from "./CostInsightsModal";
 
 interface Ingredient {
@@ -18,6 +18,8 @@ interface CostAnalysisProps {
   slicesPerBatch: number;
   sellPrice: number;
   onSellPriceChange: (price: number) => void;
+  recipeId: number;
+  onSaveSellPrice: (price: number) => Promise<void>;
 }
 
 export default function CostAnalysis({
@@ -28,9 +30,10 @@ export default function CostAnalysis({
   slicesPerBatch,
   sellPrice,
   onSellPriceChange,
+  recipeId,
+  onSaveSellPrice,
 }: CostAnalysisProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [inputValue, setInputValue] = useState(sellPrice.toString());
 
   const totalCost = useMemo(() => {
     return calcTotalCost(ingredients, baseServings, servings);
@@ -39,11 +42,6 @@ export default function CostAnalysis({
   const costPerServing = recipeType === "batch" 
     ? totalCost / slicesPerBatch 
     : totalCost;
-  
-  // Update input value when sellPrice prop changes
-  useEffect(() => {
-    setInputValue(sellPrice.toFixed(2));
-  }, [sellPrice]);
 
   // Calculate COGS percentage
   const cogsPercentage = sellPrice > 0 ? (costPerServing / sellPrice) * 100 : 0;
@@ -101,36 +99,21 @@ export default function CostAnalysis({
 
           <div className="h-px bg-gray-100 my-2" />
 
-          {/* Editable Sell Price */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5">
-              Sell Price
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-400">£</span>
-              <input
-                type="text"
-                placeholder="0.00"
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  const parsed = parseFloat(e.target.value);
-                  if (!isNaN(parsed) && parsed >= 0) {
-                    onSellPriceChange(parsed);
-                  }
-                }}
-                onBlur={() => {
-                  const parsed = parseFloat(inputValue);
-                  if (!isNaN(parsed) && parsed >= 0) {
-                    setInputValue(parsed.toFixed(2));
-                  } else {
-                    setInputValue(sellPrice.toFixed(2));
-                  }
-                }}
-                className="w-full pl-7 pr-3 py-2 text-base font-semibold border-2 border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
-              />
+          {/* Read-only Sell Price - Click to edit in modal */}
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="w-full text-left hover:bg-gray-50 rounded-lg p-2 transition-colors group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500">Sell Price</span>
+              <svg className="w-3 h-3 text-gray-400 group-hover:text-emerald-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
             </div>
-          </div>
+            <div className="text-base font-semibold text-gray-900 mt-0.5">
+              {sellPrice > 0 ? `£${sellPrice.toFixed(2)}` : 'Click to set'}
+            </div>
+          </button>
 
           <div className="h-px bg-gray-100 my-2" />
 
@@ -165,6 +148,8 @@ export default function CostAnalysis({
         slicesPerBatch={slicesPerBatch}
         sellPrice={sellPrice}
         onSellPriceChange={onSellPriceChange}
+        recipeId={recipeId}
+        onSave={onSaveSellPrice}
       />
     </>
   );

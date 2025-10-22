@@ -11,6 +11,8 @@ interface CostInsightsModalProps {
   slicesPerBatch: number;
   sellPrice: number;
   onSellPriceChange: (price: number) => void;
+  recipeId: number;
+  onSave: (price: number) => Promise<void>;
 }
 
 export default function CostInsightsModal({
@@ -22,21 +24,40 @@ export default function CostInsightsModal({
   slicesPerBatch,
   sellPrice,
   onSellPriceChange,
+  recipeId,
+  onSave,
 }: CostInsightsModalProps) {
   const [inputValue, setInputValue] = useState(sellPrice.toString());
+  const [localSellPrice, setLocalSellPrice] = useState(sellPrice);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Update input value when sellPrice prop changes
+  // Update input value and local sell price when modal opens or prop changes
   useEffect(() => {
     setInputValue(sellPrice.toFixed(2));
-  }, [sellPrice]);
+    setLocalSellPrice(sellPrice);
+  }, [sellPrice, isOpen]);
+  
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave(localSellPrice);
+      onSellPriceChange(localSellPrice);
+      onClose();
+    } catch (error) {
+      console.error('Failed to save sell price:', error);
+      alert('Failed to save sell price');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!isOpen) return null;
 
-  // Calculate metrics
-  const profit = sellPrice - costPerServing;
-  const profitMargin = sellPrice > 0 ? (profit / sellPrice) * 100 : 0;
-  const foodCostPercentage = sellPrice > 0 ? (costPerServing / sellPrice) * 100 : 0;
-  const markup = costPerServing > 0 ? ((sellPrice - costPerServing) / costPerServing) * 100 : 0;
+  // Calculate metrics using local sell price for real-time preview
+  const profit = localSellPrice - costPerServing;
+  const profitMargin = localSellPrice > 0 ? (profit / localSellPrice) * 100 : 0;
+  const foodCostPercentage = localSellPrice > 0 ? (costPerServing / localSellPrice) * 100 : 0;
+  const markup = costPerServing > 0 ? ((localSellPrice - costPerServing) / costPerServing) * 100 : 0;
 
   // Determine health status
   const getHealthStatus = () => {
@@ -111,15 +132,16 @@ export default function CostInsightsModal({
                     setInputValue(e.target.value);
                     const parsed = parseFloat(e.target.value);
                     if (!isNaN(parsed) && parsed >= 0) {
-                      onSellPriceChange(parsed);
+                      setLocalSellPrice(parsed);
                     }
                   }}
                   onBlur={() => {
                     const parsed = parseFloat(inputValue);
                     if (!isNaN(parsed) && parsed >= 0) {
                       setInputValue(parsed.toFixed(2));
+                      setLocalSellPrice(parsed);
                     } else {
-                      setInputValue(sellPrice.toFixed(2));
+                      setInputValue(localSellPrice.toFixed(2));
                     }
                   }}
                   className="w-full pl-9 pr-4 py-3 text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
@@ -134,7 +156,8 @@ export default function CostInsightsModal({
                   key={multiplier}
                   onClick={() => {
                     const newPrice = costPerServing * multiplier;
-                    onSellPriceChange(newPrice);
+                    setLocalSellPrice(newPrice);
+                    setInputValue(newPrice.toFixed(2));
                   }}
                   className="px-3 py-2 text-sm font-medium bg-gray-100 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg transition-colors"
                 >
@@ -320,12 +343,35 @@ export default function CostInsightsModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex gap-3">
           <button
             onClick={onClose}
-            className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
+            disabled={isSaving}
+            className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-colors disabled:opacity-50"
           >
-            Close
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Save Price
+              </>
+            )}
           </button>
         </div>
       </div>

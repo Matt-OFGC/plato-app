@@ -54,6 +54,7 @@ export default async function RecipesPage({ searchParams }: Props) {
       bakeTemp: true,
       storage: true,
       sellingPrice: true,
+      category: true,
       categoryRef: {
         select: {
           name: true,
@@ -91,9 +92,14 @@ export default async function RecipesPage({ searchParams }: Props) {
       return sum + (Number(item.quantity) * costPerUnit);
     }, 0);
     
-    // Calculate COGS percentage
+    // Calculate cost per serving (divide total cost by yield)
+    const yieldQty = Number(r.yieldQuantity);
+    const costPerServing = yieldQty > 0 ? totalCost / yieldQty : totalCost;
+    
+    // Calculate COGS percentage (cost per serving / sell price)
+    // Sell price is already per serving/slice, so we compare like-for-like
     const cogsPercentage = r.sellingPrice && Number(r.sellingPrice) > 0
-      ? (totalCost / Number(r.sellingPrice)) * 100
+      ? (costPerServing / Number(r.sellingPrice)) * 100
       : null;
     
     // Calculate total time from all sections
@@ -106,9 +112,11 @@ export default async function RecipesPage({ searchParams }: Props) {
       yieldQuantity: r.yieldQuantity.toString(),
       sellingPrice: r.sellingPrice ? Number(r.sellingPrice) : null,
       totalCost,
+      costPerServing,
       cogsPercentage,
       totalSteps: r.sections.length,
       totalTime: totalTime > 0 ? totalTime : null,
+      category: r.categoryRef?.name || r.category || null,
     };
   });
   

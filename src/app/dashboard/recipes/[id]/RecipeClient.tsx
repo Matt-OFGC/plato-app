@@ -3,7 +3,7 @@
 import { RecipeMock } from "@/app/lib/mocks/recipe";
 import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/app/lib/useLocalChecklist";
-import { saveRecipeChanges } from "./actions";
+import { saveRecipeChanges, saveSellPrice } from "./actions";
 import RecipeHeader from "./components/RecipeHeader";
 import RecipeImage from "./components/RecipeImage";
 import ServingsControl from "./components/ServingsControl";
@@ -101,6 +101,13 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
     }
   };
 
+  const handleSaveSellPrice = async (price: number) => {
+    const result = await saveSellPrice(recipeId, price);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to save sell price");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Main Container */}
@@ -169,6 +176,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
               slicesPerBatch={slicesPerBatch}
               sellPrice={sellPrice}
               onSellPriceChange={setSellPrice}
+              recipeId={recipeId}
+              onSaveSellPrice={handleSaveSellPrice}
             />
             
             <RecipeMetadata
