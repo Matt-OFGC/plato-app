@@ -261,13 +261,13 @@ export default function InstructionsPanel({
                     placeholder="Enter instructions, one per line..."
                   />
                 ) : (
-                  <ol className="list-decimal list-inside space-y-3 text-gray-700 leading-relaxed">
+                  <div className="space-y-3 text-gray-700 leading-relaxed">
                     {step.instructions.filter(line => line.trim() !== "").map((instruction, i) => (
-                      <li key={i} className="text-base">
+                      <p key={i} className="text-base">
                         {instruction}
-                      </li>
+                      </p>
                     ))}
-                  </ol>
+                  </div>
                 )}
                   </div>
                 </div>
