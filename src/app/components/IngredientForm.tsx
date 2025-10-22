@@ -26,6 +26,7 @@ const NUT_TYPES = [
   "Cashews",
   "Hazelnuts",
   "Macadamia nuts",
+  "Peanuts",
   "Pecans",
   "Pine nuts",
   "Pistachios",
@@ -72,6 +73,8 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(initialData?.supplierId || null);
   const [otherAllergen, setOtherAllergen] = useState<string>("");
   const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
+  const [otherNutType, setOtherNutType] = useState<string>("");
+  const [showOtherNutInput, setShowOtherNutInput] = useState<boolean>(false);
   
   // Parse initial custom conversions
   const initialConversions: CustomConversion[] = initialData?.customConversions 
@@ -153,10 +156,17 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
     
     // Combine allergens and nut types
     const allAllergens = [...allergens];
-    if (selectedNutTypes.length > 0) {
+    const nutTypesToAdd = [...selectedNutTypes];
+    
+    // Add custom "Other" nut type if provided
+    if (showOtherNutInput && otherNutType.trim()) {
+      nutTypesToAdd.push(otherNutType.trim());
+    }
+    
+    if (nutTypesToAdd.length > 0) {
       // Replace "Nuts" with specific nut types
       const allergensWithoutNuts = allAllergens.filter(a => a !== "Nuts");
-      allAllergens.splice(0, allAllergens.length, ...allergensWithoutNuts, ...selectedNutTypes);
+      allAllergens.splice(0, allAllergens.length, ...allergensWithoutNuts, ...nutTypesToAdd);
     }
     
     const formData = new FormData(ev.currentTarget);
@@ -477,31 +487,54 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
 
         {/* Specific Nut Types */}
         {allergens.includes("Nuts") && (
-          <div className="bg-yellow-100 border-4 border-yellow-400 rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-3xl">🥜</span>
-              <label className="block text-xl font-bold text-yellow-800">
-                SPECIFIC NUT TYPES - ENHANCED FEATURE!
-              </label>
-            </div>
-            <p className="text-lg text-yellow-700 mb-4 font-semibold">
-              🎉 This is the NEW enhanced feature! Select specific nut types below. 
-              This will replace the generic "Nuts" entry with the specific nut types you choose.
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+            <label className="block text-sm font-medium text-gray-900 mb-3">
+              Specific Nut Types
+              <span className="text-xs text-gray-500 font-normal ml-2">
+                (Select the specific types to replace the generic "Nuts" allergen)
+              </span>
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
               {NUT_TYPES.map((nutType) => (
-                <label key={nutType} className="flex items-center space-x-2 bg-white p-2 rounded border">
+                <label key={nutType} className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded transition-colors">
                   <input
                     type="checkbox"
                     id={`nut-type-${nutType.toLowerCase().replace(/\s+/g, '-')}`}
                     name={`nutType-${nutType}`}
                     checked={selectedNutTypes.includes(nutType)}
                     onChange={(e) => handleNutTypeChange(nutType, e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span className="text-sm text-gray-700 font-medium">{nutType}</span>
+                  <span className="text-sm text-gray-700">{nutType}</span>
                 </label>
               ))}
+            </div>
+            
+            {/* Other Nut Type Option */}
+            <div className="pt-3 border-t border-gray-200">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showOtherNutInput}
+                  onChange={(e) => {
+                    setShowOtherNutInput(e.target.checked);
+                    if (!e.target.checked) {
+                      setOtherNutType("");
+                    }
+                  }}
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-sm text-gray-700 font-medium">Other (specify)</span>
+              </label>
+              {showOtherNutInput && (
+                <input
+                  type="text"
+                  value={otherNutType}
+                  onChange={(e) => setOtherNutType(e.target.value)}
+                  placeholder="e.g., Tiger nuts, Candlenuts..."
+                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+                />
+              )}
             </div>
           </div>
         )}
