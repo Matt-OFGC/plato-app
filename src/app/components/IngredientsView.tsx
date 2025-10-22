@@ -96,6 +96,21 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                       )}
                     </p>
                   )}
+                  {ing.allergens && ing.allergens.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500 mb-1">Allergens:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {ing.allergens.map((allergen, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                          >
+                            {allergen}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -180,6 +195,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Allergens</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack Size</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
@@ -207,6 +223,27 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {ing.supplierRef?.name || ing.supplier || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {ing.allergens && ing.allergens.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {ing.allergens.slice(0, 3).map((allergen, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                              >
+                                {allergen}
+                              </span>
+                            ))}
+                            {ing.allergens.length > 3 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                +{ing.allergens.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {originalQuantity} {originalUnit}
