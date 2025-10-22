@@ -161,7 +161,16 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
     
     const formData = new FormData(ev.currentTarget);
     formData.set("allergens", JSON.stringify(allAllergens));
-    // Custom conversions temporarily disabled until migration is fixed
+    
+    // Serialize custom conversions to JSON
+    if (customConversions.length > 0) {
+      const conversionsObj = customConversions.reduce((acc, conv) => {
+        acc[conv.unit] = { value: conv.value, unit: conv.targetUnit };
+        return acc;
+      }, {} as Record<string, { value: number; unit: string }>);
+      formData.set("customConversions", JSON.stringify(conversionsObj));
+    }
+    
     if (selectedSupplierId) {
       formData.set("supplierId", selectedSupplierId.toString());
     }

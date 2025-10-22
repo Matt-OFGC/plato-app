@@ -30,6 +30,18 @@ const ingredientSchema = z.object({
       return [];
     }
   }),
+  customConversions: z.string().optional().nullable().transform((v) => {
+    // Validate and clean up the JSON
+    if (!v || v === "" || v === "{}") return null;
+    try {
+      const parsed = JSON.parse(v);
+      // Ensure it's a valid object
+      if (typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+      return v;
+    } catch {
+      return null;
+    }
+  }),
   notes: z.string().optional().nullable(),
 });
 
@@ -80,6 +92,7 @@ export async function createIngredient(formData: FormData) {
       currency: data.currency,
       densityGPerMl: (data.densityGPerMl as number | null) ?? null,
       allergens: data.allergens,
+      customConversions: data.customConversions ?? null,
       notes: data.notes ?? null,
       companyId: companyId ?? undefined,
     };
@@ -158,6 +171,7 @@ export async function updateIngredient(id: number, formData: FormData) {
         currency: data.currency,
         densityGPerMl: (data.densityGPerMl as number | null) ?? null,
         allergens: data.allergens,
+        customConversions: data.customConversions ?? null,
         notes: data.notes ?? null,
         // Update lastPriceUpdate timestamp if price changed
         ...(priceChanged && { lastPriceUpdate: new Date() }),

@@ -72,7 +72,8 @@ export default async function EditIngredientPage({ params }: Props) {
             packPrice: Number(ing.packPrice),
             densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined,
             notes: ing.notes || "",
-            allergens: ing.allergens || []
+            allergens: ing.allergens || [],
+            customConversions: ing.customConversions || undefined,
           }}
           onSubmit={handleSubmit}
         />

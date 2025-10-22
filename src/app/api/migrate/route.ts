@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     const { execSync } = require('child_process');
     
     try {
-      // Push schema to database (this creates tables)
-      execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
+      // Run migrations from prisma/migrations folder
+      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
       
       return NextResponse.json({ 
         success: true, 
