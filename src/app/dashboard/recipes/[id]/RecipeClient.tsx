@@ -107,100 +107,57 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Main Container */}
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
-        {/* Back Button + Header on same line */}
-        <div className="flex items-center gap-3 mb-6">
-          <a
-            href="/dashboard/recipes"
-            className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-white transition-colors border border-gray-200 bg-white shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="hidden sm:inline">Back</span>
-          </a>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Top Header - Compact */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-[1600px] mx-auto px-6 py-3">
+          {/* Back Button + Header on same line */}
+          <div className="flex items-center gap-3">
+            <a
+              href="/dashboard/recipes"
+              className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-white transition-colors border border-gray-200 bg-white shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="hidden sm:inline">Back</span>
+            </a>
 
-          <div className="flex-1 min-w-0">
-            <RecipeHeader
-              title={recipe.title}
-              category={category}
-              servings={servings}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              onCategoryChange={setCategory}
-              onSave={handleSave}
-              isSaving={isSaving}
-              categories={categories}
-              imageUrl={recipe.imageUrl}
-            />
+            <div className="flex-1 min-w-0">
+              <RecipeHeader
+                title={recipe.title}
+                category={category}
+                servings={servings}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                onCategoryChange={setCategory}
+                onSave={handleSave}
+                isSaving={isSaving}
+                categories={categories}
+                imageUrl={recipe.imageUrl}
+              />
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Main Content Grid - Adjust left rail width based on view mode */}
-        <div className={`grid grid-cols-1 gap-6 ${
-          viewMode === "edit" ? "lg:grid-cols-[140px_1fr]" : "lg:grid-cols-[200px_1fr]"
-        }`}>
-          {/* Left Rail */}
-          <div className="space-y-4">
-            {/* Show Servings Control in view modes, Recipe Type in edit mode */}
-            {viewMode === "edit" ? (
-              <RecipeTypeSelector
-                recipeType={recipeType}
-                onRecipeTypeChange={handleRecipeTypeChange}
-                slicesPerBatch={slicesPerBatch}
-                onSlicesPerBatchChange={handleSlicesPerBatchChange}
-              />
-            ) : (
-              <ServingsControl
-                servings={servings}
-                onServingsChange={handleServingsChange}
-                recipeType={recipeType}
-                baseServings={recipe.baseServings}
-              />
-            )}
-            
-            <CostAnalysis
-              ingredients={localIngredients}
-              servings={servings}
-              baseServings={recipe.baseServings}
-              recipeType={recipeType}
-              slicesPerBatch={slicesPerBatch}
-              sellPrice={sellPrice}
-              onSellPriceChange={setSellPrice}
-              recipeId={recipeId}
-              onSaveSellPrice={handleSaveSellPrice}
-            />
-            
-            <RecipeMetadata
-              allergens={recipe.allergens}
-              storage={storage}
-              shelfLife={shelfLife}
-              viewMode={viewMode}
-              storageOptions={storageOptions}
-              shelfLifeOptions={shelfLifeOptions}
-              onStorageChange={setStorage}
-              onShelfLifeChange={setShelfLife}
-            />
-            
-            <RecipeNotes notes={recipe.notes} />
-          </div>
-
-          {/* Right Content Area */}
-          <div className="space-y-4">
-            {/* Step Navigation - Show in Steps and Edit modes */}
-            {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
+      {/* Main Content Area - Flex Grow to Fill Space */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-[1600px] mx-auto px-6 py-6">
+          {/* Step Navigation - Show in Steps and Edit modes */}
+          {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
+            <div className="mb-4">
               <StepNavigation
                 steps={localSteps}
                 activeStepIndex={activeStepIndex}
                 onStepChange={setActiveStepIndex}
                 totalSteps={localSteps.length}
               />
-            )}
+            </div>
+          )}
 
-            {/* Two Column Layout for Ingredients & Instructions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Ingredients & Instructions - Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             {/* Ingredients */}
             <IngredientsPanel
               ingredients={localIngredients}
@@ -214,15 +171,73 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
               availableIngredients={availableIngredients}
             />
 
-              {/* Instructions */}
-              <InstructionsPanel
-                steps={localSteps}
-                viewMode={viewMode}
-                activeStepIndex={activeStepIndex}
-                recipeId={recipe.id}
-                onStepsChange={setLocalSteps}
-                onActiveStepChange={setActiveStepIndex}
+            {/* Instructions */}
+            <InstructionsPanel
+              steps={localSteps}
+              viewMode={viewMode}
+              activeStepIndex={activeStepIndex}
+              recipeId={recipe.id}
+              onStepsChange={setLocalSteps}
+              onActiveStepChange={setActiveStepIndex}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Info Bar - Horizontal Row */}
+      <div className="bg-gray-50 border-t border-gray-200 py-4">
+        <div className="max-w-[1600px] mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Servings Control or Recipe Type Selector */}
+            <div>
+              {viewMode === "edit" ? (
+                <RecipeTypeSelector
+                  recipeType={recipeType}
+                  onRecipeTypeChange={handleRecipeTypeChange}
+                  slicesPerBatch={slicesPerBatch}
+                  onSlicesPerBatchChange={handleSlicesPerBatchChange}
+                />
+              ) : (
+                <ServingsControl
+                  servings={servings}
+                  onServingsChange={handleServingsChange}
+                  recipeType={recipeType}
+                  baseServings={recipe.baseServings}
+                />
+              )}
+            </div>
+            
+            {/* Cost Analysis */}
+            <div>
+              <CostAnalysis
+                ingredients={localIngredients}
+                servings={servings}
+                baseServings={recipe.baseServings}
+                recipeType={recipeType}
+                slicesPerBatch={slicesPerBatch}
+                sellPrice={sellPrice}
+                onSellPriceChange={setSellPrice}
+                recipeId={recipeId}
+                onSaveSellPrice={handleSaveSellPrice}
               />
+            </div>
+            
+            {/* Recipe Metadata & Notes */}
+            <div className="space-y-4">
+              <RecipeMetadata
+                allergens={recipe.allergens}
+                storage={storage}
+                shelfLife={shelfLife}
+                viewMode={viewMode}
+                storageOptions={storageOptions}
+                shelfLifeOptions={shelfLifeOptions}
+                onStorageChange={setStorage}
+                onShelfLifeChange={setShelfLife}
+              />
+              
+              {recipe.notes && (
+                <RecipeNotes notes={recipe.notes} />
+              )}
             </div>
           </div>
         </div>
