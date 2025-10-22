@@ -263,7 +263,7 @@ export default function IngredientsPanel({
                   onDragEnd={handleDragEnd}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, ingredient.id)}
-                  className={`flex items-center gap-4 px-5 py-4 transition-all ${
+                  className={`flex items-center gap-4 px-5 py-2.5 transition-all ${
                     viewMode === "edit" ? "cursor-move" : ""
                   } ${
                     draggedId === ingredient.id
@@ -401,9 +401,10 @@ export default function IngredientsPanel({
                         )}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 w-full">
+                        {/* Quantity - Compact */}
                         <div
-                          className={`font-bold text-lg min-w-[90px] ${
+                          className={`font-bold text-base min-w-[80px] flex-shrink-0 ${
                             isChecked
                               ? "text-gray-400 line-through"
                               : "text-gray-900"
@@ -411,58 +412,43 @@ export default function IngredientsPanel({
                         >
                           {formatQty(scaledQuantity, ingredient.unit)}
                         </div>
-                        <div className="flex-1">
-                          <div
-                            className={`text-base ${
-                              isChecked
-                                ? "text-gray-400 line-through"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
-                          </div>
-                          
-                          {/* Cost per line in view modes */}
-                          {ingredient.costPerUnit && (
-                            <div className="text-xs text-gray-400 mt-0.5">
-                              £{(scaledQuantity * ingredient.costPerUnit).toFixed(2)}
-                            </div>
-                          )}
-                          
-                          {/* Show step info in Whole view */}
-                          {viewMode === "whole" && aggIngredient.stepTitles && (
-                            <div className="mt-1 flex items-center gap-2 flex-wrap">
-                              {isMultiStep ? (
-                                <>
-                                  <span className="text-xs text-amber-600 font-medium">
-                                    Used in {aggIngredient.stepTitles.length} steps:
-                                  </span>
-                                  {aggIngredient.originalQuantities?.map((item, idx) => {
-                                    const scaledOrigQty = scaleQuantity(
-                                      item.quantity,
-                                      baseServings,
-                                      servings
-                                    );
-                                    return (
-                                      <span
-                                        key={idx}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700"
-                                      >
-                                        <span className="font-medium">{item.stepTitle}</span>
-                                        <span className="text-amber-500">·</span>
-                                        <span>{formatQty(scaledOrigQty, ingredient.unit)}</span>
-                                      </span>
-                                    );
-                                  })}
-                                </>
-                              ) : (
-                                <span className="text-xs text-gray-500">
-                                  from {aggIngredient.stepTitles[0]}
-                                </span>
-                              )}
-                            </div>
-                          )}
+                        
+                        {/* Ingredient Name - Flexible */}
+                        <div
+                          className={`text-base flex-1 min-w-0 ${
+                            isChecked
+                              ? "text-gray-400 line-through"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
                         </div>
+                        
+                        {/* Cost - Right side */}
+                        {ingredient.costPerUnit && (
+                          <div className={`text-sm font-semibold flex-shrink-0 ${
+                            isChecked ? "text-gray-400 line-through" : "text-gray-600"
+                          }`}>
+                            £{(scaledQuantity * ingredient.costPerUnit).toFixed(2)}
+                          </div>
+                        )}
+                        
+                        {/* Step Info - Right side */}
+                        {viewMode === "whole" && aggIngredient.stepTitles && (
+                          <div className="flex-shrink-0">
+                            {isMultiStep ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-amber-600 font-medium">
+                                  {aggIngredient.stepTitles.length} steps
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-500">
+                                from {aggIngredient.stepTitles[0]}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
