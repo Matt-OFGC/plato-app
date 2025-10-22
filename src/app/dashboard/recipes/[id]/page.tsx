@@ -71,7 +71,8 @@ export default async function RecipePage({ params }: Props) {
         name: true, 
         packUnit: true,
         packPrice: true,
-        packQuantity: true
+        packQuantity: true,
+        allergens: true
       }
     }),
   ]);
