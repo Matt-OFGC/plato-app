@@ -23,7 +23,7 @@ interface Props {
   storageOptions: { id: number; name: string }[];
   shelfLifeOptions: { id: number; name: string }[];
   recipeId: number;
-  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number }>;
+  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number; allergens: string[] }>;
 }
 
 export default function RecipeRedesignClient({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients }: Props) {
@@ -55,12 +55,67 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
     localIngredients.forEach(ing => {
       // Find the ingredient in availableIngredients to get its allergens
       const fullIngredient = availableIngredients.find(ai => ai.name === ing.name);
-      if (fullIngredient && (fullIngredient as any).allergens) {
-        (fullIngredient as any).allergens.forEach((allergen: string) => allergenSet.add(allergen));
+      if (fullIngredient && fullIngredient.allergens) {
+        fullIngredient.allergens.forEach((allergen: string) => allergenSet.add(allergen));
       }
     });
-    return Array.from(allergenSet);
+    return Array.from(allergenSet).sort();
   }, [localIngredients, availableIngredients]);
+
+  // Detect dietary labels based on allergens
+  const dietaryLabels = useMemo(() => {
+    const labels: string[] = [];
+    
+    // Gluten-free check
+    if (!allergens.includes("Gluten")) {
+      labels.push("Made without gluten");
+    }
+    
+    // Dairy-free check
+    if (!allergens.includes("Milk")) {
+      labels.push("Dairy-free");
+    }
+    
+    // Vegan check (no animal products)
+    const animalProducts = ["Eggs", "Milk", "Fish", "Molluscs"];
+    const hasAnimalProducts = allergens.some(a => animalProducts.includes(a));
+    if (!hasAnimalProducts) {
+      labels.push("Vegan");
+    }
+    
+    // Vegetarian check (no meat/fish, but may have eggs/dairy)
+    const meatFish = ["Fish", "Molluscs"];
+    const hasMeatFish = allergens.some(a => meatFish.includes(a));
+    if (!hasMeatFish) {
+      labels.push("Vegetarian");
+    }
+    
+    // Nut-free check
+    const nutAllergens = allergens.filter(a => 
+      a.includes("nut") || 
+      a.includes("Nut") || 
+      a === "Peanuts" || 
+      a === "Almonds" || 
+      a === "Cashews" ||
+      a === "Hazelnuts" ||
+      a === "Walnuts" ||
+      a === "Pistachios" ||
+      a === "Pecans" ||
+      a === "Macadamia nuts" ||
+      a === "Pine nuts" ||
+      a === "Brazil nuts"
+    );
+    if (nutAllergens.length === 0) {
+      labels.push("Nut-free");
+    }
+    
+    // Soy-free check
+    if (!allergens.includes("Soya")) {
+      labels.push("Soy-free");
+    }
+    
+    return labels;
+  }, [allergens]);
 
   // Sync servings with slicesPerBatch when in batch mode
   const handleRecipeTypeChange = (type: "single" | "batch") => {
@@ -356,18 +411,45 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Allergens with list */}
                   {allergens && allergens.length > 0 && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5" title={allergens.join(", ")}>
                       <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
-                      <span className="text-xs font-medium text-red-600">{allergens.length} allergen{allergens.length !== 1 ? 's' : ''}</span>
+                      <div className="flex flex-wrap gap-1">
+                        {allergens.slice(0, 4).map((allergen, idx) => (
+                          <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            {allergen}
+                          </span>
+                        ))}
+                        {allergens.length > 4 && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            +{allergens.length - 4}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
-                  {storage && (
+                  
+                  {/* Dietary Labels */}
+                  {dietaryLabels.length > 0 && (
                     <>
                       {allergens && allergens.length > 0 && <div className="h-4 w-px bg-gray-300" />}
+                      <div className="flex flex-wrap gap-1">
+                        {dietaryLabels.map((label, idx) => (
+                          <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ✓ {label}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  
+                  {storage && (
+                    <>
+                      {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-4 w-px bg-gray-300" />}
                       <div className="flex items-center gap-1.5">
                         <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -378,7 +460,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   )}
                   {shelfLife && (
                     <>
-                      {(storage || (allergens && allergens.length > 0)) && <div className="h-4 w-px bg-gray-300" />}
+                      {(storage || allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-4 w-px bg-gray-300" />}
                       <div className="flex items-center gap-1.5">
                         <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -387,7 +469,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                       </div>
                     </>
                   )}
-                  {!allergens?.length && !storage && !shelfLife && (
+                  {!allergens?.length && !dietaryLabels.length && !storage && !shelfLife && (
                     <span className="text-xs text-gray-400 italic">No metadata available</span>
                   )}
                 </div>

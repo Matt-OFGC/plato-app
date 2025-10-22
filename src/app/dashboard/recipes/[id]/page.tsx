@@ -155,6 +155,7 @@ export default async function RecipePage({ params }: Props) {
       name: ing.name,
       unit: ing.packUnit,
       costPerUnit,
+      allergens: ing.allergens || [],
     };
   });
 
