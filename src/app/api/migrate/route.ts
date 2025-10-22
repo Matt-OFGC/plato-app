@@ -20,17 +20,27 @@ export async function POST(request: NextRequest) {
     
     try {
       // Run migrations from prisma/migrations folder
-      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+      const output = execSync('npx prisma migrate deploy', { 
+        encoding: 'utf8',
+        env: { ...process.env }
+      });
       
       return NextResponse.json({ 
         success: true, 
-        message: 'Database migrations completed successfully' 
+        message: 'Database migrations completed successfully',
+        output: output
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Migration error:', error);
+      const errorDetails = {
+        message: error.message || 'Unknown error',
+        stdout: error.stdout?.toString() || '',
+        stderr: error.stderr?.toString() || '',
+        status: error.status
+      };
       return NextResponse.json({ 
         error: 'Migration failed', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+        details: errorDetails
       }, { status: 500 });
     }
   } catch (error) {
