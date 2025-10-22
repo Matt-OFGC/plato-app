@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,34 +16,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Run Prisma migrations
-    const { execSync } = require('child_process');
-    
+    // Run the migration SQL directly
     try {
-      // Use node to run the Prisma CLI
-      // This works in serverless environments like Vercel
-      const output = execSync('node node_modules/prisma/build/index.js migrate deploy', { 
-        encoding: 'utf8',
-        env: { ...process.env },
-        cwd: process.cwd()
-      });
+      // Check if the column already exists
+      const result = await prisma.$queryRaw<any[]>`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'Ingredient' 
+        AND column_name = 'customConversions'
+      `;
+      
+      if (result.length > 0) {
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Migration already applied - customConversions column exists',
+          alreadyApplied: true
+        });
+      }
+      
+      // Add the column
+      await prisma.$executeRaw`
+        ALTER TABLE "Ingredient" ADD COLUMN "customConversions" TEXT
+      `;
       
       return NextResponse.json({ 
         success: true, 
-        message: 'Database migrations completed successfully',
-        output: output
+        message: 'Database migration completed successfully - added customConversions column'
       });
     } catch (error: any) {
       console.error('Migration error:', error);
-      const errorDetails = {
-        message: error.message || 'Unknown error',
-        stdout: error.stdout?.toString() || '',
-        stderr: error.stderr?.toString() || '',
-        status: error.status
-      };
       return NextResponse.json({ 
         error: 'Migration failed', 
-        details: errorDetails
+        details: error.message || 'Unknown error'
       }, { status: 500 });
     }
   } catch (error) {
