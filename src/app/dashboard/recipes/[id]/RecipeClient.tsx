@@ -13,6 +13,7 @@ import RecipeTypeSelector from "./components/RecipeTypeSelector";
 import StepNavigation from "./components/StepNavigation";
 import IngredientsPanel from "./components/IngredientsPanel";
 import InstructionsPanel from "./components/InstructionsPanel";
+import CostInsightsModal from "./components/CostInsightsModal";
 
 type ViewMode = "whole" | "steps" | "edit";
 
@@ -38,6 +39,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   const [storage, setStorage] = useState(recipe.storage || "");
   const [shelfLife, setShelfLife] = useState(recipe.shelfLife || "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   
   // Calculate initial cost per serving for default sell price
   const initialCostPerServing = useMemo(() => {
@@ -156,7 +158,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
 
       {/* Main Content Area - Flex Grow to Fill Space */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-[1600px] mx-auto px-6 pt-4 pb-2">
+        <div className="max-w-[1600px] mx-auto px-6 pt-2 pb-1">
           {/* Step Navigation - Show in Steps and Edit modes */}
           {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
             <div className="mb-4">
@@ -198,7 +200,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
       </div>
 
       {/* Bottom Info Bar - Separate Container Cards */}
-      <div className="bg-gray-50 border-t-2 border-gray-200 py-2">
+      <div className="bg-gray-50 border-t-2 border-gray-200 py-1.5">
         <div className="max-w-[1600px] mx-auto px-6">
           <div className="flex items-center gap-3 flex-wrap">
             
@@ -234,8 +236,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             </div>
 
             {/* Cost & COGS Container with Info Button */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-4 py-2.5 flex-1">
-              <div className="flex items-center gap-4">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-3 py-2">
+              <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-500">Cost</span>
                   <span className="text-base font-bold text-emerald-600">£{(localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)).toFixed(2)}</span>
@@ -257,8 +259,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   </span>
                 </div>
                 <button
-                  onClick={() => setPricingModalOpen(true)}
-                  className="ml-2 w-5 h-5 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex items-center justify-center text-blue-600"
+                  onClick={() => setIsPricingModalOpen(true)}
+                  className="w-5 h-5 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex items-center justify-center text-blue-600"
                   title="View pricing details"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,46 +272,96 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
 
             {/* Recipe Metadata Container */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-4 py-2.5">
-              <div className="flex items-center gap-3">
-                {allergens && allergens.length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span className="text-xs font-medium text-red-600">{allergens.length} allergen{allergens.length !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
-                {storage && (
-                  <>
-                    {allergens && allergens.length > 0 && <div className="h-4 w-px bg-gray-300" />}
+              {viewMode === "edit" ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-gray-500">Metadata:</span>
+                  <select
+                    value={storage}
+                    onChange={(e) => setStorage(e.target.value)}
+                    className="text-xs px-2 py-1 border border-gray-300 rounded"
+                  >
+                    <option value="">Storage...</option>
+                    {storageOptions.map(opt => (
+                      <option key={opt.id} value={opt.name}>{opt.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={shelfLife}
+                    onChange={(e) => setShelfLife(e.target.value)}
+                    className="text-xs px-2 py-1 border border-gray-300 rounded"
+                  >
+                    <option value="">Shelf Life...</option>
+                    {shelfLifeOptions.map(opt => (
+                      <option key={opt.id} value={opt.name}>{opt.name}</option>
+                    ))}
+                  </select>
+                  {allergens && allergens.length > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
-                      <span className="text-xs font-medium text-gray-700">{storage}</span>
+                      <span className="text-xs font-medium text-red-600">{allergens.length} allergen{allergens.length !== 1 ? 's' : ''}</span>
                     </div>
-                  </>
-                )}
-                {shelfLife && (
-                  <>
-                    {(storage || (allergens && allergens.length > 0)) && <div className="h-4 w-px bg-gray-300" />}
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  {allergens && allergens.length > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
-                      <span className="text-xs font-medium text-gray-700">{shelfLife}</span>
+                      <span className="text-xs font-medium text-red-600">{allergens.length} allergen{allergens.length !== 1 ? 's' : ''}</span>
                     </div>
-                  </>
-                )}
-                {!allergens?.length && !storage && !shelfLife && (
-                  <span className="text-xs text-gray-400 italic">No metadata available</span>
-                )}
-              </div>
+                  )}
+                  {storage && (
+                    <>
+                      {allergens && allergens.length > 0 && <div className="h-4 w-px bg-gray-300" />}
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span className="text-xs font-medium text-gray-700">{storage}</span>
+                      </div>
+                    </>
+                  )}
+                  {shelfLife && (
+                    <>
+                      {(storage || (allergens && allergens.length > 0)) && <div className="h-4 w-px bg-gray-300" />}
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs font-medium text-gray-700">{shelfLife}</span>
+                      </div>
+                    </>
+                  )}
+                  {!allergens?.length && !storage && !shelfLife && (
+                    <span className="text-xs text-gray-400 italic">No metadata available</span>
+                  )}
+                </div>
+              )}
             </div>
 
           </div>
         </div>
       </div>
+
+      {/* Pricing Modal */}
+      <CostInsightsModal
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+        totalCost={(localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings))}
+        costPerServing={((localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings))}
+        recipeType={recipeType}
+        slicesPerBatch={slicesPerBatch}
+        sellPrice={sellPrice}
+        onSellPriceChange={setSellPrice}
+        recipeId={recipeId}
+        onSave={async (price: number) => {
+          await saveSellPrice(recipeId, price);
+        }}
+      />
     </div>
   );
 }
