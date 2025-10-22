@@ -17,12 +17,16 @@ export async function POST(request: NextRequest) {
 
     // Run Prisma migrations
     const { execSync } = require('child_process');
+    const path = require('path');
     
     try {
-      // Run migrations from prisma/migrations folder
-      const output = execSync('npx prisma migrate deploy', { 
+      // Use the locally installed Prisma CLI from node_modules
+      // This works better in serverless environments like Vercel
+      const prismaPath = path.join(process.cwd(), 'node_modules', '.bin', 'prisma');
+      const output = execSync(`${prismaPath} migrate deploy`, { 
         encoding: 'utf8',
-        env: { ...process.env }
+        env: { ...process.env },
+        cwd: process.cwd()
       });
       
       return NextResponse.json({ 
