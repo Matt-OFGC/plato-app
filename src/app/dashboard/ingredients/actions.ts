@@ -50,7 +50,7 @@ export async function createIngredient(formData: FormData) {
     const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
     if (!parsed.success) {
       console.error("Validation error:", parsed.error);
-      redirect("/dashboard/ingredients?error=validation");
+      throw new Error("Validation failed");
     }
 
     const data = parsed.data;
@@ -59,7 +59,7 @@ export async function createIngredient(formData: FormData) {
     
     // Check subscription limits
     if (userId && !(await canAddIngredient(userId))) {
-      redirect("/dashboard/ingredients?error=limit_reached&type=ingredient");
+      throw new Error("Ingredient limit reached for your subscription");
     }
     
     // Check if ingredient with this name already exists for this company
@@ -71,7 +71,7 @@ export async function createIngredient(formData: FormData) {
     });
 
     if (existingIngredient) {
-      redirect(`/dashboard/ingredients/new?error=duplicate_name&name=${encodeURIComponent(data.name)}`);
+      throw new Error(`An ingredient named "${data.name}" already exists`);
     }
     
     // Convert the user-selected unit to a base unit for storage
@@ -107,14 +107,14 @@ export async function createIngredient(formData: FormData) {
         }
         
         revalidatePath("/dashboard/ingredients");
-        redirect("/dashboard/ingredients");
+        return { success: true };
   } catch (error) {
     console.error("Error in createIngredient:", error);
     // Check if it's a unique constraint error
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-      redirect("/dashboard/ingredients/new?error=duplicate_name");
+      throw new Error("An ingredient with this name already exists");
     }
-    redirect("/dashboard/ingredients?error=server_error");
+    throw error instanceof Error ? error : new Error("Failed to create ingredient");
   }
 }
 
@@ -178,10 +178,10 @@ export async function updateIngredient(id: number, formData: FormData) {
       },
     });
     revalidatePath("/dashboard/ingredients");
-    redirect("/dashboard/ingredients");
+    return { success: true };
   } catch (error) {
     console.error("Error updating ingredient:", error);
-    redirect("/dashboard/ingredients?error=update_failed");
+    throw new Error("Failed to update ingredient");
   }
 }
 

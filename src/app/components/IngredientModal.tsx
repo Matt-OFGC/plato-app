@@ -72,8 +72,9 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
       }
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving ingredient:", error);
+      alert(error?.message || "Failed to save ingredient. Please try again.");
     } finally {
       setLoading(false);
     }
