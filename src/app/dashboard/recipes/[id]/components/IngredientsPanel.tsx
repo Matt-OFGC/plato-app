@@ -401,52 +401,75 @@ export default function IngredientsPanel({
                         )}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3 w-full">
-                        {/* Quantity - Compact */}
-                        <div
-                          className={`font-bold text-base min-w-[80px] flex-shrink-0 ${
-                            isChecked
-                              ? "text-gray-400 line-through"
-                              : "text-gray-900"
-                          }`}
-                        >
-                          {formatQty(scaledQuantity, ingredient.unit)}
-                        </div>
-                        
-                        {/* Ingredient Name - Flexible */}
-                        <div
-                          className={`text-base flex-1 min-w-0 ${
-                            isChecked
-                              ? "text-gray-400 line-through"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
-                        </div>
-                        
-                        {/* Cost - Right side */}
-                        {ingredient.costPerUnit && (
-                          <div className={`text-sm font-semibold flex-shrink-0 ${
-                            isChecked ? "text-gray-400 line-through" : "text-gray-600"
-                          }`}>
-                            £{(scaledQuantity * ingredient.costPerUnit).toFixed(2)}
+                      <div className="w-full">
+                        {/* Main Row - Always horizontal */}
+                        <div className="flex items-center gap-3">
+                          {/* Quantity - Compact */}
+                          <div
+                            className={`font-bold text-base min-w-[80px] flex-shrink-0 ${
+                              isChecked
+                                ? "text-gray-400 line-through"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {formatQty(scaledQuantity, ingredient.unit)}
                           </div>
-                        )}
+                          
+                          {/* Ingredient Name - Flexible */}
+                          <div
+                            className={`text-base flex-1 min-w-0 ${
+                              isChecked
+                                ? "text-gray-400 line-through"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
+                          </div>
+                          
+                          {/* Cost - Right side */}
+                          {ingredient.costPerUnit && (
+                            <div className={`text-sm font-semibold flex-shrink-0 ${
+                              isChecked ? "text-gray-400 line-through" : "text-gray-600"
+                            }`}>
+                              £{(scaledQuantity * ingredient.costPerUnit).toFixed(2)}
+                            </div>
+                          )}
+                          
+                          {/* Step Info - Right side (simple case) */}
+                          {viewMode === "whole" && aggIngredient.stepTitles && !isMultiStep && (
+                            <span className="text-xs text-gray-500 flex-shrink-0">
+                              from {aggIngredient.stepTitles[0]}
+                            </span>
+                          )}
+                          
+                          {/* Multi-step indicator - Right side */}
+                          {viewMode === "whole" && isMultiStep && (
+                            <span className="text-xs text-amber-600 font-medium flex-shrink-0">
+                              {aggIngredient.stepTitles!.length} steps
+                            </span>
+                          )}
+                        </div>
                         
-                        {/* Step Info - Right side */}
-                        {viewMode === "whole" && aggIngredient.stepTitles && (
-                          <div className="flex-shrink-0">
-                            {isMultiStep ? (
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs text-amber-600 font-medium">
-                                  {aggIngredient.stepTitles.length} steps
+                        {/* Multi-step breakdown - Vertical on new line */}
+                        {viewMode === "whole" && isMultiStep && aggIngredient.originalQuantities && (
+                          <div className="mt-1.5 ml-[92px] flex items-center gap-2 flex-wrap">
+                            {aggIngredient.originalQuantities.map((item, idx) => {
+                              const scaledOrigQty = scaleQuantity(
+                                item.quantity,
+                                baseServings,
+                                servings
+                              );
+                              return (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700"
+                                >
+                                  <span className="font-medium">{item.stepTitle}</span>
+                                  <span className="text-amber-500">·</span>
+                                  <span>{formatQty(scaledOrigQty, ingredient.unit)}</span>
                                 </span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-500">
-                                from {aggIngredient.stepTitles[0]}
-                              </span>
-                            )}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
