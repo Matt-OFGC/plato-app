@@ -191,12 +191,41 @@ export async function deleteIngredient(id: number) {
   
   const existingIngredient = await prisma.ingredient.findUnique({
     where: { id },
-    select: { companyId: true, name: true },
+    select: { 
+      companyId: true, 
+      name: true,
+      recipeItems: {
+        select: {
+          recipe: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      }
+    },
   });
   
   // Security check: Verify ingredient belongs to user's company
   if (!existingIngredient || existingIngredient.companyId !== companyId) {
     throw new Error("Unauthorized: Cannot delete ingredient from another company");
+  }
+  
+  // Check if ingredient is being used in any recipes
+  if (existingIngredient.recipeItems && existingIngredient.recipeItems.length > 0) {
+    const recipeNames = existingIngredient.recipeItems
+      .map(item => item.recipe.name)
+      .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
+      .slice(0, 5); // Show max 5 recipes
+    
+    const recipeList = recipeNames.join(", ");
+    const moreCount = existingIngredient.recipeItems.length - recipeNames.length;
+    const moreText = moreCount > 0 ? ` and ${moreCount} more` : "";
+    
+    throw new Error(
+      `Cannot delete "${existingIngredient.name}" because it's currently used in: ${recipeList}${moreText}. Please remove it from these recipes first.`
+    );
   }
   
   await prisma.ingredient.delete({ where: { id } });

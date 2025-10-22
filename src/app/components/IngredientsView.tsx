@@ -157,8 +157,9 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                       startTransition(async () => {
                         try {
                           await deleteIngredient(ing.id);
-                        } finally {
                           router.refresh();
+                        } catch (error: any) {
+                          alert(error.message || "Failed to delete ingredient");
                         }
                       });
                     }}
@@ -233,8 +234,9 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                             startTransition(async () => {
                               try {
                                 await deleteIngredient(ing.id);
-                              } finally {
                                 router.refresh();
+                              } catch (error: any) {
+                                alert(error.message || "Failed to delete ingredient");
                               }
                             });
                           }}
