@@ -159,17 +159,16 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
       allAllergens.splice(0, allAllergens.length, ...allergensWithoutNuts, ...selectedNutTypes);
     }
     
-    // Convert custom conversions to JSON format: { "tsp": { "value": 5, "unit": "ml" } }
-    const conversionsObject = customConversions.reduce((acc, conv) => {
-      if (conv.unit && conv.value && conv.targetUnit) {
-        acc[conv.unit] = { value: conv.value, unit: conv.targetUnit };
-      }
-      return acc;
-    }, {} as Record<string, { value: number; unit: string }>);
-    
     const formData = new FormData(ev.currentTarget);
     formData.set("allergens", JSON.stringify(allAllergens));
-    formData.set("customConversions", JSON.stringify(conversionsObject));
+    // TODO: Re-enable custom conversions after database migration
+    // const conversionsObject = customConversions.reduce((acc, conv) => {
+    //   if (conv.unit && conv.value && conv.targetUnit) {
+    //     acc[conv.unit] = { value: conv.value, unit: conv.targetUnit };
+    //   }
+    //   return acc;
+    // }, {} as Record<string, { value: number; unit: string }>);
+    // formData.set("customConversions", JSON.stringify(conversionsObject));
     if (selectedSupplierId) {
       formData.set("supplierId", selectedSupplierId.toString());
     }
