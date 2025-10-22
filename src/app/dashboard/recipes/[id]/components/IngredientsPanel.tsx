@@ -17,7 +17,7 @@ interface IngredientsPanelProps {
     clear: () => void;
   };
   onIngredientsChange: (ingredients: Ingredient[]) => void;
-  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number }>;
+  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number; allergens: string[] }>;
 }
 
 type AggregatedIngredient = Ingredient & {
