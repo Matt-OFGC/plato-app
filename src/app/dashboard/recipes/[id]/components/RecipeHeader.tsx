@@ -1,5 +1,8 @@
 "use client";
 
+import React, { useState } from "react";
+import Image from "next/image";
+
 interface RecipeHeaderProps {
   title: string;
   category?: string;
@@ -10,6 +13,7 @@ interface RecipeHeaderProps {
   onSave?: () => void;
   isSaving?: boolean;
   categories?: { id: number; name: string }[];
+  imageUrl?: string;
 }
 
 export default function RecipeHeader({
@@ -22,36 +26,55 @@ export default function RecipeHeader({
   onSave,
   isSaving = false,
   categories = [],
+  imageUrl,
 }: RecipeHeaderProps) {
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-4 sm:px-5 py-2.5">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 lg:gap-4">
-        {/* Title and Info */}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-gray-900 mb-0.5 truncate">
-            {title}
-          </h1>
-          <div className="flex items-center gap-2 text-xs">
-            {viewMode === "edit" && onCategoryChange && categories.length > 0 ? (
-              <select
-                value={category || ""}
-                onChange={(e) => onCategoryChange(e.target.value)}
-                className="px-2 py-0.5 rounded border border-gray-300 text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-              >
-                <option value="">Uncategorized</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="text-gray-500">{category || "Uncategorized"}</span>
-            )}
-            <span className="text-gray-400">•</span>
-            <span className="text-gray-500">{servings} slices</span>
+    <>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-4 sm:px-5 py-2.5">
+        <div className="flex items-center gap-3">
+          {/* Recipe Image - Small thumbnail */}
+          <button
+            onClick={() => setIsImageModalOpen(true)}
+            className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-pink-100 border border-pink-200 hover:ring-2 hover:ring-pink-300 transition-all cursor-pointer"
+            title="Click to view larger"
+          >
+            <Image
+              src={imageUrl || "/images/placeholder-cake.png"}
+              alt={title}
+              width={48}
+              height={48}
+              className="w-full h-full object-cover"
+            />
+          </button>
+
+          {/* Title and Info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 mb-0.5 truncate">
+              {title}
+            </h1>
+            <div className="flex items-center gap-2 text-xs">
+              {viewMode === "edit" && onCategoryChange && categories.length > 0 ? (
+                <select
+                  value={category || ""}
+                  onChange={(e) => onCategoryChange(e.target.value)}
+                  className="px-2 py-0.5 rounded border border-gray-300 text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="">Uncategorized</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-gray-500">{category || "Uncategorized"}</span>
+              )}
+              <span className="text-gray-400">•</span>
+              <span className="text-gray-500">{servings} slices</span>
+            </div>
           </div>
-        </div>
 
         {/* Mode Buttons */}
         <div className="flex items-center gap-2 flex-wrap justify-start lg:justify-end">
@@ -139,7 +162,37 @@ export default function RecipeHeader({
             Print
           </a>
         </div>
+        </div>
       </div>
-    </div>
+
+      {/* Image Modal */}
+      {isImageModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setIsImageModalOpen(false)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full">
+            <button
+              onClick={() => setIsImageModalOpen(false)}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="relative w-full aspect-square bg-white rounded-lg overflow-hidden">
+              <Image
+                src={imageUrl || "/images/placeholder-cake.png"}
+                alt={title}
+                fill
+                className="object-contain"
+                sizes="(max-width: 896px) 100vw, 896px"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

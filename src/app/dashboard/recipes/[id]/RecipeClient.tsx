@@ -5,7 +5,6 @@ import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/app/lib/useLocalChecklist";
 import { saveRecipeChanges, saveSellPrice } from "./actions";
 import RecipeHeader from "./components/RecipeHeader";
-import RecipeImage from "./components/RecipeImage";
 import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
 import RecipeNotes from "./components/RecipeNotes";
@@ -135,6 +134,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
               onSave={handleSave}
               isSaving={isSaving}
               categories={categories}
+              imageUrl={recipe.imageUrl}
             />
           </div>
         </div>
@@ -145,12 +145,6 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
         }`}>
           {/* Left Rail */}
           <div className="space-y-4">
-            <RecipeImage
-              imageUrl={recipe.imageUrl}
-              title={recipe.title}
-              isEditMode={viewMode === "edit"}
-            />
-            
             {/* Show Servings Control in view modes, Recipe Type in edit mode */}
             {viewMode === "edit" ? (
               <RecipeTypeSelector
