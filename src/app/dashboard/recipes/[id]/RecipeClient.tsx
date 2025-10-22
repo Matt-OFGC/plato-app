@@ -41,6 +41,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   const [isSaving, setIsSaving] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isAllergenInfoExpanded, setIsAllergenInfoExpanded] = useState(false);
+  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [description, setDescription] = useState(recipe.notes || "");
   
   // Calculate initial cost per serving for default sell price
   const initialCostPerServing = useMemo(() => {
@@ -152,6 +154,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
         storage,
         shelfLife,
         sellPrice,
+        description,
         ingredients: localIngredients,
         steps: localSteps,
       });
@@ -168,6 +171,103 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handlePrintAllergenSheet = () => {
+    // Create a printable window
+    const printWindow = window.open('', '', 'height=600,width=800');
+    if (!printWindow) return;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Allergen Information - ${recipe.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+            h1 { color: #1f2937; border-bottom: 3px solid #10b981; padding-bottom: 10px; }
+            h2 { color: #374151; margin-top: 30px; }
+            .header { text-align: center; margin-bottom: 40px; }
+            .section { margin: 20px 0; padding: 15px; border-left: 4px solid #e5e7eb; }
+            .allergen-badge { display: inline-block; background: #fee2e2; color: #991b1b; padding: 4px 12px; margin: 4px; border-radius: 4px; font-size: 14px; }
+            .dietary-badge { display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; margin: 4px; border-radius: 4px; font-size: 14px; }
+            .description { background: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0; line-height: 1.6; }
+            .warning { background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${recipe.title}</h1>
+            <p style="color: #6b7280; font-size: 14px;">Allergen Information Sheet</p>
+          </div>
+          
+          ${description ? `
+            <div class="section">
+              <h2>Product Description</h2>
+              <div class="description">${description.replace(/\n/g, '<br>')}</div>
+            </div>
+          ` : ''}
+          
+          ${allergens.length > 0 ? `
+            <div class="section">
+              <h2>⚠️ Contains Allergens</h2>
+              <div class="warning">
+                <strong>Warning:</strong> This product contains the following allergens:
+              </div>
+              <div style="margin-top: 15px;">
+                ${allergens.map(a => `<span class="allergen-badge">${a}</span>`).join('')}
+              </div>
+              <p style="margin-top: 15px; font-size: 14px; color: #6b7280;">
+                Please ensure customers with allergies are informed before consumption.
+              </p>
+            </div>
+          ` : `
+            <div class="section">
+              <h2>✓ No Common Allergens</h2>
+              <p style="color: #059669;">This product does not contain any common allergens.</p>
+            </div>
+          `}
+          
+          ${dietaryLabels.length > 0 ? `
+            <div class="section">
+              <h2>✓ Dietary Information</h2>
+              <p style="margin-bottom: 10px;">This product is suitable for:</p>
+              <div>
+                ${dietaryLabels.map(l => `<span class="dietary-badge">✓ ${l}</span>`).join('')}
+              </div>
+              <p style="margin-top: 15px; font-size: 14px; color: #6b7280; font-style: italic;">
+                Auto-detected from ingredient allergen data.
+              </p>
+            </div>
+          ` : ''}
+          
+          ${storage || shelfLife ? `
+            <div class="section">
+              <h2>Storage & Shelf Life</h2>
+              ${storage ? `<p><strong>Storage:</strong> ${storage}</p>` : ''}
+              ${shelfLife ? `<p><strong>Shelf Life:</strong> ${shelfLife}</p>` : ''}
+            </div>
+          ` : ''}
+          
+          <div class="footer">
+            <p>Generated on ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p>This information is based on ingredient data and should be verified before distribution.</p>
+          </div>
+          
+          <div class="no-print" style="text-align: center; margin-top: 30px;">
+            <button onclick="window.print()" style="background: #10b981; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+              Print This Sheet
+            </button>
+            <button onclick="window.close()" style="background: #6b7280; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-left: 10px;">
+              Close
+            </button>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleSaveSellPrice = async (price: number) => {
@@ -489,7 +589,23 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                         </div>
                       </>
                     )}
-                    {!allergens?.length && !dietaryLabels.length && !storage && !shelfLife && (
+                    
+                    {/* Description Button */}
+                    {(allergens?.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && <div className="h-4 w-px bg-gray-300" />}
+                    <button
+                      onClick={() => setIsDescriptionModalOpen(true)}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                      title={description ? "View product description" : "Add product description"}
+                    >
+                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="text-xs font-medium text-gray-700">
+                        {description ? "Description" : "Add Description"}
+                      </span>
+                    </button>
+                    
+                    {!allergens?.length && !dietaryLabels.length && !storage && !shelfLife && !description && (
                       <span className="text-xs text-gray-400 italic">No metadata available</span>
                     )}
                   </div>
@@ -519,7 +635,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                       )}
                       
                       {dietaryLabels.length > 0 && (
-                        <div>
+                        <div className={allergens.length > 0 ? "mb-3" : ""}>
                           <div className="flex items-center gap-2 mb-2">
                             <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -538,6 +654,19 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                           </p>
                         </div>
                       )}
+                      
+                      {/* Print Button */}
+                      <div className="pt-3 border-t border-gray-200">
+                        <button
+                          onClick={handlePrintAllergenSheet}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                          Print Allergen Sheet for Wholesalers
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -563,6 +692,97 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
           await saveSellPrice(recipeId, price);
         }}
       />
+
+      {/* Description Modal */}
+      {isDescriptionModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsDescriptionModalOpen(false)}
+          />
+          
+          {/* Modal */}
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-gray-200">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Product Description</h2>
+                <button
+                  onClick={() => setIsDescriptionModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {viewMode === "edit" ? (
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                      Description for Wholesalers
+                      <span className="text-xs text-gray-500 font-normal ml-2">
+                        (This will appear on printed allergen sheets)
+                      </span>
+                    </label>
+                    <textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={8}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+                      placeholder="Enter a description of this product for wholesalers. Include key selling points, texture, flavor profile, or any special notes..."
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      Tip: A good description helps wholesalers understand and sell your product better.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    {description ? (
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{description}</p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-400">
+                        <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p>No description added yet</p>
+                        <p className="text-xs mt-1">Switch to edit mode to add a product description</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={() => setIsDescriptionModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Close
+                </button>
+                {viewMode === "edit" && (
+                  <button
+                    onClick={() => {
+                      setIsDescriptionModalOpen(false);
+                      // Description is already saved in state, will be saved when user clicks main Save button
+                    }}
+                    className="px-6 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
