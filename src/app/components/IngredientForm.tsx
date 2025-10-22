@@ -179,17 +179,6 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
 
   return (
     <div>
-      {/* Enhanced System Alert */}
-      <div className="bg-gradient-to-r from-red-500 to-yellow-500 text-white p-6 rounded-lg mb-6 border-4 border-black">
-        <div className="flex items-center gap-3">
-          <span className="text-4xl">🚨</span>
-          <div>
-            <h3 className="text-2xl font-bold">ENHANCED ALLERGEN SYSTEM IS ACTIVE! - VERSION 3.0</h3>
-            <p className="text-yellow-100">You now have access to specific nut type selection and improved allergen management.</p>
-          </div>
-        </div>
-      </div>
-      
       <form id="ingredient-form" onSubmit={handleSubmit} className="space-y-6">
         {/* Name */}
         <div>
@@ -446,17 +435,10 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
         </div>
 
         {/* Allergens */}
-        <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">🚀</span>
-            <label className="block text-lg font-bold text-green-800">
-              ENHANCED ALLERGEN SYSTEM - NEW FEATURE!
-            </label>
-          </div>
-          <p className="text-sm text-green-700 mb-4">
-            This is the new enhanced allergen system with specific nut type selection. 
-            If you can see this green box, the system is working!
-          </p>
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-3">
+            Allergens
+          </label>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {ALLERGEN_OPTIONS.map((allergen) => (
               <label key={allergen} className="flex items-center space-x-2">
