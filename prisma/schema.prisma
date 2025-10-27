@@ -348,6 +348,11 @@ model Company {
   integrationSyncs   IntegrationSync[]
   externalMappings   ExternalMapping[]
   webhookLogs        WebhookLog[]
+
+  // Modular architecture relationships
+  entitlements   CompanyEntitlement[]
+  featureFlags   FeatureFlag[]
+  domainEvents   DomainEvent[]
 }
 
 enum MemberRole {
@@ -1821,4 +1826,106 @@ model WebhookLog {
   @@index([eventType])
   @@index([status])
   @@index([createdAt])
+}
+
+// ============================================
+// ENTITLEMENTS & MODULAR ARCHITECTURE
+// ============================================
+
+enum AppModule {
+  RECIPES      // Recipe management, ingredients, costing
+  STAFF        // Scheduling, timesheets, leave
+  WHOLESALE    // Suppliers, orders, inventory
+  MESSAGING    // Team chat and communication
+  ANALYTICS    // Advanced reporting and insights
+}
+
+// Company entitlements - which apps/modules a company can access
+model CompanyEntitlement {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  companyId   Int
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  module      AppModule
+  isEnabled   Boolean   @default(true)
+
+  // Trial management
+  isTrial     Boolean   @default(false)
+  trialEndsAt DateTime?
+
+  // Limits per module
+  maxUsers    Int?      // Max users who can access this module
+  maxRecords  Int?      // Max records (recipes, shifts, etc.)
+
+  // Metadata
+  enabledBy   Int?      // User ID who enabled this
+  notes       String?   // Why this was granted/revoked
+
+  @@unique([companyId, module])
+  @@index([companyId])
+  @@index([module])
+  @@index([isTrial, trialEndsAt])
+}
+
+// Feature flags - granular feature toggles (global or per-company)
+model FeatureFlag {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Flag identification
+  key         String    // e.g. "staff.scheduler.drag_drop"
+  name        String    // Human-readable name
+  description String?
+
+  // Scope
+  companyId   Int?      // If null, it's a global flag
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // State
+  isEnabled   Boolean   @default(false)
+
+  // Roll-out controls
+  rolloutPercentage Int  @default(100) // 0-100, for gradual rollouts
+
+  @@unique([key, companyId])
+  @@index([key])
+  @@index([companyId])
+  @@index([isEnabled])
+}
+
+// Domain events - event-driven communication between modules
+model DomainEvent {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  // Event identification
+  eventType   String    // e.g. "wholesale.order.received"
+  module      AppModule // Which module emitted this
+
+  // Context
+  companyId   Int
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId      Int?      // Who triggered this event
+
+  // Payload
+  payload     Json      // Event-specific data
+
+  // Processing
+  status      String    @default("pending") // "pending", "processing", "completed", "failed"
+  retryCount  Int       @default(0)
+  error       String?
+
+  // For idempotency
+  idempotencyKey String? @unique
+
+  @@index([companyId])
+  @@index([eventType])
+  @@index([status])
+  @@index([createdAt])
+  @@index([module])
 }
