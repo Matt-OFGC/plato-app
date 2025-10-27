@@ -13,6 +13,7 @@ import {
 import { format, addHours, startOfDay, isSameDay } from "date-fns";
 import ShiftTemplatesPanel from "./ShiftTemplatesPanel";
 import { QuickShiftCreator } from "./QuickShiftCreator";
+import { useToast } from "@/lib/design-system";
 
 interface Member {
   id: number;
@@ -53,6 +54,13 @@ interface ModernSchedulerProps {
   canManageAll: boolean;
 }
 
+type UndoAction = {
+  type: 'create' | 'update' | 'delete';
+  shiftId: number;
+  previousData?: Partial<Shift>;
+  newData?: Partial<Shift>;
+};
+
 export default function ModernScheduler({
   companyId,
   members,
@@ -66,6 +74,9 @@ export default function ModernScheduler({
   const [showTemplates, setShowTemplates] = useState(false);
   const [hoveredCell, setHoveredCell] = useState<{ staffId: number; hour: number } | null>(null);
   const [quickCreateData, setQuickCreateData] = useState<{ member: Member; date: Date; startHour: number } | null>(null);
+  const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
+
+  const { success, error: showError } = useToast();
 
   // Hours to display (6 AM to 12 AM)
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
@@ -136,6 +147,13 @@ export default function ModernScheduler({
     const shift = shifts.find((s) => s.id === event.active.id);
     if (!shift) return;
 
+    // Save previous state for undo
+    const previousData = {
+      membershipId: shift.membershipId,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+    };
+
     // Calculate the time offset from the drag delta
     const deltaX = event.delta.x;
     const hoursDelta = deltaX / 120; // 120px per hour
@@ -147,23 +165,39 @@ export default function ModernScheduler({
     const newStart = new Date(oldStart.getTime() + hoursDelta * 60 * 60 * 1000);
     const newEnd = new Date(newStart.getTime() + duration * 60 * 60 * 1000);
 
+    const newData = {
+      membershipId: newMembershipId,
+      startTime: newStart.toISOString(),
+      endTime: newEnd.toISOString(),
+    };
+
     // Update shift via API
     try {
       const res = await fetch(`/api/staff/shifts/${shift.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          membershipId: newMembershipId,
-          startTime: newStart.toISOString(),
-          endTime: newEnd.toISOString(),
-        }),
+        body: JSON.stringify(newData),
       });
 
       if (res.ok) {
         await loadShifts();
+
+        // Show success toast with undo
+        success('Shift updated!', {
+          label: 'Undo',
+          onClick: () => handleUndo({
+            type: 'update',
+            shiftId: shift.id,
+            previousData,
+            newData,
+          }),
+        });
+      } else {
+        showError('Failed to update shift');
       }
     } catch (error) {
       console.error("Failed to update shift:", error);
+      showError('Failed to update shift');
     }
   }
 
@@ -210,12 +244,70 @@ export default function ModernScheduler({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...shiftData, location: null, notes: null }),
       });
+
       if (res.ok) {
+        const newShift = await res.json();
         await loadShifts();
         setQuickCreateData(null);
+
+        // Show success toast with undo
+        success('Shift created!', {
+          label: 'Undo',
+          onClick: () => handleUndo({
+            type: 'create',
+            shiftId: newShift.shift?.id || newShift.id,
+            newData: shiftData,
+          }),
+        });
+      } else {
+        showError('Failed to create shift');
       }
     } catch (error) {
       console.error("Failed to create shift:", error);
+      showError('Failed to create shift');
+    }
+  }
+
+  async function handleUndo(action: UndoAction) {
+    try {
+      if (action.type === 'create') {
+        // Delete the created shift
+        const res = await fetch(`/api/staff/shifts/${action.shiftId}`, {
+          method: "DELETE",
+        });
+
+        if (res.ok) {
+          await loadShifts();
+          success('Shift creation undone');
+        }
+      } else if (action.type === 'update' && action.previousData) {
+        // Restore previous values
+        const res = await fetch(`/api/staff/shifts/${action.shiftId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(action.previousData),
+        });
+
+        if (res.ok) {
+          await loadShifts();
+          success('Shift restored');
+        }
+      } else if (action.type === 'delete' && action.previousData) {
+        // Recreate the deleted shift
+        const res = await fetch("/api/staff/shifts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(action.previousData),
+        });
+
+        if (res.ok) {
+          await loadShifts();
+          success('Shift restored');
+        }
+      }
+    } catch (error) {
+      console.error("Failed to undo action:", error);
+      showError('Failed to undo');
     }
   }
 
