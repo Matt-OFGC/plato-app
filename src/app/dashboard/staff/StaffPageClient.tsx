@@ -43,19 +43,25 @@ export default function StaffPageClient({
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      {/* Modern Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg p-6 text-white">
+        <h1 className="text-3xl font-bold mb-2">Staff Management</h1>
+        <p className="text-blue-100">Manage your team schedules, timesheets, and leave requests</p>
+      </div>
+
+      {/* Tab Navigation - Modern Style */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2">
+        <nav className="flex space-x-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all duration-200
                 ${
                   activeTab === tab.id
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "bg-blue-600 text-white shadow-md transform scale-105"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 }
               `}
             >
