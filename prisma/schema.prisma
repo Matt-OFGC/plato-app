@@ -250,7 +250,14 @@ model User {
   preferences  UserPreference?
   notifications Notification[]
   activityLogs ActivityLog[]
-  
+
+  // Messaging relationships
+  createdChannels  Channel[]         @relation("ChannelCreator")
+  channelMembers   ChannelMember[]
+  messages         Message[]
+  messageReactions MessageReaction[]
+  messageReads     MessageRead[]
+
   // Subscription management
   subscription  Subscription?
   stripeCustomerId String? @unique
@@ -353,6 +360,9 @@ model Company {
   entitlements   CompanyEntitlement[]
   featureFlags   FeatureFlag[]
   domainEvents   DomainEvent[]
+
+  // Messaging relationships
+  channels       Channel[]
 }
 
 enum MemberRole {
@@ -1928,4 +1938,135 @@ model DomainEvent {
   @@index([status])
   @@index([createdAt])
   @@index([module])
+}
+
+// ============================================
+// MESSAGING APP
+// ============================================
+
+// Chat channels (teams, projects, or DMs)
+model Channel {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  companyId   Int
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name        String?   // null for DMs
+  description String?
+  type        String    @default("team") // "team", "project", "dm"
+
+  // Settings
+  isPrivate   Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+
+  // Creator
+  createdBy   Int
+  creator     User      @relation("ChannelCreator", fields: [createdBy], references: [id])
+
+  members     ChannelMember[]
+  messages    Message[]
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isArchived])
+}
+
+// Channel membership (who has access)
+model ChannelMember {
+  id          Int       @id @default(autoincrement())
+  joinedAt    DateTime  @default(now())
+
+  channelId   Int
+  channel     Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Permissions
+  role        String    @default("member") // "admin", "member"
+
+  // Read receipts
+  lastReadAt  DateTime?
+  lastReadMessageId Int?
+
+  // Notifications
+  isMuted     Boolean   @default(false)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+  @@index([channelId])
+}
+
+// Messages
+model Message {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  channelId   Int
+  channel     Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  senderId    Int
+  sender      User      @relation(fields: [senderId], references: [id])
+
+  content     String    @db.Text
+  contentType String    @default("text") // "text", "file", "image"
+
+  // Threading
+  parentId    Int?
+  parent      Message?  @relation("MessageThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Message[] @relation("MessageThread")
+
+  // Reactions & interactions
+  reactions   MessageReaction[]
+  readBy      MessageRead[]
+
+  // Edit tracking
+  isEdited    Boolean   @default(false)
+  editedAt    DateTime?
+
+  // Soft delete
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+
+  @@index([channelId, createdAt])
+  @@index([senderId])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+// Message reactions (emoji responses)
+model MessageReaction {
+  id          Int       @id @default(autoincrement())
+  createdAt   DateTime  @default(now())
+
+  messageId   Int
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emoji       String    // e.g., "👍", "❤️", "🎉"
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+}
+
+// Message read receipts
+model MessageRead {
+  id          Int       @id @default(autoincrement())
+  readAt      DateTime  @default(now())
+
+  messageId   Int
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
 }

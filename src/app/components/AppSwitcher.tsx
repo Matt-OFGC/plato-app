@@ -42,6 +42,14 @@ export function AppSwitcher() {
       href: "/dashboard/wholesale",
       paths: ["/dashboard/wholesale"],
     },
+    {
+      id: "messaging",
+      name: "Team Chat",
+      icon: "💬",
+      color: "indigo",
+      href: "/dashboard/messages",
+      paths: ["/dashboard/messages"],
+    },
   ];
 
   // Determine current app
@@ -65,6 +73,11 @@ export function AppSwitcher() {
         bg: "bg-green-100",
         hover: "hover:bg-green-200",
         text: "text-green-700",
+      },
+      indigo: {
+        bg: "bg-indigo-100",
+        hover: "hover:bg-indigo-200",
+        text: "text-indigo-700",
       },
     };
     return colors[color] || colors.blue;
