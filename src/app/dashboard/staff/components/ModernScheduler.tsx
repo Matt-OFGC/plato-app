@@ -13,6 +13,7 @@ import {
 import { format, addHours, startOfDay, isSameDay } from "date-fns";
 import ShiftTemplatesPanel from "./ShiftTemplatesPanel";
 import { QuickShiftCreator } from "./QuickShiftCreator";
+import { CoverageWarnings } from "./CoverageWarnings";
 import { useToast } from "@/lib/design-system";
 
 interface Member {
@@ -468,6 +469,15 @@ export default function ModernScheduler({
             </div>
           </div>
         </div>
+
+        {/* Coverage Warnings */}
+        <CoverageWarnings
+          shifts={shifts}
+          members={members}
+          maxHoursPerWeek={48}
+          minStaffPerHour={2}
+          maxStaffPerHour={8}
+        />
 
         {/* Timeline Scheduler */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
