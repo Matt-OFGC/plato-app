@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 // Mark notification as read
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -13,9 +13,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const notification = await prisma.notification.update({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(id),
         userId: session.id, // Ensure user owns this notification
       },
       data: {
@@ -37,7 +38,7 @@ export async function PATCH(
 // Delete notification
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -45,9 +46,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     await prisma.notification.delete({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(id),
         userId: session.id,
       },
     });
