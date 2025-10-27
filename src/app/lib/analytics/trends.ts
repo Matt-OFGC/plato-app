@@ -1,34 +1,7 @@
-import { Decimal } from "decimal.js";
 import { prisma } from "@/lib/prisma";
+import { Decimal } from "decimal.js";
 
-export interface TrendData {
-  period: string; // "daily", "weekly", "monthly"
-  date: Date;
-  value: Decimal;
-  change: Decimal; // Change from previous period
-  changePercentage: Decimal;
-}
-
-export interface SeasonalPattern {
-  recipeId: number;
-  recipeName: string;
-  season: string;
-  month: number;
-  demandMultiplier: Decimal;
-  confidence: Decimal;
-  dataPoints: number;
-}
-
-export interface TrendAnalysis {
-  metric: string;
-  period: string;
-  data: TrendData[];
-  trend: 'increasing' | 'decreasing' | 'stable';
-  averageChange: Decimal;
-  volatility: Decimal; // Standard deviation of changes
-}
-
-export interface TrendFilters {
+interface TrendFilters {
   companyId: number;
   startDate: Date;
   endDate: Date;
@@ -37,70 +10,77 @@ export interface TrendFilters {
   period: 'daily' | 'weekly' | 'monthly';
 }
 
-/**
- * Analyze revenue trends
- */
-export async function analyzeRevenueTrends(
-  filters: TrendFilters
-): Promise<TrendAnalysis> {
-  const { companyId, startDate, endDate, period } = filters;
-  
-  // Get sales records
+export async function analyzeRevenueTrends(filters: TrendFilters) {
+  const { companyId, startDate, endDate, recipeIds, period } = filters;
+
+  // Get sales records in the date range
   const salesRecords = await prisma.salesRecord.findMany({
     where: {
       companyId,
-      transactionDate: {
+      date: {
         gte: startDate,
         lte: endDate,
       },
+      ...(recipeIds && recipeIds.length > 0 && { recipeId: { in: recipeIds } }),
     },
     select: {
-      transactionDate: true,
-      totalRevenue: true,
+      date: true,
+      price: true,
+      quantity: true,
     },
     orderBy: {
-      transactionDate: 'asc',
+      date: 'asc',
     },
   });
-  
+
   // Group by period
-  const groupedData = groupDataByPeriod(salesRecords, period, 'totalRevenue');
-  
+  const grouped = groupByPeriod(salesRecords, period, (record) => ({
+    revenue: new Decimal(record.price).times(record.quantity),
+    quantity: record.quantity,
+  }));
+
   // Calculate trends
-  const trendData = calculateTrendData(groupedData);
-  
+  const data = Array.from(grouped.entries()).map(([period, records]) => {
+    const totalRevenue = records.reduce(
+      (sum, r) => sum.plus(r.revenue),
+      new Decimal(0)
+    );
+    const totalQuantity = records.reduce((sum, r) => sum + r.quantity, 0);
+
+    return {
+      period,
+      revenue: totalRevenue.toFixed(2),
+      quantity: totalQuantity,
+      avgPrice: totalQuantity > 0 ? totalRevenue.dividedBy(totalQuantity).toFixed(2) : '0',
+    };
+  });
+
+  // Calculate growth rate
+  const growthRate = calculateGrowthRate(data.map(d => parseFloat(d.revenue)));
+
   return {
-    metric: 'revenue',
-    period,
-    data: trendData,
-    trend: calculateOverallTrend(trendData),
-    averageChange: calculateAverageChange(trendData),
-    volatility: calculateVolatility(trendData),
+    data,
+    growthRate: growthRate.toFixed(2),
+    summary: {
+      totalRevenue: data.reduce((sum, d) => sum + parseFloat(d.revenue), 0).toFixed(2),
+      totalQuantity: data.reduce((sum, d) => sum + d.quantity, 0),
+      avgRevenue: calculateAverage(data.map(d => parseFloat(d.revenue))).toFixed(2),
+    },
   };
 }
 
-/**
- * Analyze production trends
- */
-export async function analyzeProductionTrends(
-  filters: TrendFilters
-): Promise<TrendAnalysis> {
-  const { companyId, startDate, endDate, period, recipeIds } = filters;
-  
-  const productionWhere: any = {
-    companyId,
-    productionDate: {
-      gte: startDate,
-      lte: endDate,
-    },
-  };
-  
-  if (recipeIds && recipeIds.length > 0) {
-    productionWhere.recipeId = { in: recipeIds };
-  }
-  
+export async function analyzeProductionTrends(filters: TrendFilters) {
+  const { companyId, startDate, endDate, recipeIds, period } = filters;
+
   const productionHistory = await prisma.productionHistory.findMany({
-    where: productionWhere,
+    where: {
+      companyId,
+      productionDate: {
+        gte: startDate,
+        lte: endDate,
+      },
+      ...(recipeIds && recipeIds.length > 0 && { recipeId: { in: recipeIds } }),
+    },
     select: {
       productionDate: true,
       quantityProduced: true,
@@ -109,464 +89,261 @@ export async function analyzeProductionTrends(
       productionDate: 'asc',
     },
   });
-  
-  // Group by period
-  const groupedData = groupDataByPeriod(productionHistory, period, 'quantityProduced');
-  
-  // Calculate trends
-  const trendData = calculateTrendData(groupedData);
-  
-  return {
-    metric: 'production',
+
+  const grouped = groupByPeriod(
+    productionHistory,
     period,
-    data: trendData,
-    trend: calculateOverallTrend(trendData),
-    averageChange: calculateAverageChange(trendData),
-    volatility: calculateVolatility(trendData),
+    (record) => ({ quantity: Number(record.quantityProduced) })
+  );
+
+  const data = Array.from(grouped.entries()).map(([period, records]) => {
+    const totalQuantity = records.reduce((sum, r) => sum + r.quantity, 0);
+    return {
+      period,
+      quantity: totalQuantity,
+    };
+  });
+
+  return {
+    data,
+    summary: {
+      totalQuantity: data.reduce((sum, d) => sum + d.quantity, 0),
+      avgQuantity: calculateAverage(data.map(d => d.quantity)).toFixed(2),
+    },
   };
 }
 
-/**
- * Analyze ingredient cost trends
- */
-export async function analyzeIngredientCostTrends(
-  filters: TrendFilters
-): Promise<TrendAnalysis> {
-  const { companyId, startDate, endDate, period } = filters;
-  
+export async function analyzeIngredientCostTrends(filters: TrendFilters) {
+  const { companyId, startDate, endDate } = filters;
+
   const priceHistory = await prisma.ingredientPriceHistory.findMany({
     where: {
-      ingredient: {
-        companyId,
-      },
-      createdAt: {
+      companyId,
+      date: {
         gte: startDate,
         lte: endDate,
       },
     },
     select: {
-      createdAt: true,
+      date: true,
       price: true,
+      ingredientId: true,
     },
     orderBy: {
-      createdAt: 'asc',
+      date: 'asc',
     },
   });
-  
-  // Group by period
-  const groupedData = groupDataByPeriod(priceHistory, period, 'price');
-  
-  // Calculate trends
-  const trendData = calculateTrendData(groupedData);
-  
+
+  const grouped = groupByPeriod(priceHistory, 'monthly', (record) => ({
+    price: new Decimal(record.price),
+  }));
+
+  const data = Array.from(grouped.entries()).map(([period, records]) => {
+    const avgPrice = records.reduce((sum, r) => sum.plus(r.price), new Decimal(0))
+      .dividedBy(records.length);
+    
+    return {
+      period,
+      avgPrice: avgPrice.toFixed(2),
+      priceChange: calculatePriceChange(records),
+    };
+  });
+
   return {
-    metric: 'ingredient_costs',
-    period,
-    data: trendData,
-    trend: calculateOverallTrend(trendData),
-    averageChange: calculateAverageChange(trendData),
-    volatility: calculateVolatility(trendData),
+    data,
+    summary: {
+      overallChange: calculateOverallChange(data),
+    },
   };
 }
 
-/**
- * Detect seasonal patterns in sales
- */
 export async function detectSeasonalPatterns(
   companyId: number,
   recipeIds?: number[]
-): Promise<SeasonalPattern[]> {
-  // Get sales records for the last 2 years
+) {
+  // Get sales data for the past 2 years
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-  
-  const salesWhere: any = {
-    companyId,
-    transactionDate: {
-      gte: twoYearsAgo,
-    },
-  };
-  
-  if (recipeIds && recipeIds.length > 0) {
-    salesWhere.recipeId = { in: recipeIds };
-  }
-  
+
   const salesRecords = await prisma.salesRecord.findMany({
-    where: salesWhere,
-    include: {
-      recipe: {
-        select: {
-          id: true,
-          name: true,
-        },
+    where: {
+      companyId,
+      date: {
+        gte: twoYearsAgo,
       },
+      ...(recipeIds && recipeIds.length > 0 && { recipeId: { in: recipeIds } }),
+    },
+    select: {
+      date: true,
+      price: true,
+      quantity: true,
     },
   });
-  
-  // Group sales by recipe and month
-  const recipeMonthSales = new Map<string, Map<number, Decimal>>();
-  
-  for (const sale of salesRecords) {
-    if (!sale.recipeId) continue;
-    
-    const month = sale.transactionDate.getMonth() + 1; // 1-12
-    const key = `${sale.recipeId}`;
-    
-    if (!recipeMonthSales.has(key)) {
-      recipeMonthSales.set(key, new Map());
-    }
-    
-    const monthSales = recipeMonthSales.get(key)!;
-    const currentTotal = monthSales.get(month) || new Decimal(0);
-    monthSales.set(month, currentTotal.add(sale.quantity));
+
+  // Group by month
+  const monthlyData = new Map<number, number>();
+
+  for (const record of salesRecords) {
+    const month = record.date.getMonth();
+    const revenue = new Decimal(record.price).times(record.quantity);
+    monthlyData.set(month, (monthlyData.get(month) || 0) + revenue.toNumber());
   }
-  
+
   // Calculate seasonal patterns
-  const patterns: SeasonalPattern[] = [];
-  
-  for (const [recipeKey, monthSales] of recipeMonthSales) {
-    const recipeId = parseInt(recipeKey);
-    const recipe = salesRecords.find(s => s.recipeId === recipeId)?.recipe;
-    
-    if (!recipe) continue;
-    
-    // Calculate average monthly sales
-    const monthlyTotals = Array.from(monthSales.values());
-    const averageMonthly = monthlyTotals.reduce((sum, total) => sum.add(total), new Decimal(0))
-      .div(monthlyTotals.length);
-    
-    // Find months with significant deviation
-    for (const [month, total] of monthSales) {
-      const multiplier = averageMonthly.gt(0) ? total.div(averageMonthly) : new Decimal(1);
-      
-      // Only consider significant deviations (>20% change)
-      if (multiplier.gt(1.2) || multiplier.lt(0.8)) {
-        const season = getSeasonFromMonth(month);
-        const confidence = calculatePatternConfidence(monthlyTotals, total);
-        
-        patterns.push({
-          recipeId,
-          recipeName: recipe.name,
-          season,
-          month,
-          demandMultiplier: multiplier,
-          confidence,
-          dataPoints: monthlyTotals.length,
-        });
-      }
-    }
-  }
-  
-  return patterns.sort((a, b) => b.confidence.toNumber() - a.confidence.toNumber());
+  const avgRevenue = Array.from(monthlyData.values()).reduce((a, b) => a + b, 0) / 12;
+
+  const seasonalPatterns = Array.from(monthlyData.entries()).map(([month, revenue]) => ({
+    month: month + 1, // Convert 0-11 to 1-12
+    revenue: revenue.toFixed(2),
+    deviation: ((revenue - avgRevenue) / avgRevenue * 100).toFixed(2),
+    isPeak: revenue > avgRevenue * 1.2,
+    isLow: revenue < avgRevenue * 0.8,
+  }));
+
+  return {
+    patterns: seasonalPatterns,
+    avgRevenue: avgRevenue.toFixed(2),
+  };
 }
 
-/**
- * Compare year-over-year performance
- */
 export async function compareYearOverYear(
   companyId: number,
   metric: 'revenue' | 'production' | 'costs',
-  currentYear: number = new Date().getFullYear()
-): Promise<{
-  currentYear: TrendData[];
-  previousYear: TrendData[];
-  growthRate: Decimal;
-  comparison: Array<{
-    month: number;
-    currentValue: Decimal;
-    previousValue: Decimal;
-    growth: Decimal;
-    growthPercentage: Decimal;
-  }>;
-}> {
-  const currentYearStart = new Date(currentYear, 0, 1);
-  const currentYearEnd = new Date(currentYear, 11, 31);
-  const previousYearStart = new Date(currentYear - 1, 0, 1);
-  const previousYearEnd = new Date(currentYear - 1, 11, 31);
-  
-  let currentYearData: any[];
-  let previousYearData: any[];
-  
-  if (metric === 'revenue') {
-    currentYearData = await prisma.salesRecord.findMany({
-      where: {
+  year: number
+) {
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59);
+  const previousStartDate = new Date(year - 1, 0, 1);
+  const previousEndDate = new Date(year - 1, 11, 31, 23, 59, 59);
+
+  let currentData: any;
+  let previousData: any;
+
+  switch (metric) {
+    case 'revenue':
+      currentData = await analyzeRevenueTrends({
         companyId,
-        transactionDate: {
-          gte: currentYearStart,
-          lte: currentYearEnd,
-        },
-      },
-      select: {
-        transactionDate: true,
-        totalRevenue: true,
-      },
-    });
-    
-    previousYearData = await prisma.salesRecord.findMany({
-      where: {
+        startDate,
+        endDate,
+        period: 'monthly',
+      });
+      previousData = await analyzeRevenueTrends({
         companyId,
-        transactionDate: {
-          gte: previousYearStart,
-          lte: previousYearEnd,
-        },
-      },
-      select: {
-        transactionDate: true,
-        totalRevenue: true,
-      },
-    });
-  } else if (metric === 'production') {
-    currentYearData = await prisma.productionHistory.findMany({
-      where: {
+        startDate: previousStartDate,
+        endDate: previousEndDate,
+        period: 'monthly',
+      });
+      break;
+    case 'production':
+      currentData = await analyzeProductionTrends({
         companyId,
-        productionDate: {
-          gte: currentYearStart,
-          lte: currentYearEnd,
-        },
-      },
-      select: {
-        productionDate: true,
-        quantityProduced: true,
-      },
-    });
-    
-    previousYearData = await prisma.productionHistory.findMany({
-      where: {
+        startDate,
+        endDate,
+        period: 'monthly',
+      });
+      previousData = await analyzeProductionTrends({
         companyId,
-        productionDate: {
-          gte: previousYearStart,
-          lte: previousYearEnd,
-        },
-      },
-      select: {
-        productionDate: true,
-        quantityProduced: true,
-      },
-    });
-  } else {
-    // costs
-    currentYearData = await prisma.ingredientPriceHistory.findMany({
-      where: {
-        ingredient: {
-          companyId,
-        },
-        createdAt: {
-          gte: currentYearStart,
-          lte: currentYearEnd,
-        },
-      },
-      select: {
-        createdAt: true,
-        price: true,
-      },
-    });
-    
-    previousYearData = await prisma.ingredientPriceHistory.findMany({
-      where: {
-        ingredient: {
-          companyId,
-        },
-        createdAt: {
-          gte: previousYearStart,
-          lte: previousYearEnd,
-        },
-      },
-      select: {
-        createdAt: true,
-        price: true,
-      },
-    });
+        startDate: previousStartDate,
+        endDate: previousEndDate,
+        period: 'monthly',
+      });
+      break;
+    case 'costs':
+      currentData = await analyzeIngredientCostTrends({
+        companyId,
+        startDate,
+        endDate,
+        period: 'monthly',
+      });
+      previousData = await analyzeIngredientCostTrends({
+        companyId,
+        startDate: previousStartDate,
+        endDate: previousEndDate,
+        period: 'monthly',
+      });
+      break;
   }
-  
-  // Group by month
-  const currentYearMonthly = groupDataByMonth(currentYearData, metric === 'revenue' ? 'totalRevenue' : metric === 'production' ? 'quantityProduced' : 'price');
-  const previousYearMonthly = groupDataByMonth(previousYearData, metric === 'revenue' ? 'totalRevenue' : metric === 'production' ? 'quantityProduced' : 'price');
-  
-  // Calculate growth rate
-  const currentYearTotal = currentYearMonthly.reduce((sum, item) => sum.add(item.value), new Decimal(0));
-  const previousYearTotal = previousYearMonthly.reduce((sum, item) => sum.add(item.value), new Decimal(0));
-  const growthRate = previousYearTotal.gt(0) ? currentYearTotal.sub(previousYearTotal).div(previousYearTotal) : new Decimal(0);
-  
-  // Create month-by-month comparison
-  const comparison = [];
-  for (let month = 1; month <= 12; month++) {
-    const currentValue = currentYearMonthly.find(item => item.date.getMonth() + 1 === month)?.value || new Decimal(0);
-    const previousValue = previousYearMonthly.find(item => item.date.getMonth() + 1 === month)?.value || new Decimal(0);
-    const growth = currentValue.sub(previousValue);
-    const growthPercentage = previousValue.gt(0) ? growth.div(previousValue) : new Decimal(0);
-    
-    comparison.push({
-      month,
-      currentValue,
-      previousValue,
-      growth,
-      growthPercentage,
-    });
-  }
-  
+
+  const currentTotal = currentData.data.reduce((sum: number, d: any) => {
+    const value = parseFloat(d.revenue || d.quantity || d.avgPrice || '0');
+    return sum + value;
+  }, 0);
+
+  const previousTotal = previousData.data.reduce((sum: number, d: any) => {
+    const value = parseFloat(d.revenue || d.quantity || d.avgPrice || '0');
+    return sum + value;
+  }, 0);
+
+  const percentChange = previousTotal > 0 
+    ? ((currentTotal - previousTotal) / previousTotal * 100).toFixed(2)
+    : '0';
+
   return {
-    currentYear: currentYearMonthly,
-    previousYear: previousYearMonthly,
-    growthRate,
-    comparison,
+    currentYear: year,
+    previousYear: year - 1,
+    currentTotal: currentTotal.toFixed(2),
+    previousTotal: previousTotal.toFixed(2),
+    percentChange,
+    isIncrease: currentTotal > previousTotal,
   };
 }
 
-/**
- * Group data by period
- */
-function groupDataByPeriod(
-  data: Array<{ [key: string]: any; transactionDate?: Date; productionDate?: Date; createdAt?: Date }>,
+// Helper functions
+function groupByPeriod<T>(
+  records: any[],
   period: 'daily' | 'weekly' | 'monthly',
-  valueField: string
-): Array<{ date: Date; value: Decimal }> {
-  const grouped = new Map<string, Decimal>();
-  
-  for (const item of data) {
-    const date = item.transactionDate || item.productionDate || item.createdAt;
-    if (!date) continue;
-    
-    let key: string;
-    
-    if (period === 'daily') {
-      key = date.toISOString().split('T')[0]; // YYYY-MM-DD
-    } else if (period === 'weekly') {
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      key = weekStart.toISOString().split('T')[0];
-    } else {
-      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  transform: (record: any) => T
+): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+
+  for (const record of records) {
+    const date = new Date(record.date || record.productionDate);
+    let periodKey: string;
+
+    switch (period) {
+      case 'daily':
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        break;
+      case 'weekly':
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        periodKey = `${weekStart.getFullYear()}-W${String(Math.ceil(date.getDate() / 7)).padStart(2, '0')}`;
+        break;
+      case 'monthly':
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        break;
     }
-    
-    const currentValue = grouped.get(key) || new Decimal(0);
-    grouped.set(key, currentValue.add(item[valueField]));
+
+    if (!grouped.has(periodKey)) {
+      grouped.set(periodKey, []);
+    }
+    grouped.get(periodKey)!.push(transform(record));
   }
-  
-  return Array.from(grouped.entries())
-    .map(([key, value]) => ({
-      date: new Date(key),
-      value,
-    }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  return grouped;
 }
 
-/**
- * Group data by month
- */
-function groupDataByMonth(
-  data: Array<{ [key: string]: any; transactionDate?: Date; productionDate?: Date; createdAt?: Date }>,
-  valueField: string
-): Array<{ date: Date; value: Decimal }> {
-  const grouped = new Map<string, Decimal>();
-  
-  for (const item of data) {
-    const date = item.transactionDate || item.productionDate || item.createdAt;
-    if (!date) continue;
-    
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const currentValue = grouped.get(key) || new Decimal(0);
-    grouped.set(key, currentValue.add(item[valueField]));
-  }
-  
-  return Array.from(grouped.entries())
-    .map(([key, value]) => ({
-      date: new Date(key + '-01'),
-      value,
-    }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+function calculateGrowthRate(values: number[]): number {
+  if (values.length < 2) return 0;
+  const first = values[0];
+  const last = values[values.length - 1];
+  return first > 0 ? ((last - first) / first) * 100 : 0;
 }
 
-/**
- * Calculate trend data with changes
- */
-function calculateTrendData(data: Array<{ date: Date; value: Decimal }>): TrendData[] {
-  const trendData: TrendData[] = [];
-  
-  for (let i = 0; i < data.length; i++) {
-    const current = data[i];
-    const previous = i > 0 ? data[i - 1] : null;
-    
-    const change = previous ? current.value.sub(previous.value) : new Decimal(0);
-    const changePercentage = previous && previous.value.gt(0) 
-      ? change.div(previous.value).mul(100)
-      : new Decimal(0);
-    
-    trendData.push({
-      period: current.date.toISOString().split('T')[0],
-      date: current.date,
-      value: current.value,
-      change,
-      changePercentage,
-    });
-  }
-  
-  return trendData;
+function calculateAverage(values: number[]): number {
+  return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 }
 
-/**
- * Calculate overall trend direction
- */
-function calculateOverallTrend(data: TrendData[]): 'increasing' | 'decreasing' | 'stable' {
-  if (data.length < 2) return 'stable';
-  
-  const changes = data.slice(1).map(item => item.changePercentage.toNumber());
-  const avgChange = changes.reduce((sum, change) => sum + change, 0) / changes.length;
-  
-  if (avgChange > 5) return 'increasing';
-  if (avgChange < -5) return 'decreasing';
-  return 'stable';
+function calculatePriceChange(records: { price: Decimal }[]): string {
+  if (records.length < 2) return '0';
+  const first = records[0].price;
+  const last = records[records.length - 1].price;
+  return first.gt(0) ? last.minus(first).dividedBy(first).times(100).toFixed(2) : '0';
 }
 
-/**
- * Calculate average change
- */
-function calculateAverageChange(data: TrendData[]): Decimal {
-  if (data.length < 2) return new Decimal(0);
-  
-  const changes = data.slice(1).map(item => item.changePercentage);
-  return changes.reduce((sum, change) => sum.add(change), new Decimal(0))
-    .div(changes.length);
-}
-
-/**
- * Calculate volatility (standard deviation of changes)
- */
-function calculateVolatility(data: TrendData[]): Decimal {
-  if (data.length < 2) return new Decimal(0);
-  
-  const changes = data.slice(1).map(item => item.changePercentage.toNumber());
-  const avgChange = changes.reduce((sum, change) => sum + change, 0) / changes.length;
-  
-  const variance = changes.reduce((sum, change) => sum + Math.pow(change - avgChange, 2), 0) / changes.length;
-  return new Decimal(Math.sqrt(variance));
-}
-
-/**
- * Get season from month
- */
-function getSeasonFromMonth(month: number): string {
-  if (month >= 3 && month <= 5) return 'spring';
-  if (month >= 6 && month <= 8) return 'summer';
-  if (month >= 9 && month <= 11) return 'autumn';
-  return 'winter';
-}
-
-/**
- * Calculate pattern confidence
- */
-function calculatePatternConfidence(monthlyTotals: Decimal[], currentTotal: Decimal): Decimal {
-  // Simple confidence calculation based on consistency
-  const avg = monthlyTotals.reduce((sum, total) => sum.add(total), new Decimal(0))
-    .div(monthlyTotals.length);
-  
-  const variance = monthlyTotals.reduce((sum, total) => {
-    const diff = total.sub(avg);
-    return sum.add(diff.mul(diff));
-  }, new Decimal(0)).div(monthlyTotals.length);
-  
-  const standardDeviation = variance.sqrt();
-  const coefficientOfVariation = avg.gt(0) ? standardDeviation.div(avg) : new Decimal(0);
-  
-  // Lower coefficient of variation = higher confidence
-  return new Decimal(Math.max(0, Math.min(1, 1 - coefficientOfVariation.toNumber())));
+function calculateOverallChange(data: any[]): string {
+  if (data.length < 2) return '0';
+  const first = parseFloat(data[0].avgPrice);
+  const last = parseFloat(data[data.length - 1].avgPrice);
+  return first > 0 ? ((last - first) / first * 100).toFixed(2) : '0';
 }

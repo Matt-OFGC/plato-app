@@ -1,35 +1,7 @@
-import { Decimal } from "decimal.js";
 import { prisma } from "@/lib/prisma";
+import { Decimal } from "decimal.js";
 
-export interface ForecastData {
-  date: Date;
-  predictedValue: Decimal;
-  confidence: number; // 0-1
-  lowerBound: Decimal;
-  upperBound: Decimal;
-}
-
-export interface IngredientForecast {
-  ingredientId: number;
-  ingredientName: string;
-  currentStock: Decimal;
-  predictedUsage: Decimal;
-  reorderPoint: Decimal;
-  suggestedOrderQuantity: Decimal;
-  daysUntilReorder: number;
-  confidence: number;
-}
-
-export interface SalesForecast {
-  recipeId: number;
-  recipeName: string;
-  predictedSales: Decimal;
-  confidence: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
-  seasonalMultiplier: Decimal;
-}
-
-export interface ForecastingFilters {
+interface ForecastingFilters {
   companyId: number;
   startDate?: Date;
   endDate?: Date;
@@ -37,123 +9,41 @@ export interface ForecastingFilters {
   ingredientIds?: number[];
 }
 
-/**
- * Calculate moving average forecast
- */
-export function calculateMovingAverage(
-  data: Array<{ date: Date; value: Decimal }>,
-  period: number = 7
-): ForecastData[] {
-  if (data.length < period) {
-    return [];
-  }
-
-  const forecasts: ForecastData[] = [];
-  
-  for (let i = period; i < data.length; i++) {
-    const window = data.slice(i - period, i);
-    const average = window.reduce((sum, item) => sum.add(item.value), new Decimal(0))
-      .div(period);
-    
-    // Calculate confidence based on variance
-    const variance = window.reduce((sum, item) => {
-      const diff = item.value.sub(average);
-      return sum.add(diff.mul(diff));
-    }, new Decimal(0)).div(period);
-    
-    const standardDeviation = variance.sqrt();
-    const confidence = Math.max(0, Math.min(1, 1 - standardDeviation.div(average).toNumber()));
-    
-    // Calculate bounds (assuming normal distribution)
-    const margin = standardDeviation.mul(1.96); // 95% confidence interval
-    const lowerBound = average.sub(margin);
-    const upperBound = average.add(margin);
-    
-    forecasts.push({
-      date: data[i].date,
-      predictedValue: average,
-      confidence,
-      lowerBound: lowerBound.gt(0) ? lowerBound : new Decimal(0),
-      upperBound,
-    });
-  }
-  
-  return forecasts;
+interface ForecastResult {
+  period: string;
+  forecastedValue: string;
+  confidence: string;
+  historicalAverage: string;
+  trend: 'increasing' | 'decreasing' | 'stable';
 }
 
-/**
- * Calculate exponential smoothing forecast
- */
-export function calculateExponentialSmoothing(
-  data: Array<{ date: Date; value: Decimal }>,
-  alpha: number = 0.3
-): ForecastData[] {
-  if (data.length < 2) {
-    return [];
-  }
-
-  const forecasts: ForecastData[] = [];
-  let smoothed = data[0].value;
-  
-  for (let i = 1; i < data.length; i++) {
-    smoothed = data[i].value.mul(alpha).add(smoothed.mul(1 - alpha));
-    
-    // Calculate confidence based on recent error
-    const error = data[i].value.sub(smoothed).abs();
-    const confidence = Math.max(0, Math.min(1, 1 - error.div(data[i].value).toNumber()));
-    
-    // Simple bounds calculation
-    const margin = error.mul(2);
-    const lowerBound = smoothed.sub(margin);
-    const upperBound = smoothed.add(margin);
-    
-    forecasts.push({
-      date: data[i].date,
-      predictedValue: smoothed,
-      confidence,
-      lowerBound: lowerBound.gt(0) ? lowerBound : new Decimal(0),
-      upperBound,
-    });
-  }
-  
-  return forecasts;
-}
-
-/**
- * Forecast ingredient usage based on production history
- */
-export async function forecastIngredientUsage(
-  filters: ForecastingFilters
-): Promise<IngredientForecast[]> {
+export async function forecastIngredientUsage(filters: ForecastingFilters) {
   const { companyId, startDate, endDate, ingredientIds } = filters;
-  
-  // Get production history for the specified period
-  const productionWhere: any = {
-    companyId,
-  };
-  
-  if (startDate && endDate) {
-    productionWhere.productionDate = {
-      gte: startDate,
-      lte: endDate,
-    };
-  }
-  
+
+  // Get historical production data
   const productionHistory = await prisma.productionHistory.findMany({
-    where: productionWhere,
+    where: {
+      companyId,
+      ...(startDate && endDate && {
+        productionDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      }),
+    },
     include: {
       recipe: {
         include: {
-          items: {
+          ingredients: {
+            where: ingredientIds && ingredientIds.length > 0
+              ? { ingredientId: { in: ingredientIds } }
+              : undefined,
             include: {
-              ingredient: true,
-            },
-          },
-          sections: {
-            include: {
-              items: {
-                include: {
-                  ingredient: true,
+              ingredient: {
+                select: {
+                  id: true,
+                  name: true,
+                  unit: true,
                 },
               },
             },
@@ -162,297 +52,274 @@ export async function forecastIngredientUsage(
       },
     },
   });
-  
-  // Get current inventory levels
-  const inventory = await prisma.inventory.findMany({
-    where: {
-      companyId,
-      ...(ingredientIds && { recipeId: { in: ingredientIds } }),
-    },
-    include: {
-      recipe: true,
-    },
-  });
-  
-  // Calculate ingredient usage from production
-  const ingredientUsage = new Map<number, Array<{ date: Date; usage: Decimal }>>();
-  
+
+  // Calculate usage per ingredient
+  const ingredientUsage = new Map<number, { name: string; unit: string; quantities: number[] }>();
+
   for (const production of productionHistory) {
-    const recipe = production.recipe;
-    const allItems = [
-      ...recipe.items.map(item => ({
-        ingredientId: item.ingredient.id,
-        quantity: Number(item.quantity),
-        unit: item.unit,
-        ingredient: item.ingredient,
-      })),
-      ...recipe.sections.flatMap(section => 
-        section.items.map(item => ({
-          ingredientId: item.ingredient.id,
-          quantity: Number(item.quantity),
-          unit: item.unit,
-          ingredient: item.ingredient,
-        }))
-      ),
-    ];
-    
-    for (const item of allItems) {
-      if (ingredientIds && !ingredientIds.includes(item.ingredientId)) {
-        continue;
+    for (const ingredient of production.recipe.ingredients) {
+      if (!ingredientUsage.has(ingredient.ingredientId)) {
+        ingredientUsage.set(ingredient.ingredientId, {
+          name: ingredient.ingredient.name,
+          unit: ingredient.ingredient.unit,
+          quantities: [],
+        });
       }
-      
-      // Calculate usage for this production batch
-      const usagePerBatch = calculateIngredientUsagePerBatch(item, production.quantityProduced);
-      
-      if (!ingredientUsage.has(item.ingredientId)) {
-        ingredientUsage.set(item.ingredientId, []);
-      }
-      
-      ingredientUsage.get(item.ingredientId)!.push({
-        date: production.productionDate,
-        usage: usagePerBatch,
-      });
+
+      const usage = ingredientUsage.get(ingredient.ingredientId)!;
+      const quantity = Number(ingredient.quantity) * Number(production.quantityProduced) / Number(production.recipe.yieldQuantity);
+      usage.quantities.push(quantity);
     }
   }
-  
-  // Generate forecasts for each ingredient
-  const forecasts: IngredientForecast[] = [];
-  
-  for (const [ingredientId, usageData] of ingredientUsage) {
-    if (usageData.length < 3) {
-      continue; // Need at least 3 data points for forecasting
-    }
-    
-    // Sort by date
-    usageData.sort((a, b) => a.date.getTime() - b.date.getTime());
-    
-    // Calculate moving average forecast
-    const forecastData = calculateMovingAverage(usageData, Math.min(7, usageData.length));
-    
-    if (forecastData.length === 0) {
-      continue;
-    }
-    
-    // Get latest forecast
-    const latestForecast = forecastData[forecastData.length - 1];
-    
-    // Get current stock
-    const currentStock = inventory.find(inv => inv.recipeId === ingredientId)?.quantity || new Decimal(0);
-    
-    // Calculate reorder point (usage rate * lead time + safety stock)
-    const avgUsage = usageData.reduce((sum, item) => sum.add(item.usage), new Decimal(0))
-      .div(usageData.length);
-    const leadTime = 7; // Assume 7 days lead time
-    const safetyStock = avgUsage.mul(2); // 2 days safety stock
-    const reorderPoint = avgUsage.mul(leadTime).add(safetyStock);
-    
-    // Calculate suggested order quantity
-    const suggestedOrderQuantity = avgUsage.mul(14); // Order for 2 weeks
-    
-    // Calculate days until reorder
-    const daysUntilReorder = currentStock.gt(0) && avgUsage.gt(0) 
-      ? Math.ceil(currentStock.div(avgUsage).toNumber())
-      : 0;
-    
-    // Get ingredient name
-    const ingredient = await prisma.ingredient.findUnique({
-      where: { id: ingredientId },
-      select: { name: true },
-    });
-    
-    forecasts.push({
+
+  // Generate forecasts
+  const forecasts = Array.from(ingredientUsage.entries()).map(([ingredientId, data]) => {
+    const avgUsage = calculateAverage(data.quantities);
+    const trend = calculateTrend(data.quantities);
+    const forecastedValue = calculateForecast(data.quantities, trend);
+
+    return {
       ingredientId,
-      ingredientName: ingredient?.name || `Ingredient ${ingredientId}`,
-      currentStock,
-      predictedUsage: latestForecast.predictedValue,
-      reorderPoint,
-      suggestedOrderQuantity,
-      daysUntilReorder,
-      confidence: latestForecast.confidence,
-    });
-  }
-  
-  return forecasts.sort((a, b) => a.daysUntilReorder - b.daysUntilReorder);
+      ingredientName: data.name,
+      unit: data.unit,
+      forecastedUsage: forecastedValue.toFixed(2),
+      averageUsage: avgUsage.toFixed(2),
+      trend,
+      confidence: calculateConfidence(data.quantities).toFixed(0),
+    };
+  });
+
+  return forecasts;
 }
 
-/**
- * Forecast sales based on historical sales data
- */
-export async function forecastSales(
-  filters: ForecastingFilters
-): Promise<SalesForecast[]> {
+export async function forecastSales(filters: ForecastingFilters) {
   const { companyId, startDate, endDate, recipeIds } = filters;
-  
-  // Get sales records
-  const salesWhere: any = {
-    companyId,
-  };
-  
-  if (startDate && endDate) {
-    salesWhere.transactionDate = {
-      gte: startDate,
-      lte: endDate,
-    };
-  }
-  
-  if (recipeIds && recipeIds.length > 0) {
-    salesWhere.recipeId = { in: recipeIds };
-  }
-  
+
+  // Get historical sales data
   const salesRecords = await prisma.salesRecord.findMany({
-    where: salesWhere,
+    where: {
+      companyId,
+      ...(startDate && endDate && {
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      }),
+      ...(recipeIds && recipeIds.length > 0 && { recipeId: { in: recipeIds } }),
+    },
+    select: {
+      recipeId: true,
+      date: true,
+      quantity: true,
+      price: true,
+    },
+    orderBy: {
+      date: 'asc',
+    },
+  });
+
+  // Group by recipe and week
+  const weeklySales = new Map<number, Map<string, number>>();
+
+  for (const sale of salesRecords) {
+    if (!weeklySales.has(sale.recipeId)) {
+      weeklySales.set(sale.recipeId, new Map());
+    }
+
+    const weekKey = getWeekKey(sale.date);
+    const weekSales = weeklySales.get(sale.recipeId)!;
+    const currentTotal = weekSales.get(weekKey) || 0;
+    weekSales.set(weekKey, currentTotal + sale.quantity);
+  }
+
+  // Get recipe names
+  const recipes = await prisma.recipe.findMany({
+    where: {
+      companyId,
+      ...(recipeIds && recipeIds.length > 0 && { id: { in: recipeIds } }),
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  const recipeMap = new Map(recipes.map(r => [r.id, r.name]));
+
+  // Generate forecasts
+  const forecasts = Array.from(weeklySales.entries()).map(([recipeId, weeklyData]) => {
+    const weeklyValues = Array.from(weeklyData.values());
+    const avgSales = calculateAverage(weeklyValues);
+    const trend = calculateTrend(weeklyValues);
+    const forecastedSales = calculateForecast(weeklyValues, trend);
+
+    return {
+      recipeId,
+      recipeName: recipeMap.get(recipeId) || 'Unknown',
+      forecastedQuantity: forecastedSales.toFixed(2),
+      averageQuantity: avgSales.toFixed(2),
+      trend,
+      confidence: calculateConfidence(weeklyValues).toFixed(0),
+      historicalWeeks: weeklyData.size,
+    };
+  });
+
+  return forecasts;
+}
+
+export async function generateReorderSuggestions(
+  companyId: number,
+  maxDays: number
+) {
+  // Get current inventory levels
+  const inventory = await prisma.inventoryItem.findMany({
+    where: { companyId },
     include: {
-      recipe: {
+      ingredient: {
         select: {
           id: true,
           name: true,
+          unit: true,
+          reorderPoint: true,
+          reorderQuantity: true,
         },
       },
     },
   });
-  
-  // Group sales by recipe
-  const recipeSales = new Map<number, Array<{ date: Date; quantity: Decimal }>>();
-  
-  for (const sale of salesRecords) {
-    if (!sale.recipeId) continue;
-    
-    if (!recipeSales.has(sale.recipeId)) {
-      recipeSales.set(sale.recipeId, []);
-    }
-    
-    recipeSales.get(sale.recipeId)!.push({
-      date: sale.transactionDate,
-      quantity: sale.quantity,
-    });
-  }
-  
-  // Generate forecasts for each recipe
-  const forecasts: SalesForecast[] = [];
-  
-  for (const [recipeId, salesData] of recipeSales) {
-    if (salesData.length < 3) {
-      continue; // Need at least 3 data points for forecasting
-    }
-    
-    // Sort by date
-    salesData.sort((a, b) => a.date.getTime() - b.date.getTime());
-    
-    // Calculate exponential smoothing forecast
-    const forecastData = calculateExponentialSmoothing(salesData);
-    
-    if (forecastData.length === 0) {
-      continue;
-    }
-    
-    // Get latest forecast
-    const latestForecast = forecastData[forecastData.length - 1];
-    
-    // Calculate trend
-    const recentData = salesData.slice(-7); // Last 7 data points
-    const trend = calculateTrend(recentData);
-    
-    // Get seasonal multiplier
-    const seasonalMultiplier = await getSeasonalMultiplier(companyId, recipeId);
-    
-    // Apply seasonal adjustment
-    const adjustedPrediction = latestForecast.predictedValue.mul(seasonalMultiplier);
-    
-    // Get recipe name
-    const recipe = salesRecords.find(s => s.recipeId === recipeId)?.recipe;
-    
-    forecasts.push({
-      recipeId,
-      recipeName: recipe?.name || `Recipe ${recipeId}`,
-      predictedSales: adjustedPrediction,
-      confidence: latestForecast.confidence,
-      trend,
-      seasonalMultiplier,
-    });
-  }
-  
-  return forecasts.sort((a, b) => b.predictedSales.toNumber() - a.predictedSales.toNumber());
-}
 
-/**
- * Calculate ingredient usage per batch
- */
-function calculateIngredientUsagePerBatch(
-  item: {
-    ingredientId: number;
-    quantity: number;
-    unit: string;
-    ingredient: any;
-  },
-  batchQuantity: Decimal
-): Decimal {
-  // Convert item quantity to base unit
-  const itemQuantity = new Decimal(item.quantity);
-  
-  // Calculate usage per batch
-  return itemQuantity.mul(batchQuantity);
-}
+  // Get recent usage rates
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-/**
- * Calculate trend from recent data
- */
-function calculateTrend(data: Array<{ date: Date; quantity: Decimal }>): 'increasing' | 'decreasing' | 'stable' {
-  if (data.length < 2) {
-    return 'stable';
-  }
-  
-  const firstHalf = data.slice(0, Math.floor(data.length / 2));
-  const secondHalf = data.slice(Math.floor(data.length / 2));
-  
-  const firstAvg = firstHalf.reduce((sum, item) => sum.add(item.quantity), new Decimal(0))
-    .div(firstHalf.length);
-  const secondAvg = secondHalf.reduce((sum, item) => sum.add(item.quantity), new Decimal(0))
-    .div(secondHalf.length);
-  
-  const change = secondAvg.sub(firstAvg).div(firstAvg);
-  
-  if (change.gt(0.1)) {
-    return 'increasing';
-  } else if (change.lt(-0.1)) {
-    return 'decreasing';
-  } else {
-    return 'stable';
-  }
-}
-
-/**
- * Get seasonal multiplier for a recipe
- */
-async function getSeasonalMultiplier(companyId: number, recipeId: number): Promise<Decimal> {
-  const currentMonth = new Date().getMonth() + 1; // 1-12
-  
-  const seasonalTrend = await prisma.seasonalTrend.findFirst({
+  const recentProduction = await prisma.productionHistory.findMany({
     where: {
       companyId,
-      recipeId,
-      month: currentMonth,
-      isActive: true,
+      productionDate: {
+        gte: thirtyDaysAgo,
+      },
+    },
+    include: {
+      recipe: {
+        include: {
+          ingredients: true,
+        },
+      },
     },
   });
-  
-  if (seasonalTrend) {
-    return seasonalTrend.demandMultiplier;
+
+  // Calculate usage rates
+  const ingredientUsage = new Map<number, number>();
+
+  for (const production of recentProduction) {
+    for (const ingredient of production.recipe.ingredients) {
+      const quantity = Number(ingredient.quantity) * Number(production.quantityProduced) / Number(production.recipe.yieldQuantity);
+      const currentUsage = ingredientUsage.get(ingredient.ingredientId) || 0;
+      ingredientUsage.set(ingredient.ingredientId, currentUsage + quantity);
+    }
   }
-  
-  // Default multiplier if no seasonal trend found
-  return new Decimal(1);
+
+  // Calculate daily usage rate
+  const days = 30;
+  const dailyUsage = new Map<number, number>();
+  for (const [ingredientId, totalUsage] of ingredientUsage.entries()) {
+    dailyUsage.set(ingredientId, totalUsage / days);
+  }
+
+  // Generate suggestions
+  const suggestions = inventory
+    .filter(item => {
+      const currentStock = Number(item.quantity);
+      const dailyRate = dailyUsage.get(item.ingredientId) || 0;
+      const daysUntilEmpty = dailyRate > 0 ? currentStock / dailyRate : 999;
+      return daysUntilEmpty < maxDays || currentStock <= Number(item.ingredient.reorderPoint);
+    })
+    .map(item => {
+      const currentStock = Number(item.quantity);
+      const dailyRate = dailyUsage.get(item.ingredientId) || 0;
+      const daysUntilEmpty = dailyRate > 0 ? currentStock / dailyRate : 999;
+      const suggestedReorder = item.ingredient.reorderQuantity 
+        ? Number(item.ingredient.reorderQuantity)
+        : Math.max(dailyRate * maxDays * 2, currentStock);
+
+      return {
+        ingredientId: item.ingredientId,
+        ingredientName: item.ingredient.name,
+        unit: item.ingredient.unit,
+        currentStock: currentStock.toFixed(2),
+        dailyUsage: dailyRate.toFixed(2),
+        daysUntilEmpty: daysUntilEmpty.toFixed(1),
+        suggestedReorder: suggestedReorder.toFixed(2),
+        urgent: daysUntilEmpty < maxDays / 2,
+      };
+    })
+    .sort((a, b) => parseFloat(a.daysUntilEmpty) - parseFloat(b.daysUntilEmpty));
+
+  return suggestions;
 }
 
-/**
- * Generate reorder suggestions
- */
-export async function generateReorderSuggestions(
-  companyId: number,
-  maxDaysUntilReorder: number = 7
-): Promise<IngredientForecast[]> {
-  const forecasts = await forecastIngredientUsage({
-    companyId,
-  });
+// Helper functions
+function calculateAverage(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+function calculateTrend(values: number[]): 'increasing' | 'decreasing' | 'stable' {
+  if (values.length < 2) return 'stable';
   
-  return forecasts.filter(forecast => forecast.daysUntilReorder <= maxDaysUntilReorder);
+  // Simple linear regression slope
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  for (let i = 0; i < values.length; i++) {
+    sumX += i;
+    sumY += values[i];
+    sumXY += i * values[i];
+    sumX2 += i * i;
+  }
+  
+  const n = values.length;
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  
+  if (slope > 0.1) return 'increasing';
+  if (slope < -0.1) return 'decreasing';
+  return 'stable';
+}
+
+function calculateForecast(values: number[], trend: string): number {
+  if (values.length === 0) return 0;
+  
+  const avg = calculateAverage(values);
+  const recentValues = values.slice(-Math.min(7, values.length));
+  const recentAvg = calculateAverage(recentValues);
+  
+  // Apply trend adjustment
+  if (trend === 'increasing') {
+    return recentAvg * 1.1;
+  } else if (trend === 'decreasing') {
+    return recentAvg * 0.9;
+  }
+  
+  return avg;
+}
+
+function calculateConfidence(values: number[]): number {
+  if (values.length < 2) return 0;
+  
+  // Calculate coefficient of variation
+  const avg = calculateAverage(values);
+  if (avg === 0) return 100;
+  
+  const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
+  const stdDev = Math.sqrt(variance);
+  const coefficientOfVariation = stdDev / avg;
+  
+  // Convert to confidence (lower variation = higher confidence)
+  const confidence = Math.max(0, Math.min(100, 100 - (coefficientOfVariation * 100)));
+  
+  return confidence;
+}
+
+function getWeekKey(date: Date): string {
+  const year = date.getFullYear();
+  const startOfYear = new Date(year, 0, 1);
+  const diff = Math.floor((date.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24 * 7));
+  return `${year}-W${String(diff + 1).padStart(2, '0')}`;
 }

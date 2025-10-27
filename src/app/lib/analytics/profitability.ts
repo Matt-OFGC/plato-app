@@ -1,32 +1,7 @@
-import { Decimal } from "decimal.js";
 import { prisma } from "@/lib/prisma";
+import { Decimal } from "decimal.js";
 
-export interface ProfitabilityMetrics {
-  recipeId: number;
-  recipeName: string;
-  category: string | null;
-  totalRevenue: Decimal;
-  totalCosts: Decimal;
-  grossProfit: Decimal;
-  grossMargin: Decimal; // Percentage
-  foodCostPercentage: Decimal;
-  sellingPrice: Decimal | null;
-  calculatedCost: Decimal;
-  batchesProduced: number;
-  avgBatchSize: Decimal;
-}
-
-export interface CategoryProfitability {
-  category: string;
-  totalRevenue: Decimal;
-  totalCosts: Decimal;
-  grossProfit: Decimal;
-  grossMargin: Decimal;
-  recipeCount: number;
-  avgFoodCost: Decimal;
-}
-
-export interface ProfitabilityFilters {
+interface ProfitabilityFilters {
   companyId: number;
   startDate?: Date;
   endDate?: Date;
@@ -34,354 +9,207 @@ export interface ProfitabilityFilters {
   recipeIds?: number[];
 }
 
-/**
- * Calculate profitability metrics for recipes
- */
-export async function calculateRecipeProfitability(
-  filters: ProfitabilityFilters
-): Promise<ProfitabilityMetrics[]> {
+export async function calculateRecipeProfitability(filters: ProfitabilityFilters) {
   const { companyId, startDate, endDate, categoryId, recipeIds } = filters;
 
-  // Build where clause
+  // Base query for recipes
   const whereClause: any = {
     companyId,
+    ...(categoryId && { categoryId }),
+    ...(recipeIds && recipeIds.length > 0 && { id: { in: recipeIds } }),
   };
 
-  if (categoryId) {
-    whereClause.categoryId = categoryId;
-  }
-
-  if (recipeIds && recipeIds.length > 0) {
-    whereClause.id = { in: recipeIds };
-  }
-
-  // Get recipes with their items and ingredients
+  // Get all recipes with their ingredients
   const recipes = await prisma.recipe.findMany({
     where: whereClause,
     include: {
-      items: {
+      ingredients: {
         include: {
           ingredient: {
             select: {
               id: true,
               name: true,
-              packQuantity: true,
-              packUnit: true,
-              packPrice: true,
-              currency: true,
-              densityGPerMl: true,
+              cost: true,
+              unit: true,
             },
           },
         },
       },
-      sections: {
-        include: {
-          items: {
-            include: {
-              ingredient: {
-                select: {
-                  id: true,
-                  name: true,
-                  packQuantity: true,
-                  packUnit: true,
-                  packPrice: true,
-                  currency: true,
-                  densityGPerMl: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      categoryRef: {
+      category: {
         select: {
+          id: true,
           name: true,
         },
       },
-    },
-  });
-
-  // Get sales records for revenue calculation
-  const salesWhere: any = {
-    companyId,
-    recipeId: { in: recipes.map(r => r.id) },
-  };
-
-  if (startDate && endDate) {
-    salesWhere.transactionDate = {
-      gte: startDate,
-      lte: endDate,
-    };
-  }
-
-  const salesRecords = await prisma.salesRecord.findMany({
-    where: salesWhere,
-    select: {
-      recipeId: true,
-      totalRevenue: true,
-      quantity: true,
-    },
-  });
-
-  // Get production history for batch counts
-  const productionWhere: any = {
-    companyId,
-    recipeId: { in: recipes.map(r => r.id) },
-  };
-
-  if (startDate && endDate) {
-    productionWhere.productionDate = {
-      gte: startDate,
-      lte: endDate,
-    };
-  }
-
-  const productionHistory = await prisma.productionHistory.findMany({
-    where: productionWhere,
-    select: {
-      recipeId: true,
-      quantityProduced: true,
-    },
-  });
-
-  // Calculate metrics for each recipe
-  const metrics: ProfitabilityMetrics[] = [];
-
-  for (const recipe of recipes) {
-    // Calculate recipe cost
-    const allItems = [
-      ...recipe.items.map(item => ({
-        quantity: Number(item.quantity),
-        unit: item.unit,
-        ingredient: {
-          packQuantity: Number(item.ingredient.packQuantity),
-          packUnit: item.ingredient.packUnit,
-          packPrice: Number(item.ingredient.packPrice),
-          densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
-        },
-      })),
-      ...recipe.sections.flatMap(section => 
-        section.items.map(item => ({
-          quantity: Number(item.quantity),
-          unit: item.unit,
-          ingredient: {
-            packQuantity: Number(item.ingredient.packQuantity),
-            packUnit: item.ingredient.packUnit,
-            packPrice: Number(item.ingredient.packPrice),
-            densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
+      _count: {
+        select: {
+          salesRecords: {
+            where: {
+              ...(startDate && endDate && {
+                date: {
+                  gte: startDate,
+                  lte: endDate,
+                },
+              }),
+            },
           },
-        }))
-      ),
-    ];
+        },
+      },
+    },
+  });
 
-    const calculatedCost = calculateRecipeCost(allItems);
-    
-    // Calculate revenue from sales records
-    const recipeSales = salesRecords.filter(s => s.recipeId === recipe.id);
-    const totalRevenue = recipeSales.reduce((sum, sale) => sum.add(sale.totalRevenue), new Decimal(0));
-    
-    // Calculate production metrics
-    const recipeProduction = productionHistory.filter(p => p.recipeId === recipe.id);
-    const batchesProduced = recipeProduction.length;
-    const totalQuantityProduced = recipeProduction.reduce((sum, prod) => sum.add(prod.quantityProduced), new Decimal(0));
-    const avgBatchSize = batchesProduced > 0 ? totalQuantityProduced.div(batchesProduced) : new Decimal(0);
-    
-    // Calculate total costs (cost per batch * batches produced)
-    const totalCosts = calculatedCost.mul(batchesProduced);
-    
-    // Calculate gross profit and margin
-    const grossProfit = totalRevenue.sub(totalCosts);
-    const grossMargin = totalRevenue.gt(0) ? grossProfit.div(totalRevenue).mul(100) : new Decimal(0);
-    
-    // Calculate food cost percentage
-    const foodCostPercentage = recipe.sellingPrice && recipe.sellingPrice.gt(0) 
-      ? calculatedCost.div(recipe.sellingPrice).mul(100)
-      : new Decimal(0);
+  // Calculate profitability for each recipe
+  const results = await Promise.all(
+    recipes.map(async (recipe) => {
+      // Calculate recipe cost
+      let recipeCost = new Decimal(0);
+      for (const recipeIngredient of recipe.ingredients) {
+        const unitCost = new Decimal(recipeIngredient.ingredient.cost);
+        const quantity = new Decimal(recipeIngredient.quantity);
+        recipeCost = recipeCost.plus(unitCost.times(quantity));
+      }
 
-    metrics.push({
-      recipeId: recipe.id,
-      recipeName: recipe.name,
-      category: recipe.categoryRef?.name || recipe.category || null,
-      totalRevenue,
-      totalCosts,
-      grossProfit,
-      grossMargin,
-      foodCostPercentage,
-      sellingPrice: recipe.sellingPrice,
-      calculatedCost,
-      batchesProduced,
-      avgBatchSize,
-    });
-  }
+      // Get sales data
+      const salesRecords = await prisma.salesRecord.findMany({
+        where: {
+          recipeId: recipe.id,
+          companyId,
+          ...(startDate && endDate && {
+            date: {
+              gte: startDate,
+              lte: endDate,
+            },
+          }),
+        },
+        select: {
+          quantity: true,
+          price: true,
+        },
+      });
 
-  return metrics;
+      // Calculate totals
+      let totalRevenue = new Decimal(0);
+      let totalQuantity = 0;
+
+      for (const sale of salesRecords) {
+        totalRevenue = totalRevenue.plus(
+          new Decimal(sale.price).times(sale.quantity)
+        );
+        totalQuantity += sale.quantity;
+      }
+
+      const batchesProduced = Math.ceil(totalQuantity / recipe.yieldQuantity);
+      const totalCosts = recipeCost.times(batchesProduced);
+      const grossProfit = totalRevenue.minus(totalCosts);
+      const grossMargin = totalRevenue.gt(0)
+        ? grossProfit.dividedBy(totalRevenue).times(100)
+        : new Decimal(0);
+      const foodCostPercentage = totalRevenue.gt(0)
+        ? totalCosts.dividedBy(totalRevenue).times(100)
+        : new Decimal(0);
+
+      return {
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        category: recipe.category?.name || "Uncategorized",
+        totalRevenue: totalRevenue.toFixed(2),
+        totalCosts: totalCosts.toFixed(2),
+        grossProfit: grossProfit.toFixed(2),
+        grossMargin: grossMargin.toFixed(2),
+        foodCostPercentage: foodCostPercentage.toFixed(2),
+        sellingPrice: recipe.sellingPrice?.toString() || null,
+        batchesProduced,
+        batchesSold: totalQuantity,
+      };
+    })
+  );
+
+  return results;
 }
 
-/**
- * Calculate profitability by category
- */
-export async function calculateCategoryProfitability(
-  filters: ProfitabilityFilters
-): Promise<CategoryProfitability[]> {
-  const recipeMetrics = await calculateRecipeProfitability(filters);
-  
-  // Group by category
-  const categoryMap = new Map<string, {
-    totalRevenue: Decimal;
-    totalCosts: Decimal;
-    recipeCount: number;
-    foodCostSum: Decimal;
-  }>();
+export async function calculateCategoryProfitability(filters: ProfitabilityFilters) {
+  const recipeResults = await calculateRecipeProfitability(filters);
 
-  for (const metric of recipeMetrics) {
-    const category = metric.category || "Uncategorized";
-    
+  // Group by category
+  const categoryMap = new Map<string, any>();
+
+  for (const result of recipeResults) {
+    const category = result.category;
     if (!categoryMap.has(category)) {
       categoryMap.set(category, {
+        category,
         totalRevenue: new Decimal(0),
         totalCosts: new Decimal(0),
         recipeCount: 0,
-        foodCostSum: new Decimal(0),
       });
     }
 
-    const categoryData = categoryMap.get(category)!;
-    categoryData.totalRevenue = categoryData.totalRevenue.add(metric.totalRevenue);
-    categoryData.totalCosts = categoryData.totalCosts.add(metric.totalCosts);
+    const categoryData = categoryMap.get(category);
+    categoryData.totalRevenue = categoryData.totalRevenue.plus(
+      new Decimal(result.totalRevenue)
+    );
+    categoryData.totalCosts = categoryData.totalCosts.plus(
+      new Decimal(result.totalCosts)
+    );
     categoryData.recipeCount += 1;
-    categoryData.foodCostSum = categoryData.foodCostSum.add(metric.foodCostPercentage);
   }
 
-  // Convert to array and calculate final metrics
-  const categoryMetrics: CategoryProfitability[] = [];
+  // Convert to array and calculate margins
+  const results = Array.from(categoryMap.values()).map((data) => {
+    const grossProfit = data.totalRevenue.minus(data.totalCosts);
+    const grossMargin = data.totalRevenue.gt(0)
+      ? grossProfit.dividedBy(data.totalRevenue).times(100)
+      : new Decimal(0);
+    const foodCostPercentage = data.totalRevenue.gt(0)
+      ? data.totalCosts.dividedBy(data.totalRevenue).times(100)
+      : new Decimal(0);
 
-  for (const [category, data] of categoryMap) {
-    const grossProfit = data.totalRevenue.sub(data.totalCosts);
-    const grossMargin = data.totalRevenue.gt(0) ? grossProfit.div(data.totalRevenue).mul(100) : new Decimal(0);
-    const avgFoodCost = data.recipeCount > 0 ? data.foodCostSum.div(data.recipeCount) : new Decimal(0);
-
-    categoryMetrics.push({
-      category,
-      totalRevenue: data.totalRevenue,
-      totalCosts: data.totalCosts,
-      grossProfit,
-      grossMargin,
+    return {
+      category: data.category,
+      totalRevenue: data.totalRevenue.toFixed(2),
+      totalCosts: data.totalCosts.toFixed(2),
+      grossProfit: grossProfit.toFixed(2),
+      grossMargin: grossMargin.toFixed(2),
+      foodCostPercentage: foodCostPercentage.toFixed(2),
       recipeCount: data.recipeCount,
-      avgFoodCost,
-    });
-  }
+    };
+  });
 
-  return categoryMetrics.sort((a, b) => b.grossMargin.toNumber() - a.grossMargin.toNumber());
+  return results;
 }
 
-/**
- * Calculate recipe cost from items
- */
-function calculateRecipeCost(items: Array<{
-  quantity: number;
-  unit: string;
-  ingredient: {
-    packQuantity: number;
-    packUnit: string;
-    packPrice: number;
-    densityGPerMl?: number;
-  };
-}>): Decimal {
-  let totalCost = new Decimal(0);
-
-  for (const item of items) {
-    const { quantity, unit, ingredient } = item;
-    
-    // Convert quantity to base unit (g, ml, each)
-    const baseQuantity = convertToBaseUnit(quantity, unit, ingredient);
-    
-    // Calculate cost per base unit
-    const costPerBaseUnit = new Decimal(ingredient.packPrice).div(ingredient.packQuantity);
-    
-    // Calculate total cost for this item
-    const itemCost = baseQuantity.mul(costPerBaseUnit);
-    totalCost = totalCost.add(itemCost);
-  }
-
-  return totalCost;
-}
-
-/**
- * Convert quantity to base unit
- */
-function convertToBaseUnit(
-  quantity: number,
-  unit: string,
-  ingredient: { packUnit: string; densityGPerMl?: number }
-): Decimal {
-  const qty = new Decimal(quantity);
-  
-  // If already in base unit, return as is
-  if (unit === ingredient.packUnit) {
-    return qty;
-  }
-
-  // Conversion factors (simplified - you might want to use the existing units library)
-  const conversions: Record<string, Record<string, number>> = {
-    g: { kg: 1000, mg: 0.001, lb: 453.592, oz: 28.3495 },
-    ml: { l: 1000, tsp: 5, tbsp: 15, cup: 240, floz: 29.5735 },
-    each: { slices: 1 }, // Assuming 1 each = 1 slice for simplicity
-  };
-
-  const baseUnit = ingredient.packUnit as keyof typeof conversions;
-  const conversionFactor = conversions[baseUnit]?.[unit];
-
-  if (conversionFactor) {
-    return qty.mul(conversionFactor);
-  }
-
-  // If density is available, use it for volume to mass conversion
-  if (ingredient.densityGPerMl && (unit.includes('ml') || unit.includes('l')) && baseUnit === 'g') {
-    const volumeInMl = unit === 'l' ? qty.mul(1000) : qty;
-    return volumeInMl.mul(ingredient.densityGPerMl);
-  }
-
-  // Default: assume 1:1 conversion if no specific conversion found
-  return qty;
-}
-
-/**
- * Get top performing recipes by profitability
- */
 export async function getTopPerformingRecipes(
   companyId: number,
-  limit: number = 10,
+  limit: number,
   startDate?: Date,
   endDate?: Date
-): Promise<ProfitabilityMetrics[]> {
-  const metrics = await calculateRecipeProfitability({
+) {
+  const results = await calculateRecipeProfitability({
     companyId,
     startDate,
     endDate,
   });
 
-  return metrics
-    .filter(m => m.totalRevenue.gt(0))
-    .sort((a, b) => b.grossMargin.toNumber() - a.grossMargin.toNumber())
+  // Sort by gross profit descending
+  return results
+    .sort((a, b) => parseFloat(b.grossProfit) - parseFloat(a.grossProfit))
     .slice(0, limit);
 }
 
-/**
- * Get recipes that need attention (high food cost)
- */
 export async function getRecipesNeedingAttention(
   companyId: number,
-  maxFoodCost: number = 35,
+  maxFoodCost: number,
   startDate?: Date,
   endDate?: Date
-): Promise<ProfitabilityMetrics[]> {
-  const metrics = await calculateRecipeProfitability({
+) {
+  const results = await calculateRecipeProfitability({
     companyId,
     startDate,
     endDate,
   });
 
-  return metrics
-    .filter(m => m.foodCostPercentage.gt(maxFoodCost))
-    .sort((a, b) => b.foodCostPercentage.toNumber() - a.foodCostPercentage.toNumber());
+  // Filter recipes with food cost above threshold
+  return results.filter(
+    (r) => parseFloat(r.foodCostPercentage) > maxFoodCost
+  );
 }
