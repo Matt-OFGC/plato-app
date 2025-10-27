@@ -13,6 +13,7 @@
     "audit:responsive": "node src/app/scripts/audit-responsive.js",
     "studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:entitlements": "tsx scripts/seed-entitlements.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "db:migrate": "prisma migrate dev",
     "db:status": "prisma migrate status",
