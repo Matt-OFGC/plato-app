@@ -155,7 +155,7 @@ model Recipe {
   inventory           Inventory[]
   wholesaleProducts   WholesaleProduct[] @relation("WholesaleRecipes")
 
-  @@unique([name, companyId])          // Ensure recipe names are unique per company
+  @@unique([name, companyId])          // Recipe names must be unique per company
   @@index([companyId])
   @@index([category])
   @@index([companyId, name])           // Performance: Fast recipe lookups by company
@@ -269,7 +269,7 @@ model Company {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  name         String    @unique
+  name         String
   slug         String?   @unique // URL-friendly identifier for public profile
   
   // Business information for personalization

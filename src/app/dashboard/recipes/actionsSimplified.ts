@@ -66,15 +66,19 @@ export async function createSimplifiedRecipe(formData: FormData) {
 
     let recipe;
     if (recipeId) {
+      // Security check: Verify the recipe belongs to the user's company
+      const existingRecipe = await prisma.recipe.findUnique({
+        where: { id: recipeId },
+        select: { name: true, companyId: true }
+      });
+      
+      if (!existingRecipe || existingRecipe.companyId !== companyId) {
+        throw new Error("Unauthorized: Recipe not found or doesn't belong to your company");
+      }
+      
       // Update existing recipe - delete old items first, then create new ones
       await prisma.recipeItem.deleteMany({
         where: { recipeId: recipeId }
-      });
-      
-      // First get the existing recipe to check if we need to handle name conflicts
-      const existingRecipe = await prisma.recipe.findUnique({
-        where: { id: recipeId },
-        select: { name: true }
       });
       
       // Only update name if it's different from the existing name
@@ -279,6 +283,16 @@ export async function updateRecipeUnified(formData: FormData) {
       throw new Error("Invalid recipe ID");
     }
     
+    // Security check: Verify the recipe belongs to the user's company
+    const existingRecipe = await prisma.recipe.findUnique({
+      where: { id: recipeId },
+      select: { name: true, companyId: true }
+    });
+    
+    if (!existingRecipe || existingRecipe.companyId !== companyId) {
+      throw new Error("Unauthorized: Recipe not found or doesn't belong to your company");
+    }
+    
     if (!name || name.trim() === "") {
       throw new Error("Recipe name is required");
     }
@@ -292,12 +306,6 @@ export async function updateRecipeUnified(formData: FormData) {
       prisma.recipeItem.deleteMany({ where: { recipeId } }),
       prisma.recipeSection.deleteMany({ where: { recipeId } }),
     ]);
-
-    // Get the existing recipe to check name conflicts
-    const existingRecipe = await prisma.recipe.findUnique({
-      where: { id: recipeId },
-      select: { name: true }
-    });
 
     // Prepare update data
     const updateData: any = {

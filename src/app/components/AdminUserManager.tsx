@@ -12,8 +12,20 @@ interface User {
   subscriptionStatus: string;
   createdAt: string;
   lastLoginAt: string | null;
+  memberships?: Membership[];
   _count: {
     memberships: number;
+  };
+}
+
+interface Membership {
+  id: number;
+  role: string;
+  isActive: boolean;
+  pin: string | null;
+  company: {
+    id: number;
+    name: string;
   };
 }
 
@@ -22,6 +34,9 @@ export function AdminUserManager() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [expandedUser, setExpandedUser] = useState<number | null>(null);
+  const [resetPasswordEmail, setResetPasswordEmail] = useState("");
+  const [newPin, setNewPin] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -29,7 +44,7 @@ export function AdminUserManager() {
 
   async function fetchUsers() {
     try {
-      const res = await fetch("/api/admin/users");
+      const res = await fetch("/api/admin/users?includeMemberships=true");
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users);
@@ -75,6 +90,67 @@ export function AdminUserManager() {
       } else {
         const data = await res.json();
         setMessage({ type: "error", text: data.error || "Failed to update admin status" });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Network error" });
+    }
+  }
+
+  async function upgradeSubscription(userId: number, tier: string) {
+    try {
+      const res = await fetch("/api/admin/users/upgrade-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, tier }),
+      });
+
+      if (res.ok) {
+        setMessage({ type: "success", text: `Subscription upgraded to ${tier}` });
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        setMessage({ type: "error", text: data.error || "Failed to upgrade subscription" });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Network error" });
+    }
+  }
+
+  async function resetPassword(email: string) {
+    try {
+      const res = await fetch("/api/admin/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        setMessage({ type: "success", text: `Password reset email sent to ${email}` });
+        setResetPasswordEmail("");
+      } else {
+        const data = await res.json();
+        setMessage({ type: "error", text: data.error || "Failed to reset password" });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Network error" });
+    }
+  }
+
+  async function updatePin(membershipId: number, pin: string) {
+    try {
+      const res = await fetch("/api/admin/team/update-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ membershipId, pin }),
+      });
+
+      if (res.ok) {
+        setMessage({ type: "success", text: "PIN updated successfully" });
+        setNewPin("");
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        setMessage({ type: "error", text: data.error || "Failed to update PIN" });
       }
     } catch (error) {
       setMessage({ type: "error", text: "Network error" });
@@ -155,61 +231,156 @@ export function AdminUserManager() {
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
-                  <tr key={user.id} className={!user.isActive ? "bg-gray-50" : ""}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.name || "No name"}
-                          {user.isAdmin && (
-                            <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                              Admin
-                            </span>
-                          )}
+                  <>
+                    <tr key={user.id} className={!user.isActive ? "bg-gray-50" : ""}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.name || "No name"}
+                            {user.isAdmin && (
+                              <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
+                                Admin
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
                         </div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        user.subscriptionTier === "pro"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}>
-                        {user.subscriptionTier}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user._count.memberships}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.lastLoginAt
-                        ? new Date(user.lastLoginAt).toLocaleDateString()
-                        : "Never"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        user.isActive
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}>
-                        {user.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => toggleUserStatus(user.id, user.isActive)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      >
-                        {user.isActive ? "Deactivate" : "Activate"}
-                      </button>
-                      <button
-                        onClick={() => toggleAdminStatus(user.id, user.isAdmin)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        {user.isAdmin ? "Remove Admin" : "Make Admin"}
-                      </button>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded ${
+                          user.subscriptionTier === "professional" || user.subscriptionTier === "team" || user.subscriptionTier === "business"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}>
+                          {user.subscriptionTier}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user._count.memberships}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.lastLoginAt
+                          ? new Date(user.lastLoginAt).toLocaleDateString()
+                          : "Never"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded ${
+                          user.isActive
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}>
+                          {user.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                          className="text-blue-600 hover:text-blue-900 mr-2"
+                        >
+                          {expandedUser === user.id ? "▲" : "▼"} Details
+                        </button>
+                        <button
+                          onClick={() => toggleUserStatus(user.id, user.isActive)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-2"
+                        >
+                          {user.isActive ? "Deactivate" : "Activate"}
+                        </button>
+                        <button
+                          onClick={() => toggleAdminStatus(user.id, user.isAdmin)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          {user.isAdmin ? "Remove Admin" : "Make Admin"}
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedUser === user.id && (
+                      <tr className="bg-gray-50">
+                        <td colSpan={6} className="px-6 py-4">
+                          <div className="space-y-4">
+                            {/* Subscription Management */}
+                            <div className="border-b border-gray-200 pb-3">
+                              <h4 className="font-semibold text-gray-900 mb-2">Subscription Management</h4>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => upgradeSubscription(user.id, "starter")}
+                                  className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded"
+                                >
+                                  Starter
+                                </button>
+                                <button
+                                  onClick={() => upgradeSubscription(user.id, "professional")}
+                                  className="px-3 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded"
+                                >
+                                  Professional
+                                </button>
+                                <button
+                                  onClick={() => upgradeSubscription(user.id, "team")}
+                                  className="px-3 py-1 text-xs bg-purple-200 hover:bg-purple-300 rounded"
+                                >
+                                  Team
+                                </button>
+                                <button
+                                  onClick={() => upgradeSubscription(user.id, "business")}
+                                  className="px-3 py-1 text-xs bg-green-200 hover:bg-green-300 rounded"
+                                >
+                                  Business
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Password Reset */}
+                            <div className="border-b border-gray-200 pb-3">
+                              <h4 className="font-semibold text-gray-900 mb-2">Password Management</h4>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => resetPassword(user.email)}
+                                  className="px-3 py-1 text-xs bg-orange-200 hover:bg-orange-300 rounded"
+                                >
+                                  Send Reset Link
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Company Memberships */}
+                            {user.memberships && user.memberships.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-gray-900 mb-2">Company Memberships</h4>
+                                <div className="space-y-2">
+                                  {user.memberships.map((membership) => (
+                                    <div key={membership.id} className="bg-white p-3 rounded border border-gray-200">
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <p className="font-medium text-gray-900">{membership.company.name}</p>
+                                          <p className="text-xs text-gray-600">Role: {membership.role}</p>
+                                          {membership.pin && (
+                                            <p className="text-xs text-gray-600">PIN: {membership.pin}</p>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                          <input
+                                            type="text"
+                                            placeholder="New PIN (4-6 digits)"
+                                            onChange={(e) => setNewPin(e.target.value)}
+                                            className="px-2 py-1 text-xs border border-gray-300 rounded"
+                                          />
+                                          <button
+                                            onClick={() => updatePin(membership.id, newPin)}
+                                            className="px-3 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded"
+                                          >
+                                            Update PIN
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))
               )}
             </tbody>

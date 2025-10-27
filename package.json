@@ -10,7 +10,23 @@
     "postinstall": "prisma generate",
     "diagnose:ui": "node scripts/diagnose-ui.mjs",
     "clean:caches": "rimraf .next dist build node_modules/.vite",
-    "audit:responsive": "node src/app/scripts/audit-responsive.js"
+    "audit:responsive": "node src/app/scripts/audit-responsive.js",
+    "studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force && npm run db:seed",
+    "db:migrate": "prisma migrate dev",
+    "db:status": "prisma migrate status",
+    "db:backup": "tsx scripts/db-backup.ts",
+    "db:analyze": "tsx scripts/db-analyze.ts",
+    "dev:clean": "npm run db:reset && npm run dev",
+    "dev:seed": "npm run db:seed && npm run dev",
+    "test:db": "prisma migrate dev --name test && npm run db:seed",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -47,6 +63,8 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.3.0",
+    "tsx": "^4.19.2",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^6.0.0",
