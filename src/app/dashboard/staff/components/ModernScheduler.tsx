@@ -123,16 +123,84 @@ export default function ModernScheduler({
     }
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    // Handle shift drop logic here
+  async function handleDragEnd(event: DragEndEvent) {
     setDraggedShift(null);
-    // TODO: Update shift time/date based on drop location
+
+    if (!event.over || !event.active) return;
+
+    // Extract staff ID from drop zone
+    const overId = String(event.over.id);
+    if (!overId.startsWith("staff-")) return;
+
+    const newMembershipId = parseInt(overId.replace("staff-", ""));
+    const shift = shifts.find((s) => s.id === event.active.id);
+    if (!shift) return;
+
+    // Calculate the time offset from the drag delta
+    const deltaX = event.delta.x;
+    const hoursDelta = deltaX / 120; // 120px per hour
+
+    const oldStart = new Date(shift.startTime);
+    const oldEnd = new Date(shift.endTime);
+    const duration = (oldEnd.getTime() - oldStart.getTime()) / (1000 * 60 * 60);
+
+    const newStart = new Date(oldStart.getTime() + hoursDelta * 60 * 60 * 1000);
+    const newEnd = new Date(newStart.getTime() + duration * 60 * 60 * 1000);
+
+    // Update shift via API
+    try {
+      const res = await fetch(`/api/staff/shifts/${shift.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          membershipId: newMembershipId,
+          startTime: newStart.toISOString(),
+          endTime: newEnd.toISOString(),
+        }),
+      });
+
+      if (res.ok) {
+        await loadShifts();
+      }
+    } catch (error) {
+      console.error("Failed to update shift:", error);
+    }
   }
 
-  function handleApplyTemplate(template: any) {
-    // TODO: Apply template to selected staff/time
-    console.log("Applying template:", template);
-    setShowTemplates(false);
+  async function handleApplyTemplate(template: any) {
+    if (!canManageAll) return;
+
+    // Apply template to all active staff for the current date
+    const dateStr = format(viewMode === "day" ? selectedDate : weekDays[0], "yyyy-MM-dd");
+
+    // Create shifts for each active staff member
+    const promises = members.map(async (member) => {
+      const startDateTime = new Date(`${dateStr}T${template.startTime}`);
+      const endDateTime = new Date(`${dateStr}T${template.endTime}`);
+
+      return fetch("/api/staff/shifts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          membershipId: member.id,
+          date: dateStr,
+          startTime: startDateTime.toISOString(),
+          endTime: endDateTime.toISOString(),
+          shiftType: template.shiftType,
+          breakDuration: template.breakDuration,
+          location: null,
+          notes: `Applied from ${template.name} template`,
+        }),
+      });
+    });
+
+    try {
+      await Promise.all(promises);
+      await loadShifts();
+      setShowTemplates(false);
+    } catch (error) {
+      console.error("Failed to apply template:", error);
+    }
   }
 
   async function handleQuickCreate(shiftData: any) {
