@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-interface ProfitabilityTabProps {
+interface AnalyticsProfitabilityProps {
   filters: {
     dateRange: { start: Date; end: Date };
     categories: number[];
@@ -12,9 +12,9 @@ interface ProfitabilityTabProps {
   };
 }
 
-const CHART_COLORS = ['#06b6d4', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'];
+const CHART_COLORS = ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'];
 
-export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
+export function AnalyticsProfitability({ filters }: AnalyticsProfitabilityProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<"recipes" | "categories">("recipes");
@@ -52,9 +52,9 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 animate-pulse">
-          <div className="h-6 bg-slate-800 rounded mb-4"></div>
-          <div className="h-64 bg-slate-800 rounded"></div>
+        <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6 animate-pulse">
+          <div className="h-6 bg-[var(--muted)] rounded mb-4"></div>
+          <div className="h-64 bg-[var(--muted)] rounded"></div>
         </div>
       </div>
     );
@@ -63,16 +63,16 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
+      <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-4">
           {/* View Toggle */}
-          <div className="flex bg-slate-800 rounded-lg p-1">
+          <div className="flex bg-[var(--muted)] rounded-lg p-1">
             <button
               onClick={() => setActiveView("recipes")}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeView === "recipes"
-                  ? "bg-cyan-600 text-white"
-                  : "text-slate-400 hover:text-slate-300"
+                  ? "bg-white text-[var(--foreground)] shadow-sm"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
               Recipes
@@ -81,8 +81,8 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
               onClick={() => setActiveView("categories")}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeView === "categories"
-                  ? "bg-cyan-600 text-white"
-                  : "text-slate-400 hover:text-slate-300"
+                  ? "bg-white text-[var(--foreground)] shadow-sm"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
               Categories
@@ -91,11 +91,11 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
 
           {/* Sort Controls */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">Sort by:</span>
+            <span className="text-sm text-[var(--muted-foreground)]">Sort by:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="px-3 py-2 border border-[var(--border)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
             >
               <option value="revenue">Revenue</option>
               <option value="profit">Profit</option>
@@ -103,7 +103,7 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
             </select>
             <button
               onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-              className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 text-sm hover:bg-slate-700 transition-colors"
+              className="px-3 py-2 border border-[var(--border)] rounded-md text-sm hover:bg-[var(--muted)] transition-colors"
             >
               {sortOrder === "asc" ? "↑" : "↓"}
             </button>
@@ -112,32 +112,32 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
       </div>
 
       {/* Chart */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-slate-100 mb-4">
+      <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">
           {activeView === "recipes" ? "Recipe" : "Category"} Profitability Comparison
         </h3>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={sortedData.slice(0, 10)}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey={activeView === "recipes" ? "recipeName" : "category"}
-              stroke="#9ca3af"
+              stroke="#6b7280"
               fontSize={12}
               angle={-45}
               textAnchor="end"
               height={80}
             />
             <YAxis 
-              stroke="#9ca3af"
+              stroke="#6b7280"
               fontSize={12}
               tickFormatter={(value) => `£${(value / 1000).toFixed(0)}K`}
             />
             <Tooltip 
               contentStyle={{
-                backgroundColor: '#1e293b',
-                border: '1px solid #475569',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
                 borderRadius: '8px',
-                color: '#f1f5f9'
+                color: '#1f2937'
               }}
               formatter={(value: any, name: string) => [
                 `£${parseFloat(value).toFixed(2)}`, 
@@ -147,7 +147,7 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
               ]}
             />
             <Legend />
-            <Bar dataKey="totalRevenue" fill="#06b6d4" name="Revenue" />
+            <Bar dataKey="totalRevenue" fill="#059669" name="Revenue" />
             <Bar dataKey="totalCosts" fill="#ef4444" name="Costs" />
             <Bar dataKey="grossProfit" fill="#10b981" name="Profit" />
           </BarChart>
@@ -155,73 +155,73 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
       </div>
 
       {/* Detailed Table */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-slate-100 mb-4">
+      <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">
           Detailed {activeView === "recipes" ? "Recipe" : "Category"} Analysis
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="min-w-full divide-y divide-[var(--border)]">
             <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left py-3 px-4 text-sm font-medium text-slate-300">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">
                   {activeView === "recipes" ? "Recipe" : "Category"}
                 </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Revenue</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Costs</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Profit</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Margin %</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Food Cost %</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">Revenue</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">Costs</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">Profit</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">Margin %</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">Food Cost %</th>
                 {activeView === "recipes" && (
-                  <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Batches</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">Batches</th>
                 )}
                 {activeView === "categories" && (
-                  <th className="text-right py-3 px-4 text-sm font-medium text-slate-300">Recipes</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider">Recipes</th>
                 )}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[var(--border)]">
               {sortedData.map((item: any, index: number) => (
-                <tr key={item[activeView === "recipes" ? "recipeId" : "category"]} className="border-b border-slate-800 hover:bg-slate-800/50">
-                  <td className="py-3 px-4 text-sm text-slate-200">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 bg-slate-700 rounded-full flex items-center justify-center text-xs text-slate-400">
+                <tr key={item[activeView === "recipes" ? "recipeId" : "category"]} className="hover:bg-[var(--muted)]/50">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">
+                    <div className="flex items-center">
+                      <span className="w-6 h-6 bg-[var(--muted)] rounded-full flex items-center justify-center text-xs text-[var(--muted-foreground)] mr-3">
                         {index + 1}
                       </span>
                       {item[activeView === "recipes" ? "recipeName" : "category"]}
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-sm text-slate-200 text-right tabular-nums">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-[var(--foreground)] text-right">
                     £{parseFloat(item.totalRevenue).toFixed(2)}
                   </td>
-                  <td className="py-3 px-4 text-sm text-slate-200 text-right tabular-nums">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-[var(--foreground)] text-right">
                     £{parseFloat(item.totalCosts).toFixed(2)}
                   </td>
-                  <td className="py-3 px-4 text-sm text-slate-200 text-right tabular-nums">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-[var(--foreground)] text-right">
                     £{parseFloat(item.grossProfit).toFixed(2)}
                   </td>
-                  <td className="py-3 px-4 text-sm text-right tabular-nums">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-right">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       parseFloat(item.grossMargin) > 30 
-                        ? 'bg-emerald-900 text-emerald-300' 
+                        ? 'bg-green-100 text-green-800' 
                         : parseFloat(item.grossMargin) > 20 
-                        ? 'bg-yellow-900 text-yellow-300'
-                        : 'bg-red-900 text-red-300'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                     }`}>
                       {parseFloat(item.grossMargin).toFixed(1)}%
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-right tabular-nums">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-right">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       parseFloat(item.foodCostPercentage) < 30 
-                        ? 'bg-emerald-900 text-emerald-300' 
+                        ? 'bg-green-100 text-green-800' 
                         : parseFloat(item.foodCostPercentage) < 40 
-                        ? 'bg-yellow-900 text-yellow-300'
-                        : 'bg-red-900 text-red-300'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                     }`}>
                       {parseFloat(item.foodCostPercentage).toFixed(1)}%
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-slate-200 text-right tabular-nums">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-[var(--foreground)] text-right">
                     {activeView === "recipes" ? item.batchesProduced || 0 : item.recipeCount || 0}
                   </td>
                 </tr>
@@ -233,22 +233,22 @@ export function ProfitabilityTab({ filters }: ProfitabilityTabProps) {
 
       {/* Summary Stats */}
       {data && data.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-            <h4 className="text-sm font-medium text-slate-300 mb-2">Total Revenue</h4>
-            <div className="text-2xl font-bold text-slate-100 tabular-nums">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+            <h4 className="text-sm font-medium text-[var(--muted-foreground)] mb-2">Total Revenue</h4>
+            <div className="text-2xl font-semibold text-[var(--foreground)]">
               £{data.reduce((sum: number, item: any) => sum + parseFloat(item.totalRevenue), 0).toFixed(2)}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-            <h4 className="text-sm font-medium text-slate-300 mb-2">Total Profit</h4>
-            <div className="text-2xl font-bold text-slate-100 tabular-nums">
+          <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+            <h4 className="text-sm font-medium text-[var(--muted-foreground)] mb-2">Total Profit</h4>
+            <div className="text-2xl font-semibold text-[var(--foreground)]">
               £{data.reduce((sum: number, item: any) => sum + parseFloat(item.grossProfit), 0).toFixed(2)}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-            <h4 className="text-sm font-medium text-slate-300 mb-2">Avg Margin</h4>
-            <div className="text-2xl font-bold text-slate-100 tabular-nums">
+          <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+            <h4 className="text-sm font-medium text-[var(--muted-foreground)] mb-2">Avg Margin</h4>
+            <div className="text-2xl font-semibold text-[var(--foreground)]">
               {(data.reduce((sum: number, item: any) => sum + parseFloat(item.grossMargin), 0) / data.length).toFixed(1)}%
             </div>
           </div>

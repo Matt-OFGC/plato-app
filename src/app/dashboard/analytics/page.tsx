@@ -2,7 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { AnalyticsClient } from "./AnalyticsClient";
+import { AnalyticsPageClient } from "./AnalyticsPageClient";
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +67,7 @@ export default async function AnalyticsPage() {
   const avgRevenuePerSale = salesCount > 0 ? totalRevenue / salesCount : 0;
 
   return (
-    <AnalyticsClient 
+    <AnalyticsPageClient 
       initialCategories={categories}
       initialRecipes={recipes}
       initialMetrics={{

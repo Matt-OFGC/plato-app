@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-interface ReportsTabProps {
+interface AnalyticsReportsProps {
   filters: {
     dateRange: { start: Date; end: Date };
     categories: number[];
@@ -21,7 +21,7 @@ interface CustomReport {
   createdAt: string;
 }
 
-export function ReportsTab({ filters }: ReportsTabProps) {
+export function AnalyticsReports({ filters }: AnalyticsReportsProps) {
   const [reports, setReports] = useState<CustomReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -129,9 +129,9 @@ export function ReportsTab({ filters }: ReportsTabProps) {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 animate-pulse">
-          <div className="h-6 bg-slate-800 rounded mb-4"></div>
-          <div className="h-32 bg-slate-800 rounded"></div>
+        <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6 animate-pulse">
+          <div className="h-6 bg-[var(--muted)] rounded mb-4"></div>
+          <div className="h-32 bg-[var(--muted)] rounded"></div>
         </div>
       </div>
     );
@@ -140,15 +140,15 @@ export function ReportsTab({ filters }: ReportsTabProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
+      <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-100">Custom Reports</h3>
-            <p className="text-sm text-slate-400 mt-1">Create, schedule, and export custom analytics reports</p>
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">Custom Reports</h3>
+            <p className="text-sm text-[var(--muted-foreground)] mt-1">Create, schedule, and export custom analytics reports</p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+            className="btn-responsive-primary"
           >
             Create Report
           </button>
@@ -157,27 +157,27 @@ export function ReportsTab({ filters }: ReportsTabProps) {
 
       {/* Create Report Form */}
       {showCreateForm && (
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-          <h4 className="text-lg font-semibold text-slate-100 mb-4">Create New Report</h4>
+        <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+          <h4 className="text-lg font-semibold text-[var(--foreground)] mb-4">Create New Report</h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Report Name</label>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-2">Report Name</label>
               <input
                 type="text"
                 value={newReport.name}
                 onChange={(e) => setNewReport({ ...newReport, name: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3 py-2 border border-[var(--border)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 placeholder="Enter report name"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Report Type</label>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-2">Report Type</label>
               <select
                 value={newReport.reportType}
                 onChange={(e) => setNewReport({ ...newReport, reportType: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3 py-2 border border-[var(--border)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               >
                 <option value="profitability">Profitability</option>
                 <option value="trends">Trends</option>
@@ -188,11 +188,11 @@ export function ReportsTab({ filters }: ReportsTabProps) {
           </div>
           
           <div className="mt-4">
-            <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-2">Description</label>
             <textarea
               value={newReport.description}
               onChange={(e) => setNewReport({ ...newReport, description: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full px-3 py-2 border border-[var(--border)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               rows={3}
               placeholder="Enter report description"
             />
@@ -202,13 +202,13 @@ export function ReportsTab({ filters }: ReportsTabProps) {
             <button
               onClick={createReport}
               disabled={!newReport.name.trim()}
-              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-600 text-white rounded-lg transition-colors"
+              className="btn-responsive-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Create Report
             </button>
             <button
               onClick={() => setShowCreateForm(false)}
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+              className="px-4 py-2 border border-[var(--border)] rounded-md text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
             >
               Cancel
             </button>
@@ -217,21 +217,21 @@ export function ReportsTab({ filters }: ReportsTabProps) {
       )}
 
       {/* Reports List */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-        <h4 className="text-lg font-semibold text-slate-100 mb-4">Saved Reports</h4>
+      <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+        <h4 className="text-lg font-semibold text-[var(--foreground)] mb-4">Saved Reports</h4>
         
         {reports.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-slate-400 mb-4">
+            <div className="text-[var(--muted-foreground)] mb-4">
               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h5 className="text-lg font-medium text-slate-300 mb-2">No Reports Yet</h5>
-            <p className="text-slate-400 mb-4">Create your first custom report to get started</p>
+            <h5 className="text-lg font-medium text-[var(--foreground)] mb-2">No Reports Yet</h5>
+            <p className="text-[var(--muted-foreground)] mb-4">Create your first custom report to get started</p>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+              className="btn-responsive-primary"
             >
               Create Report
             </button>
@@ -239,12 +239,12 @@ export function ReportsTab({ filters }: ReportsTabProps) {
         ) : (
           <div className="space-y-4">
             {reports.map((report) => (
-              <div key={report.id} className="bg-slate-800 rounded-lg p-4">
+              <div key={report.id} className="bg-[var(--muted)]/30 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h5 className="font-medium text-slate-200">{report.name}</h5>
-                    <p className="text-sm text-slate-400 mt-1">{report.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+                    <h5 className="font-medium text-[var(--foreground)]">{report.name}</h5>
+                    <p className="text-sm text-[var(--muted-foreground)] mt-1">{report.description}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-[var(--muted-foreground)]">
                       <span>Type: {report.reportType}</span>
                       <span>Created: {new Date(report.createdAt).toLocaleDateString()}</span>
                       {report.lastRunAt && (
@@ -256,30 +256,30 @@ export function ReportsTab({ filters }: ReportsTabProps) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => generateReport(report.id)}
-                      className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm transition-colors"
+                      className="px-3 py-1 border border-[var(--border)] rounded-md text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
                     >
                       Generate
                     </button>
                     <div className="relative group">
-                      <button className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-sm transition-colors">
+                      <button className="px-3 py-1 border border-[var(--border)] rounded-md text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors">
                         Export
                       </button>
-                      <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-[var(--border)] rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         <button
                           onClick={() => exportReport(report.id, 'csv')}
-                          className="block w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 rounded-t-lg"
+                          className="block w-full px-3 py-2 text-left text-sm text-[var(--foreground)] hover:bg-[var(--muted)] rounded-t-lg"
                         >
                           Export as CSV
                         </button>
                         <button
                           onClick={() => exportReport(report.id, 'excel')}
-                          className="block w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700"
+                          className="block w-full px-3 py-2 text-left text-sm text-[var(--foreground)] hover:bg-[var(--muted)]"
                         >
                           Export as Excel
                         </button>
                         <button
                           onClick={() => exportReport(report.id, 'pdf')}
-                          className="block w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 rounded-b-lg"
+                          className="block w-full px-3 py-2 text-left text-sm text-[var(--foreground)] hover:bg-[var(--muted)] rounded-b-lg"
                         >
                           Export as PDF
                         </button>
@@ -294,13 +294,13 @@ export function ReportsTab({ filters }: ReportsTabProps) {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-          <h4 className="text-sm font-medium text-slate-300 mb-2">Quick Export</h4>
-          <p className="text-xs text-slate-400 mb-4">Export current view data</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+          <h4 className="text-sm font-medium text-[var(--foreground)] mb-2">Quick Export</h4>
+          <p className="text-xs text-[var(--muted-foreground)] mb-4">Export current view data</p>
           <button
             onClick={() => {
-              // Export current filters as CSV
+              // Export current filters as JSON
               const data = {
                 filters,
                 timestamp: new Date().toISOString()
@@ -315,26 +315,26 @@ export function ReportsTab({ filters }: ReportsTabProps) {
               window.URL.revokeObjectURL(url);
               document.body.removeChild(a);
             }}
-            className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors"
+            className="w-full px-3 py-2 border border-[var(--border)] rounded-md text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
           >
             Export Current View
           </button>
         </div>
         
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-          <h4 className="text-sm font-medium text-slate-300 mb-2">Schedule Reports</h4>
-          <p className="text-xs text-slate-400 mb-4">Set up automated reports</p>
+        <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+          <h4 className="text-sm font-medium text-[var(--foreground)] mb-2">Schedule Reports</h4>
+          <p className="text-xs text-[var(--muted-foreground)] mb-4">Set up automated reports</p>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors"
+            className="w-full px-3 py-2 border border-[var(--border)] rounded-md text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
           >
             Schedule New Report
           </button>
         </div>
         
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-6">
-          <h4 className="text-sm font-medium text-slate-300 mb-2">Report Templates</h4>
-          <p className="text-xs text-slate-400 mb-4">Use pre-built templates</p>
+        <div className="bg-white border border-[var(--border)] rounded-lg p-4 sm:p-6">
+          <h4 className="text-sm font-medium text-[var(--foreground)] mb-2">Report Templates</h4>
+          <p className="text-xs text-[var(--muted-foreground)] mb-4">Use pre-built templates</p>
           <button
             onClick={() => {
               // Load template
@@ -349,7 +349,7 @@ export function ReportsTab({ filters }: ReportsTabProps) {
               });
               setShowCreateForm(true);
             }}
-            className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors"
+            className="w-full px-3 py-2 border border-[var(--border)] rounded-md text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
           >
             Load Template
           </button>
