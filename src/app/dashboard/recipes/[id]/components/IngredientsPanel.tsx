@@ -130,7 +130,13 @@ export default function IngredientsPanel({
             return { ...ing, quantity: 0 };
           }
           const numValue = parseFloat(value);
-          return { ...ing, quantity: isNaN(numValue) ? 0 : numValue };
+          // Validate: must be a valid number, positive, and not unreasonably large
+          if (isNaN(numValue) || numValue < 0) {
+            return { ...ing, quantity: 0 };
+          }
+          // Reasonable max limit to prevent data issues
+          const MAX_QUANTITY = 1000000;
+          return { ...ing, quantity: Math.min(numValue, MAX_QUANTITY) };
         } else if (field === "unit") {
           return { ...ing, unit: value as Ingredient["unit"] };
         }

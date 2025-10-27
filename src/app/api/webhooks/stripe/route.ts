@@ -3,6 +3,14 @@ import { stripe, STRIPE_CONFIG, getTierFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 
+// Subscription tier seat limits
+const SEAT_LIMITS = {
+  PROFESSIONAL: 1,
+  TEAM: 5,
+  BUSINESS: 999999, // Effectively unlimited
+  STARTER: 1,
+} as const;
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -83,11 +91,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const interval = tierInfo?.interval || "month";
 
   // Get seat limits based on tier
-  let maxSeats = 1;
+  let maxSeats = SEAT_LIMITS.PROFESSIONAL;
   if (tier === "team") {
-    maxSeats = 5;
+    maxSeats = SEAT_LIMITS.TEAM;
   } else if (tier === "business") {
-    maxSeats = 999999; // Effectively unlimited
+    maxSeats = SEAT_LIMITS.BUSINESS;
   }
 
   // Update subscription, user, and company in a transaction
@@ -174,11 +182,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const interval = tierInfo?.interval || "month";
 
   // Get seat limits based on tier
-  let maxSeats = 1;
+  let maxSeats = SEAT_LIMITS.PROFESSIONAL;
   if (tier === "team") {
-    maxSeats = 5;
+    maxSeats = SEAT_LIMITS.TEAM;
   } else if (tier === "business") {
-    maxSeats = 999999;
+    maxSeats = SEAT_LIMITS.BUSINESS;
   }
 
   // Update subscription, user, and company in a transaction
@@ -265,7 +273,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
           prisma.company.update({
             where: { id: membership.company.id },
             data: {
-              maxSeats: 1,
+              maxSeats: SEAT_LIMITS.STARTER,
             },
           })
         );

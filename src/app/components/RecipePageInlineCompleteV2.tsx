@@ -190,13 +190,10 @@ export function RecipePageInlineCompleteV2({
       const navBarHeight = 80; // Bottom navigation height
       const padding = 60; // Additional padding for better spacing
       const availableHeight = Math.max(400, viewportHeight - headerHeight - navBarHeight - padding);
-      
-      console.log('Viewport:', viewportWidth, 'x', viewportHeight, 'Available height:', availableHeight);
-      
+
       // Apply styles to panes for independent scrolling
       const panes = document.querySelectorAll('.ingredients-pane, .instructions-pane');
-      console.log('Found panes:', panes.length);
-      
+
       panes.forEach((pane: any) => {
         // Only set max-height, let flex handle the rest
         pane.style.maxHeight = `${availableHeight}px`;
@@ -204,7 +201,6 @@ export function RecipePageInlineCompleteV2({
         pane.style.overflowX = 'hidden';
         pane.style.webkitOverflowScrolling = 'touch';
         pane.style.scrollBehavior = 'smooth';
-        console.log('Applied styles to pane:', pane.className, 'Max Height:', availableHeight);
       });
       
       // Ensure parent containers don't scroll
@@ -228,9 +224,13 @@ export function RecipePageInlineCompleteV2({
     
     return () => {
       window.removeEventListener('resize', applyResponsiveStyles);
-      // Clean up classes when component unmounts
+      // Clean up classes and styles when component unmounts
       document.documentElement.classList.remove('recipe-page-active');
       document.body.classList.remove('recipe-page-active');
+      document.documentElement.style.height = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.height = '';
+      document.body.style.overflow = '';
     };
   }, []);
   
