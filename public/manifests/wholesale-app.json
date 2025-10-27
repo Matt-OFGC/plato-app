@@ -1,0 +1,42 @@
+{
+  "name": "Plato Wholesale App",
+  "short_name": "Wholesale",
+  "description": "Supplier management, orders, pricing & inventory",
+  "start_url": "/dashboard/wholesale?source=pwa",
+  "scope": "/dashboard/wholesale",
+  "display": "standalone",
+  "background_color": "#10B981",
+  "theme_color": "#10B981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/wholesale-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/wholesale-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Suppliers",
+      "short_name": "Suppliers",
+      "description": "View suppliers",
+      "url": "/dashboard/wholesale?tab=suppliers",
+      "icons": [{ "src": "/icons/building-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Orders",
+      "short_name": "Orders",
+      "description": "Place new order",
+      "url": "/dashboard/wholesale?tab=orders",
+      "icons": [{ "src": "/icons/cart-96.png", "sizes": "96x96" }]
+    }
+  ]
+}

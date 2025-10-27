@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS } from "@/lib/navigation-config";
+import { AppSwitcher } from "./AppSwitcher";
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -94,6 +95,13 @@ export function Sidebar() {
             </button>
             {/* Removed the 3-stripe image; only the collapse button remains as requested */}
           </div>
+
+          {/* App Switcher - NEW! */}
+          {(!collapsed || pinned || isHovered) && (
+            <div className="mt-4 px-2">
+              <AppSwitcher />
+            </div>
+          )}
 
           {/* List */}
           <nav className="mt-2 space-y-1 px-2">

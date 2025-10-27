@@ -1,0 +1,42 @@
+{
+  "name": "Plato Recipe App",
+  "short_name": "Recipe",
+  "description": "Manage recipes, ingredients, costing & menu engineering",
+  "start_url": "/dashboard/recipes?source=pwa",
+  "scope": "/dashboard/recipes",
+  "display": "standalone",
+  "background_color": "#3B82F6",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/recipe-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/recipe-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "productivity", "business"],
+  "shortcuts": [
+    {
+      "name": "New Recipe",
+      "short_name": "New",
+      "description": "Create a new recipe",
+      "url": "/dashboard/recipes/new",
+      "icons": [{ "src": "/icons/plus-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Ingredients",
+      "short_name": "Ingredients",
+      "description": "View ingredients",
+      "url": "/dashboard/ingredients",
+      "icons": [{ "src": "/icons/ingredient-96.png", "sizes": "96x96" }]
+    }
+  ]
+}

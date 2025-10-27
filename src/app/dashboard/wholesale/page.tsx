@@ -1,50 +1,27 @@
 import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { WholesaleCustomers } from "@/components/WholesaleCustomers";
+import { prisma } from "@/lib/prisma";
+import WholesalePageClient from "./WholesalePageClient";
 
 export const dynamic = 'force-dynamic';
 
 export default async function WholesalePage() {
   const user = await getUserFromSession();
-  if (!user) redirect("/login");
+  if (!user) redirect("/login?redirect=/dashboard/wholesale");
 
-  const { companyId } = await getCurrentUserAndCompany();
+  const { companyId, currentUserRole } = await getCurrentUserAndCompany();
+  if (!companyId) redirect("/dashboard");
 
-  // Get all wholesale customers for the company
-  const customers = await prisma.wholesaleCustomer.findMany({
-    where: { companyId: companyId! },
-    include: {
-      _count: {
-        select: {
-          productionItems: true,
-          orders: true,
-        },
-      },
-    },
-    orderBy: [
-      { isActive: "desc" },
-      { name: "asc" },
-    ],
-  });
+  // Get suppliers (we'll create this model later)
+  // For now, return empty array
+  const suppliers: any[] = [];
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Wholesale Customers
-        </h1>
-        <p className="text-gray-600">
-          Manage your wholesale customers and track orders
-        </p>
-      </div>
-
-      <WholesaleCustomers
-        customers={customers}
-        companyId={companyId!}
-      />
-    </div>
+    <WholesalePageClient
+      companyId={companyId}
+      currentUserRole={currentUserRole}
+      suppliers={suppliers}
+    />
   );
 }
-
