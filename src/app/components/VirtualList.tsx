@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { FixedSizeList as List } from 'react-window';
+import { List } from 'react-window';
 
 interface VirtualListProps<T> {
   items: T[];
