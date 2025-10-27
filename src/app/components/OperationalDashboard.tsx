@@ -86,40 +86,40 @@ export function OperationalDashboard({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Modern Header Card with User Info */}
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-2xl shadow-xl overflow-hidden relative">
+    <div className="space-y-4 sm:space-y-5">
+      {/* Modern Header Card with User Info - Compact */}
+      <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-xl shadow-xl overflow-hidden relative">
         {/* Decorative background elements */}
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl"></div>
 
-        <div className="relative z-10 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg border-2 border-white/30">
+        <div className="relative z-10 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg border-2 border-white/30">
                 {(userName?.[0] || 'U').toUpperCase()}
               </div>
               <div className="text-white">
-                <h1 className="text-2xl sm:text-3xl font-bold mb-1">
+                <h1 className="text-xl sm:text-2xl font-bold mb-0.5">
                   Welcome back{userName ? `, ${userName}` : ''}!
                 </h1>
-                <div className="flex flex-wrap items-center gap-2 text-emerald-50">
-                  <span className="text-sm sm:text-base">{formatRole(userRole)}</span>
+                <div className="flex flex-wrap items-center gap-1.5 text-emerald-50 text-sm">
+                  <span>{formatRole(userRole)}</span>
                   {companyName && (
                     <>
                       <span className="text-emerald-300">•</span>
-                      <span className="text-sm sm:text-base">{companyName}</span>
+                      <span>{companyName}</span>
                     </>
                   )}
                 </div>
-                <p className="text-emerald-100 text-sm mt-2">
-                  {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                <p className="text-emerald-100 text-xs mt-1">
+                  {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white text-sm font-medium border border-white/30 shadow-lg">
-                Your Personalized Dashboard
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white text-xs font-medium border border-white/30">
+                Personalized
               </div>
             </div>
           </div>
@@ -188,9 +188,9 @@ export function OperationalDashboard({
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
         {/* Today's Production */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             <div className="p-6 sm:p-8 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
@@ -276,38 +276,42 @@ export function OperationalDashboard({
             </div>
           </div>
 
-          {/* This Week's Schedule */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-              <h2 className="text-xl font-bold text-gray-900">This Week's Schedule</h2>
-              <p className="text-sm text-gray-600 mt-1">Upcoming production plans</p>
+          {/* This Week's Schedule - Compact */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">This Week</h2>
+                  <p className="text-xs text-gray-600 mt-0.5">{weekProduction.length} plan{weekProduction.length !== 1 ? 's' : ''}</p>
+                </div>
+                <Link
+                  href="/dashboard/production"
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold"
+                >
+                  View All →
+                </Link>
+              </div>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               {weekProduction.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No production plans scheduled this week</p>
+                <div className="text-center py-6">
+                  <p className="text-gray-500 text-sm">No plans this week</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {weekProduction.slice(0, 5).map(plan => (
-                    <div key={plan.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-md transition-all duration-200">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{plan.name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {new Date(plan.startDate).toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+                <div className="space-y-2">
+                  {weekProduction.slice(0, 3).map(plan => (
+                    <div key={plan.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200 hover:border-emerald-300 transition-all duration-200">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm text-gray-900 truncate">{plan.name}</h3>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {new Date(plan.startDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
                           {' - '}
-                          {new Date(plan.endDate).toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          {new Date(plan.endDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
                         </p>
-                        <p className="text-xs text-emerald-600 font-medium mt-1">
-                          {plan.items.length} recipe{plan.items.length !== 1 ? 's' : ''} planned
+                        <p className="text-xs text-emerald-600 font-medium mt-0.5">
+                          {plan.items.length} recipe{plan.items.length !== 1 ? 's' : ''}
                         </p>
                       </div>
-                      <Link
-                        href="/dashboard/production"
-                        className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
-                      >
-                        View →
-                      </Link>
                     </div>
                   ))}
                 </div>
@@ -317,14 +321,14 @@ export function OperationalDashboard({
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* My Tasks */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">My Tasks</h2>
-                  <p className="text-xs text-gray-600 mt-0.5">Assigned to you</p>
+                  <h2 className="text-base font-bold text-gray-900">My Tasks</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Assigned to you</p>
                 </div>
                 <button
                   onClick={() => setShowCompletedTasks(!showCompletedTasks)}
@@ -334,54 +338,50 @@ export function OperationalDashboard({
                 </button>
               </div>
             </div>
-            <div className="p-4 max-h-96 overflow-y-auto">
+            <div className="p-3 max-h-64 overflow-y-auto">
               {displayTasks.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 mx-auto mb-3 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 mx-auto mb-2 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <p className="text-gray-600 text-sm font-medium">All tasks completed!</p>
-                  <p className="text-gray-500 text-xs mt-1">Great work!</p>
+                  <p className="text-gray-600 text-xs font-medium">All tasks completed!</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {displayTasks.map(task => {
+                <div className="space-y-1.5">
+                  {displayTasks.slice(0, 5).map(task => {
                     const isUrgent = task.dueDate && urgentTasks.some(t => t.id === task.id);
                     return (
                       <div
                         key={task.id}
-                        className={`p-3 rounded-xl border-2 transition-all duration-200 ${
+                        className={`p-2.5 rounded-lg border transition-all duration-200 ${
                           task.completed
                             ? 'bg-gray-50 border-gray-200'
                             : isUrgent
-                            ? 'bg-red-50 border-red-300 shadow-sm'
+                            ? 'bg-red-50 border-red-200'
                             : 'bg-emerald-50 border-emerald-200'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center mt-0.5 ${
+                        <div className="flex items-start gap-2">
+                          <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center mt-0.5 ${
                             task.completed
                               ? 'bg-emerald-500 border-emerald-500'
                               : 'border-gray-300 bg-white'
                           }`}>
                             {task.completed && (
-                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                            <p className={`text-xs font-semibold ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                               {task.title}
                             </p>
-                            {task.description && (
-                              <p className="text-xs text-gray-600 mt-1">{task.description}</p>
-                            )}
-                            <div className="flex items-center gap-3 mt-2 text-xs">
+                            <div className="flex items-center gap-2 mt-1 text-xs">
                               {task.dueDate && (
-                                <span className={`flex items-center gap-1 ${isUrgent && !task.completed ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                                <span className={`flex items-center gap-0.5 ${isUrgent && !task.completed ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
@@ -389,10 +389,7 @@ export function OperationalDashboard({
                                 </span>
                               )}
                               {task.assignedToName && (
-                                <span className="flex items-center gap-1 text-gray-500">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                  </svg>
+                                <span className="flex items-center gap-0.5 text-gray-500 text-xs">
                                   {task.assignedToName}
                                 </span>
                               )}
@@ -404,178 +401,175 @@ export function OperationalDashboard({
                   })}
                 </div>
               )}
+              {displayTasks.length > 5 && (
+                <div className="text-center pt-2 border-t border-gray-100 mt-2">
+                  <button
+                    onClick={() => setShowCompletedTasks(!showCompletedTasks)}
+                    className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                  >
+                    View all {displayTasks.length} tasks →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Price Alerts */}
           {staleIngredients.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-lg border border-red-200 overflow-hidden">
-              <div className="p-6 border-b border-red-200 bg-gradient-to-r from-red-50 to-rose-50">
+            <div className="bg-white rounded-xl shadow-lg border border-red-200 overflow-hidden">
+              <div className="p-3 border-b border-red-200 bg-gradient-to-r from-red-50 to-rose-50">
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-red-900">Price Alerts</h2>
-                    <p className="text-xs text-red-700">Ingredients need updating</p>
+                    <h2 className="text-base font-bold text-red-900">Price Alerts</h2>
+                    <p className="text-xs text-red-600">{staleIngredients.length} need updating</p>
                   </div>
                 </div>
               </div>
-              <div className="p-4 max-h-64 overflow-y-auto">
-                <div className="space-y-2">
-                  {staleIngredients.slice(0, 10).map(ingredient => (
+              <div className="p-3 max-h-48 overflow-y-auto">
+                <div className="space-y-1.5">
+                  {staleIngredients.slice(0, 5).map(ingredient => (
                     <Link
                       key={ingredient.id}
                       href={`/dashboard/ingredients/${ingredient.id}`}
-                      className="block p-3 bg-red-50 border-2 border-red-200 rounded-xl hover:border-red-400 hover:shadow-md transition-all duration-200"
+                      className="block p-2 bg-red-50 border border-red-200 rounded-lg hover:border-red-300 hover:bg-red-100 transition-all duration-200"
                     >
-                      <p className="text-sm font-semibold text-gray-900">{ingredient.name}</p>
-                      <p className="text-xs text-red-600 font-medium mt-1">
-                        {ingredient.daysSinceUpdate} days since last update
+                      <p className="text-xs font-semibold text-gray-900">{ingredient.name}</p>
+                      <p className="text-xs text-red-600 mt-0.5">
+                        {ingredient.daysSinceUpdate} days ago
                       </p>
                     </Link>
                   ))}
                 </div>
-                {staleIngredients.length > 10 && (
+                {staleIngredients.length > 5 && (
                   <Link
                     href="/dashboard/ingredients"
-                    className="block text-center text-sm text-red-600 hover:text-red-700 font-semibold mt-3"
+                    className="block text-center text-xs text-red-600 hover:text-red-700 font-semibold mt-2 pt-2 border-t border-red-100"
                   >
-                    View all {staleIngredients.length} ingredients →
+                    View all {staleIngredients.length} →
                   </Link>
                 )}
               </div>
             </div>
           )}
 
-          {/* Today's Timesheet - NEW SECTION */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Today's Timesheet</h2>
-                  <p className="text-xs text-gray-600">Track your hours</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-white rounded-xl border border-blue-200">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">Clock In Time</p>
-                    <p className="text-xs text-gray-600 mt-0.5">Not clocked in</p>
+          {/* Today's Timesheet - Compact */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-                  <button className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-md">
-                    Clock In
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">Today</p>
-                    <p className="text-lg font-bold text-gray-900">0h 0m</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">This Week</p>
-                    <p className="text-lg font-bold text-gray-900">0h 0m</p>
-                  </div>
+                  <h2 className="text-base font-bold text-gray-900">Timesheet</h2>
                 </div>
                 <Link
                   href="/dashboard/timesheet"
-                  className="block text-center text-sm text-blue-600 hover:text-blue-700 font-semibold"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  View Full Timesheet →
+                  View →
                 </Link>
               </div>
             </div>
-          </div>
-
-          {/* Team Roster - NEW SECTION */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Team Roster</h2>
-                  <p className="text-xs text-gray-600">Who's working today</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 max-h-64 overflow-y-auto">
+            <div className="p-3">
               <div className="space-y-2">
-                <div className="p-3 bg-gradient-to-r from-emerald-50 to-white rounded-xl border border-emerald-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
-                      {(userName?.[0] || 'U').toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">{userName || 'You'}</p>
-                      <p className="text-xs text-gray-600">{formatRole(userRole)}</p>
-                    </div>
-                    <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md">
-                      Active
-                    </span>
+                <button className="w-full px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200">
+                  Clock In
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                    <p className="text-xs text-gray-600">Today</p>
+                    <p className="text-sm font-bold text-gray-900">0h</p>
+                  </div>
+                  <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                    <p className="text-xs text-gray-600">Week</p>
+                    <p className="text-sm font-bold text-gray-900">0h</p>
                   </div>
                 </div>
-                <p className="text-center text-xs text-gray-500 py-4">
-                  View team schedule for more details
-                </p>
               </div>
-              <Link
-                href="/dashboard/team"
-                className="block text-center text-sm text-purple-600 hover:text-purple-700 font-semibold mt-2"
-              >
-                View Full Roster →
-              </Link>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-2xl shadow-xl overflow-hidden relative">
+          {/* Team Roster - Compact */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-base font-bold text-gray-900">Team</h2>
+                </div>
+                <Link
+                  href="/dashboard/team"
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  View →
+                </Link>
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="p-2.5 bg-gradient-to-r from-emerald-50 to-white rounded-lg border border-emerald-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
+                    {(userName?.[0] || 'U').toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 truncate">{userName || 'You'}</p>
+                    <p className="text-xs text-gray-600">{formatRole(userRole)}</p>
+                  </div>
+                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded">
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions - Compact */}
+          <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-xl shadow-xl overflow-hidden relative">
             <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="relative z-10 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="relative z-10 p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-white">Quick Actions</h3>
+                <h3 className="text-base font-bold text-white">Quick Actions</h3>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Link
                   href="/dashboard/production"
-                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
                 >
                   Plan Production
                 </Link>
                 <Link
                   href="/dashboard/recipes/new"
-                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
                 >
                   New Recipe
                 </Link>
                 <Link
                   href="/dashboard/ingredients/new"
-                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
                 >
                   Add Ingredient
                 </Link>
                 <Link
                   href="/dashboard/analytics"
-                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
                 >
-                  View Analytics
+                  Analytics
                 </Link>
               </div>
             </div>
