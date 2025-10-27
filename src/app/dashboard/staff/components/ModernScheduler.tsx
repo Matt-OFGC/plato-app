@@ -12,6 +12,7 @@ import {
 } from "@dnd-kit/core";
 import { format, addHours, startOfDay, isSameDay } from "date-fns";
 import ShiftTemplatesPanel from "./ShiftTemplatesPanel";
+import { QuickShiftCreator } from "./QuickShiftCreator";
 
 interface Member {
   id: number;
@@ -64,6 +65,7 @@ export default function ModernScheduler({
   const [isCreatingShift, setIsCreatingShift] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [hoveredCell, setHoveredCell] = useState<{ staffId: number; hour: number } | null>(null);
+  const [quickCreateData, setQuickCreateData] = useState<{ member: Member; date: Date; startHour: number } | null>(null);
 
   // Hours to display (6 AM to 12 AM)
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
@@ -131,6 +133,33 @@ export default function ModernScheduler({
     // TODO: Apply template to selected staff/time
     console.log("Applying template:", template);
     setShowTemplates(false);
+  }
+
+  async function handleQuickCreate(shiftData: any) {
+    try {
+      const res = await fetch("/api/staff/shifts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...shiftData, location: null, notes: null }),
+      });
+      if (res.ok) {
+        await loadShifts();
+        setQuickCreateData(null);
+      }
+    } catch (error) {
+      console.error("Failed to create shift:", error);
+    }
+  }
+
+  function detectConflicts(shift: Shift): boolean {
+    const shiftStart = new Date(shift.startTime).getTime();
+    const shiftEnd = new Date(shift.endTime).getTime();
+    return shifts.some((other) => {
+      if (other.id === shift.id || other.membershipId !== shift.membershipId) return false;
+      const otherStart = new Date(other.startTime).getTime();
+      const otherEnd = new Date(other.endTime).getTime();
+      return (shiftStart >= otherStart && shiftStart < otherEnd) || (shiftEnd > otherStart && shiftEnd <= otherEnd) || (shiftStart <= otherStart && shiftEnd >= otherEnd);
+    });
   }
 
   function getShiftPosition(shift: Shift) {
@@ -312,6 +341,8 @@ export default function ModernScheduler({
                   isEven={idx % 2 === 0}
                   getShiftPosition={getShiftPosition}
                   getShiftTypeColor={getShiftTypeColor}
+                  detectConflicts={detectConflicts}
+                  onCellClick={(hour) => setQuickCreateData({ member, date: weekDays[0], startHour: hour })}
                 />
               ))}
             </div>
@@ -355,6 +386,17 @@ export default function ModernScheduler({
           onApplyTemplate={handleApplyTemplate}
         />
       )}
+
+      {/* Quick Create Modal */}
+      {quickCreateData && (
+        <QuickShiftCreator
+          member={quickCreateData.member}
+          date={quickCreateData.date}
+          startHour={quickCreateData.startHour}
+          onClose={() => setQuickCreateData(null)}
+          onSave={handleQuickCreate}
+        />
+      )}
     </DndContext>
   );
 }
@@ -367,6 +409,8 @@ function StaffRow({
   isEven,
   getShiftPosition,
   getShiftTypeColor,
+  detectConflicts,
+  onCellClick,
 }: {
   member: Member;
   shifts: Shift[];
@@ -374,6 +418,8 @@ function StaffRow({
   isEven: boolean;
   getShiftPosition: (shift: Shift) => { left: number; width: number };
   getShiftTypeColor: (type: string) => { bg: string; border: string; text: string };
+  detectConflicts: (shift: Shift) => boolean;
+  onCellClick: (hour: number) => void;
 }) {
   const { setNodeRef } = useDroppable({
     id: `staff-${member.id}`,
@@ -401,20 +447,27 @@ function StaffRow({
 
       {/* Timeline Grid */}
       <div className="flex-1 relative min-w-max" style={{ height: "80px" }}>
-        {/* Grid Lines */}
+        {/* Clickable Grid Cells */}
         <div className="absolute inset-0 flex">
           {hours.map((hour) => (
             <div
               key={hour}
-              className="border-r border-gray-100"
+              onClick={() => onCellClick(hour)}
+              className="border-r border-gray-100 hover:bg-blue-100 cursor-pointer transition-colors group"
               style={{ width: "120px" }}
-            />
+              title="Click to create shift"
+            >
+              <div className="opacity-0 group-hover:opacity-100 flex items-center justify-center h-full text-blue-600 text-xs font-semibold">
+                +
+              </div>
+            </div>
           ))}
         </div>
 
         {/* Shifts */}
         {shifts.map((shift) => {
           const position = getShiftPosition(shift);
+          const hasConflict = detectConflicts(shift);
           return (
             <div
               key={shift.id}
@@ -428,6 +481,7 @@ function StaffRow({
                 shift={shift}
                 position={position}
                 getShiftTypeColor={getShiftTypeColor}
+                hasConflict={hasConflict}
               />
             </div>
           );
@@ -442,10 +496,12 @@ function ShiftBlock({
   shift,
   position,
   getShiftTypeColor,
+  hasConflict = false,
 }: {
   shift: Shift;
   position: { left: number; width: number };
   getShiftTypeColor: (type: string) => { bg: string; border: string; text: string };
+  hasConflict?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: shift.id,
@@ -467,10 +523,15 @@ function ShiftBlock({
       style={style}
       {...listeners}
       {...attributes}
-      className={`h-full ${colors.bg} ${colors.border} border-2 rounded-lg p-2 cursor-move hover:shadow-lg transition-all ${
+      className={`relative h-full ${colors.bg} ${hasConflict ? 'border-red-600 animate-pulse' : colors.border} border-2 rounded-lg p-2 cursor-move hover:shadow-lg transition-all ${
         isDragging ? "opacity-50" : ""
       }`}
     >
+      {hasConflict && (
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full flex items-center justify-center text-white text-xs font-bold" title="Schedule conflict!">
+          !
+        </div>
+      )}
       <div className={`text-xs font-bold ${colors.text} truncate`}>
         {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
       </div>
