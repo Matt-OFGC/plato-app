@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
 import { OperationalDashboard } from "@/components/OperationalDashboard";
+import { AppLauncher } from "@/components/AppLauncher";
 import { checkPriceStatus } from "@/lib/priceTracking";
 
 // Force dynamic rendering since this page uses cookies
@@ -53,7 +54,7 @@ export default async function DashboardPage() {
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   // OPTIMIZATION: Run all database queries in parallel
-  const [todayProductionPlansRaw, weekProductionPlansRaw, tasksRaw, ingredients] = await Promise.all([
+  const [todayProductionPlansRaw, weekProductionPlansRaw, tasksRaw, ingredients, recipeCount, staffCount, shiftsThisWeek] = await Promise.all([
     // Today's production plans
     prisma.productionPlan.findMany({
       where: {
@@ -138,6 +139,30 @@ export default async function DashboardPage() {
       },
       orderBy: { lastPriceUpdate: "asc" },
     }),
+
+    // Get recipe count for app launcher
+    prisma.recipe.count({
+      where: { companyId },
+    }),
+
+    // Get active staff count for app launcher
+    prisma.membership.count({
+      where: {
+        companyId,
+        isActive: true,
+      },
+    }),
+
+    // Get this week's shifts count
+    prisma.shift.count({
+      where: {
+        companyId,
+        date: {
+          gte: today,
+          lt: weekEnd,
+        },
+      },
+    }),
   ]);
 
   // Serialize for client components
@@ -207,6 +232,27 @@ export default async function DashboardPage() {
       userName={user.name || undefined}
       companyName={company?.name || "Your Company"}
     >
+      {/* App Launcher - NEW! */}
+      <AppLauncher
+        recipeCount={recipeCount}
+        ingredientCount={ingredients.length}
+        staffCount={staffCount}
+        shiftsThisWeek={shiftsThisWeek}
+      />
+
+      {/* Divider */}
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-4 bg-gray-50 text-gray-500 font-medium">
+            Today's Operations
+          </span>
+        </div>
+      </div>
+
+      {/* Existing Operational Dashboard - KEPT! */}
       <OperationalDashboard
         todayProduction={todayProduction}
         weekProduction={weekProduction}

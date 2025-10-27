@@ -1,0 +1,42 @@
+{
+  "name": "Plato Staff App",
+  "short_name": "Staff",
+  "description": "Scheduling, timesheets, leave management & payroll",
+  "start_url": "/dashboard/staff?source=pwa",
+  "scope": "/dashboard/staff",
+  "display": "standalone",
+  "background_color": "#9333EA",
+  "theme_color": "#9333EA",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/staff-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/staff-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Scheduler",
+      "short_name": "Schedule",
+      "description": "View staff scheduler",
+      "url": "/dashboard/staff?tab=scheduler",
+      "icons": [{ "src": "/icons/calendar-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Timesheets",
+      "short_name": "Time",
+      "description": "Manage timesheets",
+      "url": "/dashboard/staff?tab=timesheets",
+      "icons": [{ "src": "/icons/clock-96.png", "sizes": "96x96" }]
+    }
+  ]
+}
