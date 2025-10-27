@@ -50,6 +50,36 @@ export type CostBreakdown = {
 
 const MAX_RECIPE_DEPTH = 10; // Prevent infinite recursion
 
+/**
+ * Calculate the total cost of a recipe including ingredients and sub-recipes.
+ *
+ * This function recursively calculates costs for recipes that contain other recipes (sub-recipes).
+ * It includes protection against circular dependencies and excessive nesting depth.
+ *
+ * @param recipe - The recipe to calculate costs for
+ * @param ingredients - Array of all available ingredients with their pricing
+ * @param allRecipes - Array of all recipes (needed for resolving sub-recipes)
+ * @param visitedRecipes - Set of recipe IDs already visited (prevents circular dependencies)
+ * @param depth - Current recursion depth (limited to MAX_RECIPE_DEPTH)
+ *
+ * @returns CostBreakdown object containing itemized costs and totals
+ *
+ * @throws Error if recipe has invalid yield quantity (<= 0)
+ * @throws Error if circular dependency detected between recipes
+ * @throws Error if maximum recursion depth exceeded
+ * @throws Error if required ingredient or sub-recipe not found
+ *
+ * @example
+ * ```typescript
+ * const breakdown = calculateRecipeCost(
+ *   myRecipe,
+ *   allIngredients,
+ *   allRecipes
+ * );
+ * console.log(`Total cost: ${breakdown.totalCost}`);
+ * console.log(`Cost per unit: ${breakdown.costPerOutputUnit}`);
+ * ```
+ */
 export function calculateRecipeCost(
   recipe: RecipeData,
   ingredients: IngredientData[],

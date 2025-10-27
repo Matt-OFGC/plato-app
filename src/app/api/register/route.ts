@@ -111,7 +111,9 @@ export async function POST(req: NextRequest) {
         name: name || "there",
         companyName: company,
       });
-      console.log(`✅ Welcome email sent to ${email}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ Welcome email sent to ${email}`);
+      }
     } catch (emailError) {
       console.error("❌ Failed to send welcome email:", emailError);
       // Don't fail registration if email fails

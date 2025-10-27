@@ -163,7 +163,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { stripeCustomerId: subscription.customer as string },
     include: {
       memberships: {
@@ -234,7 +234,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { stripeCustomerId: subscription.customer as string },
     include: {
       memberships: {

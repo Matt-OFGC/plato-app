@@ -88,6 +88,27 @@ const UNIT_KIND: Record<Unit, UnitKind> = {
   small: "size",
 };
 
+/**
+ * Convert a quantity from any unit to its base unit (g, ml, each, or slices).
+ *
+ * This function normalizes measurements to base units for consistent calculations.
+ * Volume-to-mass conversions require density when available.
+ *
+ * @param quantity - The amount to convert
+ * @param unit - The source unit (e.g., "kg", "cup", "tbsp")
+ * @param densityGPerMl - Optional density for volume-to-mass conversions (grams per milliliter)
+ *
+ * @returns Object with normalized amount and base unit
+ *
+ * @example
+ * ```typescript
+ * // Convert 2 cups of flour to grams (requires density)
+ * const flour = toBase(2, "cup", 0.6); // { amount: 300, base: "g" }
+ *
+ * // Convert 1 kg to grams
+ * const weight = toBase(1, "kg"); // { amount: 1000, base: "g" }
+ * ```
+ */
 export function toBase(quantity: number, unit: Unit, densityGPerMl?: number): { amount: number; base: BaseUnit } {
   const kind = UNIT_KIND[unit];
   if (kind === "each") return { amount: quantity, base: "each" };
@@ -148,6 +169,28 @@ export function normalizeToBaseUnit(quantity: number, unit: Unit, densityGPerMl?
   return toBase(quantity, unit, densityGPerMl);
 }
 
+/**
+ * Convert a quantity from one unit to another unit.
+ *
+ * Handles conversions within the same category (mass-to-mass, volume-to-volume) and
+ * cross-category conversions (volume-to-mass) when density is provided.
+ *
+ * @param quantity - The amount to convert
+ * @param from - The source unit
+ * @param to - The target unit
+ * @param densityGPerMl - Optional density for cross-category conversions (grams per milliliter)
+ *
+ * @returns The converted quantity in the target unit
+ *
+ * @example
+ * ```typescript
+ * // Convert 2 kg to grams
+ * const grams = convertBetweenUnits(2, "kg", "g"); // 2000
+ *
+ * // Convert 250ml of milk to grams (requires density)
+ * const milkGrams = convertBetweenUnits(250, "ml", "g", 1.03); // 257.5
+ * ```
+ */
 export function convertBetweenUnits(
   quantity: number,
   from: Unit,
