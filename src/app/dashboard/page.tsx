@@ -15,7 +15,11 @@ export default async function DashboardPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard");
 
-  const { companyId, company } = await getCurrentUserAndCompany();
+  const { companyId, company, user: userWithMemberships } = await getCurrentUserAndCompany();
+
+  // Get user's role in the current company
+  const membership = userWithMemberships?.memberships.find(m => m.companyId === companyId);
+  const userRole = membership?.role;
   
   // If no company, show empty state
   if (!companyId) {
@@ -31,6 +35,8 @@ export default async function DashboardPage() {
           tasks={[]}
           staleIngredients={[]}
           userName={user.name || undefined}
+          userRole={userRole}
+          companyName={company?.name || undefined}
         />
       </DashboardWithOnboarding>
     );
@@ -207,8 +213,11 @@ export default async function DashboardPage() {
         tasks={tasks}
         staleIngredients={staleIngredients}
         userName={user.name || undefined}
+        userRole={userRole}
+        companyName={company?.name || undefined}
       />
     </DashboardWithOnboarding>
   );
 }
+
 
