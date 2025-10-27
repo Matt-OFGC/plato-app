@@ -5,6 +5,7 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
   buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
+    // Static assets - Cache forever
     {
       urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
       handler: 'CacheFirst',
@@ -22,27 +23,74 @@ const withPWA = require('next-pwa')({
       options: {
         cacheName: 'images',
         expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+          maxEntries: 200,
+          maxAgeSeconds: 365 * 24 * 60 * 60 // 1 year
         }
       }
     },
+    // API routes - Aggressive caching with background sync
     {
       urlPattern: /^\/api\/recipes.*/i,
-      handler: 'NetworkFirst',
+      handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'recipes-api',
         expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 60 // 1 hour
+          maxEntries: 100,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        },
+        backgroundSync: {
+          name: 'recipes-sync',
+          options: {
+            maxRetentionTime: 24 * 60 // 24 minutes
+          }
         }
       }
     },
     {
       urlPattern: /^\/api\/ingredients.*/i,
-      handler: 'NetworkFirst',
+      handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'ingredients-api',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        },
+        backgroundSync: {
+          name: 'ingredients-sync',
+          options: {
+            maxRetentionTime: 24 * 60 // 24 minutes
+          }
+        }
+      }
+    },
+    {
+      urlPattern: /^\/api\/suppliers.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'suppliers-api',
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: /^\/api\/categories.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'categories-api',
+        expiration: {
+          maxEntries: 20,
+          maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
+        }
+      }
+    },
+    // Dashboard pages - Cache aggressively
+    {
+      urlPattern: /^\/dashboard\/recipes.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'recipes-page',
         expiration: {
           maxEntries: 50,
           maxAgeSeconds: 60 * 60 // 1 hour
@@ -50,25 +98,61 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      urlPattern: /^\/dashboard\/recipes.*/i,
-      handler: 'NetworkFirst',
+      urlPattern: /^\/dashboard\/ingredients.*/i,
+      handler: 'StaleWhileRevalidate',
       options: {
-        cacheName: 'recipes-page',
+        cacheName: 'ingredients-page',
         expiration: {
-          maxEntries: 20,
-          maxAgeSeconds: 5 * 60 // 5 minutes
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 // 1 hour
         }
       }
     },
     {
-      urlPattern: /^\/dashboard\/ingredients.*/i,
+      urlPattern: /^\/dashboard\/account.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'account-page',
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 30 * 60 // 30 minutes
+        }
+      }
+    },
+    // Static pages - Cache first
+    {
+      urlPattern: /^\/$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'home-page',
+        expiration: {
+          maxEntries: 1,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        }
+      }
+    },
+    {
+      urlPattern: /^\/login.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'auth-pages',
+        expiration: {
+          maxEntries: 5,
+          maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
+        }
+      }
+    },
+    // Fallback for everything else
+    {
+      urlPattern: /.*/i,
       handler: 'NetworkFirst',
       options: {
-        cacheName: 'ingredients-page',
+        cacheName: 'fallback',
         expiration: {
-          maxEntries: 20,
-          maxAgeSeconds: 5 * 60 // 5 minutes
-        }
+          maxEntries: 32,
+          maxAgeSeconds: 24 * 60 * 60 // 24 hours
+        },
+        networkTimeoutSeconds: 3
       }
     }
   ]

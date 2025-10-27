@@ -4,7 +4,6 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { SeatManager } from "@/components/SeatManager";
 import { TeamManagerWithPins } from "@/components/TeamManagerWithPins";
-import { DeviceModeIndicator } from "@/components/DeviceModeIndicator";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';

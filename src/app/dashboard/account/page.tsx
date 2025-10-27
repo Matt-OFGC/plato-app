@@ -80,7 +80,7 @@ export default async function AccountPage() {
   });
 
   return (
-    <div className="mx-auto max-w-[1280px] px-5 pb-6">
+    <div className="app-container pb-6">
       {/* Header */}
       <div className="mt-4">
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>

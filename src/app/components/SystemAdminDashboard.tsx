@@ -3,11 +3,7 @@
 import { useState, useEffect } from "react";
 import { AdminSession } from "@/lib/admin-auth";
 import { FileUpload } from "./FileUpload";
-import { AdminUserManager } from "./AdminUserManager";
-import { AdminCompanyManager } from "./AdminCompanyManager";
 import { SystemStatus } from "./SystemStatus";
-import { DatabaseBrowser } from "./DatabaseBrowser";
-import { ActivityLogViewer } from "./ActivityLogViewer";
 import { SystemAnalytics } from "./SystemAnalytics";
 
 interface SystemAdminDashboardProps {
@@ -101,51 +97,6 @@ export function SystemAdminDashboard({ session }: SystemAdminDashboardProps) {
               </div>
             </button>
             <button
-              onClick={() => setActiveTab("users")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "users"
-                  ? "border-red-500 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                Users
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("companies")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "companies"
-                  ? "border-red-500 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Companies
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("database")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "database"
-                  ? "border-red-500 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                </svg>
-                Database
-              </div>
-            </button>
-            <button
               onClick={() => setActiveTab("analytics")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "analytics"
@@ -158,21 +109,6 @@ export function SystemAdminDashboard({ session }: SystemAdminDashboardProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 Analytics
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("logs")}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "logs"
-                  ? "border-red-500 text-red-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Activity Logs
               </div>
             </button>
             <button
@@ -220,39 +156,7 @@ export function SystemAdminDashboard({ session }: SystemAdminDashboardProps) {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {loading ? "..." : stats.users}
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Companies</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {loading ? "..." : stats.companies}
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -289,21 +193,7 @@ export function SystemAdminDashboard({ session }: SystemAdminDashboardProps) {
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  onClick={() => setActiveTab("users")}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-colors text-left"
-                >
-                  <h4 className="font-medium text-gray-900">Manage Users</h4>
-                  <p className="text-sm text-gray-600 mt-1">View and manage all user accounts</p>
-                </button>
-                <button
-                  onClick={() => setActiveTab("companies")}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-colors text-left"
-                >
-                  <h4 className="font-medium text-gray-900">Manage Companies</h4>
-                  <p className="text-sm text-gray-600 mt-1">View and manage all companies</p>
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => setActiveTab("system")}
                   className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-colors text-left"
@@ -311,16 +201,19 @@ export function SystemAdminDashboard({ session }: SystemAdminDashboardProps) {
                   <h4 className="font-medium text-gray-900">System Status</h4>
                   <p className="text-sm text-gray-600 mt-1">Check system health and logs</p>
                 </button>
+                <button
+                  onClick={() => setActiveTab("files")}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-colors text-left"
+                >
+                  <h4 className="font-medium text-gray-900">File Management</h4>
+                  <p className="text-sm text-gray-600 mt-1">Upload and manage files</p>
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {activeTab === "users" && <AdminUserManager />}
-        {activeTab === "companies" && <AdminCompanyManager />}
-        {activeTab === "database" && <DatabaseBrowser />}
         {activeTab === "analytics" && <SystemAnalytics />}
-        {activeTab === "logs" && <ActivityLogViewer />}
         {activeTab === "files" && <FileUpload />}
         {activeTab === "system" && <SystemStatus />}
       </div>

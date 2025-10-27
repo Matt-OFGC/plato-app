@@ -84,7 +84,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -92,7 +92,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const planId = parseInt(params.id);
+    const { id } = await params;
+    const planId = parseInt(id);
 
     // Verify the plan exists
     const existingPlan = await prisma.productionPlan.findUnique({

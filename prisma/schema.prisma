@@ -93,6 +93,9 @@ model Ingredient {
   @@index([companyId, name])           // Performance: Fast ingredient search
   @@index([companyId, lastPriceUpdate]) // Performance: Stale price checks
   @@index([supplierId])                // Performance: Filter by supplier
+  @@index([allergens])                 // Performance: Allergen filtering
+  @@index([createdAt])                 // Performance: Recent ingredients
+  @@index([packPrice])                 // Performance: Price sorting
 }
 
 model Recipe {
@@ -169,6 +172,10 @@ model Recipe {
   @@index([companyId, name])           // Performance: Fast recipe lookups by company
   @@index([companyId, categoryId])     // Performance: Filter by category
   @@index([companyId, updatedAt])      // Performance: Recent recipes
+  @@index([createdAt])                 // Performance: Recipe creation timeline
+  @@index([sellingPrice])              // Performance: Price sorting
+  @@index([actualFoodCost])           // Performance: Cost analysis
+  @@index([isSubRecipe])              // Performance: Sub-recipe filtering
 }
 
 model RecipeItem {

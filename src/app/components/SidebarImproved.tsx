@@ -9,20 +9,27 @@ export function Sidebar() {
   const [pinned, setPinned] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const pathname = usePathname();
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  // Lock scroll and add global class for background parallax when drawer opens on mobile
+  // Detect touch device and handle mobile behavior
   useEffect(() => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (typeof window === 'undefined') return;
+    
+    // Detect if device supports touch
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    setIsTouchDevice(hasTouch);
+    
+    const isMobile = window.innerWidth < 768;
     if (isMobile && isOpen) {
       document.body.classList.add('mobile-drawer-open');
-      // Prevent body scroll
       document.body.style.overflow = 'hidden';
     } else {
       document.body.classList.remove('mobile-drawer-open');
       document.body.style.overflow = '';
     }
+    
     return () => {
       document.body.classList.remove('mobile-drawer-open');
       document.body.style.overflow = '';
@@ -45,10 +52,13 @@ export function Sidebar() {
   // Apply body class to adjust main padding so pages don't hide behind sidebar
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const isActuallyCollapsed = collapsed && !pinned && !isHovered;
+    // On touch devices, don't use hover state - only use collapsed/pinned
+    const isActuallyCollapsed = isTouchDevice 
+      ? (collapsed && !pinned) 
+      : (collapsed && !pinned && !isHovered);
     document.body.classList.toggle('sidebar-collapsed', isActuallyCollapsed);
     document.body.classList.toggle('sidebar-expanded', !isActuallyCollapsed);
-  }, [collapsed, pinned, isHovered]);
+  }, [collapsed, pinned, isHovered, isTouchDevice]);
 
   // Fetch navigation preferences
   useEffect(() => {
@@ -79,18 +89,30 @@ export function Sidebar() {
       {/* Fixed compact sidebar on md+; hidden on mobile. Use sticky containment to keep it stationary */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 will-change-transform [position:sticky] md:[position:fixed]">
         <div 
-          className={`${(collapsed && !pinned && !isHovered) ? 'w-16' : 'w-64'} transition-all duration-300 ease-out h-full flex flex-col py-3 bg-white/90 backdrop-blur-md border-r border-gray-200 shadow-sm`}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          className={`${
+            isTouchDevice 
+              ? (collapsed && !pinned ? 'w-16' : 'w-64')
+              : (collapsed && !pinned && !isHovered ? 'w-16' : 'w-64')
+          } transition-all duration-300 ease-out h-full flex flex-col py-3 bg-white/90 backdrop-blur-md border-r border-gray-200 shadow-sm`}
+          onMouseEnter={() => !isTouchDevice && setIsHovered(true)}
+          onMouseLeave={() => !isTouchDevice && setIsHovered(false)}
         >
           {/* Header controls */}
           <div className="flex items-center justify-between px-2">
-            <button onClick={() => setCollapsed(!collapsed)} className="w-10 h-10 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition" title={collapsed ? 'Expand' : 'Collapse'}>
-              {collapsed ? (
-                <svg className="w-4 h-4 m-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-              ) : (
-                <svg className="w-4 h-4 m-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
-              )}
+            <button 
+              onClick={() => setCollapsed(!collapsed)} 
+              className="w-10 h-10 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-all duration-200 touch-manipulation" 
+              title={collapsed ? 'Expand' : 'Collapse'}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <svg 
+                className={`w-4 h-4 m-auto transition-transform duration-300 ${collapsed ? 'rotate-0' : 'rotate-180'}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+              </svg>
             </button>
             {/* Removed the 3-stripe image; only the collapse button remains as requested */}
           </div>
@@ -99,11 +121,15 @@ export function Sidebar() {
           <nav className="mt-2 space-y-1 px-2">
             {ALL_NAVIGATION_ITEMS.map((item) => {
               const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
-              const shouldShowLabel = !(collapsed && !pinned) || isHovered;
+              // On touch devices, show labels when not collapsed or when pinned
+              // On non-touch devices, also show on hover
+              const shouldShowLabel = isTouchDevice 
+                ? !(collapsed && !pinned)
+                : (!(collapsed && !pinned) || isHovered);
               return (
                 <a key={item.value} href={item.href} className={`group flex items-center gap-3 rounded-md px-2 ${active ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-100 text-gray-700'} transition-colors h-10`}>
                   <div className={`w-8 h-8 rounded-md flex items-center justify-center ${active ? 'text-emerald-700' : 'text-gray-700'}`}>{item.icon}</div>
-                  <span className={`${shouldShowLabel ? 'opacity-100 w-auto' : 'opacity-0 w-0'} transition-all text-sm font-medium whitespace-nowrap`}>{item.label}</span>
+                  <span className={`${shouldShowLabel ? 'opacity-100 w-auto' : 'opacity-0 w-0'} transition-all duration-300 text-sm font-medium whitespace-nowrap`}>{item.label}</span>
                 </a>
               );
             })}
@@ -138,7 +164,7 @@ export function Sidebar() {
           />
 
           {/* Sliding rounded drawer inspired by the provided design */}
-          <div className={`absolute left-0 top-0 bottom-0 w-[88vw] max-w-[420px] p-4 transform transition-transform duration-500 ${isOpen ? 'translate-x-0' : '-translate-x-6'}`}
+          <div className={`absolute left-0 top-0 bottom-0 w-88 max-w-80 p-4 transform transition-transform duration-500 ${isOpen ? 'translate-x-0' : '-translate-x-6'}`}
                style={{ transitionTimingFunction: 'cubic-bezier(0.2, 0.8, 0.2, 1.05)' }}>
             <div className="relative h-full rounded-r-3xl shadow-2xl overflow-hidden bg-gradient-to-b from-emerald-600 via-emerald-500 to-emerald-700 text-white/95 backdrop-blur-md">
               <div className="pointer-events-none absolute inset-y-0 right-2 w-12 rounded-l-3xl bg-white/10 blur-2xl opacity-60" />

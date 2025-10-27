@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import { DebugBadge } from "./components/DebugBadge";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +43,7 @@ export default async function RootLayout({
           {children}
         </Providers>
         <InstallPrompt />
-        <DebugBadge />
+        <PerformanceMonitor />
       </body>
     </html>
   );

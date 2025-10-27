@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 // GET /api/wholesale/products/[id] - Get a specific wholesale product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -13,8 +13,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const product = await prisma.wholesaleProduct.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       include: {
         recipe: {
           select: {

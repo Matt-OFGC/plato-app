@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Get payroll runs for the period
     const payrollRuns = await prisma.payrollRun.findMany({
       where: {
-        companyId,
+        companyId: companyId!,
         periodStart: { gte: new Date(periodStart) },
         periodEnd: { lte: new Date(periodEnd) },
       },
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     // Get approved timesheets for the period
     const timesheets = await prisma.timesheet.findMany({
       where: {
-        companyId,
+        companyId: companyId!,
         id: timesheetIds ? { in: timesheetIds } : undefined,
         status: 'approved',
         clockInAt: {
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     // Create payroll run
     const payrollRun = await prisma.payrollRun.create({
       data: {
-        companyId,
+        companyId: companyId!,
         periodStart: new Date(periodStart),
         periodEnd: new Date(periodEnd),
         payDate: new Date(payDate),

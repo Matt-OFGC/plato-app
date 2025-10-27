@@ -89,7 +89,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, companyId } = await getCurrentUserAndCompany();
@@ -97,14 +97,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    const supplierId = parseInt(id);
+    if (isNaN(supplierId)) {
       return NextResponse.json({ error: "Invalid supplier ID" }, { status: 400 });
     }
 
     // Check if supplier has ingredients
     const ingredientCount = await prisma.ingredient.count({
-      where: { supplierId: id }
+      where: { supplierId: supplierId }
     });
 
     if (ingredientCount > 0) {
@@ -114,7 +115,7 @@ export async function DELETE(
     }
 
     await prisma.supplier.delete({
-      where: { id, companyId }
+      where: { id: supplierId, companyId }
     });
 
     return NextResponse.json({ success: true });

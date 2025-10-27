@@ -13,10 +13,10 @@ const { execSync } = require('child_process');
 
 // Configuration
 const SCAN_DIRS = [
-  'src/app/components',
-  'src/app/dashboard',
-  'src/app',
-  'src/app/lib'
+  'components',
+  'dashboard',
+  '.',
+  'lib'
 ];
 
 const PATTERNS = {

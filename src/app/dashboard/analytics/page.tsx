@@ -2,7 +2,6 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { computeRecipeCost } from "@/lib/units";
 
 export const dynamic = 'force-dynamic';
@@ -138,11 +137,10 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <AnalyticsDashboard
-        recipes={recipesWithCosts}
-        ingredients={ingredientsData}
-        categories={categoryStats}
-      />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Analytics Dashboard</h2>
+        <p className="text-gray-600">Analytics features are being updated. Coming soon!</p>
+      </div>
     </div>
   );
 }

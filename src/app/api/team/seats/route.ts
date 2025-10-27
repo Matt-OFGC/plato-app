@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         try {
           const seatInfo = await getSubscriptionSeatCount(subscription.stripeSubscriptionId);
           additionalSeats = seatInfo.additionalSeats;
-          basePrice = subscription.price;
+          basePrice = subscription.price.toNumber();
         } catch (error) {
           console.error("Failed to get Stripe seat count:", error);
           // Fall back to calculated values
