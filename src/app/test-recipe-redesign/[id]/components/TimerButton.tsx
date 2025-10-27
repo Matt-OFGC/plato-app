@@ -1,6 +1,6 @@
 "use client";
 
-import { useCountdown } from "@/app/lib/useCountdown";
+import { useCountdown } from "@/lib/useCountdown";
 
 interface TimerButtonProps {
   recipeId: string;

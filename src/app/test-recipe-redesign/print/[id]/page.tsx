@@ -1,5 +1,5 @@
-import { getMockRecipeById } from "@/app/lib/mocks/recipe";
-import { formatQty } from "@/app/lib/recipe-scaling";
+import { getMockRecipeById } from "@/lib/mocks/recipe";
+import { formatQty } from "@/lib/recipe-scaling";
 
 interface Props {
   params: Promise<{ id: string }>;

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Ingredient, RecipeStep } from "@/app/lib/mocks/recipe";
-import { scaleQuantity, formatQty } from "@/app/lib/recipe-scaling";
+import { Ingredient, RecipeStep } from "@/lib/mocks/recipe";
+import { scaleQuantity, formatQty } from "@/lib/recipe-scaling";
 
 interface IngredientsPanelProps {
   ingredients: Ingredient[];

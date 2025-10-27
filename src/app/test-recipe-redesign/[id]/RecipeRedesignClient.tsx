@@ -1,8 +1,8 @@
 "use client";
 
-import { RecipeMock } from "@/app/lib/mocks/recipe";
+import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState } from "react";
-import { useServings, useIngredientChecklist } from "@/app/lib/useLocalChecklist";
+import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
 import RecipeHeader from "./components/RecipeHeader";
 import RecipeImage from "./components/RecipeImage";
 import ServingsControl from "./components/ServingsControl";

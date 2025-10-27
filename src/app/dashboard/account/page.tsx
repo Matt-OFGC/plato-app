@@ -9,8 +9,8 @@ import { SupplierManager } from "@/components/SupplierManager";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 import { SettingsTabs } from "@/components/SettingsTabs";
 import { TimerSettings } from "@/components/TimerSettings";
-import { CurrencySettings } from "@/app/components/CurrencySettings";
-import { FoodCostSettings } from "@/app/components/FoodCostSettings";
+import { CurrencySettings } from "@/components/CurrencySettings";
+import { FoodCostSettings } from "@/components/FoodCostSettings";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';

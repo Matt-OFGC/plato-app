@@ -1,4 +1,4 @@
-import { getMockRecipeById } from "@/app/lib/mocks/recipe";
+import { getMockRecipeById } from "@/lib/mocks/recipe";
 import RecipeRedesignClient from "./RecipeRedesignClient";
 
 interface Props {

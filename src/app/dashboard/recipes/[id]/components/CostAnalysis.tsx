@@ -1,6 +1,6 @@
 "use client";
 
-import { calcTotalCost } from "@/app/lib/recipe-scaling";
+import { calcTotalCost } from "@/lib/recipe-scaling";
 import { useMemo, useState } from "react";
 import CostInsightsModal from "./CostInsightsModal";
 

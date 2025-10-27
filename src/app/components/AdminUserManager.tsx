@@ -33,6 +33,8 @@ export function AdminUserManager() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showTestAccountsOnly, setShowTestAccountsOnly] = useState(false);
+  const [hideTestAccounts, setHideTestAccounts] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
   const [resetPasswordEmail, setResetPasswordEmail] = useState("");
@@ -157,10 +159,72 @@ export function AdminUserManager() {
     }
   }
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Function to determine if a user is a test/fake account
+  const isTestAccount = (user: User) => {
+    const testEmails = [
+      'admin@testbakery.com',
+      'demo@democafe.com',
+      'admin@example.com'
+    ];
+    
+    const testNames = [
+      'Admin User',
+      'Demo User',
+      'Ronald O\'Hara',
+      'Arnold Klocko',
+      'Lucas Botsford',
+      'Dr. Nancy Nader',
+      'Cecil Aufderhar',
+      'Suzanne Hilll',
+      'Lena Wolff',
+      'Sandy Schuppe',
+      'Marsha Friesen',
+      'Lillian Yundt'
+    ];
+    
+    const testEmailPatterns = [
+      /@test.*\.com$/,
+      /@demo.*\.com$/,
+      /@example\.com$/,
+      /@gmail\.com$/,
+      /@yahoo\.com$/
+    ];
+    
+    // Check exact matches
+    if (testEmails.includes(user.email)) return true;
+    if (testNames.includes(user.name || '')) return true;
+    
+    // Check email patterns (but be more selective)
+    if (testEmailPatterns.some(pattern => pattern.test(user.email))) {
+      // Only mark as test if it's clearly a fake name or test email
+      if (user.name && testNames.some(name => user.name?.includes(name.split(' ')[0]))) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  const filteredUsers = users.filter(user => {
+    // Text search filter
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Test account filters
+    const isTest = isTestAccount(user);
+    
+    if (showTestAccountsOnly) {
+      return isTest;
+    }
+    
+    if (hideTestAccounts) {
+      return !isTest;
+    }
+    
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -179,15 +243,46 @@ export function AdminUserManager() {
         </div>
       )}
 
-      {/* Search */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <input
-          type="text"
-          placeholder="Search users by email or name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-        />
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
+        <div>
+          <input
+            type="text"
+            placeholder="Search users by email or name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+          />
+        </div>
+        
+        {/* Test Account Filters */}
+        <div className="flex gap-4 items-center">
+          <span className="text-sm font-medium text-gray-700">Filter:</span>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={showTestAccountsOnly}
+              onChange={(e) => {
+                setShowTestAccountsOnly(e.target.checked);
+                if (e.target.checked) setHideTestAccounts(false);
+              }}
+              className="mr-2"
+            />
+            <span className="text-sm text-gray-600">Show test accounts only</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={hideTestAccounts}
+              onChange={(e) => {
+                setHideTestAccounts(e.target.checked);
+                if (e.target.checked) setShowTestAccountsOnly(false);
+              }}
+              className="mr-2"
+            />
+            <span className="text-sm text-gray-600">Hide test accounts</span>
+          </label>
+        </div>
       </div>
 
       {/* Users Table */}
@@ -240,6 +335,11 @@ export function AdminUserManager() {
                             {user.isAdmin && (
                               <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
                                 Admin
+                              </span>
+                            )}
+                            {isTestAccount(user) && (
+                              <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+                                Test Account
                               </span>
                             )}
                           </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { RecipeMock } from "@/app/lib/mocks/recipe";
-import { calcTotalCost } from "@/app/lib/recipe-scaling";
+import { RecipeMock } from "@/lib/mocks/recipe";
+import { calcTotalCost } from "@/lib/recipe-scaling";
 import { useMemo } from "react";
 
 interface CostAnalysisProps {

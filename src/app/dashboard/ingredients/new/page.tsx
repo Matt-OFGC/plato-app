@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createIngredient } from "../actions";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { IngredientForm } from "../../../components/IngredientForm";
+import { IngredientForm } from "@/components/IngredientForm";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';

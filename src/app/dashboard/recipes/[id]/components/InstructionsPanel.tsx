@@ -1,6 +1,6 @@
 "use client";
 
-import { RecipeStep } from "@/app/lib/mocks/recipe";
+import { RecipeStep } from "@/lib/mocks/recipe";
 import TimerButton from "./TimerButton";
 
 interface InstructionsPanelProps {

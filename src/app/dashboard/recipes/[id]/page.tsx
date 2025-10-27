@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { redirect } from "next/navigation";
 import RecipeClient from "./RecipeClient";
-import type { RecipeMock, Ingredient, RecipeStep } from "@/app/lib/mocks/recipe";
+import type { RecipeMock, Ingredient, RecipeStep } from "@/lib/mocks/recipe";
 
 export const dynamic = 'force-dynamic';
 

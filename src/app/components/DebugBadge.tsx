@@ -1,6 +1,6 @@
 "use client";
 
-import { getBuildInfoString } from "../lib/buildInfo";
+import { getBuildInfoString } from "@/lib/buildInfo";
 import { useState } from "react";
 
 export function DebugBadge() {
