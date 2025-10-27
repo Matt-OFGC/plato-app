@@ -1099,7 +1099,7 @@ export function RecipePageInlineCompleteV2({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
                   </svg>
                 </button>
-                <span className="text-3xl font-bold text-gray-900 min-w-[3rem] sm:min-w-[4rem] text-center">{servings}</span>
+                <span className="text-3xl font-bold text-gray-900 min-w-12 sm:min-w-16 text-center">{servings}</span>
                 <button 
                   onClick={() => setServings(servings + 1)}
                   className="w-12 h-12 rounded-full bg-emerald-100 hover:bg-emerald-200 flex items-center justify-center transition-colors text-emerald-700 touch-manipulation"
@@ -1151,7 +1151,7 @@ export function RecipePageInlineCompleteV2({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
                         </svg>
                       </button>
-                      <span className="text-lg font-bold text-gray-900 min-w-[2rem] sm:min-w-[3rem] text-center">{slicesPerBatch}</span>
+                      <span className="text-lg font-bold text-gray-900 min-w-8 sm:min-w-12 text-center">{slicesPerBatch}</span>
                       <button 
                         onClick={() => setSlicesPerBatch(slicesPerBatch + 1)}
                         className="w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center transition-colors text-blue-700 touch-manipulation"
@@ -1313,7 +1313,7 @@ export function RecipePageInlineCompleteV2({
               {/* Allergens Popup */}
               {showAllergensPopup && (
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
-                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px] max-w-[250px] sm:min-w-[250px] sm:max-w-[300px]">
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-48 max-w-60 sm:min-w-60 sm:max-w-72">
                     <div className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Allergens Present</div>
                     <div className="text-xs text-gray-700 space-y-1">
                       {allAllergens.map((allergen, index) => (
@@ -1335,7 +1335,7 @@ export function RecipePageInlineCompleteV2({
             <div className="text-center">
               <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Notes</div>
               {isLocked ? (
-                <div className="text-xs text-blue-700 min-h-[1.5rem] sm:min-h-[2rem]">
+                <div className="text-xs text-blue-700 min-h-6 sm:min-h-8">
                   {notes || 'No notes added'}
                 </div>
               ) : (

@@ -2,7 +2,6 @@
 
 import { RecipeStep } from "@/lib/mocks/recipe";
 import { useState } from "react";
-import TimerButton from "./TimerButton";
 
 interface InstructionsPanelProps {
   steps: RecipeStep[];
@@ -240,11 +239,9 @@ export default function InstructionsPanel({
                       )}
 
                       {step.hasTimer && step.durationMin && (
-                        <TimerButton
-                          recipeId={recipeId}
-                          stepId={step.id}
-                          minutes={step.durationMin}
-                        />
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          Timer: {step.durationMin}m
+                        </span>
                       )}
                     </div>
                   )}

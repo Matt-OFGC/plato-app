@@ -4,13 +4,8 @@ import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
 import RecipeHeader from "./components/RecipeHeader";
-import RecipeImage from "./components/RecipeImage";
-import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
-import RecipeNotes from "./components/RecipeNotes";
 import RecipeMetadata from "./components/RecipeMetadata";
-import RecipeTypeSelector from "./components/RecipeTypeSelector";
-import StepNavigation from "./components/StepNavigation";
 import IngredientsPanel from "./components/IngredientsPanel";
 import InstructionsPanel from "./components/InstructionsPanel";
 
@@ -90,28 +85,24 @@ export default function RecipeRedesignClient({ recipe }: Props) {
         }`}>
           {/* Left Rail */}
           <div className="space-y-4">
-            <RecipeImage
-              imageUrl={recipe.imageUrl}
-              title={recipe.title}
-              isEditMode={viewMode === "edit"}
-            />
-            
-            {/* Show Servings Control in view modes, Recipe Type in edit mode */}
-            {viewMode === "edit" ? (
-              <RecipeTypeSelector
-                recipeType={recipeType}
-                onRecipeTypeChange={handleRecipeTypeChange}
-                slicesPerBatch={slicesPerBatch}
-                onSlicesPerBatchChange={handleSlicesPerBatchChange}
-              />
-            ) : (
-              <ServingsControl
-                servings={servings}
-                onServingsChange={handleServingsChange}
-                recipeType={recipeType}
-                baseServings={recipe.baseServings}
-              />
+            {/* Recipe Image Placeholder */}
+            {recipe.imageUrl && (
+              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                <img 
+                  src={recipe.imageUrl} 
+                  alt={recipe.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             )}
+            
+            {/* Servings Info */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-medium text-gray-900 mb-2">Servings</h3>
+              <p className="text-sm text-gray-600">
+                {servings} {recipeType === 'batch' ? 'batches' : 'servings'}
+              </p>
+            </div>
             
             <CostAnalysis
               recipe={recipe}
@@ -127,19 +118,25 @@ export default function RecipeRedesignClient({ recipe }: Props) {
               shelfLife={recipe.shelfLife}
             />
             
-            <RecipeNotes notes={recipe.notes} />
+            {/* Recipe Notes */}
+            {recipe.notes && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-medium text-gray-900 mb-2">Notes</h3>
+                <p className="text-sm text-gray-600">{recipe.notes}</p>
+              </div>
+            )}
           </div>
 
           {/* Right Content Area */}
           <div className="space-y-4">
             {/* Step Navigation - Show in Steps and Edit modes */}
             {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
-              <StepNavigation
-                steps={localSteps}
-                activeStepIndex={activeStepIndex}
-                onStepChange={setActiveStepIndex}
-                totalSteps={localSteps.length}
-              />
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-medium text-gray-900 mb-2">Steps</h3>
+                <p className="text-sm text-gray-600">
+                  Step {activeStepIndex + 1} of {localSteps.length}
+                </p>
+              </div>
             )}
 
             {/* Two Column Layout for Ingredients & Instructions */}
