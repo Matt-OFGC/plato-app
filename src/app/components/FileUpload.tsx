@@ -6,7 +6,7 @@ export function FileUpload() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
-  const [logoPath, setLogoPath] = useState("/images/plato-logo.svg");
+  const [logoPath, setLogoPath] = useState("/images/plato-logo.png");
 
   useEffect(() => {
     // Check which logo file exists
@@ -14,9 +14,9 @@ export function FileUpload() {
       const extensions = ['.svg', '.png', '.jpg', '.jpeg'];
       for (const ext of extensions) {
         try {
-          const response = await fetch(`/images/plato-logo${ext}`, { method: 'HEAD' });
+          const response = await fetch(`/images/plato-logo.png`, { method: 'HEAD' });
           if (response.ok) {
-            setLogoPath(`/images/plato-logo${ext}`);
+            setLogoPath(`/images/plato-logo.png`);
             break;
           }
         } catch (e) {

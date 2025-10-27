@@ -126,7 +126,7 @@ export default function PinLoginPage() {
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <img 
-              src="/images/plato-logo.svg" 
+              src="/images/plato-logo.png" 
               alt="Plato" 
               className="h-12 w-auto"
             />

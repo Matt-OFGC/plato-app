@@ -12,15 +12,9 @@ export default function Home() {
               Login
             </a>
             <img 
-              src="/images/plato-logo.svg" 
+              src="/images/plato-logo.png" 
               alt="Plato" 
               className="h-10 w-auto"
-              onError={(e) => {
-                const img = e.currentTarget;
-                if (img.src.endsWith('.svg')) {
-                  img.src = '/images/plato-logo.png';
-                }
-              }}
             />
             <a
               href="/register"
@@ -47,15 +41,9 @@ export default function Home() {
             {/* Centered Logo */}
             <div className="flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
               <img 
-                src="/images/plato-logo.svg" 
+                src="/images/plato-logo.png" 
                 alt="Plato" 
                 className="h-12 w-auto"
-                onError={(e) => {
-                  const img = e.currentTarget;
-                  if (img.src.endsWith('.svg')) {
-                    img.src = '/images/plato-logo.png';
-                  }
-                }}
               />
             </div>
             
@@ -721,7 +709,7 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-              <img src="/images/plato-logo.svg" alt="Plato" className="h-10 w-auto" />
+              <img src="/images/plato-logo.png" alt="Plato" className="h-10 w-auto" />
               </div>
               <p className="text-gray-600">
                 Recipe management and cost control for professional kitchens.

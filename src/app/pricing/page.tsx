@@ -128,7 +128,7 @@ export default function PricingPage() {
         <div className="app-container">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-3">
-              <img src="/images/plato-logo.svg" alt="Plato" className="h-10 w-auto" />
+              <img src="/images/plato-logo.png" alt="Plato" className="h-10 w-auto" />
               <span className="text-2xl font-bold text-gray-900">Plato</span>
             </Link>
             <div className="flex items-center gap-4">
