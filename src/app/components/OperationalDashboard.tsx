@@ -47,6 +47,8 @@ interface OperationalDashboardProps {
   tasks: Task[];
   staleIngredients: StaleIngredient[];
   userName?: string;
+  userRole?: string;
+  companyName?: string;
 }
 
 export function OperationalDashboard({
@@ -55,6 +57,8 @@ export function OperationalDashboard({
   tasks,
   staleIngredients,
   userName,
+  userRole,
+  companyName,
 }: OperationalDashboardProps) {
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
 
@@ -76,86 +80,110 @@ export function OperationalDashboard({
 
   const displayTasks = showCompletedTasks ? tasks : pendingTasks;
 
+  const formatRole = (role?: string) => {
+    if (!role) return 'Team Member';
+    return role.charAt(0) + role.slice(1).toLowerCase();
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Top Bar - Responsive, shows active user */}
-      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-xl px-3 sm:px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-semibold">
-            {(userName?.[0] || 'U').toUpperCase()}
+      {/* Modern Header Card with User Info */}
+      <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-2xl shadow-xl overflow-hidden relative">
+        {/* Decorative background elements */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl"></div>
+
+        <div className="relative z-10 p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl sm:text-3xl font-bold shadow-lg border-2 border-white/30">
+                {(userName?.[0] || 'U').toUpperCase()}
+              </div>
+              <div className="text-white">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-1">
+                  Welcome back{userName ? `, ${userName}` : ''}!
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 text-emerald-50">
+                  <span className="text-sm sm:text-base">{formatRole(userRole)}</span>
+                  {companyName && (
+                    <>
+                      <span className="text-emerald-300">•</span>
+                      <span className="text-sm sm:text-base">{companyName}</span>
+                    </>
+                  )}
+                </div>
+                <p className="text-emerald-100 text-sm mt-2">
+                  {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm text-white text-sm font-medium border border-white/30 shadow-lg">
+                Your Personalized Dashboard
+              </div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="text-sm sm:text-base font-semibold text-gray-900 truncate">{userName ? userName : 'Signed in'}</div>
-            <div className="text-xs text-gray-500 truncate">{new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
-          </div>
-        </div>
-        <div className="hidden sm:flex items-center gap-2">
-          <span className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">Personalised dashboard</span>
         </div>
       </div>
 
-      {/* Welcome */}
-      <div className="spacing-responsive-compact">
-        <h1 className="text-responsive-h1 text-gray-900 mb-2">Welcome back{userName ? `, ${userName}` : ''}! 👋</h1>
-        <p className="text-responsive-body text-gray-600">Keep an eye on production and tasks at a glance</p>
-      </div>
-
-      {/* Quick Stats Bar */}
-      <div className="grid-responsive-tablet gap-4">
-        <div className="card-responsive bg-gradient-to-br from-blue-500 to-blue-600 text-white touch-target">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm font-medium mb-1">Today's Progress</p>
-              <p className="text-2xl sm:text-3xl font-bold">{todayProgress}%</p>
-              <p className="text-blue-100 text-xs mt-1">{todayCompleted} of {todayTotal} items</p>
+      {/* Quick Stats Bar - Modern Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
             </div>
-            <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
           </div>
+          <p className="text-gray-600 text-sm font-medium mb-1">Today's Progress</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{todayProgress}%</p>
+          <p className="text-xs text-gray-500">{todayCompleted} of {todayTotal} items completed</p>
         </div>
 
-        <div className="card-responsive bg-gradient-to-br from-amber-500 to-amber-600 text-white touch-target">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-amber-100 text-sm font-medium mb-1">Pending Tasks</p>
-              <p className="text-2xl sm:text-3xl font-bold">{pendingTasks.length}</p>
-              {urgentTasks.length > 0 && (
-                <p className="text-amber-100 text-xs mt-1 font-semibold">⚠️ {urgentTasks.length} urgent</p>
-              )}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
             </div>
-            <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
           </div>
+          <p className="text-gray-600 text-sm font-medium mb-1">Pending Tasks</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{pendingTasks.length}</p>
+          {urgentTasks.length > 0 ? (
+            <p className="text-xs text-red-600 font-semibold">{urgentTasks.length} urgent task{urgentTasks.length !== 1 ? 's' : ''}</p>
+          ) : (
+            <p className="text-xs text-gray-500">No urgent tasks</p>
+          )}
         </div>
 
-        <div className="card-responsive bg-gradient-to-br from-purple-500 to-purple-600 text-white touch-target">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium mb-1">This Week</p>
-              <p className="text-2xl sm:text-3xl font-bold">{weekProduction.length}</p>
-              <p className="text-purple-100 text-xs mt-1">production plans</p>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
-            <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
           </div>
+          <p className="text-gray-600 text-sm font-medium mb-1">This Week</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{weekProduction.length}</p>
+          <p className="text-xs text-gray-500">production plan{weekProduction.length !== 1 ? 's' : ''}</p>
         </div>
 
-        <div className={`card-responsive bg-gradient-to-br ${staleIngredients.length > 0 ? 'from-red-500 to-red-600' : 'from-green-500 to-green-600'} text-white touch-target`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`${staleIngredients.length > 0 ? 'text-red-100' : 'text-green-100'} text-sm font-medium mb-1`}>Price Alerts</p>
-              <p className="text-2xl sm:text-3xl font-bold">{staleIngredients.length}</p>
-              <p className={`${staleIngredients.length > 0 ? 'text-red-100' : 'text-green-100'} text-xs mt-1`}>
-                {staleIngredients.length > 0 ? 'need updating' : 'all current'}
-              </p>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200">
+          <div className="flex items-start justify-between mb-4">
+            <div className={`w-12 h-12 rounded-xl ${staleIngredients.length > 0 ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30' : 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30'} flex items-center justify-center`}>
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-            <svg className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 ${staleIngredients.length > 0 ? 'text-red-200' : 'text-green-200'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
           </div>
+          <p className="text-gray-600 text-sm font-medium mb-1">Price Alerts</p>
+          <p className="text-3xl font-bold text-gray-900 mb-1">{staleIngredients.length}</p>
+          <p className={`text-xs ${staleIngredients.length > 0 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+            {staleIngredients.length > 0 ? 'need updating' : 'All prices current'}
+          </p>
         </div>
       </div>
 
@@ -163,31 +191,33 @@ export function OperationalDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Today's Production */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="card-responsive">
-            <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-6 sm:p-8 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                 <div>
-                  <h2 className="text-responsive-h3 text-gray-900">Today's Production</h2>
-                  <p className="text-responsive-body text-gray-600 mt-1">What needs to be made today</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Today's Production</h2>
+                  <p className="text-sm text-gray-600 mt-1">What needs to be made today</p>
                 </div>
                 <Link
                   href="/dashboard/production"
-                  className="btn-responsive-secondary text-sm"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   View All →
                 </Link>
               </div>
             </div>
-            <div className="p-4 sm:p-6">
+            <div className="p-6 sm:p-8">
               {todayProduction.length === 0 ? (
-                <div className="text-center py-8 sm:py-12">
-                  <svg className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  <p className="text-gray-500 mb-4 text-responsive-body">No production scheduled for today</p>
+                <div className="text-center py-12 sm:py-16">
+                  <div className="w-20 h-20 rounded-full bg-gray-100 mx-auto mb-4 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 mb-6 text-base">No production scheduled for today</p>
                   <Link
                     href="/dashboard/production"
-                    className="btn-responsive-primary"
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg shadow-emerald-600/30"
                   >
                     Create Production Plan
                   </Link>
@@ -196,29 +226,34 @@ export function OperationalDashboard({
                 <div className="space-y-6">
                   {todayProduction.map(plan => (
                     <div key={plan.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-                      <h3 className="font-semibold text-gray-900 mb-3">{plan.name}</h3>
-                      <div className="space-y-2">
+                      <h3 className="font-bold text-lg text-gray-900 mb-4">{plan.name}</h3>
+                      <div className="space-y-3">
                         {plan.items.map(item => (
                           <div
                             key={item.id}
-                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border touch-target ${
+                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
                               item.completed
-                                ? 'bg-green-50 border-green-200'
-                                : 'bg-gray-50 border-gray-200'
+                                ? 'bg-emerald-50 border-emerald-200 shadow-sm'
+                                : 'bg-white border-gray-200 hover:border-emerald-300 hover:shadow-md'
                             }`}
                           >
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                checked={item.completed}
-                                className="w-5 h-5 sm:w-6 sm:h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 touch-target"
-                                readOnly
-                              />
+                            <div className="flex items-center gap-4">
+                              <div className={`flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center ${
+                                item.completed
+                                  ? 'bg-emerald-500 border-emerald-500'
+                                  : 'border-gray-300 bg-white'
+                              }`}>
+                                {item.completed && (
+                                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
                               <div>
-                                <p className={`font-medium text-responsive-body ${item.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                                <p className={`font-semibold text-base ${item.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                                   {item.recipe.name}
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-600 mt-0.5">
                                   {item.quantity} batch{item.quantity !== 1 ? 'es' : ''} × {item.recipe.yieldQuantity}{item.recipe.yieldUnit}
                                 </p>
                               </div>
@@ -226,7 +261,7 @@ export function OperationalDashboard({
                             {!item.completed && (
                               <Link
                                 href={`/dashboard/recipes/${item.recipe.id}`}
-                                className="btn-responsive-secondary text-sm mt-2 sm:mt-0"
+                                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors duration-200 mt-3 sm:mt-0"
                               >
                                 View Recipe →
                               </Link>
@@ -242,8 +277,8 @@ export function OperationalDashboard({
           </div>
 
           {/* This Week's Schedule */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
               <h2 className="text-xl font-bold text-gray-900">This Week's Schedule</h2>
               <p className="text-sm text-gray-600 mt-1">Upcoming production plans</p>
             </div>
@@ -255,7 +290,7 @@ export function OperationalDashboard({
               ) : (
                 <div className="space-y-3">
                   {weekProduction.slice(0, 5).map(plan => (
-                    <div key={plan.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div key={plan.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-md transition-all duration-200">
                       <div>
                         <h3 className="font-semibold text-gray-900">{plan.name}</h3>
                         <p className="text-sm text-gray-600 mt-1">
@@ -263,13 +298,13 @@ export function OperationalDashboard({
                           {' - '}
                           {new Date(plan.endDate).toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-emerald-600 font-medium mt-1">
                           {plan.items.length} recipe{plan.items.length !== 1 ? 's' : ''} planned
                         </p>
                       </div>
                       <Link
                         href="/dashboard/production"
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
                       >
                         View →
                       </Link>
@@ -283,14 +318,17 @@ export function OperationalDashboard({
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* Tasks */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-bold text-gray-900">Tasks</h2>
+          {/* My Tasks */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">My Tasks</h2>
+                  <p className="text-xs text-gray-600 mt-0.5">Assigned to you</p>
+                </div>
                 <button
                   onClick={() => setShowCompletedTasks(!showCompletedTasks)}
-                  className="text-xs text-gray-600 hover:text-gray-900"
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
                 >
                   {showCompletedTasks ? 'Hide' : 'Show'} completed
                 </button>
@@ -299,10 +337,13 @@ export function OperationalDashboard({
             <div className="p-4 max-h-96 overflow-y-auto">
               {displayTasks.length === 0 ? (
                 <div className="text-center py-8">
-                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-gray-500 text-sm">All tasks completed! 🎉</p>
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 mx-auto mb-3 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 text-sm font-medium">All tasks completed!</p>
+                  <p className="text-gray-500 text-xs mt-1">Great work!</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -311,36 +352,49 @@ export function OperationalDashboard({
                     return (
                       <div
                         key={task.id}
-                        className={`p-3 rounded-lg border ${
+                        className={`p-3 rounded-xl border-2 transition-all duration-200 ${
                           task.completed
                             ? 'bg-gray-50 border-gray-200'
                             : isUrgent
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-blue-50 border-blue-200'
+                            ? 'bg-red-50 border-red-300 shadow-sm'
+                            : 'bg-emerald-50 border-emerald-200'
                         }`}
                       >
-                        <div className="flex items-start gap-2">
-                          <input
-                            type="checkbox"
-                            checked={task.completed}
-                            className="mt-1 w-4 h-4 rounded border-gray-300"
-                            readOnly
-                          />
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center mt-0.5 ${
+                            task.completed
+                              ? 'bg-emerald-500 border-emerald-500'
+                              : 'border-gray-300 bg-white'
+                          }`}>
+                            {task.completed && (
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                            <p className={`text-sm font-semibold ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                               {task.title}
                             </p>
                             {task.description && (
                               <p className="text-xs text-gray-600 mt-1">{task.description}</p>
                             )}
-                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                            <div className="flex items-center gap-3 mt-2 text-xs">
                               {task.dueDate && (
-                                <span className={isUrgent && !task.completed ? 'text-red-600 font-semibold' : ''}>
-                                  📅 {new Date(task.dueDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
+                                <span className={`flex items-center gap-1 ${isUrgent && !task.completed ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  {new Date(task.dueDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
                                 </span>
                               )}
                               {task.assignedToName && (
-                                <span>👤 {task.assignedToName}</span>
+                                <span className="flex items-center gap-1 text-gray-500">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  </svg>
+                                  {task.assignedToName}
+                                </span>
                               )}
                             </div>
                           </div>
@@ -353,12 +407,21 @@ export function OperationalDashboard({
             </div>
           </div>
 
-          {/* Alerts */}
+          {/* Price Alerts */}
           {staleIngredients.length > 0 && (
-            <div className="bg-white rounded-xl border border-red-200 shadow-sm">
-              <div className="p-6 border-b border-red-200 bg-red-50">
-                <h2 className="text-lg font-bold text-red-900">⚠️ Price Alerts</h2>
-                <p className="text-sm text-red-700 mt-1">These ingredients need price updates</p>
+            <div className="bg-white rounded-2xl shadow-lg border border-red-200 overflow-hidden">
+              <div className="p-6 border-b border-red-200 bg-gradient-to-r from-red-50 to-rose-50">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-red-900">Price Alerts</h2>
+                    <p className="text-xs text-red-700">Ingredients need updating</p>
+                  </div>
+                </div>
               </div>
               <div className="p-4 max-h-64 overflow-y-auto">
                 <div className="space-y-2">
@@ -366,10 +429,10 @@ export function OperationalDashboard({
                     <Link
                       key={ingredient.id}
                       href={`/dashboard/ingredients/${ingredient.id}`}
-                      className="block p-3 bg-red-50 border border-red-200 rounded-lg hover:border-red-300 transition-colors"
+                      className="block p-3 bg-red-50 border-2 border-red-200 rounded-xl hover:border-red-400 hover:shadow-md transition-all duration-200"
                     >
-                      <p className="text-sm font-medium text-gray-900">{ingredient.name}</p>
-                      <p className="text-xs text-red-600 mt-1">
+                      <p className="text-sm font-semibold text-gray-900">{ingredient.name}</p>
+                      <p className="text-xs text-red-600 font-medium mt-1">
                         {ingredient.daysSinceUpdate} days since last update
                       </p>
                     </Link>
@@ -378,7 +441,7 @@ export function OperationalDashboard({
                 {staleIngredients.length > 10 && (
                   <Link
                     href="/dashboard/ingredients"
-                    className="block text-center text-sm text-red-600 hover:text-red-700 font-medium mt-3"
+                    className="block text-center text-sm text-red-600 hover:text-red-700 font-semibold mt-3"
                   >
                     View all {staleIngredients.length} ingredients →
                   </Link>
@@ -387,34 +450,134 @@ export function OperationalDashboard({
             </div>
           )}
 
+          {/* Today's Timesheet - NEW SECTION */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Today's Timesheet</h2>
+                  <p className="text-xs text-gray-600">Track your hours</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-white rounded-xl border border-blue-200">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Clock In Time</p>
+                    <p className="text-xs text-gray-600 mt-0.5">Not clocked in</p>
+                  </div>
+                  <button className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-md">
+                    Clock In
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-1">Today</p>
+                    <p className="text-lg font-bold text-gray-900">0h 0m</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-xs text-gray-600 mb-1">This Week</p>
+                    <p className="text-lg font-bold text-gray-900">0h 0m</p>
+                  </div>
+                </div>
+                <Link
+                  href="/dashboard/timesheet"
+                  className="block text-center text-sm text-blue-600 hover:text-blue-700 font-semibold"
+                >
+                  View Full Timesheet →
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Team Roster - NEW SECTION */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Team Roster</h2>
+                  <p className="text-xs text-gray-600">Who's working today</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 max-h-64 overflow-y-auto">
+              <div className="space-y-2">
+                <div className="p-3 bg-gradient-to-r from-emerald-50 to-white rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
+                      {(userName?.[0] || 'U').toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">{userName || 'You'}</p>
+                      <p className="text-xs text-gray-600">{formatRole(userRole)}</p>
+                    </div>
+                    <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md">
+                      Active
+                    </span>
+                  </div>
+                </div>
+                <p className="text-center text-xs text-gray-500 py-4">
+                  View team schedule for more details
+                </p>
+              </div>
+              <Link
+                href="/dashboard/team"
+                className="block text-center text-sm text-purple-600 hover:text-purple-700 font-semibold mt-2"
+              >
+                View Full Roster →
+              </Link>
+            </div>
+          </div>
+
           {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-6 text-white">
-            <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
-            <div className="space-y-2">
-              <Link
-                href="/dashboard/production"
-                className="block w-full py-2 px-4 bg-white/20 hover:bg-white/30 rounded-lg text-center font-medium transition-colors"
-              >
-                Plan Production
-              </Link>
-              <Link
-                href="/dashboard/recipes/new"
-                className="block w-full py-2 px-4 bg-white/20 hover:bg-white/30 rounded-lg text-center font-medium transition-colors"
-              >
-                New Recipe
-              </Link>
-              <Link
-                href="/dashboard/ingredients/new"
-                className="block w-full py-2 px-4 bg-white/20 hover:bg-white/30 rounded-lg text-center font-medium transition-colors"
-              >
-                Add Ingredient
-              </Link>
-              <Link
-                href="/dashboard/analytics"
-                className="block w-full py-2 px-4 bg-white/20 hover:bg-white/30 rounded-lg text-center font-medium transition-colors"
-              >
-                View Analytics
-              </Link>
+          <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-2xl shadow-xl overflow-hidden relative">
+            <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+            <div className="relative z-10 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white">Quick Actions</h3>
+              </div>
+              <div className="space-y-2">
+                <Link
+                  href="/dashboard/production"
+                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                >
+                  Plan Production
+                </Link>
+                <Link
+                  href="/dashboard/recipes/new"
+                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                >
+                  New Recipe
+                </Link>
+                <Link
+                  href="/dashboard/ingredients/new"
+                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                >
+                  Add Ingredient
+                </Link>
+                <Link
+                  href="/dashboard/analytics"
+                  className="block w-full py-3 px-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl text-center font-semibold transition-all duration-200 border border-white/30 hover:border-white/50 shadow-lg"
+                >
+                  View Analytics
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -422,4 +585,5 @@ export function OperationalDashboard({
     </div>
   );
 }
+
 
