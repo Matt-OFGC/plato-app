@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -14,7 +14,8 @@ export async function PATCH(
 
     const body = await request.json();
     const { completed, quantity, notes } = body;
-    const itemId = parseInt(params.id);
+    const { id } = await params;
+    const itemId = parseInt(id);
 
     // Get the existing item to check if completion status changed
     const existingItem = await prisma.productionItem.findUnique({

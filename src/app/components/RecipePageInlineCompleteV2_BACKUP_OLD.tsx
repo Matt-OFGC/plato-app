@@ -5,7 +5,7 @@ import { formatCurrency } from "@/lib/currency";
 import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCostWithDensity, BaseUnit } from "@/lib/units";
 import Link from "next/link";
-import { initPaneVars } from "../lib/paneHeight";
+import { initPaneVars } from "@/lib/paneHeight";
 import {
   DndContext,
   closestCenter,

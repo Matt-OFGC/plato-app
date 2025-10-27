@@ -26,7 +26,7 @@ const supplierSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, companyId } = await getCurrentUserAndCompany();
@@ -34,7 +34,8 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
+    const { id } = await params;
+    const supplierId = parseInt(id);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid supplier ID" }, { status: 400 });
     }

@@ -1,4 +1,4 @@
-import { mapAuthError, generateErrorId } from '../auth-errors';
+import { mapAuthError, generateErrorId } from '@/lib/errors/auth-errors';
 
 describe('Auth Error Mapping', () => {
   test('should map duplicate key error to EMAIL_ALREADY_EXISTS', () => {

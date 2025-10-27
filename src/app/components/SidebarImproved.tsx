@@ -8,6 +8,7 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
   const pathname = usePathname();
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
@@ -44,9 +45,10 @@ export function Sidebar() {
   // Apply body class to adjust main padding so pages don't hide behind sidebar
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    document.body.classList.toggle('sidebar-collapsed', collapsed && !pinned);
-    document.body.classList.toggle('sidebar-expanded', !(collapsed && !pinned));
-  }, [collapsed, pinned]);
+    const isActuallyCollapsed = collapsed && !pinned && !isHovered;
+    document.body.classList.toggle('sidebar-collapsed', isActuallyCollapsed);
+    document.body.classList.toggle('sidebar-expanded', !isActuallyCollapsed);
+  }, [collapsed, pinned, isHovered]);
 
   // Fetch navigation preferences
   useEffect(() => {
@@ -76,7 +78,11 @@ export function Sidebar() {
 
       {/* Fixed compact sidebar on md+; hidden on mobile. Use sticky containment to keep it stationary */}
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 z-40 will-change-transform [position:sticky] md:[position:fixed]">
-        <div className={`${(collapsed && !pinned) ? 'w-16' : 'w-64'} transition-all duration-300 ease-out h-full flex flex-col py-3 bg-white/90 backdrop-blur-md border-r border-gray-200 shadow-sm`}>
+        <div 
+          className={`${(collapsed && !pinned && !isHovered) ? 'w-16' : 'w-64'} transition-all duration-300 ease-out h-full flex flex-col py-3 bg-white/90 backdrop-blur-md border-r border-gray-200 shadow-sm`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           {/* Header controls */}
           <div className="flex items-center justify-between px-2">
             <button onClick={() => setCollapsed(!collapsed)} className="w-10 h-10 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition" title={collapsed ? 'Expand' : 'Collapse'}>
@@ -93,10 +99,11 @@ export function Sidebar() {
           <nav className="mt-2 space-y-1 px-2">
             {ALL_NAVIGATION_ITEMS.map((item) => {
               const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+              const shouldShowLabel = !(collapsed && !pinned) || isHovered;
               return (
                 <a key={item.value} href={item.href} className={`group flex items-center gap-3 rounded-md px-2 ${active ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-100 text-gray-700'} transition-colors h-10`}>
                   <div className={`w-8 h-8 rounded-md flex items-center justify-center ${active ? 'text-emerald-700' : 'text-gray-700'}`}>{item.icon}</div>
-                  <span className={`${(collapsed && !pinned) ? 'opacity-0 w-0' : 'opacity-100 w-auto'} transition-all text-sm font-medium whitespace-nowrap`}>{item.label}</span>
+                  <span className={`${shouldShowLabel ? 'opacity-100 w-auto' : 'opacity-0 w-0'} transition-all text-sm font-medium whitespace-nowrap`}>{item.label}</span>
                 </a>
               );
             })}

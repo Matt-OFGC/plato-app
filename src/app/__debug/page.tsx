@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getDebugInfo, BUILD_INFO } from "../lib/buildInfo";
+import { getDebugInfo, BUILD_INFO } from "@/lib/buildInfo";
 
 interface RouteInfo {
   path: string;
