@@ -78,30 +78,28 @@ export async function POST(req: NextRequest) {
     const currency = getCurrencyFromCountry(country);
     
     const [co, user] = await prisma.$transaction([
-      prisma.company.upsert({
-        where: { name: company },
-        create: { 
+      prisma.company.create({
+        data: {
           name: company,
           slug,
           businessType,
           country,
           phone
         },
-        update: {},
       }),
-      prisma.user.create({ 
-        data: { 
-          email, 
-          name, 
-          passwordHash, 
-          preferences: { 
-            create: { currency } 
-          } 
-        } 
+      prisma.user.create({
+        data: {
+          email,
+          name,
+          passwordHash,
+          preferences: {
+            create: { currency }
+          }
+        }
       })
     ]);
-    
-    await prisma.membership.create({ data: { userId: user.id, companyId: co.id, role: "ADMIN" } });
+
+    await prisma.membership.create({ data: { userId: user.id, companyId: co.id, role: "OWNER" } });
     
     // Audit successful registration
     await auditLog.register(user.id, co.id, req);
@@ -113,7 +111,9 @@ export async function POST(req: NextRequest) {
         name: name || "there",
         companyName: company,
       });
-      console.log(`✅ Welcome email sent to ${email}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ Welcome email sent to ${email}`);
+      }
     } catch (emailError) {
       console.error("❌ Failed to send welcome email:", emailError);
       // Don't fail registration if email fails

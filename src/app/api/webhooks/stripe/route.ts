@@ -3,6 +3,14 @@ import { stripe, STRIPE_CONFIG, getTierFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 
+// Subscription tier seat limits
+const SEAT_LIMITS = {
+  PROFESSIONAL: 1,
+  TEAM: 5,
+  BUSINESS: 999999, // Effectively unlimited
+  STARTER: 1,
+} as const;
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -83,75 +91,79 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const interval = tierInfo?.interval || "month";
 
   // Get seat limits based on tier
-  let maxSeats = 1;
+  let maxSeats = SEAT_LIMITS.PROFESSIONAL;
   if (tier === "team") {
-    maxSeats = 5;
+    maxSeats = SEAT_LIMITS.TEAM;
   } else if (tier === "business") {
-    maxSeats = 999999; // Effectively unlimited
+    maxSeats = SEAT_LIMITS.BUSINESS;
   }
 
-  // Create or update subscription in database
-  await prisma.subscription.upsert({
-    where: { userId: user.id },
-    create: {
-      userId: user.id,
-      stripeSubscriptionId: subscriptionId,
-      stripePriceId: price.id,
-      stripeProductId: price.product as string,
-      status: subscription.status,
-      tier: tier,
-      price: price.unit_amount ? price.unit_amount / 100 : 19.0,
-      currency: price.currency,
-      interval: interval,
-      currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-      currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-      maxIngredients: null, // All paid tiers have unlimited
-      maxRecipes: null, // All paid tiers have unlimited
-    },
-    update: {
-      stripeSubscriptionId: subscriptionId,
-      stripePriceId: price.id,
-      stripeProductId: price.product as string,
-      status: subscription.status,
-      tier: tier,
-      price: price.unit_amount ? price.unit_amount / 100 : 19.0,
-      currency: price.currency,
-      interval: interval,
-      currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-      currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-      maxIngredients: null,
-      maxRecipes: null,
-    },
-  });
+  // Update subscription, user, and company in a transaction
+  const operations: any[] = [
+    prisma.subscription.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        stripeSubscriptionId: subscriptionId,
+        stripePriceId: price.id,
+        stripeProductId: price.product as string,
+        status: subscription.status,
+        tier: tier,
+        price: price.unit_amount ? price.unit_amount / 100 : 19.0,
+        currency: price.currency,
+        interval: interval,
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        maxIngredients: null, // All paid tiers have unlimited
+        maxRecipes: null, // All paid tiers have unlimited
+      },
+      update: {
+        stripeSubscriptionId: subscriptionId,
+        stripePriceId: price.id,
+        stripeProductId: price.product as string,
+        status: subscription.status,
+        tier: tier,
+        price: price.unit_amount ? price.unit_amount / 100 : 19.0,
+        currency: price.currency,
+        interval: interval,
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        maxIngredients: null,
+        maxRecipes: null,
+      },
+    }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        subscriptionTier: tier,
+        subscriptionInterval: interval,
+        subscriptionStatus: subscription.status,
+        subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+      },
+    }),
+  ];
 
-  // Update user subscription status
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      subscriptionTier: tier,
-      subscriptionInterval: interval,
-      subscriptionStatus: subscription.status,
-      subscriptionEndsAt: new Date((subscription as any).current_period_end * 1000),
-    },
-  });
-
-  // Update company seat limits if user is company owner
+  // Add company updates to transaction
   if (user.memberships.length > 0) {
     for (const membership of user.memberships) {
       if (membership.company) {
-        await prisma.company.update({
-          where: { id: membership.company.id },
-          data: {
-            maxSeats: maxSeats,
-          },
-        });
+        operations.push(
+          prisma.company.update({
+            where: { id: membership.company.id },
+            data: {
+              maxSeats: maxSeats,
+            },
+          })
+        );
       }
     }
   }
+
+  await prisma.$transaction(operations);
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { stripeCustomerId: subscription.customer as string },
     include: {
       memberships: {
@@ -170,55 +182,59 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const interval = tierInfo?.interval || "month";
 
   // Get seat limits based on tier
-  let maxSeats = 1;
+  let maxSeats = SEAT_LIMITS.PROFESSIONAL;
   if (tier === "team") {
-    maxSeats = 5;
+    maxSeats = SEAT_LIMITS.TEAM;
   } else if (tier === "business") {
-    maxSeats = 999999;
+    maxSeats = SEAT_LIMITS.BUSINESS;
   }
 
-  // Update subscription in database
-  await prisma.subscription.updateMany({
-    where: { stripeSubscriptionId: subscription.id },
-    data: {
-      status: subscription.status,
-      tier: tier,
-      interval: interval,
-      currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-      currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-    },
-  });
+  // Update subscription, user, and company in a transaction
+  const operations: any[] = [
+    prisma.subscription.updateMany({
+      where: { stripeSubscriptionId: subscription.id },
+      data: {
+        status: subscription.status,
+        tier: tier,
+        interval: interval,
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+      },
+    }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        subscriptionTier: tier,
+        subscriptionInterval: interval,
+        subscriptionStatus: subscription.status,
+        subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+      },
+    }),
+  ];
 
-  // Update user status
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      subscriptionTier: tier,
-      subscriptionInterval: interval,
-      subscriptionStatus: subscription.status,
-      subscriptionEndsAt: new Date((subscription as any).current_period_end * 1000),
-    },
-  });
-
-  // Update company seat limits if user is company owner
+  // Add company updates to transaction
   if (user.memberships.length > 0) {
     for (const membership of user.memberships) {
       if (membership.company) {
-        await prisma.company.update({
-          where: { id: membership.company.id },
-          data: {
-            maxSeats: maxSeats,
-          },
-        });
+        operations.push(
+          prisma.company.update({
+            where: { id: membership.company.id },
+            data: {
+              maxSeats: maxSeats,
+            },
+          })
+        );
       }
     }
   }
+
+  await prisma.$transaction(operations);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { stripeCustomerId: subscription.customer as string },
     include: {
       memberships: {
@@ -230,38 +246,42 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   if (!user) return;
 
-  // Update subscription status
-  await prisma.subscription.updateMany({
-    where: { stripeSubscriptionId: subscription.id },
-    data: {
-      status: "canceled",
-      canceledAt: new Date(),
-    },
-  });
+  // Update subscription, user, and company in a transaction
+  const operations: any[] = [
+    prisma.subscription.updateMany({
+      where: { stripeSubscriptionId: subscription.id },
+      data: {
+        status: "canceled",
+        canceledAt: new Date(),
+      },
+    }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        subscriptionTier: "starter",
+        subscriptionStatus: "canceled",
+        subscriptionEndsAt: null,
+      },
+    }),
+  ];
 
-  // Downgrade user to starter tier
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      subscriptionTier: "starter",
-      subscriptionStatus: "canceled",
-      subscriptionEndsAt: null,
-    },
-  });
-
-  // Reset company seat limits to 1
+  // Add company updates to transaction
   if (user.memberships.length > 0) {
     for (const membership of user.memberships) {
       if (membership.company) {
-        await prisma.company.update({
-          where: { id: membership.company.id },
-          data: {
-            maxSeats: 1,
-          },
-        });
+        operations.push(
+          prisma.company.update({
+            where: { id: membership.company.id },
+            data: {
+              maxSeats: SEAT_LIMITS.STARTER,
+            },
+          })
+        );
       }
     }
   }
+
+  await prisma.$transaction(operations);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {

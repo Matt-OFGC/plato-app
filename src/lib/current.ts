@@ -7,11 +7,18 @@ export async function getCurrentUserAndCompany() {
   
   const user = await prisma.user.findUnique({
     where: { id: session.id },
-    include: { memberships: true, preferences: true },
+    include: {
+      memberships: {
+        where: { isActive: true },
+        orderBy: { createdAt: 'asc' }
+      },
+      preferences: true
+    },
   });
-  
+
   if (!user) return { user: null, companyId: null, company: null, currency: "GBP" };
-  const membership = user.memberships[0] || null;
+  // Only use active memberships, prioritize first (oldest) active membership
+  const membership = user.memberships.find(m => m.isActive) || user.memberships[0] || null;
   const companyId = membership?.companyId ?? null;
   const currency = user.preferences?.currency ?? "GBP";
   
