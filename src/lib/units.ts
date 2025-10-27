@@ -156,7 +156,7 @@ export function convertBetweenUnits(
 ): number {
   if (from === to) return quantity;
   const { amount, base } = toBase(quantity, from, densityGPerMl);
-  return fromBase(amount, to, base === "g" ? densityGPerMl : densityGPerMl);
+  return fromBase(amount, to, densityGPerMl);
 }
 
 export function costPerBaseUnit(packPrice: number, packQuantity: number, packUnit: BaseUnit): number {

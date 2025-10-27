@@ -224,17 +224,17 @@ export async function DELETE(request: NextRequest) {
       include: { user: { select: { email: true } } },
     });
 
-    // Soft delete (set isActive to false)
-    await prisma.membership.update({
-      where: { id: membershipId },
-      data: { isActive: false },
-    });
-
-    // Update company seat count
-    await prisma.company.update({
-      where: { id: companyId },
-      data: { seatsUsed: { decrement: 1 } },
-    });
+    // Soft delete member and update company seat count in a transaction
+    await prisma.$transaction([
+      prisma.membership.update({
+        where: { id: membershipId },
+        data: { isActive: false },
+      }),
+      prisma.company.update({
+        where: { id: companyId },
+        data: { seatsUsed: { decrement: 1 } },
+      }),
+    ]);
 
     // Audit member removal
     if (memberToRemove) {
