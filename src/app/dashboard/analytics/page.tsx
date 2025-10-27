@@ -2,7 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { computeRecipeCost } from "@/lib/units";
+import { AnalyticsClient } from "./AnalyticsClient";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,133 +15,70 @@ export default async function AnalyticsPage() {
     redirect("/dashboard");
   }
 
-  // Get recipes with cost data
-  const recipes = await prisma.recipe.findMany({
-    where: { companyId },
-    include: {
-      items: {
-        include: {
-          ingredient: {
-            select: {
-              packQuantity: true,
-              packUnit: true,
-              packPrice: true,
-              densityGPerMl: true,
-              currency: true,
-            },
-          },
-        },
-      },
-      sections: {
-        include: {
-          items: {
-            include: {
-              ingredient: {
-                select: {
-                  packQuantity: true,
-                  packUnit: true,
-                  packPrice: true,
-                  densityGPerMl: true,
-                  currency: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      categoryRef: true,
-    },
-  });
-
-  // Calculate costs for each recipe
-  const recipesWithCosts = recipes.map(recipe => {
-    // Collect all items from both direct items and section items
-    const allItems = [
-      ...recipe.items.map(item => ({
-        quantity: Number(item.quantity),
-        unit: item.unit,
-        ingredient: {
-          packQuantity: Number(item.ingredient.packQuantity),
-          packUnit: item.ingredient.packUnit,
-          packPrice: Number(item.ingredient.packPrice),
-          densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
+  // Fetch initial data for the dashboard
+  const [categories, recipes, recentSales] = await Promise.all([
+    // Get categories for filtering
+    prisma.category.findMany({
+      where: { companyId },
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: { recipes: true }
         }
-      })),
-      ...recipe.sections.flatMap(section => 
-        section.items.map(item => ({
-          quantity: Number(item.quantity),
-          unit: item.unit,
-          ingredient: {
-            packQuantity: Number(item.ingredient.packQuantity),
-            packUnit: item.ingredient.packUnit,
-            packPrice: Number(item.ingredient.packPrice),
-            densityGPerMl: item.ingredient.densityGPerMl ? Number(item.ingredient.densityGPerMl) : undefined,
-          }
-        }))
-      )
-    ];
-
-    const cost = computeRecipeCost({ items: allItems });
-    
-    return {
-      id: recipe.id,
-      name: recipe.name,
-      category: recipe.categoryRef?.name || recipe.category || "Uncategorized",
-      cost: cost.toString(),
-      sellingPrice: recipe.sellingPrice?.toString() || null,
-      actualFoodCost: recipe.actualFoodCost?.toString() || null,
-      yieldQuantity: recipe.yieldQuantity.toString(),
-      yieldUnit: recipe.yieldUnit,
-      createdAt: recipe.createdAt.toISOString(),
-      updatedAt: recipe.updatedAt.toISOString(),
-    };
-  });
-
-  // Get ingredient price trends
-  const ingredients = await prisma.ingredient.findMany({
-    where: { companyId },
-    select: {
-      id: true,
-      name: true,
-      packPrice: true,
-      currency: true,
-      lastPriceUpdate: true,
-    },
-    orderBy: { lastPriceUpdate: "desc" },
-  });
-
-  const ingredientsData = ingredients.map(ing => ({
-    ...ing,
-    packPrice: ing.packPrice.toString(),
-    lastPriceUpdate: ing.lastPriceUpdate.toISOString(),
-  }));
-
-  // Get recipe count by category
-  const categoryStats = await prisma.category.findMany({
-    where: { companyId },
-    include: {
-      _count: {
-        select: { recipes: true },
       },
-    },
-  });
+      orderBy: { name: 'asc' }
+    }),
+
+    // Get recipes for filtering
+    prisma.recipe.findMany({
+      where: { companyId },
+      select: {
+        id: true,
+        name: true,
+        categoryRef: {
+          select: { name: true }
+        }
+      },
+      orderBy: { name: 'asc' }
+    }),
+
+    // Get recent sales data for initial overview
+    prisma.salesRecord.findMany({
+      where: { 
+        companyId,
+        transactionDate: {
+          gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // Last 90 days
+        }
+      },
+      select: {
+        totalRevenue: true,
+        transactionDate: true,
+        recipeId: true
+      },
+      orderBy: { transactionDate: 'desc' },
+      take: 1000 // Limit for performance
+    })
+  ]);
+
+  // Calculate initial metrics
+  const totalRevenue = recentSales.reduce((sum, sale) => sum + Number(sale.totalRevenue), 0);
+  const salesCount = recentSales.length;
+  const avgRevenuePerSale = salesCount > 0 ? totalRevenue / salesCount : 0;
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Analytics & Insights
-        </h1>
-        <p className="text-gray-600">
-          Track costs, profitability, and business metrics
-        </p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Analytics Dashboard</h2>
-        <p className="text-gray-600">Analytics features are being updated. Coming soon!</p>
-      </div>
-    </div>
+    <AnalyticsClient 
+      initialCategories={categories}
+      initialRecipes={recipes}
+      initialMetrics={{
+        totalRevenue,
+        salesCount,
+        avgRevenuePerSale,
+        dateRange: {
+          start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+          end: new Date()
+        }
+      }}
+    />
   );
 }
-
