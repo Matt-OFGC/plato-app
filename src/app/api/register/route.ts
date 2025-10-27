@@ -56,8 +56,11 @@ export async function POST(req: NextRequest) {
     
     const { email, password, company, name, businessType, country, phone } = validationResult.data;
 
+    // Convert email to lowercase for case-insensitive storage
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Check if user already exists
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return NextResponse.json({
         error: "That email is already registered. Try logging in or reset your password.",
@@ -67,20 +70,20 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    
+
     // Generate unique slug for company
     const slug = await generateUniqueSlug(company, async (slug) => {
       const existing = await prisma.company.findUnique({ where: { slug } });
       return !!existing;
     });
-    
+
     // Auto-detect currency from country
     const currency = getCurrencyFromCountry(country);
-    
+
     const [co, user] = await prisma.$transaction([
       prisma.company.upsert({
         where: { name: company },
-        create: { 
+        create: {
           name: company,
           slug,
           businessType,
@@ -89,9 +92,9 @@ export async function POST(req: NextRequest) {
         },
         update: {},
       }),
-      prisma.user.create({ 
-        data: { 
-          email, 
+      prisma.user.create({
+        data: {
+          email: normalizedEmail, 
           name, 
           passwordHash, 
           preferences: { 
@@ -109,11 +112,11 @@ export async function POST(req: NextRequest) {
     // Send welcome email
     try {
       await sendWelcomeEmail({
-        to: email,
+        to: normalizedEmail,
         name: name || "there",
         companyName: company,
       });
-      console.log(`✅ Welcome email sent to ${email}`);
+      console.log(`✅ Welcome email sent to ${normalizedEmail}`);
     } catch (emailError) {
       console.error("❌ Failed to send welcome email:", emailError);
       // Don't fail registration if email fails

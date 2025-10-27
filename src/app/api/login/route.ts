@@ -30,13 +30,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Convert email to lowercase for case-insensitive lookup
+    const normalizedEmail = email.toLowerCase().trim();
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user || !user.passwordHash) {
       // Audit failed login
-      await auditLog.loginFailed(email, request, "User not found or no password");
+      await auditLog.loginFailed(normalizedEmail, request, "User not found or no password");
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     if (!isValid) {
       // Audit failed login
-      await auditLog.loginFailed(email, request, "Invalid password");
+      await auditLog.loginFailed(normalizedEmail, request, "Invalid password");
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }

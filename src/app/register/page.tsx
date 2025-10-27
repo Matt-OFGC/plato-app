@@ -27,12 +27,15 @@ export default function RegisterPage() {
     setError(null);
     setStatus(null);
     setLoading(true);
-    
+
     try {
-      const formData = new URLSearchParams({ 
-        email, 
-        password, 
-        company, 
+      // Normalize email to lowercase for case-insensitive registration
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const formData = new URLSearchParams({
+        email: normalizedEmail,
+        password,
+        company,
         name,
         businessType,
         country,
