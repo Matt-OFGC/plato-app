@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic';
 export default async function StaffPage() {
   try {
     const user = await getUserFromSession();
-    if (!user) redirect("/login");
+    if (!user) {
+      redirect("/login?redirect=/dashboard/staff");
+    }
     
     const { companyId } = await getCurrentUserAndCompany();
     
