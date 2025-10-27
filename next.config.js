@@ -1,3 +1,79 @@
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+  buildExcludes: [/middleware-manifest\.json$/],
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-fonts',
+        expiration: {
+          maxEntries: 4,
+          maxAgeSeconds: 365 * 24 * 60 * 60 // 365 days
+        }
+      }
+    },
+    {
+      urlPattern: /\.(?:jpg|jpeg|gif|png|svg|webp|avif)$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'images',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+        }
+      }
+    },
+    {
+      urlPattern: /^\/api\/recipes.*/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'recipes-api',
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 // 1 hour
+        }
+      }
+    },
+    {
+      urlPattern: /^\/api\/ingredients.*/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'ingredients-api',
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 // 1 hour
+        }
+      }
+    },
+    {
+      urlPattern: /^\/dashboard\/recipes.*/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'recipes-page',
+        expiration: {
+          maxEntries: 20,
+          maxAgeSeconds: 5 * 60 // 5 minutes
+        }
+      }
+    },
+    {
+      urlPattern: /^\/dashboard\/ingredients.*/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'ingredients-page',
+        expiration: {
+          maxEntries: 20,
+          maxAgeSeconds: 5 * 60 // 5 minutes
+        }
+      }
+    }
+  ]
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   turbopack: {
@@ -76,4 +152,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withPWA(nextConfig);
