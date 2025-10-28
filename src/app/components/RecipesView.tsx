@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ViewToggle } from "./ViewToggle";
 
-type ViewMode = 'grid' | 'list';
+type ViewMode = 'grid' | 'list' | 'photos';
 type SortField = 'name' | 'category' | 'yield' | 'sellPrice' | 'cogs' | 'totalSteps' | 'totalTime';
 type SortDirection = 'asc' | 'desc';
 
@@ -138,10 +138,76 @@ export function RecipesView({ recipes }: RecipesViewProps) {
           defaultView="grid" 
           onChange={setViewMode}
           storageKey="recipes-view-mode"
+          options={[
+            { value: 'grid', label: 'Grid' },
+            { value: 'list', label: 'List' },
+            { value: 'photos', label: 'Photos' }
+          ]}
         />
       </div>
 
-      {viewMode === 'grid' ? (
+      {viewMode === 'photos' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sortedRecipes.map((r) => (
+            <div key={r.id} className="group">
+              <Link href={`/dashboard/recipes/${r.id}`} className="block">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  {/* Large Recipe Image */}
+                  <div className="aspect-[4/3] bg-gradient-to-br from-emerald-100 to-blue-100 relative overflow-hidden">
+                    {r.imageUrl ? (
+                      <img 
+                        src={r.imageUrl} 
+                        alt={r.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <svg className="w-16 h-16 text-emerald-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <p className="text-sm text-gray-500">No image</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* Category Badge */}
+                    {r.category && (
+                      <div className="absolute top-3 left-3">
+                        <span className="px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-xs font-medium text-gray-700">
+                          {r.category}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recipe Info - Minimal */}
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors mb-2 line-clamp-2">
+                      {r.name}
+                    </h3>
+                    {r.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                        {r.description}
+                      </p>
+                    )}
+                    
+                    {/* Key Stats */}
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>{r.yieldQuantity} {r.yieldUnit}</span>
+                      {r.sellingPrice && (
+                        <span className="font-medium text-emerald-600">
+                          £{r.sellingPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      ) : viewMode === 'grid' ? (
         <div className="grid-responsive-mobile">
           {sortedRecipes.map((r) => (
             <div key={r.id} className="card-responsive hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
