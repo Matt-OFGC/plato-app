@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { getAppByRoute, getAppById, PlatoApp } from '@/src/lib/plato-apps-config';
+import { getAppByRoute, getAppById, PlatoApp } from '@/lib/plato-apps-config';
 
 interface AppContextType {
   activeApp: PlatoApp | null;

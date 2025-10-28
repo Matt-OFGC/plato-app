@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { PLATO_APPS, canAccessApp, PlatoApp } from '@/src/lib/plato-apps-config';
+import { PLATO_APPS, canAccessApp, PlatoApp } from '@/lib/plato-apps-config';
 import { LockIcon } from './icons/PlatoAppIcons';
 import { AppUpgradeModal } from './AppUpgradeModal';
 import { useAppContext } from './AppContextProvider';

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { getAvailableApps } from "@/src/lib/plato-apps-config";
+import { getAvailableApps } from "@/lib/plato-apps-config";
 
 export async function GET() {
   try {
