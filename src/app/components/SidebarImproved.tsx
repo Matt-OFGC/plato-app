@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
 import { AppSwitcher } from "./AppSwitcher";
 import { useAppContext } from "./AppContextProvider";
@@ -13,6 +13,7 @@ export function Sidebar() {
   const [isHovered, setIsHovered] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   
@@ -159,8 +160,8 @@ export function Sidebar() {
               activeApp={activeApp} 
               onAppChange={(app) => {
                 switchToApp(app.id);
-                // Navigate to the app's main route
-                window.location.href = app.route;
+                // Navigate to the app's main route using Next.js router
+                router.push(app.route);
               }} 
             />
           </div>

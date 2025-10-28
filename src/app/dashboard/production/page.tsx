@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { ProductionPlannerEnhanced } from "@/components/ProductionPlannerEnhanced";
 
-export const dynamic = 'force-dynamic';
+// Cache for 2 minutes to improve performance
+export const revalidate = 120;
 
 export default async function ProductionPage() {
   const user = await getUserFromSession();

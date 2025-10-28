@@ -7,10 +7,8 @@ import { OperationalDashboard } from "@/components/OperationalDashboard";
 import { AppLauncher } from "@/components/AppLauncher";
 import { checkPriceStatus } from "@/lib/priceTracking";
 
-// Force dynamic rendering since this page uses cookies
-export const dynamic = 'force-dynamic';
-// Revalidate this page every 60 seconds for better performance
-export const revalidate = 60;
+// Revalidate this page every 5 minutes for better performance
+export const revalidate = 300;
 
 export default async function DashboardPage() {
   const user = await getUserFromSession();
