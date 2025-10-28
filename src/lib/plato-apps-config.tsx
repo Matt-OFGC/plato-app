@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface PlatoApp {
   id: string;
   name: string;
