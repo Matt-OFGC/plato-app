@@ -43,10 +43,17 @@ export default async function DashboardPage() {
   }
 
   // Get basic counts for app launcher - much lighter queries
-  const [recipeCount, staffCount] = await Promise.all([
-    prisma.recipe.count({ where: { companyId } }),
-    prisma.membership.count({ where: { companyId, isActive: true } })
-  ]);
+  // Temporarily disabled while Prisma client is being set up
+  let recipeCount = 0;
+  let staffCount = 0;
+  try {
+    [recipeCount, staffCount] = await Promise.all([
+      prisma.recipe.count({ where: { companyId } }),
+      prisma.membership.count({ where: { companyId, isActive: true } })
+    ]);
+  } catch (error) {
+    console.log('Dashboard: Could not fetch counts, using defaults');
+  }
 
   return (
     <DashboardWithOnboarding
