@@ -154,20 +154,8 @@ export function Sidebar() {
             </button>
           </div>
 
-          {/* Plato OS App Switcher */}
-          <div className="px-2 mt-4">
-            <AppSwitcher 
-              activeApp={activeApp} 
-              onAppChange={(app) => {
-                switchToApp(app.id);
-                // Navigate to the app's main route using Next.js router
-                router.push(app.route);
-              }} 
-            />
-          </div>
-
-          {/* List */}
-          <nav className="mt-2 space-y-1 px-2">
+          {/* Main Navigation */}
+          <nav className="mt-2 space-y-1 px-2 flex-1">
             {getFilteredNavigationItems(activeApp?.id || null).map((item) => {
               const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
               // On touch devices, show labels when not collapsed or when pinned
@@ -183,6 +171,21 @@ export function Sidebar() {
               );
             })}
           </nav>
+
+          {/* Plato OS App Switcher - Bottom of sidebar */}
+          <div className="px-2 pb-2">
+            <AppSwitcher 
+              activeApp={activeApp} 
+              onAppChange={(app) => {
+                switchToApp(app.id);
+                // Navigate to the app's main route using Next.js router
+                router.push(app.route);
+              }}
+              collapsed={isTouchDevice ? (collapsed && !pinned) : (collapsed && !pinned && !isHovered)}
+              isHovered={isHovered}
+              isTouchDevice={isTouchDevice}
+            />
+          </div>
         </div>
       </aside>
 
