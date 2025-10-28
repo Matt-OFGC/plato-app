@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { ALL_NAVIGATION_ITEMS } from "@/lib/navigation-config";
+import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
 import { AppSwitcher } from "./AppSwitcher";
+import { useAppContext } from "./AppContextProvider";
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,6 +38,8 @@ export function Sidebar() {
     };
   }, [isOpen]);
   const [navigationItems, setNavigationItems] = useState<string[]>(["dashboard", "ingredients", "recipes", "recipe-mixer"]);
+  const [userTier, setUserTier] = useState<string>("starter");
+  const { activeApp } = useAppContext();
 
   // Persist collapsed/pinned
   useEffect(() => {
@@ -61,18 +64,24 @@ export function Sidebar() {
     document.body.classList.toggle('sidebar-expanded', !isActuallyCollapsed);
   }, [collapsed, pinned, isHovered, isTouchDevice]);
 
-  // Fetch navigation preferences
+  // Fetch navigation preferences and user subscription
   useEffect(() => {
-    fetch("/api/user/navigation-preferences")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.navigationItems) {
-          setNavigationItems(data.navigationItems);
+    Promise.all([
+      fetch("/api/user/navigation-preferences").then(res => res.json()),
+      fetch("/api/session").then(res => res.json())
+    ])
+      .then(([navData, sessionData]) => {
+        if (navData.navigationItems) {
+          setNavigationItems(navData.navigationItems);
+        }
+        if (sessionData.user?.subscriptionTier) {
+          setUserTier(sessionData.user.subscriptionTier);
         }
       })
       .catch(() => {
         // Use defaults if API fails
         setNavigationItems(["dashboard", "ingredients", "recipes", "recipe-mixer"]);
+        setUserTier("starter");
       });
   }, []);
 
@@ -118,16 +127,14 @@ export function Sidebar() {
             {/* Removed the 3-stripe image; only the collapse button remains as requested */}
           </div>
 
-          {/* App Switcher - NEW! */}
-          {(!collapsed || pinned || isHovered) && (
-            <div className="mt-4 px-2">
-              <AppSwitcher />
-            </div>
-          )}
+          {/* Plato OS App Switcher */}
+          <div className="px-2 mt-4">
+            <AppSwitcher userTier={userTier} collapsed={isTouchDevice ? (collapsed && !pinned) : (collapsed && !pinned && !isHovered)} />
+          </div>
 
           {/* List */}
           <nav className="mt-2 space-y-1 px-2">
-            {ALL_NAVIGATION_ITEMS.map((item) => {
+            {getFilteredNavigationItems(activeApp?.id || null, userTier).map((item) => {
               const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
               // On touch devices, show labels when not collapsed or when pinned
               // On non-touch devices, also show on hover

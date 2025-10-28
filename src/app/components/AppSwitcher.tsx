@@ -1,195 +1,141 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import React, { useState, useRef, useEffect } from 'react';
+import { PLATO_APPS, canAccessApp, PlatoApp } from '@/src/lib/plato-apps-config';
+import { LockIcon } from './icons/PlatoAppIcons';
+import { AppUpgradeModal } from './AppUpgradeModal';
+import { useAppContext } from './AppContextProvider';
 
-interface App {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  href: string;
-  paths: string[];
+interface AppSwitcherProps {
+  userTier: string;
+  collapsed?: boolean;
 }
 
-export function AppSwitcher() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+export function AppSwitcher({ userTier, collapsed = false }: AppSwitcherProps) {
+  const [selectedApp, setSelectedApp] = useState<PlatoApp | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { activeApp, switchToApp } = useAppContext();
 
-  const apps: App[] = [
-    {
-      id: "recipe",
-      name: "Recipe App",
-      icon: "🍽️",
-      color: "blue",
-      href: "/dashboard/recipes",
-      paths: ["/dashboard/recipes", "/dashboard/ingredients", "/dashboard/recipe-mixer"],
-    },
-    {
-      id: "staff",
-      name: "Staff App",
-      icon: "👥",
-      color: "purple",
-      href: "/dashboard/staff",
-      paths: ["/dashboard/staff"],
-    },
-    {
-      id: "wholesale",
-      name: "Wholesale App",
-      icon: "📦",
-      color: "green",
-      href: "/dashboard/wholesale",
-      paths: ["/dashboard/wholesale"],
-    },
-    {
-      id: "messaging",
-      name: "Team Chat",
-      icon: "💬",
-      color: "indigo",
-      href: "/dashboard/messages",
-      paths: ["/dashboard/messages"],
-    },
-  ];
+  const availableApps = PLATO_APPS.filter(app => canAccessApp(app.id, userTier));
+  const lockedApps = PLATO_APPS.filter(app => !canAccessApp(app.id, userTier));
 
-  // Determine current app
-  const currentApp = apps.find((app) =>
-    app.paths.some((path) => pathname?.startsWith(path))
-  ) || null;
-
-  const getColorClasses = (color: string) => {
-    const colors: Record<string, { bg: string; hover: string; text: string }> = {
-      blue: {
-        bg: "bg-blue-100",
-        hover: "hover:bg-blue-200",
-        text: "text-blue-700",
-      },
-      purple: {
-        bg: "bg-purple-100",
-        hover: "hover:bg-purple-200",
-        text: "text-purple-700",
-      },
-      green: {
-        bg: "bg-green-100",
-        hover: "hover:bg-green-200",
-        text: "text-green-700",
-      },
-      indigo: {
-        bg: "bg-indigo-100",
-        hover: "hover:bg-indigo-200",
-        text: "text-indigo-700",
-      },
-    };
-    return colors[color] || colors.blue;
+  const handleAppClick = (app: PlatoApp) => {
+    if (canAccessApp(app.id, userTier)) {
+      switchToApp(app.id);
+      window.location.href = app.route;
+    } else {
+      setSelectedApp(app);
+      setShowUpgradeModal(true);
+    }
   };
 
-  if (!currentApp) return null;
+  const getAppTileClasses = (app: PlatoApp, isLocked: boolean) => {
+    const baseClasses = "group relative w-16 h-16 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center";
+    const activeClasses = activeApp?.id === app.id ? "ring-2 ring-emerald-500 ring-offset-2 bg-emerald-50" : "";
+    const lockedClasses = isLocked ? "opacity-60" : "hover:bg-gray-50";
+    
+    return `${baseClasses} ${activeClasses} ${lockedClasses}`;
+  };
 
-  const currentColors = getColorClasses(currentApp.color);
+  const getAppIconClasses = (app: PlatoApp, isLocked: boolean) => {
+    const baseClasses = "w-6 h-6 transition-colors";
+    const activeClasses = activeApp?.id === app.id ? "text-emerald-600" : "text-gray-600";
+    const lockedClasses = isLocked ? "text-gray-400" : "group-hover:text-gray-800";
+    
+    return `${baseClasses} ${activeClasses} ${lockedClasses}`;
+  };
 
   return (
-    <div className="relative">
-      {/* Current App Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg ${currentColors.bg} ${currentColors.hover} transition-colors`}
-      >
-        <span className="text-2xl">{currentApp.icon}</span>
-        <div className="flex-1 text-left">
-          <div className={`text-sm font-bold ${currentColors.text}`}>
-            {currentApp.name}
-          </div>
-          <div className="text-xs text-gray-500">Current App</div>
-        </div>
-        <svg
-          className={`w-4 h-4 ${currentColors.text} transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+    <>
+      <div className="px-2 mb-4">
+        {/* App Switcher Container */}
+        <div 
+          ref={scrollContainerRef}
+          className={`overflow-y-auto scrollbar-hide ${collapsed ? 'max-h-20' : 'max-h-80'}`}
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
+          <div className="space-y-2">
+            {/* Available Apps */}
+            {availableApps.map((app) => (
+              <div key={app.id} className="relative">
+                <div
+                  className={getAppTileClasses(app, false)}
+                  onClick={() => handleAppClick(app)}
+                  title={collapsed ? app.shortName : app.description}
+                >
+                  <div className={getAppIconClasses(app, false)}>
+                    {app.icon}
+                  </div>
+                  
+                  {/* Active indicator */}
+                  {activeApp?.id === app.id && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
+                  )}
+                </div>
+                
+                {/* App name (only when not collapsed) */}
+                {!collapsed && (
+                  <div className="text-center mt-1">
+                    <span className="text-xs text-gray-600 font-medium">
+                      {app.shortName}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-30"
-            onClick={() => setIsOpen(false)}
-          ></div>
-
-          {/* Menu */}
-          <div className="absolute left-0 right-0 mt-2 z-40 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
-            <div className="p-2 space-y-1">
-              {apps.map((app) => {
-                const colors = getColorClasses(app.color);
-                const isCurrent = app.id === currentApp.id;
-
-                return (
-                  <button
-                    key={app.id}
-                    onClick={() => {
-                      router.push(app.href);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                      isCurrent
-                        ? `${colors.bg} ${colors.text}`
-                        : "hover:bg-gray-100"
-                    }`}
-                  >
-                    <span className="text-2xl">{app.icon}</span>
-                    <div className="flex-1 text-left">
-                      <div
-                        className={`text-sm font-semibold ${
-                          isCurrent ? colors.text : "text-gray-900"
-                        }`}
-                      >
-                        {app.name}
-                      </div>
+            {/* Locked Apps */}
+            {lockedApps.map((app) => (
+              <div key={app.id} className="relative">
+                <div
+                  className={getAppTileClasses(app, true)}
+                  onClick={() => handleAppClick(app)}
+                  title={collapsed ? `${app.shortName} (Locked)` : `${app.description} - Upgrade Required`}
+                >
+                  <div className={getAppIconClasses(app, true)}>
+                    {app.icon}
+                  </div>
+                  
+                  {/* Lock overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-5 h-5 bg-gray-800/80 rounded-full flex items-center justify-center">
+                      <LockIcon className="w-3 h-3 text-white" />
                     </div>
-                    {isCurrent && (
-                      <svg
-                        className={`w-5 h-5 ${colors.text}`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-gray-200 p-3 bg-gray-50">
-              <button
-                onClick={() => {
-                  router.push("/dashboard");
-                  setIsOpen(false);
-                }}
-                className="w-full text-sm text-gray-600 hover:text-gray-900 font-medium text-left"
-              >
-                ← Back to Dashboard
-              </button>
-            </div>
+                  </div>
+                </div>
+                
+                {/* App name (only when not collapsed) */}
+                {!collapsed && (
+                  <div className="text-center mt-1">
+                    <span className="text-xs text-gray-400 font-medium">
+                      {app.shortName}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </>
-      )}
-    </div>
+        </div>
+
+        {/* Scroll indicators (only when not collapsed and there are many apps) */}
+        {!collapsed && (availableApps.length + lockedApps.length) > 4 && (
+          <>
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-6 h-2 bg-gradient-to-b from-white to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-2 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+          </>
+        )}
+      </div>
+
+      {/* Upgrade Modal */}
+      <AppUpgradeModal
+        app={selectedApp!}
+        isOpen={showUpgradeModal}
+        onClose={() => {
+          setShowUpgradeModal(false);
+          setSelectedApp(null);
+        }}
+      />
+    </>
   );
 }

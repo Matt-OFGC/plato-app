@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sidebar } from "@/components/SidebarImproved";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
+import { AppContextProvider } from "@/components/AppContextProvider";
 
 export const metadata: Metadata = {
   title: "Dashboard - Plato",
@@ -13,8 +14,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <KeyboardShortcutsProvider>
-      <div className="flex min-h-screen">
+    <AppContextProvider>
+      <KeyboardShortcutsProvider>
+        <div className="flex min-h-screen">
         {/* Sidebar Navigation */}
         <Sidebar />
         
@@ -28,8 +30,9 @@ export default function DashboardLayout({
     </main>
     
     {/* Floating back button removed to avoid overlapping the sidebar */}
-      </div>
-    </KeyboardShortcutsProvider>
+        </div>
+      </KeyboardShortcutsProvider>
+    </AppContextProvider>
   );
 }
 

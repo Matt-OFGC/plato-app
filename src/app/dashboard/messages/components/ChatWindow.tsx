@@ -4,6 +4,16 @@ import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
+import { 
+  socketClient, 
+  onSocketEvent, 
+  offSocketEvent, 
+  sendMessage as socketSendMessage,
+  joinChannel,
+  leaveChannel,
+  startTyping,
+  stopTyping
+} from "@/lib/socket/client";
 
 interface Message {
   id: number;
@@ -40,7 +50,10 @@ interface ChatWindowProps {
 export function ChatWindow({ channel, userId, companyId }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load messages
   useEffect(() => {
@@ -52,11 +65,79 @@ export function ChatWindow({ channel, userId, companyId }: ChatWindowProps) {
     scrollToBottom();
   }, [messages]);
 
-  // Poll for new messages every 2 seconds
+  // Socket.io event handlers
   useEffect(() => {
-    const interval = setInterval(loadMessages, 2000);
-    return () => clearInterval(interval);
-  }, [channel.id]);
+    // Join channel when component mounts
+    joinChannel(channel.id);
+
+    // Set up event listeners
+    const handleNewMessage = (data: any) => {
+      if (data.channelId === channel.id) {
+        setMessages(prev => [...prev, data]);
+      }
+    };
+
+    const handleMessageUpdated = (data: any) => {
+      if (data.channelId === channel.id) {
+        setMessages(prev => 
+          prev.map(msg => msg.id === data.id ? data : msg)
+        );
+      }
+    };
+
+    const handleMessageDeleted = (data: any) => {
+      if (data.channelId === channel.id) {
+        setMessages(prev => 
+          prev.filter(msg => msg.id !== data.messageId)
+        );
+      }
+    };
+
+    const handleTypingIndicator = (data: any) => {
+      if (data.channelId === channel.id && data.user.id !== userId) {
+        if (data.isTyping) {
+          setTypingUsers(prev => new Set([...prev, data.user.id]));
+        } else {
+          setTypingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(data.user.id);
+            return newSet;
+          });
+        }
+      }
+    };
+
+    const handleUserJoined = (data: any) => {
+      if (data.channelId === channel.id) {
+        console.log(`${data.user.name} joined the channel`);
+      }
+    };
+
+    const handleUserLeft = (data: any) => {
+      if (data.channelId === channel.id) {
+        console.log(`${data.user.name} left the channel`);
+      }
+    };
+
+    // Register event listeners
+    onSocketEvent('message:new', handleNewMessage);
+    onSocketEvent('message:updated', handleMessageUpdated);
+    onSocketEvent('message:deleted', handleMessageDeleted);
+    onSocketEvent('typing:indicator', handleTypingIndicator);
+    onSocketEvent('user:joined', handleUserJoined);
+    onSocketEvent('user:left', handleUserLeft);
+
+    // Cleanup
+    return () => {
+      leaveChannel(channel.id);
+      offSocketEvent('message:new', handleNewMessage);
+      offSocketEvent('message:updated', handleMessageUpdated);
+      offSocketEvent('message:deleted', handleMessageDeleted);
+      offSocketEvent('typing:indicator', handleTypingIndicator);
+      offSocketEvent('user:joined', handleUserJoined);
+      offSocketEvent('user:left', handleUserLeft);
+    };
+  }, [channel.id, userId]);
 
   async function loadMessages() {
     try {
@@ -74,17 +155,50 @@ export function ChatWindow({ channel, userId, companyId }: ChatWindowProps) {
 
   async function handleSendMessage(content: string) {
     try {
+      // Send via Socket.io for real-time delivery
+      socketSendMessage(channel.id, content);
+      
+      // Also send via API for persistence (fallback)
       const res = await fetch(`/api/messages/channels/${channel.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
       });
 
-      if (res.ok) {
-        await loadMessages();
+      if (!res.ok) {
+        console.error("Failed to persist message");
       }
     } catch (error) {
       console.error("Failed to send message:", error);
+    }
+  }
+
+  function handleTypingStart() {
+    if (!isTyping) {
+      setIsTyping(true);
+      startTyping(channel.id);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set timeout to stop typing
+    typingTimeoutRef.current = setTimeout(() => {
+      handleTypingStop();
+    }, 3000);
+  }
+
+  function handleTypingStop() {
+    if (isTyping) {
+      setIsTyping(false);
+      stopTyping(channel.id);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
     }
   }
 
@@ -154,9 +268,32 @@ export function ChatWindow({ channel, userId, companyId }: ChatWindowProps) {
         )}
       </div>
 
+      {/* Typing Indicator */}
+      {typingUsers.size > 0 && (
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+            <span>
+              {typingUsers.size === 1 
+                ? 'Someone is typing...' 
+                : `${typingUsers.size} people are typing...`
+              }
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Message Input */}
       <div className="border-t border-gray-200 p-4 bg-gray-50">
-        <MessageInput onSend={handleSendMessage} />
+        <MessageInput 
+          onSend={handleSendMessage}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
+        />
       </div>
     </div>
   );

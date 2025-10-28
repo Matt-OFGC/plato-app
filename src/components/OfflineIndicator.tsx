@@ -45,9 +45,10 @@ export function OfflineIndicator({ className = "" }: OfflineIndicatorProps) {
     // Check for pending offline actions
     const checkPendingActions = async () => {
       try {
-        const { offlineStorage } = await import('@/lib/pwa/offline-storage');
-        const actions = await offlineStorage.getOfflineActions();
-        setPendingActions(actions.length);
+        // This would integrate with IndexedDB to check pending actions
+        // For now, simulate with localStorage
+        const pending = localStorage.getItem('plato-pending-actions');
+        setPendingActions(pending ? JSON.parse(pending).length : 0);
       } catch (error) {
         console.error('Failed to check pending actions:', error);
       }
@@ -141,9 +142,8 @@ export function usePendingActions() {
   useEffect(() => {
     const checkPendingActions = async () => {
       try {
-        const { offlineStorage } = await import('@/lib/pwa/offline-storage');
-        const actions = await offlineStorage.getOfflineActions();
-        setPendingActions(actions.length);
+        const pending = localStorage.getItem('plato-pending-actions');
+        setPendingActions(pending ? JSON.parse(pending).length : 0);
       } catch (error) {
         console.error('Failed to check pending actions:', error);
       }

@@ -28,22 +28,26 @@ export function SyncStatus({ className = "", showDetails = false }: SyncStatusPr
     
     try {
       // Trigger manual sync
-      const { offlineStorage } = await import('@/lib/pwa/offline-storage');
-      const actions = await offlineStorage.getOfflineActions();
-      
-      for (const action of actions) {
-        try {
-          const response = await fetch(action.url, {
-            method: action.method,
-            headers: action.headers,
-            body: action.body,
-          });
-          
-          if (response.ok) {
-            await offlineStorage.removeOfflineAction(action.id!);
+      const pending = localStorage.getItem('plato-pending-actions');
+      if (pending) {
+        const actions = JSON.parse(pending);
+        
+        for (const action of actions) {
+          try {
+            const response = await fetch(action.url, {
+              method: action.method,
+              headers: action.headers,
+              body: action.body,
+            });
+            
+            if (response.ok) {
+              // Remove from pending actions
+              const updatedActions = actions.filter((a: any) => a.id !== action.id);
+              localStorage.setItem('plato-pending-actions', JSON.stringify(updatedActions));
+            }
+          } catch (error) {
+            console.error('Failed to sync action:', action.id, error);
           }
-        } catch (error) {
-          console.error('Failed to sync action:', action.id, error);
         }
       }
       

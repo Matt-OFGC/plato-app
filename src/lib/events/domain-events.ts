@@ -1,449 +1,374 @@
-import { prisma } from "@/lib/prisma";
+// Domain Events System for Cross-App Communication
+// Handles event emission, processing, and retry logic
+
+import { prisma } from '../prisma';
 
 export enum EventTypes {
-  // Wholesale events
-  WHOLESALE_ORDER_RECEIVED = 'wholesale.order.received',
+  // Wholesale Events
   PURCHASE_ORDER_RECEIVED = 'purchase_order.received',
-  INVENTORY_LOW_STOCK = 'inventory.low_stock',
+  PURCHASE_ORDER_CREATED = 'purchase_order.created',
+  WHOLESALE_ORDER_RECEIVED = 'wholesale.order.received',
+  WHOLESALE_ORDER_CONFIRMED = 'wholesale.order.confirmed',
   
-  // Recipe events
-  RECIPE_INGREDIENT_PRICE_UPDATED = 'recipe.ingredient.price_updated',
+  // Recipe Events
+  RECIPE_CREATED = 'recipe.created',
+  RECIPE_UPDATED = 'recipe.updated',
+  RECIPE_DELETED = 'recipe.deleted',
+  INGREDIENT_PRICE_UPDATED = 'ingredient.price_updated',
   
-  // Staff events
-  STAFF_WEEK_FINALISED = 'staff.week.finalised',
+  // Staff Events
+  STAFF_WEEK_FINALIZED = 'staff.week.finalized',
   STAFF_WEEK_COPIED = 'staff.week.copied',
+  SHIFT_CREATED = 'shift.created',
+  SHIFT_UPDATED = 'shift.updated',
   
-  // General events
-  COMPANY_CREATED = 'company.created',
-  USER_REGISTERED = 'user.registered',
+  // Inventory Events
+  INVENTORY_LOW_STOCK = 'inventory.low_stock',
+  INVENTORY_UPDATED = 'inventory.updated',
+  
+  // Message Events
+  MESSAGE_SENT = 'message.sent',
+  CHANNEL_CREATED = 'channel.created',
+  CHANNEL_JOINED = 'channel.joined',
+  
+  // System Events
+  USER_LOGIN = 'user.login',
+  USER_LOGOUT = 'user.logout',
+  COMPANY_UPDATED = 'company.updated',
+}
+
+interface EventPayload {
+  [key: string]: any;
+}
+
+interface EventMetadata {
+  userId?: number;
+  source?: string;
+  timestamp?: Date;
+  [key: string]: any;
 }
 
 export interface DomainEvent {
+  id: number;
   eventType: EventTypes;
   companyId: number;
-  payload: Record<string, any>;
-  metadata?: {
-    userId?: number;
-    source?: string;
-    timestamp?: Date;
-  };
+  payload: EventPayload;
+  metadata: EventMetadata;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  retryCount: number;
+  createdAt: Date;
+  processedAt?: Date;
+  failedAt?: Date;
+  error?: string;
 }
 
-export class DomainEventBus {
-  private static instance: DomainEventBus;
-  
-  private constructor() {}
-  
-  public static getInstance(): DomainEventBus {
-    if (!DomainEventBus.instance) {
-      DomainEventBus.instance = new DomainEventBus();
-    }
-    return DomainEventBus.instance;
-  }
-
-  /**
-   * Emit a domain event
-   * Events are persisted to the database and processed asynchronously
-   */
-  async emit(event: DomainEvent): Promise<void> {
-    try {
-      // Persist the event to the database
-      await prisma.domainEvent.create({
-        data: {
-          eventType: event.eventType,
-          companyId: event.companyId,
-          payload: event.payload,
-          metadata: event.metadata || {},
-          status: 'pending',
-          retryCount: 0,
-        },
-      });
-
-      // Process the event asynchronously
-      this.processEvent(event).catch(error => {
-        console.error(`Failed to process event ${event.eventType}:`, error);
-      });
-    } catch (error) {
-      console.error(`Failed to emit event ${event.eventType}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Process a domain event
-   * This method handles the actual business logic for each event type
-   */
-  private async processEvent(event: DomainEvent): Promise<void> {
-    try {
-      switch (event.eventType) {
-        case EventTypes.PURCHASE_ORDER_RECEIVED:
-          await this.handlePurchaseOrderReceived(event);
-          break;
-        
-        case EventTypes.INVENTORY_LOW_STOCK:
-          await this.handleInventoryLowStock(event);
-          break;
-        
-        case EventTypes.RECIPE_INGREDIENT_PRICE_UPDATED:
-          await this.handleRecipeIngredientPriceUpdated(event);
-          break;
-        
-        case EventTypes.STAFF_WEEK_FINALISED:
-          await this.handleStaffWeekFinalised(event);
-          break;
-        
-        case EventTypes.WHOLESALE_ORDER_RECEIVED:
-          await this.handleWholesaleOrderReceived(event);
-          break;
-        
-        default:
-          console.log(`Unhandled event type: ${event.eventType}`);
-      }
-
-      // Mark event as processed
-      await this.markEventProcessed(event.eventType, event.companyId);
-    } catch (error) {
-      console.error(`Error processing event ${event.eventType}:`, error);
-      await this.markEventFailed(event.eventType, event.companyId, error);
-    }
-  }
-
-  /**
-   * Handle purchase order received - update inventory
-   */
-  private async handlePurchaseOrderReceived(event: DomainEvent): Promise<void> {
-    const { orderId, supplierId, items } = event.payload;
-    
-    console.log(`Processing purchase order received: ${orderId}`);
-    
-    // Update inventory for each item
-    for (const item of items) {
-      const { ingredientId, quantity, unitPrice } = item;
-      
-      // Get current ingredient
-      const ingredient = await prisma.ingredient.findUnique({
-        where: { id: ingredientId },
-      });
-      
-      if (!ingredient) {
-        console.warn(`Ingredient ${ingredientId} not found`);
-        continue;
-      }
-      
-      // Check if price changed significantly (>10%)
-      const oldPrice = Number(ingredient.packPrice);
-      const priceChange = Math.abs(unitPrice - oldPrice) / oldPrice;
-      
-      if (priceChange > 0.1) {
-        // Emit price update event
-        await this.emit({
-          eventType: EventTypes.RECIPE_INGREDIENT_PRICE_UPDATED,
-          companyId: event.companyId,
-          payload: {
-            ingredientId,
-            oldPrice,
-            newPrice: unitPrice,
-            variance: priceChange * 100,
-            source: 'purchase_order',
-          },
-          metadata: {
-            source: 'purchase_order',
-            timestamp: new Date(),
-          },
-        });
-      }
-      
-      // Update ingredient price
-      await prisma.ingredient.update({
-        where: { id: ingredientId },
-        data: {
-          packPrice: unitPrice,
-          lastPriceUpdate: new Date(),
-        },
-      });
-      
-      // Update inventory if it exists
-      const inventory = await prisma.inventory.findFirst({
-        where: {
-          ingredientId,
-          companyId: event.companyId,
-        },
-      });
-      
-      if (inventory) {
-        await prisma.inventory.update({
-          where: { id: inventory.id },
-          data: {
-            quantity: inventory.quantity + quantity,
-            lastUpdated: new Date(),
-          },
-        });
-      } else {
-        // Create new inventory record
-        await prisma.inventory.create({
-          data: {
-            ingredientId,
-            companyId: event.companyId,
-            quantity,
-            unit: ingredient.packUnit,
-            lastUpdated: new Date(),
-          },
-        });
-      }
-    }
-    
-    console.log(`✅ Purchase order ${orderId} processed - inventory updated`);
-  }
-
-  /**
-   * Handle inventory low stock - create purchase order suggestion
-   */
-  private async handleInventoryLowStock(event: DomainEvent): Promise<void> {
-    const { ingredientId, currentStock, reorderPoint, supplierId } = event.payload;
-    
-    console.log(`Processing low stock alert for ingredient ${ingredientId}`);
-    
-    // Create notification for purchasing team
-    const companyMembers = await prisma.membership.findMany({
-      where: {
-        companyId: event.companyId,
-        isActive: true,
-        role: { in: ['OWNER', 'ADMIN', 'EDITOR'] },
-      },
-      select: { userId: true },
-    });
-    
-    if (companyMembers.length > 0) {
-      await prisma.notification.createMany({
-        data: companyMembers.map(member => ({
-          userId: member.userId,
-          type: 'inventory_low_stock',
-          title: 'Low Stock Alert',
-          message: `Ingredient ${ingredientId} is below reorder point (${currentStock}/${reorderPoint})`,
-          link: `/dashboard/wholesale/purchase-orders`,
-        })),
-      });
-    }
-    
-    console.log(`✅ Low stock alert processed for ingredient ${ingredientId}`);
-  }
-
-  /**
-   * Handle recipe ingredient price updated - recalculate recipe costs
-   */
-  private async handleRecipeIngredientPriceUpdated(event: DomainEvent): Promise<void> {
-    const { ingredientId, oldPrice, newPrice, variance } = event.payload;
-    
-    console.log(`Processing ingredient price update: ${ingredientId} (${oldPrice} → ${newPrice})`);
-    
-    // Find all recipes that use this ingredient
-    const recipes = await prisma.recipe.findMany({
-      where: {
-        companyId: event.companyId,
-        items: {
-          some: {
-            ingredientId,
-          },
-        },
-      },
-      include: {
-        items: {
-          where: {
-            ingredientId,
-          },
-        },
-      },
-    });
-    
-    // Recalculate costs for affected recipes
-    for (const recipe of recipes) {
-      const ingredientItem = recipe.items[0];
-      if (!ingredientItem) continue;
-      
-      const priceDifference = newPrice - oldPrice;
-      const quantityUsed = Number(ingredientItem.quantity);
-      const costImpact = priceDifference * quantityUsed;
-      
-      // Update recipe's actual food cost
-      const currentFoodCost = Number(recipe.actualFoodCost || 0);
-      const newFoodCost = currentFoodCost + costImpact;
-      
-      await prisma.recipe.update({
-        where: { id: recipe.id },
-        data: {
-          actualFoodCost: newFoodCost,
-          lastPriceUpdate: new Date(),
-        },
-      });
-    }
-    
-    console.log(`✅ Recipe costs updated for ${recipes.length} recipes using ingredient ${ingredientId}`);
-  }
-
-  /**
-   * Handle staff week finalised - check production capacity
-   */
-  private async handleStaffWeekFinalised(event: DomainEvent): Promise<void> {
-    const { weekStart, totalHours, staffCount } = event.payload;
-    
-    console.log(`Processing staff week finalised: ${weekStart} (${totalHours}h, ${staffCount} staff)`);
-    
-    // Check if there are pending wholesale orders for this week
-    const weekStartDate = new Date(weekStart);
-    const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekEndDate.getDate() + 7);
-    
-    const pendingOrders = await prisma.wholesaleOrder.findMany({
-      where: {
-        companyId: event.companyId,
-        status: { in: ['pending', 'confirmed'] },
-        deliveryDate: {
-          gte: weekStartDate,
-          lte: weekEndDate,
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
-    
-    if (pendingOrders.length > 0) {
-      // Calculate total production hours needed
-      const totalProductionHours = pendingOrders.reduce((sum, order) => {
-        return sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-      }, 0);
-      
-      // Check if understaffed (assuming 1 hour per unit produced)
-      if (totalProductionHours > totalHours) {
-        const companyMembers = await prisma.membership.findMany({
-          where: {
-            companyId: event.companyId,
-            isActive: true,
-            role: { in: ['OWNER', 'ADMIN'] },
-          },
-          select: { userId: true },
-        });
-        
-        if (companyMembers.length > 0) {
-          await prisma.notification.createMany({
-            data: companyMembers.map(member => ({
-              userId: member.userId,
-              type: 'production_capacity_warning',
-              title: 'Production Capacity Warning',
-              message: `Week ${weekStart} may be understaffed. ${totalProductionHours}h needed vs ${totalHours}h scheduled.`,
-              link: `/dashboard/staff`,
-            })),
-          });
-        }
-      }
-    }
-    
-    console.log(`✅ Staff week finalised processed for ${weekStart}`);
-  }
-
-  /**
-   * Handle wholesale order received - create production plan
-   */
-  private async handleWholesaleOrderReceived(event: DomainEvent): Promise<void> {
-    const { orderId, items, deliveryDate } = event.payload;
-    
-    console.log(`Processing wholesale order received: ${orderId}`);
-    
-    // Create production plan for the order
-    const productionPlan = await prisma.productionPlan.create({
+// Emit a domain event
+export async function emitEvent(
+  eventType: EventTypes,
+  payload: EventPayload,
+  companyId: number,
+  metadata: EventMetadata = {}
+): Promise<DomainEvent> {
+  try {
+    const event = await prisma.domainEvent.create({
       data: {
-        name: `Order ${orderId}`,
-        startDate: new Date(),
-        endDate: new Date(deliveryDate),
-        companyId: event.companyId,
-        createdBy: event.metadata?.userId || 0,
-        items: {
-          create: items.map((item: any) => ({
-            recipeId: item.recipeId,
-            quantity: item.quantity,
-            priority: 1,
-          })),
-        },
-      },
-    });
-    
-    console.log(`✅ Production plan created for wholesale order ${orderId}`);
-  }
-
-  /**
-   * Mark event as processed
-   */
-  private async markEventProcessed(eventType: string, companyId: number): Promise<void> {
-    await prisma.domainEvent.updateMany({
-      where: {
         eventType,
         companyId,
+        payload,
+        metadata: {
+          ...metadata,
+          timestamp: metadata.timestamp || new Date(),
+        },
         status: 'pending',
-      },
-      data: {
-        status: 'processed',
-        processedAt: new Date(),
-      },
-    });
-  }
-
-  /**
-   * Mark event as failed and increment retry count
-   */
-  private async markEventFailed(eventType: string, companyId: number, error: any): Promise<void> {
-    await prisma.domainEvent.updateMany({
-      where: {
-        eventType,
-        companyId,
-        status: 'pending',
-      },
-      data: {
-        status: 'failed',
-        retryCount: { increment: 1 },
-        error: error.message || 'Unknown error',
-        failedAt: new Date(),
-      },
-    });
-  }
-
-  /**
-   * Retry failed events (for background job)
-   */
-  async retryFailedEvents(): Promise<void> {
-    const failedEvents = await prisma.domainEvent.findMany({
-      where: {
-        status: 'failed',
-        retryCount: { lt: 3 }, // Max 3 retries
-      },
-      orderBy: {
-        createdAt: 'asc',
+        retryCount: 0,
       },
     });
 
-    for (const event of failedEvents) {
-      try {
-        await this.processEvent({
-          eventType: event.eventType as EventTypes,
-          companyId: event.companyId,
-          payload: event.payload as Record<string, any>,
-          metadata: event.metadata as any,
-        });
-      } catch (error) {
-        console.error(`Retry failed for event ${event.id}:`, error);
-      }
-    }
+    console.log(`[DomainEvent] Emitted event: ${eventType} (ID: ${event.id})`);
+    
+    // Trigger WebSocket broadcast if available
+    await broadcastEvent(event);
+    
+    return event;
+  } catch (error) {
+    console.error(`[DomainEvent] Failed to emit event ${eventType}:`, error);
+    throw error;
   }
 }
 
-// Export singleton instance
-export const eventBus = DomainEventBus.getInstance();
-
-// Convenience function for emitting events
-export async function emitEvent(eventType: EventTypes, payload: Record<string, any>, companyId: number, metadata?: any): Promise<void> {
-  await eventBus.emit({
-    eventType,
-    companyId,
-    payload,
-    metadata,
+// Process a domain event
+export async function processEvent(eventId: number): Promise<void> {
+  const event = await prisma.domainEvent.findUnique({ 
+    where: { id: eventId } 
   });
+
+  if (!event) {
+    console.warn(`[DomainEvent] Event ${eventId} not found for processing.`);
+    return;
+  }
+
+  if (event.status !== 'pending' && event.status !== 'failed') {
+    console.log(`[DomainEvent] Event ${eventId} already processed or in progress.`);
+    return;
+  }
+
+  try {
+    // Mark as processing
+    await prisma.domainEvent.update({
+      where: { id: eventId },
+      data: { status: 'processing' },
+    });
+
+    console.log(`[DomainEvent] Processing event ${event.eventType} (ID: ${event.id})`);
+    
+    // Process based on event type
+    await handleEvent(event);
+    
+    // Mark as completed
+    await prisma.domainEvent.update({
+      where: { id: eventId },
+      data: { 
+        status: 'completed', 
+        processedAt: new Date() 
+      },
+    });
+    
+    console.log(`[DomainEvent] Successfully processed event ${event.eventType} (ID: ${event.id})`);
+  } catch (error) {
+    console.error(`[DomainEvent] Error processing event ${event.eventType} (ID: ${event.id}):`, error);
+    
+    const newRetryCount = event.retryCount + 1;
+    const newStatus = newRetryCount >= 3 ? 'failed' : 'pending';
+
+    await prisma.domainEvent.update({
+      where: { id: eventId },
+      data: {
+        status: newStatus,
+        retryCount: newRetryCount,
+        error: error instanceof Error ? error.message : String(error),
+        failedAt: newStatus === 'failed' ? new Date() : null,
+      },
+    });
+  }
+}
+
+// Handle specific event types
+async function handleEvent(event: DomainEvent): Promise<void> {
+  switch (event.eventType) {
+    case EventTypes.PURCHASE_ORDER_RECEIVED:
+      await handlePurchaseOrderReceived(event);
+      break;
+      
+    case EventTypes.WHOLESALE_ORDER_RECEIVED:
+      await handleWholesaleOrderReceived(event);
+      break;
+      
+    case EventTypes.INGREDIENT_PRICE_UPDATED:
+      await handleIngredientPriceUpdated(event);
+      break;
+      
+    case EventTypes.INVENTORY_LOW_STOCK:
+      await handleInventoryLowStock(event);
+      break;
+      
+    case EventTypes.STAFF_WEEK_FINALIZED:
+      await handleStaffWeekFinalized(event);
+      break;
+      
+    case EventTypes.MESSAGE_SENT:
+      await handleMessageSent(event);
+      break;
+      
+    default:
+      console.warn(`[DomainEvent] No handler for event type: ${event.eventType}`);
+  }
+}
+
+// Event handlers
+async function handlePurchaseOrderReceived(event: DomainEvent): Promise<void> {
+  const { orderId, supplierId, items } = event.payload;
+  
+  console.log(`[DomainEvent] Handling PURCHASE_ORDER_RECEIVED for order ${orderId}`);
+  
+  // Update inventory levels
+  for (const item of items) {
+    await prisma.ingredient.update({
+      where: { id: item.ingredientId },
+      data: {
+        packPrice: item.unitPrice,
+        lastPriceUpdate: new Date(),
+      },
+    });
+  }
+  
+  // Emit inventory updated event
+  await emitEvent(EventTypes.INVENTORY_UPDATED, {
+    orderId,
+    items: items.map((item: any) => ({
+      ingredientId: item.ingredientId,
+      quantity: item.quantity,
+      price: item.unitPrice,
+    })),
+  }, event.companyId, {
+    source: 'purchase_order_handler',
+    userId: event.metadata.userId,
+  });
+}
+
+async function handleWholesaleOrderReceived(event: DomainEvent): Promise<void> {
+  const { orderId, items, deliveryDate } = event.payload;
+  
+  console.log(`[DomainEvent] Handling WHOLESALE_ORDER_RECEIVED for order ${orderId}`);
+  
+  // Create production plan
+  // This would integrate with the recipe app to create production schedules
+  console.log(`[DomainEvent] Would create production plan for ${items.length} items`);
+}
+
+async function handleIngredientPriceUpdated(event: DomainEvent): Promise<void> {
+  const { ingredientId, oldPrice, newPrice, changePercent } = event.payload;
+  
+  console.log(`[DomainEvent] Handling INGREDIENT_PRICE_UPDATED for ingredient ${ingredientId}`);
+  
+  // If price change is significant (>10%), notify relevant users
+  if (changePercent > 10) {
+    await emitEvent(EventTypes.MESSAGE_SENT, {
+      channelId: 'pricing-alerts', // This would be a system channel
+      content: `⚠️ Price alert: Ingredient ${ingredientId} increased by ${changePercent.toFixed(1)}% (${oldPrice} → ${newPrice})`,
+      type: 'system',
+    }, event.companyId, {
+      source: 'ingredient_price_handler',
+      userId: event.metadata.userId,
+    });
+  }
+}
+
+async function handleInventoryLowStock(event: DomainEvent): Promise<void> {
+  const { ingredientId, currentStock, reorderPoint, supplierId } = event.payload;
+  
+  console.log(`[DomainEvent] Handling INVENTORY_LOW_STOCK for ingredient ${ingredientId}`);
+  
+  // Create draft purchase order
+  // This would integrate with the wholesale app
+  console.log(`[DomainEvent] Would create draft PO for ingredient ${ingredientId}`);
+  
+  // Notify purchasing team
+  await emitEvent(EventTypes.MESSAGE_SENT, {
+    channelId: 'purchasing',
+    content: `📦 Low stock alert: Ingredient ${ingredientId} (${currentStock} remaining, reorder at ${reorderPoint})`,
+    type: 'system',
+  }, event.companyId, {
+    source: 'inventory_handler',
+  });
+}
+
+async function handleStaffWeekFinalized(event: DomainEvent): Promise<void> {
+  const { weekStart, totalHours, staffCount } = event.payload;
+  
+  console.log(`[DomainEvent] Handling STAFF_WEEK_FINALIZED for week ${weekStart}`);
+  
+  // Check if capacity can handle pending wholesale orders
+  // This would integrate with the wholesale app
+  console.log(`[DomainEvent] Would check wholesale capacity for ${staffCount} staff, ${totalHours} hours`);
+}
+
+async function handleMessageSent(event: DomainEvent): Promise<void> {
+  const { channelId, content, type } = event.payload;
+  
+  console.log(`[DomainEvent] Handling MESSAGE_SENT in channel ${channelId}`);
+  
+  // This would integrate with the messaging app for real-time updates
+  console.log(`[DomainEvent] Would broadcast message to channel ${channelId}`);
+}
+
+// Broadcast event via WebSocket
+async function broadcastEvent(event: DomainEvent): Promise<void> {
+  try {
+    // This would integrate with Socket.io to broadcast to relevant users
+    // For now, just log
+    console.log(`[DomainEvent] Would broadcast event ${event.eventType} to company ${event.companyId}`);
+  } catch (error) {
+    console.error(`[DomainEvent] Failed to broadcast event ${event.id}:`, error);
+  }
+}
+
+// Get pending events for processing
+export async function getPendingEvents(limit: number = 100): Promise<DomainEvent[]> {
+  return await prisma.domainEvent.findMany({
+    where: {
+      status: 'pending',
+      retryCount: { lt: 3 },
+    },
+    orderBy: { createdAt: 'asc' },
+    take: limit,
+  });
+}
+
+// Get failed events for manual review
+export async function getFailedEvents(limit: number = 100): Promise<DomainEvent[]> {
+  return await prisma.domainEvent.findMany({
+    where: {
+      status: 'failed',
+    },
+    orderBy: { failedAt: 'desc' },
+    take: limit,
+  });
+}
+
+// Retry failed events
+export async function retryFailedEvents(): Promise<void> {
+  const failedEvents = await getFailedEvents(50);
+  
+  for (const event of failedEvents) {
+    await processEvent(event.id);
+  }
+}
+
+// Clean up old completed events
+export async function cleanupOldEvents(daysOld: number = 30): Promise<number> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+  
+  const result = await prisma.domainEvent.deleteMany({
+    where: {
+      status: 'completed',
+      processedAt: { lt: cutoffDate },
+    },
+  });
+  
+  console.log(`[DomainEvent] Cleaned up ${result.count} old events`);
+  return result.count;
+}
+
+// Event statistics
+export async function getEventStats(companyId: number): Promise<{
+  total: number;
+  pending: number;
+  completed: number;
+  failed: number;
+  byType: Record<string, number>;
+}> {
+  const [total, pending, completed, failed] = await Promise.all([
+    prisma.domainEvent.count({ where: { companyId } }),
+    prisma.domainEvent.count({ where: { companyId, status: 'pending' } }),
+    prisma.domainEvent.count({ where: { companyId, status: 'completed' } }),
+    prisma.domainEvent.count({ where: { companyId, status: 'failed' } }),
+  ]);
+  
+  const byType = await prisma.domainEvent.groupBy({
+    by: ['eventType'],
+    where: { companyId },
+    _count: { eventType: true },
+  });
+  
+  return {
+    total,
+    pending,
+    completed,
+    failed,
+    byType: byType.reduce((acc, item) => {
+      acc[item.eventType] = item._count.eventType;
+      return acc;
+    }, {} as Record<string, number>),
+  };
 }

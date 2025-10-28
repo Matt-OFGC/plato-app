@@ -1,69 +1,66 @@
 {
-  "name": "Plato - Restaurant Management Platform",
+  "name": "Plato - Restaurant Management",
   "short_name": "Plato",
-  "description": "Complete restaurant management platform with recipes, staff scheduling, wholesale orders, and team messaging",
+  "description": "Your ultimate restaurant management companion - recipes, staff scheduling, wholesale orders, and team messaging",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#10b981",
-  "theme_color": "#059669",
   "orientation": "portrait-primary",
+  "background_color": "#f3f4f6",
+  "theme_color": "#059669",
   "scope": "/",
   "lang": "en",
   "dir": "ltr",
   "categories": ["business", "productivity", "food"],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png"
+      "src": "/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
     {
       "name": "Recipes",
       "short_name": "Recipes",
-      "description": "View and manage your recipes",
+      "description": "Manage your recipe collection",
       "url": "/dashboard/recipes",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/recipe-shortcut.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
     {
-      "name": "Staff Scheduler",
+      "name": "Staff Schedule",
       "short_name": "Schedule",
-      "description": "Manage staff schedules and shifts",
+      "description": "View and manage staff schedules",
       "url": "/dashboard/staff",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Team Messages",
-      "short_name": "Messages",
-      "description": "Chat with your team",
-      "url": "/dashboard/messages",
-      "icons": [
-        {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/schedule-shortcut.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -74,8 +71,35 @@
       "url": "/dashboard/wholesale",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/wholesale-shortcut.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Team Messages",
+      "short_name": "Messages",
+      "description": "Communicate with your team",
+      "url": "/dashboard/messages",
+      "icons": [
+        {
+          "src": "/icons/messages-shortcut.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "New Recipe",
+      "short_name": "New Recipe",
+      "description": "Create a new recipe",
+      "url": "/dashboard/recipes/new",
+      "icons": [
+        {
+          "src": "/icons/new-recipe-shortcut.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -86,26 +110,41 @@
       "url": "/dashboard/ingredients",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/ingredients-shortcut.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }
   ],
   "screenshots": [
     {
-      "src": "/screenshot-wide.png",
+      "src": "/screenshots/desktop-dashboard.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Plato Dashboard Overview"
+      "label": "Dashboard overview"
     },
     {
-      "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
+      "src": "/screenshots/mobile-recipes.png",
+      "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Plato Mobile View"
+      "label": "Recipe management on mobile"
+    },
+    {
+      "src": "/screenshots/desktop-schedule.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Staff scheduling interface"
+    },
+    {
+      "src": "/screenshots/mobile-messages.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Team messaging on mobile"
     }
   ],
   "related_applications": [],
@@ -114,7 +153,7 @@
     "preferred_width": 400
   },
   "launch_handler": {
-    "client_mode": "focus-existing"
+    "client_mode": "navigate-existing"
   },
   "protocol_handlers": [
     {
@@ -127,13 +166,12 @@
       "action": "/dashboard/recipes/import",
       "accept": {
         "text/csv": [".csv"],
-        "application/vnd.ms-excel": [".xls"],
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+        "application/json": [".json"]
       }
     }
   ],
   "share_target": {
-    "action": "/dashboard/recipes/new",
+    "action": "/dashboard/recipes/share",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
@@ -142,10 +180,12 @@
       "url": "url",
       "files": [
         {
-          "name": "image",
+          "name": "recipe_image",
           "accept": ["image/*"]
         }
       ]
     }
-  }
+  },
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "handle_links": "preferred"
 }

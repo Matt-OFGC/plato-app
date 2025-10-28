@@ -35,6 +35,79 @@
   --pane-max-h: calc(100vh - 200px); /* Default pane height */
   
   /* =============================================================================
+     PLATO OS APP SWITCHER STYLES
+     ============================================================================= */
+  
+  /* Glassmorphism utilities */
+  .glass-morphism {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .glass-morphism-dark {
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* App switcher scroll behavior */
+  .app-switcher-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .app-switcher-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Glow effect for active app */
+  .app-glow {
+    box-shadow: 0 0 20px rgba(5, 150, 105, 0.3);
+    animation: app-glow-pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes app-glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(5, 150, 105, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(5, 150, 105, 0.5);
+    }
+  }
+  
+  /* Smooth transitions for app tiles */
+  .app-tile {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .app-tile:hover {
+    transform: translateY(-1px);
+  }
+  
+  .app-tile:active {
+    transform: translateY(0);
+  }
+  
+  /* Lock overlay animation */
+  .lock-overlay {
+    animation: lock-fade-in 0.3s ease-out;
+  }
+  
+  @keyframes lock-fade-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* =============================================================================
      RESPONSIVE DESIGN TOKENS
      ============================================================================= */
   

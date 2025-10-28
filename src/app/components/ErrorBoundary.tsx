@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, ReactNode, ErrorInfo } from "react";
+import { captureException, addBreadcrumb } from "../../sentry.client.config";
 
 interface Props {
   children: ReactNode;
@@ -33,11 +34,27 @@ export class ErrorBoundary extends Component<Props, State> {
       errorCount: prev.errorCount + 1,
     }));
 
+    // Add breadcrumb for error tracking
+    addBreadcrumb('Error Boundary caught error', 'error', {
+      errorMessage: error.message,
+      errorStack: error.stack,
+      componentStack: errorInfo.componentStack,
+      errorCount: this.state.errorCount + 1,
+    });
+
+    // Capture error with Sentry
+    captureException(error, {
+      react: {
+        componentStack: errorInfo.componentStack,
+      },
+      errorBoundary: {
+        errorCount: this.state.errorCount + 1,
+        componentName: this.constructor.name,
+      },
+    });
+
     // Call custom error handler if provided
     this.props.onError?.(error, errorInfo);
-
-    // TODO: Log to error reporting service (Sentry, LogRocket, etc.)
-    // Example: Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } });
   }
 
   handleReset = () => {

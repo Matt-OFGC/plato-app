@@ -1,18 +1,27 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, useEffect, useRef } from "react";
 
 interface MessageInputProps {
   onSend: (content: string) => void;
+  onTypingStart?: () => void;
+  onTypingStop?: () => void;
 }
 
-export function MessageInput({ onSend }: MessageInputProps) {
+export function MessageInput({ onSend, onTypingStart, onTypingStop }: MessageInputProps) {
   const [message, setMessage] = useState("");
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
 
   function handleSend() {
     if (message.trim()) {
       onSend(message);
       setMessage("");
+      
+      // Stop typing when sending
+      if (onTypingStop) {
+        onTypingStop();
+      }
     }
   }
 
@@ -23,11 +32,45 @@ export function MessageInput({ onSend }: MessageInputProps) {
     }
   }
 
+  function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setMessage(e.target.value);
+    
+    // Handle typing indicators
+    if (onTypingStart && onTypingStop) {
+      if (!isTypingRef.current) {
+        isTypingRef.current = true;
+        onTypingStart();
+      }
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Set timeout to stop typing
+      typingTimeoutRef.current = setTimeout(() => {
+        if (isTypingRef.current) {
+          isTypingRef.current = false;
+          onTypingStop();
+        }
+      }, 1000);
+    }
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="flex items-end space-x-2">
       <textarea
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={handleInputChange}
         onKeyPress={handleKeyPress}
         placeholder="Type a message... (Shift+Enter for new line)"
         rows={1}
