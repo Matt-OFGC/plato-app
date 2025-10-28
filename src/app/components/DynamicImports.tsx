@@ -100,14 +100,8 @@ export const SystemAnalytics = dynamic(
   }
 );
 
-// Dashboard components
-export const OperationalDashboard = dynamic(
-  () => import('./OperationalDashboard').then(mod => ({ default: mod.OperationalDashboard })),
-  {
-    loading: () => <ProductionSkeleton />,
-    ssr: false,
-  }
-);
+// Dashboard components - Import directly for immediate rendering
+export { OperationalDashboard } from './OperationalDashboard';
 
 // Preload critical components on hover
 export const preloadComponents = () => {
