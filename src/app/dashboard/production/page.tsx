@@ -14,7 +14,7 @@ export default async function ProductionPage() {
   const { companyId } = await getCurrentUserAndCompany();
   if (!companyId) redirect("/dashboard");
 
-  // Get all recipes for the company with sections
+  // Get basic recipes data - much lighter query
   const recipesRaw = await prisma.recipe.findMany({
     where: { companyId },
     select: {
@@ -36,6 +36,7 @@ export default async function ProductionPage() {
       },
     },
     orderBy: { name: "asc" },
+    take: 50, // Limit for performance
   });
 
   // Serialize Decimal objects to strings for client components
@@ -44,81 +45,6 @@ export default async function ProductionPage() {
     yieldQuantity: recipe.yieldQuantity.toString(),
   }));
 
-  // Get current production plans with allocations
-  const productionPlansRaw = await prisma.productionPlan.findMany({
-    where: { companyId },
-    include: {
-      items: {
-        include: {
-          recipe: {
-            select: {
-              id: true,
-              name: true,
-              yieldQuantity: true,
-              yieldUnit: true,
-            },
-          },
-          allocations: {
-            include: {
-              customer: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      tasks: true,
-    },
-    orderBy: { startDate: "desc" },
-    take: 10,
-  });
-
-  // Serialize Decimal objects to strings for client components
-  const productionPlans = productionPlansRaw.map(plan => ({
-    ...plan,
-    items: plan.items.map(item => ({
-      ...item,
-      quantity: item.quantity.toString(),
-      recipe: {
-        ...item.recipe,
-        yieldQuantity: item.recipe.yieldQuantity.toString(),
-      },
-      allocations: item.allocations.map(alloc => ({
-        ...alloc,
-        quantity: alloc.quantity.toString(),
-      })),
-    })),
-  }));
-
-  // Get team members for task assignment
-  const teamMembers = await prisma.membership.findMany({
-    where: { 
-      companyId,
-      isActive: true,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  // Get wholesale customers
-  const wholesaleCustomers = await prisma.wholesaleCustomer.findMany({
-    where: {
-      companyId,
-      isActive: true,
-    },
-    orderBy: { name: "asc" },
-  });
-
   return (
     <div>
       <div className="mb-8">
@@ -126,18 +52,17 @@ export default async function ProductionPage() {
           Production Planning
         </h1>
         <p className="text-gray-600">
-          Plan your weekly bake schedule and organize multi-day production
+          Plan production schedules, manage tasks, and track progress
         </p>
       </div>
 
       <ProductionPlannerEnhanced
         recipes={recipes}
-        productionPlans={productionPlans as any}
-        teamMembers={teamMembers}
-        wholesaleCustomers={wholesaleCustomers}
-        companyId={companyId!}
+        productionPlans={[]}
+        teamMembers={[]}
+        wholesaleCustomers={[]}
+        companyId={companyId}
       />
     </div>
   );
 }
-

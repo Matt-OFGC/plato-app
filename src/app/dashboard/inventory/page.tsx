@@ -14,44 +14,7 @@ export default async function InventoryPage() {
   const { companyId } = await getCurrentUserAndCompany();
   if (!companyId) redirect("/dashboard");
 
-  // Get all inventory items
-  const inventoryRaw = await prisma.inventory.findMany({
-    where: { companyId },
-    include: {
-      recipe: {
-        select: {
-          id: true,
-          name: true,
-          yieldQuantity: true,
-          yieldUnit: true,
-          category: true,
-          imageUrl: true,
-        },
-      },
-      movements: {
-        take: 5,
-        orderBy: { createdAt: "desc" },
-      },
-    },
-    orderBy: { recipe: { name: "asc" } },
-  });
-
-  // Serialize
-  const inventory = inventoryRaw.map(inv => ({
-    ...inv,
-    quantity: inv.quantity.toString(),
-    lowStockThreshold: inv.lowStockThreshold?.toString() || null,
-    recipe: {
-      ...inv.recipe,
-      yieldQuantity: inv.recipe.yieldQuantity.toString(),
-    },
-    movements: inv.movements.map(mov => ({
-      ...mov,
-      quantity: mov.quantity.toString(),
-    })),
-  }));
-
-  // Get recipes for adding new inventory items
+  // Get basic recipes for adding new inventory items - much lighter query
   const recipesRaw = await prisma.recipe.findMany({
     where: {
       companyId,
@@ -65,6 +28,7 @@ export default async function InventoryPage() {
       category: true,
     },
     orderBy: { name: "asc" },
+    take: 100, // Limit for performance
   });
 
   const recipes = recipesRaw.map(recipe => ({
@@ -84,11 +48,10 @@ export default async function InventoryPage() {
       </div>
 
       <InventoryManager
-        inventory={inventory}
+        inventory={[]}
         recipes={recipes}
         companyId={companyId}
       />
     </div>
   );
 }
-

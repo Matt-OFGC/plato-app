@@ -16,8 +16,8 @@ export default async function AnalyticsPage() {
     redirect("/dashboard");
   }
 
-  // Fetch initial data for the dashboard
-  const [categories, recipes, recentSales] = await Promise.all([
+  // Get basic data for initial load - much lighter queries
+  const [categories, recipes] = await Promise.all([
     // Get categories for filtering
     prisma.category.findMany({
       where: { companyId },
@@ -42,39 +42,17 @@ export default async function AnalyticsPage() {
         }
       },
       orderBy: { name: 'asc' }
-    }),
-
-    // Get recent sales data for initial overview
-    prisma.salesRecord.findMany({
-      where: { 
-        companyId,
-        transactionDate: {
-          gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // Last 90 days
-        }
-      },
-      select: {
-        totalRevenue: true,
-        transactionDate: true,
-        recipeId: true
-      },
-      orderBy: { transactionDate: 'desc' },
-      take: 1000 // Limit for performance
     })
   ]);
-
-  // Calculate initial metrics
-  const totalRevenue = recentSales.reduce((sum, sale) => sum + Number(sale.totalRevenue), 0);
-  const salesCount = recentSales.length;
-  const avgRevenuePerSale = salesCount > 0 ? totalRevenue / salesCount : 0;
 
   return (
     <AnalyticsPageClient 
       initialCategories={categories}
       initialRecipes={recipes}
       initialMetrics={{
-        totalRevenue,
-        salesCount,
-        avgRevenuePerSale,
+        totalRevenue: 0,
+        salesCount: 0,
+        avgRevenuePerSale: 0,
         dateRange: {
           start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
           end: new Date()
