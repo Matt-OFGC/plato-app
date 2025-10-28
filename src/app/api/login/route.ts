@@ -68,6 +68,8 @@ export async function POST(request: NextRequest) {
       isAdmin: user.isAdmin,
     }, rememberMe);
 
+    console.log('Session created for user:', user.id, user.email);
+
     // Audit successful login
     await auditLog.loginSuccess(user.id, request);
 

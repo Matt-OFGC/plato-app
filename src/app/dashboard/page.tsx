@@ -11,6 +11,8 @@ export const revalidate = 300;
 
 export default async function DashboardPage() {
   const user = await getUserFromSession();
+  console.log('Dashboard: User from session:', user ? { id: user.id, email: user.email } : 'No user');
+  
   if (!user) redirect("/login?redirect=/dashboard");
 
   const { companyId, company, user: userWithMemberships } = await getCurrentUserAndCompany();
