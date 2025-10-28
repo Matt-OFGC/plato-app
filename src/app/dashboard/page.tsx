@@ -64,8 +64,9 @@ export default async function DashboardPage() {
       
       <AppLauncher 
         recipeCount={recipeCount}
+        ingredientCount={0}
         staffCount={staffCount}
-        companyId={companyId}
+        shiftsThisWeek={0}
       />
     </DashboardWithOnboarding>
   );
