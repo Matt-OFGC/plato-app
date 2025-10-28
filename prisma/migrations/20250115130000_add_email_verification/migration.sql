@@ -7,3 +7,4 @@ ALTER TABLE "User" ADD COLUMN "verificationTokenExpiresAt" TIMESTAMP(3);
 
 -- Create unique index for verification token
 CREATE UNIQUE INDEX "User_verificationToken_key" ON "User"("verificationToken");
+

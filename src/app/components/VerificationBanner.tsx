@@ -84,3 +84,4 @@ export function VerificationBanner({ userEmail }: VerificationBannerProps) {
     </div>
   );
 }
+

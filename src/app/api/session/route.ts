@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { getAvailableApps } from "@/lib/plato-apps-config";
 
 export async function GET() {
   try {
@@ -32,20 +31,9 @@ export async function GET() {
       orderBy: { createdAt: 'asc' } // Get the first company they joined
     });
 
-    // Get available apps based on user's subscription tier
-    const availableApps = getAvailableApps(session.subscriptionTier || 'starter');
-
     return NextResponse.json({ 
       user: session,
       company: membership?.company || null,
-      availableApps: availableApps.map(app => ({
-        id: app.id,
-        name: app.name,
-        shortName: app.shortName,
-        route: app.route,
-        requiredTier: app.requiredTier,
-        isCore: app.isCore
-      }))
     });
   } catch (error) {
     console.error("Session error:", error);
