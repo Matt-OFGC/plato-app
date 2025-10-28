@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface NavigationItem {
   value: string;
   href: string;

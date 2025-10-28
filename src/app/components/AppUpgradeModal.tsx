@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { PlatoApp } from '@/src/lib/plato-apps-config';
+import { PlatoApp } from '@/lib/plato-apps-config';
 import { LockIcon } from './icons/PlatoAppIcons';
 
 interface AppUpgradeModalProps {
