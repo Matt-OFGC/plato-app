@@ -49,8 +49,11 @@ function LoginForm() {
           }
         }
 
-        router.push(sp.get("redirect") || "/dashboard");
-        router.refresh();
+        // Wait a moment for the session cookie to be set
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Force a hard refresh to ensure session is loaded
+        window.location.href = sp.get("redirect") || "/dashboard";
       } else {
         setError(data.error || "Login failed");
       }
