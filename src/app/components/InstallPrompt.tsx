@@ -12,6 +12,7 @@ export function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     // Check if already installed
@@ -19,6 +20,10 @@ export function InstallPrompt() {
       setIsStandalone(true);
       return;
     }
+
+    // Check if mobile device
+    const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(mobile);
 
     // Check if iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -54,7 +59,7 @@ export function InstallPrompt() {
     };
   }, []);
 
-  const handleInstallClick = async () => {
+  const handleInstall = async () => {
     if (!deferredPrompt) {
       setShowPrompt(true);
       return;
@@ -82,36 +87,41 @@ export function InstallPrompt() {
     localStorage.setItem('pwa-install-dismissed', new Date().toISOString());
   };
 
-  // Don't show if already installed or prompt already dismissed
-  if (isStandalone || !showPrompt) {
+  // Only show on mobile devices and if not already installed
+  if (typeof window === 'undefined' || isStandalone || !isMobile) {
     return null;
   }
 
-  // iOS Safari install instructions
+  // iOS Safari install instructions - compact version
   if (isIOS) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg p-4 border-t-4 border-emerald-500">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+      <div className="fixed bottom-4 right-4 z-50 max-w-xs">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 flex items-center gap-3">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18l9-5-9-5-9 5 9 5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18V9" />
               </svg>
-              <span className="font-semibold">Install Plato</span>
             </div>
-            <p className="text-sm text-emerald-50">
-              To install: Tap the share button <svg className="inline w-4 h-4 mx-1" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-              </svg> then &quot;Add to Home Screen&quot;
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              Install Plato
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              Tap share → "Add to Home Screen"
             </p>
           </div>
+          
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 p-2 hover:bg-emerald-500 rounded-lg transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
             aria-label="Dismiss"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -119,35 +129,42 @@ export function InstallPrompt() {
     );
   }
 
-  // Standard PWA install prompt
+  // Standard PWA install prompt - compact version
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg p-4 border-t-4 border-emerald-500">
-      <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+    <div className="fixed bottom-4 right-4 z-50 max-w-sm">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 flex items-center gap-3">
+        <div className="flex-shrink-0">
+          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18l9-5-9-5-9 5 9 5z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18V9" />
             </svg>
-            <span className="font-semibold">Install Plato</span>
           </div>
-          <p className="text-sm text-emerald-50">
-            Install our app for a better experience with offline access and faster loading.
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            Install Plato
+          </p>
+          <p className="text-xs text-gray-500 truncate">
+            Offline access & faster loading
           </p>
         </div>
+        
         <div className="flex items-center gap-2">
           <button
-            onClick={handleInstallClick}
-            className="bg-white text-emerald-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors whitespace-nowrap"
+            onClick={handleInstall}
+            className="bg-green-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-green-700 transition-colors font-medium"
           >
-            Install Now
+            Install
           </button>
           <button
             onClick={handleDismiss}
-            className="p-2 hover:bg-emerald-500 rounded-lg transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
             aria-label="Dismiss"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>

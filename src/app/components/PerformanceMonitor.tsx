@@ -55,7 +55,7 @@ export function PerformanceMonitor() {
       const renderTime = performance.now() - renderStart.current;
       setMetrics(prev => ({ ...prev, renderTime: Math.round(renderTime) }));
     };
-  });
+  }, []); // Add empty dependency array to prevent infinite loop
 
   // Keyboard shortcut to toggle visibility
   useEffect(() => {
@@ -144,7 +144,7 @@ export function usePerformanceMeasure(componentName: string) {
         }
       }
     };
-  });
+  }, [componentName]); // Add dependency to prevent infinite loop
 
   return {
     renderCount: renderCount.current,

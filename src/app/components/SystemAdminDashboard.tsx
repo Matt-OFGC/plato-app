@@ -5,6 +5,7 @@ import { AdminSession } from "@/lib/admin-auth";
 import { FileUpload } from "./FileUpload";
 import { SystemStatus } from "./SystemStatus";
 import { SystemAnalytics } from "./SystemAnalytics";
+import { UserManagement } from "./UserManagement";
 
 interface SystemAdminDashboardProps {
   session: AdminSession;
@@ -112,6 +113,21 @@ export function SystemAdminDashboard({ session }: SystemAdminDashboardProps) {
               </div>
             </button>
             <button
+              onClick={() => setActiveTab("users")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "users"
+                  ? "border-red-500 text-red-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                User Management
+              </div>
+            </button>
+            <button
               onClick={() => setActiveTab("files")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "files"
@@ -214,6 +230,7 @@ export function SystemAdminDashboard({ session }: SystemAdminDashboardProps) {
         )}
 
         {activeTab === "analytics" && <SystemAnalytics />}
+        {activeTab === "users" && <UserManagement />}
         {activeTab === "files" && <FileUpload />}
         {activeTab === "system" && <SystemStatus />}
       </div>

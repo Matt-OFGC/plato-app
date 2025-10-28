@@ -40,52 +40,74 @@ export default async function RecipesPage({ searchParams }: Props) {
         })
       };
     
-  const recipesRaw = await prisma.recipe.findMany({ 
-    where, 
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      yieldQuantity: true,
-      yieldUnit: true,
-      imageUrl: true,
-      bakeTime: true,
-      bakeTemp: true,
-      storage: true,
-      sellingPrice: true,
-      category: true,
-      categoryRef: {
-        select: {
-          name: true,
-          color: true,
-        }
-      },
-      items: {
-        select: {
-          id: true,
-          quantity: true,
-          ingredient: {
-            select: {
-              packPrice: true,
-              packQuantity: true,
+  let recipesRaw: any[] = [];
+  
+  try {
+    recipesRaw = await prisma.recipe.findMany({ 
+      where, 
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        yieldQuantity: true,
+        yieldUnit: true,
+        imageUrl: true,
+        bakeTime: true,
+        bakeTemp: true,
+        storage: true,
+        sellingPrice: true,
+        category: true,
+        categoryRef: {
+          select: {
+            name: true,
+            color: true,
+          }
+        },
+        items: {
+          select: {
+            id: true,
+            quantity: true,
+            ingredient: {
+              select: {
+                packPrice: true,
+                packQuantity: true,
+              }
             }
           }
-        }
-      },
-      sections: {
-        select: {
-          id: true,
-          bakeTime: true,
+        },
+        sections: {
+          select: {
+            id: true,
+            bakeTime: true,
+          }
         }
       }
+    });
+  } catch (error) {
+    console.error('Database error in recipes page:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch recipes. Check database connection.');
     }
-  });
+    // Use empty array to prevent page crash
+    recipesRaw = [];
+  }
   
   // Serialize Decimal fields and calculate derived values for client component
   const recipes = recipesRaw.map(r => {
+    // Serialize items with Decimal quantities
+    const serializedItems = r.items.map(item => ({
+      ...item,
+      quantity: item.quantity.toString(), // Convert Decimal to string
+      ingredient: {
+        ...item.ingredient,
+        packPrice: item.ingredient.packPrice ? item.ingredient.packPrice.toString() : null,
+        packQuantity: item.ingredient.packQuantity ? item.ingredient.packQuantity.toString() : null,
+      }
+    }));
+
     // Calculate total cost
-    const totalCost = r.items.reduce((sum, item) => {
+    const totalCost = serializedItems.reduce((sum, item) => {
       const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
         ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
         : 0;
@@ -111,6 +133,7 @@ export default async function RecipesPage({ searchParams }: Props) {
       ...r,
       yieldQuantity: r.yieldQuantity.toString(),
       sellingPrice: r.sellingPrice ? Number(r.sellingPrice) : null,
+      items: serializedItems, // Use serialized items
       totalCost,
       costPerServing,
       cogsPercentage,

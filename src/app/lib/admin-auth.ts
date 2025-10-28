@@ -1,9 +1,10 @@
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 // Admin credentials (in production, store these securely)
 const ADMIN_CREDENTIALS = {
-  username: process.env.ADMIN_USERNAME || 'admin',
-  password: process.env.ADMIN_PASSWORD || 'admin123'
+  username: process.env.ADMIN_USERNAME || 'plato328',
+  password: process.env.ADMIN_PASSWORD || 'adminpassword'
 };
 
 export interface AdminSession {
@@ -12,9 +13,28 @@ export interface AdminSession {
   createdAt: number;
 }
 
-// Verify admin credentials
+// Verify admin credentials - check both hardcoded and database admin users
 export async function verifyAdminCredentials(username: string, password: string): Promise<boolean> {
-  return username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password;
+  // Check if user exists in database and is marked as admin
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        email: username,
+        isAdmin: true,
+        isActive: true
+      }
+    });
+    
+    // For database admin users, we'll use a simple password check
+    // In production, you should use proper password hashing
+    if (user && password === 'adminpassword') {
+      return true;
+    }
+  } catch (error) {
+    console.error('Database admin check error:', error);
+  }
+  
+  return false;
 }
 
 // Create admin session

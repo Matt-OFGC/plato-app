@@ -17,33 +17,49 @@ export default async function AnalyticsPage() {
   }
 
   // Get basic data for initial load - much lighter queries
-  const [categories, recipes] = await Promise.all([
-    // Get categories for filtering
-    prisma.category.findMany({
-      where: { companyId },
-      select: {
-        id: true,
-        name: true,
-        _count: {
-          select: { recipes: true }
-        }
-      },
-      orderBy: { name: 'asc' }
-    }),
+  let categories: any[] = [];
+  let recipes: any[] = [];
+  
+  try {
+    const [categoriesResult, recipesResult] = await Promise.all([
+      // Get categories for filtering
+      prisma.category.findMany({
+        where: { companyId },
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: { recipes: true }
+          }
+        },
+        orderBy: { name: 'asc' }
+      }),
 
-    // Get recipes for filtering
-    prisma.recipe.findMany({
-      where: { companyId },
-      select: {
-        id: true,
-        name: true,
-        categoryRef: {
-          select: { name: true }
-        }
-      },
-      orderBy: { name: 'asc' }
-    })
-  ]);
+      // Get recipes for filtering
+      prisma.recipe.findMany({
+        where: { companyId },
+        select: {
+          id: true,
+          name: true,
+          categoryRef: {
+            select: { name: true }
+          }
+        },
+        orderBy: { name: 'asc' }
+      })
+    ]);
+    
+    categories = categoriesResult;
+    recipes = recipesResult;
+  } catch (error) {
+    console.error('Database error in analytics page:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch analytics data. Check database connection.');
+    }
+    // Use empty arrays to prevent page crash
+    categories = [];
+    recipes = [];
+  }
 
   return (
     <AnalyticsPageClient 

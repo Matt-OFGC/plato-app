@@ -6,8 +6,8 @@ import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
 import { OperationalDashboard } from "@/components/OperationalDashboard";
 import { AppLauncher } from "@/components/AppLauncher";
 
-// Revalidate this page every 5 minutes for better performance
-export const revalidate = 300;
+// Revalidate this page every 2 minutes for better performance
+export const revalidate = 120;
 
 export default async function DashboardPage() {
   const user = await getUserFromSession();
@@ -42,11 +42,28 @@ export default async function DashboardPage() {
     );
   }
 
-  // Get basic counts for app launcher - much lighter queries
-  const [recipeCount, staffCount] = await Promise.all([
-    prisma.recipe.count({ where: { companyId } }),
-    prisma.membership.count({ where: { companyId, isActive: true } })
-  ]);
+  // Get basic counts for app launcher - optimized queries
+  let recipeCount = 0;
+  let staffCount = 0;
+  
+  try {
+    // Use Promise.allSettled to prevent one query failure from breaking the other
+    const [recipeResult, staffResult] = await Promise.allSettled([
+      prisma.recipe.count({ where: { companyId } }),
+      prisma.membership.count({ where: { companyId, isActive: true } })
+    ]);
+    
+    recipeCount = recipeResult.status === 'fulfilled' ? recipeResult.value : 0;
+    staffCount = staffResult.status === 'fulfilled' ? staffResult.value : 0;
+  } catch (error) {
+    console.error('Database error in dashboard page:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch dashboard counts. Check database connection.');
+    }
+    // Use default values to prevent page crash
+    recipeCount = 0;
+    staffCount = 0;
+  }
 
   return (
     <DashboardWithOnboarding
