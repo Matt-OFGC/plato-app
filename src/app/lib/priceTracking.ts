@@ -40,3 +40,4 @@ export function getPriceStatusColorClass(status: 'fresh' | 'stale' | 'very-stale
       return 'text-gray-600';
   }
 }
+

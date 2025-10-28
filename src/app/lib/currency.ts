@@ -30,3 +30,4 @@ export function parseCurrency(value: string | number): number {
   
   return isNaN(parsed) ? 0 : parsed;
 }
+

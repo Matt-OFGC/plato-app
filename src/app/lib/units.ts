@@ -128,3 +128,4 @@ export function computeCostPerOutputUnit(
 ): number {
   return totalCost / outputQuantity;
 }
+

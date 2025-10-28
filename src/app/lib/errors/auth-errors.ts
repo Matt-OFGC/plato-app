@@ -1,47 +1,28 @@
-// Authentication error handling
-export interface AuthError {
-  code: string;
-  message: string;
-  field?: string;
-}
-
-export function mapAuthError(error: any): AuthError {
+// Authentication error handling utilities
+export function mapAuthError(error: any): string {
   if (error.code === 'P2002') {
-    return {
-      code: 'DUPLICATE_EMAIL',
-      message: 'An account with this email already exists',
-      field: 'email'
-    };
+    return 'An account with this email already exists';
   }
-  
+  if (error.code === 'P2025') {
+    return 'User not found';
+  }
   if (error.message?.includes('Invalid credentials')) {
-    return {
-      code: 'INVALID_CREDENTIALS',
-      message: 'Invalid email or password',
-      field: 'password'
-    };
+    return 'Invalid email or password';
   }
-  
-  if (error.message?.includes('User not found')) {
-    return {
-      code: 'USER_NOT_FOUND',
-      message: 'No account found with this email',
-      field: 'email'
-    };
+  if (error.message?.includes('Email not verified')) {
+    return 'Please verify your email before logging in';
   }
-  
-  return {
-    code: 'UNKNOWN_ERROR',
-    message: 'An unexpected error occurred. Please try again.'
-  };
+  if (error.message?.includes('Account locked')) {
+    return 'Account is temporarily locked. Please try again later';
+  }
+  return 'An unexpected error occurred. Please try again';
 }
 
-export function createAuthErrorResponse(error: AuthError, status: number = 400) {
+export function createAuthErrorResponse(message: string, status: number = 400) {
   return {
-    error: error.message,
-    code: error.code,
-    field: error.field,
-    status
+    error: message,
+    status,
+    timestamp: new Date().toISOString(),
   };
 }
 
@@ -50,7 +31,7 @@ export function logAuthError(error: any, context: string) {
     message: error.message,
     code: error.code,
     stack: error.stack,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
