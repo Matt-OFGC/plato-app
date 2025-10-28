@@ -7,8 +7,8 @@ interface RecipeHeaderProps {
   title: string;
   category?: string;
   servings: number;
-  viewMode: "whole" | "steps" | "edit";
-  onViewModeChange: (mode: "whole" | "steps" | "edit") => void;
+  viewMode: "whole" | "steps" | "edit" | "photos";
+  onViewModeChange: (mode: "whole" | "steps" | "edit" | "photos") => void;
   onCategoryChange?: (category: string) => void;
   onSave?: () => void;
   isSaving?: boolean;
@@ -106,6 +106,20 @@ export default function RecipeHeader({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
               Steps
+            </button>
+
+            <button
+              onClick={() => onViewModeChange("photos")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                viewMode === "photos"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Photos
             </button>
           </div>
 

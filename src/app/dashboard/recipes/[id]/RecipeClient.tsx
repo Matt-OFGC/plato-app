@@ -14,8 +14,9 @@ import StepNavigation from "./components/StepNavigation";
 import IngredientsPanel from "./components/IngredientsPanel";
 import InstructionsPanel from "./components/InstructionsPanel";
 import CostInsightsModal from "./components/CostInsightsModal";
+import Image from "next/image";
 
-type ViewMode = "whole" | "steps" | "edit";
+type ViewMode = "whole" | "steps" | "edit" | "photos";
 
 interface Props {
   recipe: RecipeMock;
@@ -336,8 +337,92 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             </div>
           )}
 
+          {/* Photos View - Large Image Focus */}
+          {viewMode === "photos" && (
+            <div className="mb-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                {/* Large Recipe Image */}
+                <div className="aspect-[4/3] bg-gradient-to-br from-emerald-100 to-blue-100 relative overflow-hidden">
+                  <Image
+                    src={recipe.imageUrl || "/images/placeholder-cake.png"}
+                    alt={recipe.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                  {/* Recipe Info Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <h1 className="text-3xl font-bold text-white mb-2">{recipe.name}</h1>
+                      <div className="flex items-center gap-4 text-white/90">
+                        <span className="text-lg">{recipe.category || "Uncategorized"}</span>
+                        <span className="text-lg">•</span>
+                        <span className="text-lg">{servings} servings</span>
+                        {recipe.sellingPrice && (
+                          <>
+                            <span className="text-lg">•</span>
+                            <span className="text-lg font-semibold">£{recipe.sellingPrice.toFixed(2)}</span>
+                          </>
+                        )}
+                      </div>
+                      {recipe.description && (
+                        <p className="text-white/80 mt-3 text-lg leading-relaxed max-w-2xl">
+                          {recipe.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recipe Details Grid */}
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Ingredients Summary */}
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Ingredients</h3>
+                      <div className="space-y-2">
+                        {localIngredients.slice(0, 6).map((ingredient, index) => (
+                          <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                            <span className="text-gray-700">{ingredient.name}</span>
+                            <span className="text-sm text-gray-500">{ingredient.quantity} {ingredient.unit}</span>
+                          </div>
+                        ))}
+                        {localIngredients.length > 6 && (
+                          <div className="text-sm text-gray-500 pt-2">
+                            +{localIngredients.length - 6} more ingredients
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Instructions Summary */}
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Instructions</h3>
+                      <div className="space-y-3">
+                        {localSteps.slice(0, 4).map((step, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
+                              {index + 1}
+                            </div>
+                            <p className="text-gray-700 text-sm leading-relaxed">{step.instructions}</p>
+                          </div>
+                        ))}
+                        {localSteps.length > 4 && (
+                          <div className="text-sm text-gray-500 pt-2">
+                            +{localSteps.length - 4} more steps
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Ingredients & Instructions - Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2 max-h-[calc(100vh-350px)]">
+          {viewMode !== "photos" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2 max-h-[calc(100vh-350px)]">
             {/* Ingredients */}
             <IngredientsPanel
               ingredients={localIngredients}
@@ -361,6 +446,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
               onActiveStepChange={setActiveStepIndex}
             />
           </div>
+          )}
         </div>
       </div>
 
