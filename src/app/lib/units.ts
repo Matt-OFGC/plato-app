@@ -1,5 +1,5 @@
 export type BaseUnit = 'g' | 'ml' | 'each';
-export type Unit = BaseUnit | 'kg' | 'l' | 'slices' | 'cups' | 'tbsp' | 'tsp' | 'oz' | 'lb' | 'fl oz';
+export type Unit = BaseUnit | 'kg' | 'l' | 'slices' | 'cups' | 'tbsp' | 'tsp' | 'oz' | 'lb' | 'fl oz' | 'floz';
 
 // Conversion factors to base units
 const CONVERSION_FACTORS: Record<string, number> = {
@@ -13,6 +13,7 @@ const CONVERSION_FACTORS: Record<string, number> = {
   'ml': 1,
   'l': 1000,
   'fl oz': 29.5735,
+  'floz': 29.5735, // Alias for 'fl oz' (without space)
   'cups': 236.588,
   'tbsp': 14.7868,
   'tsp': 4.92892,
@@ -22,9 +23,19 @@ const CONVERSION_FACTORS: Record<string, number> = {
   'slices': 1,
 };
 
+// Normalize unit string (handle 'floz' -> 'fl oz', lowercase, etc.)
+function normalizeUnit(unit: string): string {
+  const lower = unit.toLowerCase().trim();
+  // Normalize 'floz' to 'fl oz' for consistent handling
+  if (lower === 'floz' || lower === 'fl-oz') {
+    return 'fl oz';
+  }
+  return lower;
+}
+
 // Convert to base unit
 export function toBase(amount: number, unit: Unit, density?: number): { amount: number; base: BaseUnit } {
-  const normalizedUnit = unit.toLowerCase() as Unit;
+  const normalizedUnit = normalizeUnit(unit) as Unit;
   
   // Handle density conversion (g/ml)
   if (density && (normalizedUnit === 'ml' || normalizedUnit === 'l' || normalizedUnit === 'fl oz' || normalizedUnit === 'cups' || normalizedUnit === 'tbsp' || normalizedUnit === 'tsp')) {
@@ -48,7 +59,7 @@ export function toBase(amount: number, unit: Unit, density?: number): { amount: 
 
 // Convert from base unit
 export function fromBase(amount: number, baseUnit: BaseUnit, targetUnit: Unit): number {
-  const normalizedTarget = targetUnit.toLowerCase() as Unit;
+  const normalizedTarget = normalizeUnit(targetUnit);
   
   if (baseUnit === 'g' && ['g', 'kg', 'oz', 'lb'].includes(normalizedTarget)) {
     return amount / CONVERSION_FACTORS[normalizedTarget];
@@ -71,8 +82,8 @@ export function areUnitsCompatible(unit1: Unit, unit2: Unit): boolean {
   const volumeUnits = ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'];
   const countUnits = ['each', 'slices'];
   
-  const normalized1 = unit1.toLowerCase() as Unit;
-  const normalized2 = unit2.toLowerCase() as Unit;
+  const normalized1 = normalizeUnit(unit1);
+  const normalized2 = normalizeUnit(unit2);
   
   return (
     (weightUnits.includes(normalized1) && weightUnits.includes(normalized2)) ||

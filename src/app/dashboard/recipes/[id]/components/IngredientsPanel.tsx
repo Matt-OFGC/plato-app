@@ -317,10 +317,14 @@ export default function IngredientsPanel({
                           >
                             <option value="g">g</option>
                             <option value="kg">kg</option>
+                            <option value="oz">oz</option>
+                            <option value="lb">lb</option>
                             <option value="ml">ml</option>
                             <option value="l">l</option>
+                            <option value="floz">fl oz</option>
                             <option value="tbsp">tbsp</option>
                             <option value="tsp">tsp</option>
+                            <option value="cup">cup</option>
                             <option value="each">each</option>
                           </select>
                           
