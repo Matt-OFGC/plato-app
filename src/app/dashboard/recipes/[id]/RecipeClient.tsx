@@ -62,7 +62,9 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   // Calculate cost properly with unit conversion
   const calculateIngredientCost = useMemo(() => {
     return (ingredient: typeof localIngredients[0]) => {
-      const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
+      const fullIngredient = availableIngredients.find(ai => 
+        ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
+      );
       if (!fullIngredient || !ingredient.quantity) return 0;
       
       return computeIngredientUsageCostWithDensity(

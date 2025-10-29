@@ -123,16 +123,36 @@ export function computeIngredientUsageCostWithDensity(
   const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
   
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
-  const { amount: basePackQuantity } = toBase(packQuantity, packUnit);
+  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
-  // Ensure we're comparing compatible base units
-  if (baseUnit !== 'g' && baseUnit !== 'ml' && baseUnit !== 'each') {
-    // Fallback: if conversion failed, return 0
+  // Safety checks
+  if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {
     return 0;
   }
   
-  const costPerBaseUnit = packPrice / basePackQuantity;
-  return baseQuantity * costPerBaseUnit;
+  // If base units match, simple calculation
+  if (baseUnit === packBaseUnit) {
+    const costPerBaseUnit = packPrice / basePackQuantity;
+    return baseQuantity * costPerBaseUnit;
+  }
+  
+  // If base units don't match but we have density, convert via density
+  if (density) {
+    if (baseUnit === 'ml' && packBaseUnit === 'g') {
+      // Recipe is volume, pack is weight - convert pack to volume
+      const packVolume = basePackQuantity / density;
+      const costPerMl = packPrice / packVolume;
+      return baseQuantity * costPerMl;
+    } else if (baseUnit === 'g' && packBaseUnit === 'ml') {
+      // Recipe is weight, pack is volume - convert pack to weight
+      const packWeight = basePackQuantity * density;
+      const costPerGram = packPrice / packWeight;
+      return baseQuantity * costPerGram;
+    }
+  }
+  
+  // If no density and units don't match, return 0
+  return 0;
 }
 
 // Compute recipe cost with density

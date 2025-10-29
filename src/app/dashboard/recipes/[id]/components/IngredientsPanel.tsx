@@ -413,7 +413,9 @@ export default function IngredientsPanel({
                         
                         {/* Cost per line */}
                         {(() => {
-                          const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
+                          const fullIngredient = availableIngredients.find(ai => 
+                            ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
+                          );
                           if (!fullIngredient || !ingredient.quantity) return null;
                           
                           const ingredientCost = computeIngredientUsageCostWithDensity(
@@ -463,7 +465,9 @@ export default function IngredientsPanel({
                           
                           {/* Cost - Right side */}
                           {(() => {
-                            const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
+                            const fullIngredient = availableIngredients.find(ai => 
+                              ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
+                            );
                             if (!fullIngredient || !ingredient.quantity) return null;
                             
                             const ingredientCost = computeIngredientUsageCostWithDensity(
