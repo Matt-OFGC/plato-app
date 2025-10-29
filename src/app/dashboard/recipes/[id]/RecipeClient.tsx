@@ -4,6 +4,7 @@ import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
 import { saveRecipeChanges, saveSellPrice, saveRecipe } from "./actions";
+import RecipeHeader from "./components/RecipeHeader";
 import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
 import RecipeNotes from "./components/RecipeNotes";
