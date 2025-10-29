@@ -12,38 +12,51 @@ interface Props {
 
 export default async function RecipePage({ params }: Props) {
   const { id: idParam } = await params;
-  const id = Number(idParam);
+  const isNew = idParam === "new";
   
   const { companyId } = await getCurrentUserAndCompany();
   
-  const recipe = await prisma.recipe.findUnique({
-    where: { id },
-    include: {
-      sections: {
-        include: {
-          items: {
-            include: {
-              ingredient: true,
-            },
-          },
-        },
-        orderBy: { order: "asc" },
-      },
-      items: {
-        include: {
-          ingredient: true,
-        },
-      },
-    },
-  });
-
-  if (!recipe) {
+  if (!isNew && (!companyId)) {
     redirect("/dashboard/recipes");
   }
   
-  // Security check: Verify recipe belongs to user's company
-  if (recipe.companyId !== companyId) {
-    redirect("/dashboard/recipes");
+  // Fetch recipe if editing existing recipe
+  let recipe = null;
+  if (!isNew) {
+    const id = Number(idParam);
+    if (isNaN(id)) {
+      redirect("/dashboard/recipes");
+    }
+    
+    recipe = await prisma.recipe.findUnique({
+      where: { id },
+      include: {
+        sections: {
+          include: {
+            items: {
+              include: {
+                ingredient: true,
+              },
+            },
+          },
+          orderBy: { order: "asc" },
+        },
+        items: {
+          include: {
+            ingredient: true,
+          },
+        },
+      },
+    });
+
+    if (!recipe) {
+      redirect("/dashboard/recipes");
+    }
+    
+    // Security check: Verify recipe belongs to user's company
+    if (recipe.companyId !== companyId) {
+      redirect("/dashboard/recipes");
+    }
   }
 
   // Fetch categories, storage, shelf life options, and ingredients for dropdowns
@@ -84,7 +97,8 @@ export default async function RecipePage({ params }: Props) {
   };
 
   // Transform database recipe to match the new UI format
-  const transformedRecipe: RecipeMock = {
+  // For new recipes, use empty/default values
+  const transformedRecipe: RecipeMock = recipe ? {
     id: recipe.id.toString(),
     title: recipe.name,
     category: recipe.category || undefined,
@@ -143,7 +157,19 @@ export default async function RecipePage({ params }: Props) {
           })
         )
       : [], // Empty array - old recipes start fresh with new system
+  } : {
+    id: "new",
+    title: "",
+    baseServings: 1,
+    steps: [{
+      id: '1',
+      title: 'Instructions',
+      instructions: [],
+    }] as RecipeStep[],
+    ingredients: [],
   };
+
+  const recipeId = recipe ? recipe.id : null;
 
   // Transform ingredients for dropdown
   const ingredientsForDropdown = availableIngredients.map(ing => {
@@ -165,8 +191,9 @@ export default async function RecipePage({ params }: Props) {
       categories={categories}
       storageOptions={storageOptions}
       shelfLifeOptions={shelfLifeOptions}
-      recipeId={recipe.id}
+      recipeId={recipeId}
       availableIngredients={ingredientsForDropdown}
+      isNew={isNew}
     />
   );
 }

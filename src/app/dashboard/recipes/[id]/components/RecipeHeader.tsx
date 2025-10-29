@@ -14,6 +14,7 @@ interface RecipeHeaderProps {
   isSaving?: boolean;
   categories?: { id: number; name: string }[];
   imageUrl?: string;
+  onTitleChange?: (title: string) => void;
 }
 
 export default function RecipeHeader({
@@ -27,6 +28,7 @@ export default function RecipeHeader({
   isSaving = false,
   categories = [],
   imageUrl,
+  onTitleChange,
 }: RecipeHeaderProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
@@ -51,9 +53,20 @@ export default function RecipeHeader({
 
           {/* Title and Info */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 mb-0.5 truncate">
-              {title}
-            </h1>
+            {onTitleChange && viewMode === "edit" ? (
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => onTitleChange(e.target.value)}
+                placeholder="Recipe name"
+                className="text-lg sm:text-xl font-bold text-gray-900 mb-0.5 w-full bg-transparent border-none outline-none focus:ring-2 focus:ring-emerald-500 rounded px-2 py-1 -mx-2 -my-1"
+                autoFocus
+              />
+            ) : (
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 mb-0.5 truncate">
+                {title}
+              </h1>
+            )}
             <div className="flex items-center gap-2 text-xs">
               {viewMode === "edit" && onCategoryChange && categories.length > 0 ? (
                 <select

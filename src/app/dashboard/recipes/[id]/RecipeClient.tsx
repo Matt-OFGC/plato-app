@@ -3,8 +3,7 @@
 import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
-import { saveRecipeChanges, saveSellPrice } from "./actions";
-import RecipeHeader from "./components/RecipeHeader";
+import { saveRecipeChanges, saveSellPrice, saveRecipe } from "./actions";
 import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
 import RecipeNotes from "./components/RecipeNotes";
@@ -23,17 +22,20 @@ interface Props {
   categories: { id: number; name: string }[];
   storageOptions: { id: number; name: string }[];
   shelfLifeOptions: { id: number; name: string }[];
-  recipeId: number;
+  recipeId: number | null;
   availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number; allergens: string[] }>;
+  isNew?: boolean;
 }
 
-export default function RecipeRedesignClient({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>("steps");
+export default function RecipeRedesignClient({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients, isNew = false }: Props) {
+  // Start in edit mode for new recipes, steps mode for existing
+  const [viewMode, setViewMode] = useState<ViewMode>(isNew ? "edit" : "steps");
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const { servings, setServings } = useServings(recipe.id, recipe.baseServings);
   const checklist = useIngredientChecklist(recipe.id);
   const [localIngredients, setLocalIngredients] = useState(recipe.ingredients);
   const [localSteps, setLocalSteps] = useState(recipe.steps);
+  const [recipeTitle, setRecipeTitle] = useState(recipe.title);
   const [recipeType, setRecipeType] = useState<"single" | "batch">("batch");
   const [slicesPerBatch, setSlicesPerBatch] = useState(recipe.baseServings);
   const [category, setCategory] = useState(recipe.category || "Uncategorized");
@@ -149,26 +151,58 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const result = await saveRecipeChanges({
-        recipeId,
-        category,
-        storage,
-        shelfLife,
-        sellPrice,
-        description,
-        ingredients: localIngredients,
-        steps: localSteps,
-      });
+      // Validation
+      if (!recipeTitle || recipeTitle.trim() === "") {
+        alert("❌ Please enter a recipe name");
+        setIsSaving(false);
+        return;
+      }
 
-      if (result.success) {
-        // Switch back to steps view after saving
-        setViewMode("steps");
+      if (isNew) {
+        // Create new recipe
+        const result = await saveRecipe({
+          recipeId: null,
+          name: recipeTitle.trim(),
+          yieldQuantity: servings,
+          yieldUnit: recipeType === "batch" ? "slices" : "each",
+          category,
+          storage,
+          shelfLife,
+          sellPrice,
+          description,
+          ingredients: localIngredients,
+          steps: localSteps,
+        });
+
+        if (result.success && result.recipeId) {
+          // Redirect to the new recipe page
+          window.location.href = `/dashboard/recipes/${result.recipeId}`;
+        } else {
+          alert("❌ Failed to create recipe: " + (result.error || "Unknown error"));
+        }
       } else {
-        alert("❌ Failed to save changes: " + (result.error || "Unknown error"));
+        // Update existing recipe
+        const result = await saveRecipeChanges({
+          recipeId: recipeId!,
+          category,
+          storage,
+          shelfLife,
+          sellPrice,
+          description,
+          ingredients: localIngredients,
+          steps: localSteps,
+        });
+
+        if (result.success) {
+          // Switch back to steps view after saving
+          setViewMode("steps");
+        } else {
+          alert("❌ Failed to save changes: " + (result.error || "Unknown error"));
+        }
       }
     } catch (error) {
       console.error("Save error:", error);
-      alert("❌ Failed to save changes");
+      alert("❌ Failed to save recipe");
     } finally {
       setIsSaving(false);
     }
@@ -306,7 +340,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
 
             <div className="flex-1 min-w-0">
               <RecipeHeader
-                title={recipe.title}
+                title={isNew ? recipeTitle || "New Recipe" : recipe.title}
                 category={category}
                 servings={servings}
                 viewMode={viewMode}
@@ -316,6 +350,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                 isSaving={isSaving}
                 categories={categories}
                 imageUrl={recipe.imageUrl}
+                onTitleChange={isNew ? setRecipeTitle : undefined}
               />
             </div>
           </div>
