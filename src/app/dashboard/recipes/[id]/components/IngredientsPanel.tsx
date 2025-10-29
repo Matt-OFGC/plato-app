@@ -335,14 +335,39 @@ export default function IngredientsPanel({
                         return manualResult;
                       }
                       
-                      const result = computeIngredientUsageCostWithDensity(
-                        scaledQuantity,
-                        ingredient.unit as Unit,
-                        fullIngredient.packPrice,
-                        fullIngredient.packQuantity,
-                        fullIngredient.packUnit as Unit,
-                        fullIngredient.densityGPerMl || undefined
-                      );
+                      // DEBUG: Log before calling function
+                      console.error('🔍 ABOUT TO CALL FUNCTION:', {
+                        func: computeIngredientUsageCostWithDensity,
+                        funcType: typeof computeIngredientUsageCostWithDensity,
+                        funcName: computeIngredientUsageCostWithDensity?.name,
+                        funcToString: computeIngredientUsageCostWithDensity?.toString().substring(0, 200),
+                        args: {
+                          quantity: scaledQuantity,
+                          unit: ingredient.unit,
+                          packPrice: fullIngredient.packPrice,
+                          packQuantity: fullIngredient.packQuantity,
+                          packUnit: fullIngredient.packUnit,
+                          density: fullIngredient.densityGPerMl || undefined
+                        }
+                      });
+                      
+                      // Try to call the function directly
+                      let result: number;
+                      try {
+                        result = computeIngredientUsageCostWithDensity(
+                          scaledQuantity,
+                          ingredient.unit as Unit,
+                          fullIngredient.packPrice,
+                          fullIngredient.packQuantity,
+                          fullIngredient.packUnit as Unit,
+                          fullIngredient.densityGPerMl || undefined
+                        );
+                        console.error('🔍 FUNCTION RETURNED:', result);
+                      } catch (err) {
+                        console.error('❌ FUNCTION THREW ERROR:', err);
+                        throw err;
+                      }
+                      
                       console.error('🔍 DIRECT CALCULATION RESULT:', {
                         input: { scaledQuantity, unit: ingredient.unit, packPrice: fullIngredient.packPrice, packQuantity: fullIngredient.packQuantity, packUnit: fullIngredient.packUnit },
                         result,
