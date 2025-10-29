@@ -22,7 +22,9 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
-  const [ingredientsList, setIngredientsList] = useState(ingredients);
+
+  // Use props directly instead of local state to ensure UI updates after router.refresh()
+  // This fixes the issue where deleted ingredients don't disappear until manual page refresh
 
   const handleNewIngredient = () => {
     setEditingIngredient(null);
@@ -67,7 +69,7 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
 
       {/* Stale Price Alerts */}
       <div className="mb-8">
-        <StalePriceAlerts ingredients={ingredientsList.map(ing => ({
+        <StalePriceAlerts ingredients={ingredients.map(ing => ({
           id: ing.id,
           name: ing.name,
           lastPriceUpdate: ing.lastPriceUpdate || new Date(),
@@ -81,7 +83,7 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
       </div>
 
       <IngredientsView 
-        ingredients={ingredientsList} 
+        ingredients={ingredients} 
         deleteIngredient={deleteIngredient}
         onEdit={handleEditIngredient}
         onNew={handleNewIngredient}
