@@ -127,18 +127,25 @@ export function computeIngredientUsageCostWithDensity(
     adjustedUnit = 'fl oz';
   }
   
-  // If pack unit is volume and recipe unit is weight (or vice versa), try to use density
-  const weightUnits = ['g', 'kg', 'oz', 'lb'];
-  const isPackVolume = volumeUnits.includes(normalizedPackUnit);
-  const isRecipeWeight = weightUnits.includes(normalizeUnit(adjustedUnit));
-  const isPackWeight = weightUnits.includes(normalizedPackUnit);
-  const isRecipeVolume = volumeUnits.includes(normalizeUnit(adjustedUnit));
-  
-  // Use density if available and units are incompatible
-  const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
-  
-  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
+  // Convert both to base units
+  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, density);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
+  
+  // Debug logging
+  console.log('Cost calculation debug:', {
+    quantity,
+    unit: adjustedUnit,
+    normalizedUnit,
+    packQuantity,
+    packUnit,
+    normalizedPackUnit,
+    baseQuantity,
+    baseUnit,
+    basePackQuantity,
+    packBaseUnit,
+    packPrice,
+    density,
+  });
   
   // Safety checks
   if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {
@@ -159,6 +166,7 @@ export function computeIngredientUsageCostWithDensity(
   if (baseUnit === packBaseUnit) {
     const costPerBaseUnit = packPrice / basePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
+    console.log('Cost result:', { costPerBaseUnit, result, baseQuantity, basePackQuantity });
     return result;
   }
   
