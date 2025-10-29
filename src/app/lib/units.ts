@@ -113,18 +113,22 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
+  // IMMEDIATE DEBUG - this should always show
+  console.error('🚨 FUNCTION CALLED:', { quantity, unit, packPrice, packQuantity, packUnit, density });
+  
   // Safety check - log if inputs are invalid
   if (!quantity || quantity === 0) {
+    console.error('❌ quantity is 0 or falsy:', quantity);
     return 0;
   }
   
   if (!packPrice || packPrice === 0) {
-    console.warn('Invalid packPrice:', packPrice);
+    console.error('❌ packPrice is 0 or falsy:', packPrice);
     return 0;
   }
   
   if (!packQuantity || packQuantity === 0) {
-    console.warn('Invalid packQuantity:', packQuantity);
+    console.error('❌ packQuantity is 0 or falsy:', packQuantity);
     return 0;
   }
   
