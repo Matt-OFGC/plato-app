@@ -61,7 +61,7 @@ export function toBase(amount: number, unit: Unit, density?: number): { amount: 
       return { amount: 0, base: 'ml' };
     }
     const result = { amount: amount * factor, base: 'ml' as BaseUnit };
-    console.log(`✅ toBase conversion: ${amount} ${normalizedUnit} = ${result.amount} ${result.base}`);
+    console.error(`✅ toBase conversion: ${amount} ${normalizedUnit} = ${result.amount} ${result.base}`);
     return result;
   }
   
@@ -148,8 +148,8 @@ export function computeIngredientUsageCostWithDensity(
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, shouldUseDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit, undefined); // Never use density for pack unit
   
-  // Debug logging
-  console.log('Cost calculation debug:', {
+  // Debug logging - use console.error so it shows even with filters
+  console.error('🔍 Cost calculation debug:', {
     quantity,
     unit: adjustedUnit,
     normalizedUnit,
@@ -162,6 +162,9 @@ export function computeIngredientUsageCostWithDensity(
     packBaseUnit,
     packPrice,
     density,
+    isRecipeVolume,
+    isPackVolume,
+    shouldUseDensity,
   });
   
   // Safety checks
@@ -188,7 +191,7 @@ export function computeIngredientUsageCostWithDensity(
   if (baseUnit === packBaseUnit) {
     const costPerBaseUnit = packPrice / basePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
-    console.log('✅ Cost calculation successful:', { 
+    console.error('✅ Cost calculation successful:', { 
       costPerBaseUnit, 
       result, 
       baseQuantity, 
