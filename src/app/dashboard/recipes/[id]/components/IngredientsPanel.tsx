@@ -271,6 +271,23 @@ export default function IngredientsPanel({
               const aggIngredient = ingredient as AggregatedIngredient;
               const isMultiStep = (aggIngredient.stepIds?.length || 0) > 1;
               const hasDropdownOpen = searchResults[ingredient.id] || ingredientSearch[ingredient.id]?.length === 0;
+              
+              // Find ingredient for cost calculation
+              const fullIngredient = availableIngredients.find(ai => 
+                ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
+              );
+              
+              // Calculate cost if ingredient found
+              const ingredientCost = fullIngredient && ingredient.quantity && scaledQuantity > 0
+                ? computeIngredientUsageCostWithDensity(
+                    scaledQuantity,
+                    ingredient.unit as Unit,
+                    fullIngredient.packPrice,
+                    fullIngredient.packQuantity,
+                    fullIngredient.packUnit as Unit,
+                    fullIngredient.densityGPerMl || undefined
+                  )
+                : 0;
 
               return (
                 <div
@@ -412,30 +429,14 @@ export default function IngredientsPanel({
                         </div>
                         
                         {/* Cost per line */}
-                        {(() => {
-                          const fullIngredient = availableIngredients.find(ai => 
-                            ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
-                          );
-                          if (!fullIngredient || !ingredient.quantity) return null;
-                          
-                          const ingredientCost = computeIngredientUsageCostWithDensity(
-                            scaledQuantity,
-                            ingredient.unit as Unit,
-                            fullIngredient.packPrice,
-                            fullIngredient.packQuantity,
-                            fullIngredient.packUnit as Unit,
-                            fullIngredient.densityGPerMl || undefined
-                          );
-                          
-                          return (
-                            <div className="text-xs text-gray-500 ml-1">
-                              Cost: £{ingredientCost.toFixed(2)}
-                              <span className="text-gray-400 ml-2">
-                                (£{(fullIngredient.packPrice / fullIngredient.packQuantity).toFixed(3)} per {fullIngredient.packUnit})
-                              </span>
-                            </div>
-                          );
-                        })()}
+                        {fullIngredient && ingredient.quantity ? (
+                          <div className="text-xs text-gray-500 ml-1">
+                            Cost: £{ingredientCost.toFixed(2)}
+                            <span className="text-gray-400 ml-2">
+                              (£{(fullIngredient.packPrice / fullIngredient.packQuantity).toFixed(3)} per {fullIngredient.packUnit})
+                            </span>
+                          </div>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="w-full">
@@ -464,29 +465,13 @@ export default function IngredientsPanel({
                           </div>
                           
                           {/* Cost - Right side */}
-                          {(() => {
-                            const fullIngredient = availableIngredients.find(ai => 
-                              ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
-                            );
-                            if (!fullIngredient || !ingredient.quantity) return null;
-                            
-                            const ingredientCost = computeIngredientUsageCostWithDensity(
-                              scaledQuantity,
-                              ingredient.unit as Unit,
-                              fullIngredient.packPrice,
-                              fullIngredient.packQuantity,
-                              fullIngredient.packUnit as Unit,
-                              fullIngredient.densityGPerMl || undefined
-                            );
-                            
-                            return (
-                              <div className={`text-sm font-semibold flex-shrink-0 ${
-                                isChecked ? "text-gray-400 line-through" : "text-gray-600"
-                              }`}>
-                                £{ingredientCost.toFixed(2)}
-                              </div>
-                            );
-                          })()}
+                          {ingredientCost > 0 || fullIngredient ? (
+                            <div className={`text-sm font-semibold flex-shrink-0 ${
+                              isChecked ? "text-gray-400 line-through" : "text-gray-600"
+                            }`}>
+                              £{ingredientCost.toFixed(2)}
+                            </div>
+                          ) : null}
                           
                           {/* Step Info - Right side (simple case) */}
                           {viewMode === "whole" && aggIngredient.stepTitles && !isMultiStep && (

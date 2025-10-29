@@ -101,6 +101,18 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
+  // Safety check
+  if (!quantity || !packPrice || !packQuantity || packQuantity === 0) {
+    console.log('Invalid input to cost calculation:', {
+      quantity,
+      packPrice,
+      packQuantity,
+      packUnit,
+      unit,
+    });
+    return 0;
+  }
+  
   // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
   const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
   const normalizedPackUnit = normalizeUnit(packUnit);
@@ -127,13 +139,34 @@ export function computeIngredientUsageCostWithDensity(
   
   // Safety checks
   if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {
+    console.log('Failed base unit conversion:', {
+      quantity,
+      unit: adjustedUnit,
+      packQuantity,
+      packUnit,
+      baseQuantity,
+      baseUnit,
+      basePackQuantity,
+      packBaseUnit,
+    });
     return 0;
   }
   
   // If base units match, simple calculation
   if (baseUnit === packBaseUnit) {
     const costPerBaseUnit = packPrice / basePackQuantity;
-    return baseQuantity * costPerBaseUnit;
+    const result = baseQuantity * costPerBaseUnit;
+    console.log('Cost calculation (matching base units):', {
+      quantity,
+      unit: adjustedUnit,
+      packQuantity,
+      packUnit,
+      baseQuantity,
+      basePackQuantity,
+      costPerBaseUnit,
+      result,
+    });
+    return result;
   }
   
   // If base units don't match but we have density, convert via density
@@ -152,6 +185,11 @@ export function computeIngredientUsageCostWithDensity(
   }
   
   // If no density and units don't match, return 0
+  console.log('Units incompatible and no density:', {
+    baseUnit,
+    packBaseUnit,
+    density,
+  });
   return 0;
 }
 
