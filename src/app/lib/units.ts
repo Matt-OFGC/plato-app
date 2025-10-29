@@ -37,32 +37,41 @@ function normalizeUnit(unit: string): string {
 export function toBase(amount: number, unit: Unit, density?: number): { amount: number; base: BaseUnit } {
   const normalizedUnit = normalizeUnit(unit) as Unit;
   
-  // Handle density conversion (g/ml)
-  if (density && (normalizedUnit === 'ml' || normalizedUnit === 'l' || normalizedUnit === 'fl oz' || normalizedUnit === 'cups' || normalizedUnit === 'tbsp' || normalizedUnit === 'tsp')) {
-    const mlAmount = amount * CONVERSION_FACTORS[normalizedUnit];
+  // Map normalized units to conversion factor keys
+  const volumeUnitMap: Record<string, string> = {
+    'fl oz': 'fl oz',
+    'floz': 'fl oz',
+  };
+  const volumeKey = volumeUnitMap[normalizedUnit] || normalizedUnit;
+  const volumeUnits = ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'];
+  const weightUnits = ['g', 'kg', 'oz', 'lb'];
+  
+  // Handle density conversion (volume -> weight when density is provided)
+  if (density && volumeUnits.includes(volumeKey)) {
+    const factor = CONVERSION_FACTORS[volumeKey];
+    if (!factor) {
+      return { amount: 0, base: 'g' };
+    }
+    const mlAmount = amount * factor;
     return { amount: mlAmount * density, base: 'g' };
   }
   
   // Weight units -> grams
-  if (['g', 'kg', 'oz', 'lb'].includes(normalizedUnit)) {
+  if (weightUnits.includes(normalizedUnit)) {
     const factor = CONVERSION_FACTORS[normalizedUnit];
     if (!factor) {
-      console.error(`❌ Missing conversion factor for unit: ${normalizedUnit}`);
       return { amount: 0, base: 'g' };
     }
     return { amount: amount * factor, base: 'g' };
   }
   
   // Volume units -> ml
-  if (['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedUnit)) {
-    const factor = CONVERSION_FACTORS[normalizedUnit];
+  if (volumeUnits.includes(volumeKey)) {
+    const factor = CONVERSION_FACTORS[volumeKey];
     if (!factor) {
-      console.error(`❌ Missing conversion factor for unit: ${normalizedUnit}`);
       return { amount: 0, base: 'ml' };
     }
-    const result = { amount: amount * factor, base: 'ml' as BaseUnit };
-    console.error(`✅ toBase conversion: ${amount} ${normalizedUnit} = ${result.amount} ${result.base}`);
-    return result;
+    return { amount: amount * factor, base: 'ml' as BaseUnit };
   }
   
   // Count units -> each
@@ -73,12 +82,21 @@ export function toBase(amount: number, unit: Unit, density?: number): { amount: 
 export function fromBase(amount: number, baseUnit: BaseUnit, targetUnit: Unit): number {
   const normalizedTarget = normalizeUnit(targetUnit);
   
-  if (baseUnit === 'g' && ['g', 'kg', 'oz', 'lb'].includes(normalizedTarget)) {
+  // Map normalized units to conversion factor keys
+  const volumeUnitMap: Record<string, string> = {
+    'fl oz': 'fl oz',
+    'floz': 'fl oz',
+  };
+  const volumeKey = volumeUnitMap[normalizedTarget] || normalizedTarget;
+  const volumeUnits = ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'];
+  const weightUnits = ['g', 'kg', 'oz', 'lb'];
+  
+  if (baseUnit === 'g' && weightUnits.includes(normalizedTarget)) {
     return amount / CONVERSION_FACTORS[normalizedTarget];
   }
   
-  if (baseUnit === 'ml' && ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedTarget)) {
-    return amount / CONVERSION_FACTORS[normalizedTarget];
+  if (baseUnit === 'ml' && volumeUnits.includes(volumeKey)) {
+    return amount / CONVERSION_FACTORS[volumeKey];
   }
   
   if (baseUnit === 'each' && ['each', 'slices'].includes(normalizedTarget)) {

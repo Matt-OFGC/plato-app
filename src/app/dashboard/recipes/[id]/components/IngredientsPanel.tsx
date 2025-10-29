@@ -281,63 +281,18 @@ export default function IngredientsPanel({
               const ingredientCost = fullIngredient && ingredient.quantity && scaledQuantity > 0
                 ? (() => {
                     try {
-                      // Use manual calculation for compatible unit conversions
-                      // The function has a caching issue, so we use manual calculation which works correctly
-                      const volumeUnits = ['ml', 'l', 'fl oz', 'floz'];
-                      const weightUnits = ['g', 'kg', 'oz', 'lb'];
-                      
-                      const isVolumeToVolume = (volumeUnits.includes(ingredient.unit || '') && 
-                                                volumeUnits.includes(fullIngredient.packUnit || ''));
-                      const isWeightToWeight = (weightUnits.includes(ingredient.unit || '') && 
-                                                weightUnits.includes(fullIngredient.packUnit || ''));
-                      
-                      if (isVolumeToVolume && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
-                        // Convert recipe quantity to ml
-                        let recipeMl = scaledQuantity;
-                        if (ingredient.unit === 'l') recipeMl = scaledQuantity * 1000;
-                        else if (ingredient.unit === 'fl oz' || ingredient.unit === 'floz') recipeMl = scaledQuantity * 29.5735;
-                        
-                        // Convert pack quantity to ml
-                        let packMl = fullIngredient.packQuantity;
-                        if (fullIngredient.packUnit === 'l') packMl = fullIngredient.packQuantity * 1000;
-                        else if (fullIngredient.packUnit === 'fl oz' || fullIngredient.packUnit === 'floz') packMl = fullIngredient.packQuantity * 29.5735;
-                        
-                        const manualResult = (recipeMl / packMl) * fullIngredient.packPrice;
-                        return manualResult;
-                      }
-                      
-                      if (isWeightToWeight && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
-                        // Convert recipe quantity to grams
-                        let recipeG = scaledQuantity;
-                        if (ingredient.unit === 'kg') recipeG = scaledQuantity * 1000;
-                        else if (ingredient.unit === 'oz') recipeG = scaledQuantity * 28.3495;
-                        else if (ingredient.unit === 'lb') recipeG = scaledQuantity * 453.592;
-                        
-                        // Convert pack quantity to grams
-                        let packG = fullIngredient.packQuantity;
-                        if (fullIngredient.packUnit === 'kg') packG = fullIngredient.packQuantity * 1000;
-                        else if (fullIngredient.packUnit === 'oz') packG = fullIngredient.packQuantity * 28.3495;
-                        else if (fullIngredient.packUnit === 'lb') packG = fullIngredient.packQuantity * 453.592;
-                        
-                        const manualResult = (recipeG / packG) * fullIngredient.packPrice;
-                        return manualResult;
-                      }
-                      
-                      // Fallback to function for other conversions (weight-to-volume, etc.)
-                      try {
-                        return computeIngredientUsageCostWithDensity(
-                          scaledQuantity,
-                          ingredient.unit as Unit,
-                          fullIngredient.packPrice,
-                          fullIngredient.packQuantity,
-                          fullIngredient.packUnit as Unit,
-                          fullIngredient.densityGPerMl || undefined
-                        );
-                      } catch (error) {
-                        return 0;
-                      }
+                      // Use the comprehensive conversion function for all unit types
+                      // This handles volume-to-weight, weight-to-volume, and all unit conversions
+                      return computeIngredientUsageCostWithDensity(
+                        scaledQuantity,
+                        ingredient.unit as Unit,
+                        fullIngredient.packPrice,
+                        fullIngredient.packQuantity,
+                        fullIngredient.packUnit as Unit,
+                        fullIngredient.densityGPerMl || undefined
+                      );
                     } catch (error) {
-                      console.error('❌ ERROR IN CALCULATION:', error);
+                      // Silently fail - cost will show as 0 if calculation fails
                       return 0;
                     }
                   })()
