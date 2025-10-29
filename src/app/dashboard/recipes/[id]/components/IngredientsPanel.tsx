@@ -3,7 +3,7 @@
 import React from "react";
 import { Ingredient, RecipeStep } from "@/lib/mocks/recipe";
 import { scaleQuantity, formatQty } from "@/lib/recipe-scaling";
-import { computeIngredientUsageCostWithDensity, Unit } from "@/lib/units";
+import { computeIngredientUsageCostWithDensity, toBase, Unit } from "@/lib/units";
 
 interface IngredientsPanelProps {
   ingredients: Ingredient[];
@@ -281,9 +281,8 @@ export default function IngredientsPanel({
               const ingredientCost = fullIngredient && ingredient.quantity && scaledQuantity > 0
                 ? (() => {
                     try {
-                      // Use the comprehensive conversion function for all unit types
-                      // This handles volume-to-weight, weight-to-volume, and all unit conversions
-                      return computeIngredientUsageCostWithDensity(
+                      // First try the comprehensive conversion function
+                      const result = computeIngredientUsageCostWithDensity(
                         scaledQuantity,
                         ingredient.unit as Unit,
                         fullIngredient.packPrice,
@@ -291,8 +290,51 @@ export default function IngredientsPanel({
                         fullIngredient.packUnit as Unit,
                         fullIngredient.densityGPerMl || undefined
                       );
+                      
+                      // If it returns a valid result, use it
+                      if (result > 0) {
+                        return result;
+                      }
+                      
+                      // Otherwise, use robust manual calculation with toBase/fromBase
+                      // This ensures conversions always work
+                      const recipeUnit = ingredient.unit?.toLowerCase().trim() as Unit;
+                      const packUnitLower = fullIngredient.packUnit?.toLowerCase().trim() as Unit;
+                      
+                      // Convert recipe quantity to base unit
+                      const recipeBase = toBase(scaledQuantity, recipeUnit, fullIngredient.densityGPerMl || undefined);
+                      
+                      // Convert pack quantity to base unit (never use density for pack)
+                      const packBase = toBase(fullIngredient.packQuantity, packUnitLower, undefined);
+                      
+                      // If both converted to the same base unit, calculate cost
+                      if (recipeBase.base === packBase.base && packBase.amount > 0) {
+                        const costPerBaseUnit = fullIngredient.packPrice / packBase.amount;
+                        return recipeBase.amount * costPerBaseUnit;
+                      }
+                      
+                      // If base units don't match and we have density, try cross-conversion
+                      if (fullIngredient.densityGPerMl) {
+                        const density = fullIngredient.densityGPerMl;
+                        
+                        // Recipe is ml, pack is g - convert pack to ml
+                        if (recipeBase.base === 'ml' && packBase.base === 'g') {
+                          const packMl = packBase.amount / density;
+                          const costPerMl = fullIngredient.packPrice / packMl;
+                          return recipeBase.amount * costPerMl;
+                        }
+                        
+                        // Recipe is g, pack is ml - convert pack to g
+                        if (recipeBase.base === 'g' && packBase.base === 'ml') {
+                          const packG = packBase.amount * density;
+                          const costPerG = fullIngredient.packPrice / packG;
+                          return recipeBase.amount * costPerG;
+                        }
+                      }
+                      
+                      return 0;
                     } catch (error) {
-                      // Silently fail - cost will show as 0 if calculation fails
+                      console.error('❌ Cost calculation error:', error);
                       return 0;
                     }
                   })()

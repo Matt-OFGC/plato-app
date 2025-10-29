@@ -4,7 +4,7 @@ import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
 import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe } from "./actions";
-import { computeIngredientUsageCostWithDensity, Unit } from "@/lib/units";
+import { computeIngredientUsageCostWithDensity, toBase, Unit } from "@/lib/units";
 import RecipeHeader from "./components/RecipeHeader";
 import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
@@ -67,14 +67,62 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
       );
       if (!fullIngredient || !ingredient.quantity) return 0;
       
-      return computeIngredientUsageCostWithDensity(
-        ingredient.quantity,
-        ingredient.unit as Unit,
-        fullIngredient.packPrice,
-        fullIngredient.packQuantity,
-        fullIngredient.packUnit as Unit,
-        fullIngredient.densityGPerMl || undefined
-      );
+      try {
+        // First try the comprehensive conversion function
+        const result = computeIngredientUsageCostWithDensity(
+          ingredient.quantity,
+          ingredient.unit as Unit,
+          fullIngredient.packPrice,
+          fullIngredient.packQuantity,
+          fullIngredient.packUnit as Unit,
+          fullIngredient.densityGPerMl || undefined
+        );
+        
+        // If it returns a valid result, use it
+        if (result > 0) {
+          return result;
+        }
+        
+        // Otherwise, use robust manual calculation with toBase
+        const recipeUnit = ingredient.unit?.toLowerCase().trim() as Unit;
+        const packUnitLower = fullIngredient.packUnit?.toLowerCase().trim() as Unit;
+        
+        // Convert recipe quantity to base unit
+        const recipeBase = toBase(ingredient.quantity, recipeUnit, fullIngredient.densityGPerMl || undefined);
+        
+        // Convert pack quantity to base unit (never use density for pack)
+        const packBase = toBase(fullIngredient.packQuantity, packUnitLower, undefined);
+        
+        // If both converted to the same base unit, calculate cost
+        if (recipeBase.base === packBase.base && packBase.amount > 0) {
+          const costPerBaseUnit = fullIngredient.packPrice / packBase.amount;
+          return recipeBase.amount * costPerBaseUnit;
+        }
+        
+        // If base units don't match and we have density, try cross-conversion
+        if (fullIngredient.densityGPerMl) {
+          const density = fullIngredient.densityGPerMl;
+          
+          // Recipe is ml, pack is g - convert pack to ml
+          if (recipeBase.base === 'ml' && packBase.base === 'g') {
+            const packMl = packBase.amount / density;
+            const costPerMl = fullIngredient.packPrice / packMl;
+            return recipeBase.amount * costPerMl;
+          }
+          
+          // Recipe is g, pack is ml - convert pack to g
+          if (recipeBase.base === 'g' && packBase.base === 'ml') {
+            const packG = packBase.amount * density;
+            const costPerG = fullIngredient.packPrice / packG;
+            return recipeBase.amount * costPerG;
+          }
+        }
+        
+        return 0;
+      } catch (error) {
+        console.error('❌ Cost calculation error:', error);
+        return 0;
+      }
     };
   }, [availableIngredients]);
 
@@ -525,12 +573,12 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
       {/* Bottom Info Bar - Separate Container Cards - FIXED TO BOTTOM */}
       <div className="fixed bottom-0 left-0 right-0 bg-gray-50 border-t-2 border-gray-200 py-1.5 z-30 pl-4 md:pl-16 lg:pl-20 xl:pl-24">
         <div className="max-w-[1600px] mx-auto px-6">
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 md:gap-2 lg:gap-3 flex-wrap sm:flex-nowrap overflow-x-auto sm:overflow-x-visible">
             
             {/* Servings Container */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-3 py-2">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
               {viewMode === "edit" ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 md:gap-2">
                   <span className="text-xs font-semibold text-gray-500">Type:</span>
                   <div className="bg-gray-100 rounded-lg p-0.5 flex gap-0.5">
                     <button
@@ -556,49 +604,49 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   </div>
                   {recipeType === "batch" && (
                     <>
-                      <div className="h-4 w-px bg-gray-300" />
-                      <span className="text-xs text-gray-500">Slices:</span>
-                      <button
-                        onClick={() => handleSlicesPerBatchChange(Math.max(1, slicesPerBatch - 1))}
-                        className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-sm"
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        value={slicesPerBatch}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value, 10);
-                          if (!isNaN(val) && val > 0) {
-                            handleSlicesPerBatchChange(val);
-                          }
-                        }}
-                        className="w-12 text-center text-base font-bold text-gray-900 border border-gray-300 rounded px-1 py-0.5"
-                        min="1"
-                      />
-                      <button
-                        onClick={() => handleSlicesPerBatchChange(slicesPerBatch + 1)}
-                        className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-sm"
-                      >
-                        +
-                      </button>
+                  <div className="h-4 w-px bg-gray-300" />
+                  <span className="text-xs text-gray-500">Slices:</span>
+                  <button
+                    onClick={() => handleSlicesPerBatchChange(Math.max(1, slicesPerBatch - 1))}
+                    className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-xs md:text-sm"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    value={slicesPerBatch}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val > 0) {
+                        handleSlicesPerBatchChange(val);
+                      }
+                    }}
+                    className="w-10 md:w-12 text-center text-sm md:text-base font-bold text-gray-900 border border-gray-300 rounded px-1 py-0.5"
+                    min="1"
+                  />
+                  <button
+                    onClick={() => handleSlicesPerBatchChange(slicesPerBatch + 1)}
+                    className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-xs md:text-sm"
+                  >
+                    +
+                  </button>
                     </>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Servings</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <button
                       onClick={() => handleServingsChange(Math.max(1, servings - 1))}
-                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold"
+                      className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-xs md:text-sm"
                     >
                       −
                     </button>
-                    <span className="text-base font-bold text-gray-900 min-w-[2rem] text-center">{servings}</span>
+                    <span className="text-sm md:text-base font-bold text-gray-900 min-w-[1.75rem] md:min-w-[2rem] text-center">{servings}</span>
                     <button
                       onClick={() => handleServingsChange(servings + 1)}
-                      className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold"
+                      className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-xs md:text-sm"
                     >
                       +
                     </button>
@@ -608,21 +656,21 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             </div>
 
             {/* Cost & COGS Container with Info Button */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-3 py-2">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
+              <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3">
+                <div className="flex items-center gap-1.5 md:gap-2">
                   <span className="text-xs font-semibold text-gray-500">Cost</span>
-                  <span className="text-base font-bold text-emerald-600">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
+                  <span className="text-sm md:text-base font-bold text-emerald-600">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
                 </div>
-                <div className="h-4 w-px bg-gray-300" />
-                <div className="flex items-center gap-2">
+                <div className="h-3 md:h-4 w-px bg-gray-300" />
+                <div className="flex items-center gap-1.5 md:gap-2">
                   <span className="text-xs font-semibold text-gray-500">Per Slice</span>
-                  <span className="text-base font-semibold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
+                  <span className="text-sm md:text-base font-semibold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
                 </div>
-                <div className="h-4 w-px bg-gray-300" />
-                <div className="flex items-center gap-2">
+                <div className="h-3 md:h-4 w-px bg-gray-300" />
+                <div className="flex items-center gap-1.5 md:gap-2">
                   <span className="text-xs font-semibold text-gray-500">COGS</span>
-                  <span className={`text-base font-bold ${
+                  <span className={`text-sm md:text-base font-bold ${
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-emerald-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 33 ? 'text-green-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 40 ? 'text-yellow-600' : 'text-red-600'
@@ -632,10 +680,10 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                 </div>
                 <button
                   onClick={() => setIsPricingModalOpen(true)}
-                  className="w-5 h-5 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex items-center justify-center text-blue-600"
+                  className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex items-center justify-center text-blue-600 flex-shrink-0"
                   title="View pricing details"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </button>
@@ -643,9 +691,9 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             </div>
 
             {/* Recipe Metadata Container */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-3 py-2">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0 min-w-0">
               {viewMode === "edit" ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 md:gap-2">
                   <select
                     value={storage}
                     onChange={(e) => setStorage(e.target.value)}
@@ -668,22 +716,22 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   </select>
                   {allergens && allergens.length > 0 && (
                     <>
-                      <div className="h-4 w-px bg-gray-300" />
-                      <div className="flex items-center gap-1.5">
-                        <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="h-3 md:h-4 w-px bg-gray-300" />
+                      <div className="flex items-center gap-1 md:gap-1.5">
+                        <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                         <span className="text-xs font-medium text-red-600">{allergens.length}</span>
                       </div>
                     </>
                   )}
-                  <div className="h-4 w-px bg-gray-300" />
+                  <div className="h-3 md:h-4 w-px bg-gray-300" />
                   <button
                     onClick={() => setIsDescriptionModalOpen(true)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2 py-0.5 md:py-1 rounded hover:bg-gray-100 transition-colors"
                     title={description ? "Edit product description" : "Add product description"}
                   >
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span className="text-xs font-medium text-gray-700">
@@ -693,21 +741,21 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                 </div>
               ) : (
                 <div>
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3 flex-wrap sm:flex-nowrap">
                     {/* Allergens with list */}
                     {allergens && allergens.length > 0 && (
-                      <div className="flex items-center gap-1.5" title={allergens.join(", ")}>
-                        <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0" title={allergens.join(", ")}>
+                        <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-0.5 md:gap-1">
                           {allergens.slice(0, 3).map((allergen, idx) => (
-                            <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            <span key={idx} className="inline-flex items-center px-1 md:px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                               {allergen}
                             </span>
                           ))}
                           {allergens.length > 3 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            <span className="inline-flex items-center px-1 md:px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                               +{allergens.length - 3}
                             </span>
                           )}
@@ -718,15 +766,15 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                     {/* Dietary Labels */}
                     {dietaryLabels.length > 0 && (
                       <>
-                        {allergens && allergens.length > 0 && <div className="h-4 w-px bg-gray-300" />}
-                        <div className="flex flex-wrap gap-1">
+                        {allergens && allergens.length > 0 && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
+                        <div className="flex flex-wrap gap-0.5 md:gap-1 flex-shrink-0">
                           {dietaryLabels.slice(0, 3).map((label, idx) => (
-                            <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span key={idx} className="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               ✓ {label}
                             </span>
                           ))}
                           {dietaryLabels.length > 3 && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               +{dietaryLabels.length - 3}
                             </span>
                           )}
@@ -738,10 +786,10 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                {(allergens.length > 0 || dietaryLabels.length > 0) && (
                  <button
                    onClick={() => setIsAllergenModalOpen(true)}
-                   className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-600"
+                   className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-600 flex-shrink-0"
                    title="View detailed allergen and dietary information"
                  >
-                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                    </svg>
                  </button>
@@ -749,38 +797,38 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                     
                     {storage && (
                       <>
-                        {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-4 w-px bg-gray-300" />}
-                        <div className="flex items-center gap-1.5">
-                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
+                        <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
+                          <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                           </svg>
-                          <span className="text-xs font-medium text-gray-700">{storage}</span>
+                          <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{storage}</span>
                         </div>
                       </>
                     )}
                     {shelfLife && (
                       <>
-                        {(storage || allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-4 w-px bg-gray-300" />}
-                        <div className="flex items-center gap-1.5">
-                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {(storage || allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
+                        <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
+                          <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="text-xs font-medium text-gray-700">{shelfLife}</span>
+                          <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{shelfLife}</span>
                         </div>
                       </>
                     )}
                     
                     {/* Description Button */}
-                    {(allergens?.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && <div className="h-4 w-px bg-gray-300" />}
+                    {(allergens?.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
                     <button
                       onClick={() => setIsDescriptionModalOpen(true)}
-                      className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2 py-0.5 md:py-1 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
                       title={description ? "View product description" : "Add product description"}
                     >
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-xs font-medium text-gray-700">
+                      <span className="text-xs font-medium text-gray-700 whitespace-nowrap">
                         {description ? "Description" : "Add Description"}
                       </span>
                     </button>
