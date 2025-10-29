@@ -163,39 +163,61 @@ export async function createRecipeUnified(formData: FormData) {
       companyId,
     };
 
-    // Create the recipe first
-    const recipe = await prisma.recipe.create({
-      data: recipeData,
-    });
+    // Wrap everything in a transaction to ensure atomicity
+    // If any part fails, the entire operation rolls back (no empty recipes!)
+    const recipe = await prisma.$transaction(async (tx) => {
+      // Create the recipe first
+      const createdRecipe = await tx.recipe.create({
+        data: recipeData,
+      });
 
-    // Now create sections and items
-    if (useSections) {
-      const sectionsData = JSON.parse(formData.get("sections") as string);
-      
-      for (let idx = 0; idx < sectionsData.length; idx++) {
-        const section = sectionsData[idx];
-        const createdSection = await prisma.recipeSection.create({
-          data: {
-            recipeId: recipe.id,
-            title: section.title,
-            description: section.description || null,
-            method: section.method || null,
-            bakeTemp: section.bakeTemp ? parseInt(section.bakeTemp) : null,
-            bakeTime: section.bakeTime ? parseInt(section.bakeTime) : null,
-            order: idx,
-          },
-        });
+      // Now create sections and items
+      if (useSections) {
+        const sectionsData = JSON.parse(formData.get("sections") as string);
+        
+        for (let idx = 0; idx < sectionsData.length; idx++) {
+          const section = sectionsData[idx];
+          const createdSection = await tx.recipeSection.create({
+            data: {
+              recipeId: createdRecipe.id,
+              title: section.title,
+              description: section.description || null,
+              method: section.method || null,
+              bakeTemp: section.bakeTemp ? parseInt(section.bakeTemp) : null,
+              bakeTime: section.bakeTime ? parseInt(section.bakeTime) : null,
+              order: idx,
+            },
+          });
 
-        // Create items for this section
-        const validItems = section.items.filter(
+          // Create items for this section
+          const validItems = section.items.filter(
+            (item: any) => item.ingredientId && parseFloat(item.quantity) > 0
+          );
+
+          if (validItems.length > 0) {
+            await tx.recipeItem.createMany({
+              data: validItems.map((item: any) => ({
+                recipeId: createdRecipe.id,
+                sectionId: createdSection.id,
+                ingredientId: item.ingredientId,
+                quantity: parseFloat(item.quantity),
+                unit: item.unit,
+                price: item.price ? parseFloat(item.price) : null,
+                note: item.note || null,
+              })),
+            });
+          }
+        }
+      } else {
+        const itemsData = JSON.parse(formData.get("recipeItems") as string);
+        const validItems = itemsData.filter(
           (item: any) => item.ingredientId && parseFloat(item.quantity) > 0
         );
 
         if (validItems.length > 0) {
-          await prisma.recipeItem.createMany({
+          await tx.recipeItem.createMany({
             data: validItems.map((item: any) => ({
-              recipeId: recipe.id,
-              sectionId: createdSection.id,
+              recipeId: createdRecipe.id,
               ingredientId: item.ingredientId,
               quantity: parseFloat(item.quantity),
               unit: item.unit,
@@ -205,50 +227,33 @@ export async function createRecipeUnified(formData: FormData) {
           });
         }
       }
-    } else {
-      const itemsData = JSON.parse(formData.get("recipeItems") as string);
-      const validItems = itemsData.filter(
-        (item: any) => item.ingredientId && parseFloat(item.quantity) > 0
-      );
 
-      if (validItems.length > 0) {
-        await prisma.recipeItem.createMany({
-          data: validItems.map((item: any) => ({
-            recipeId: recipe.id,
-            ingredientId: item.ingredientId,
-            quantity: parseFloat(item.quantity),
-            unit: item.unit,
-            price: item.price ? parseFloat(item.price) : null,
-            note: item.note || null,
-          })),
+      // Check if should be added to wholesale catalogue
+      const isWholesaleProduct = formData.get("isWholesaleProduct") === "on";
+      if (isWholesaleProduct) {
+        const wholesalePriceStr = formData.get("wholesalePrice") as string;
+        
+        // Calculate cost per unit (e.g., cost per slice if batch makes 24 slices)
+        const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
+          ? parseFloat(wholesalePriceStr) 
+          : 0;
+
+        await tx.wholesaleProduct.create({
+          data: {
+            companyId: companyId!,
+            recipeId: createdRecipe.id,
+            price: wholesalePrice, // This should be price per unit (per slice)
+            currency: "GBP",
+            unit: `per ${yieldUnit}`, // e.g., "per each" or "per slice"
+            category: recipeData.categoryId ? null : (categoryId ? null : null),
+            isActive: true,
+            sortOrder: 0,
+          },
         });
       }
-    }
 
-    // Check if should be added to wholesale catalogue
-    const isWholesaleProduct = formData.get("isWholesaleProduct") === "on";
-    if (isWholesaleProduct) {
-      const wholesalePriceStr = formData.get("wholesalePrice") as string;
-      
-      // Calculate cost per unit (e.g., cost per slice if batch makes 24 slices)
-      // This will be set in the recipe action, so we need to get the cost breakdown
-      const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
-        ? parseFloat(wholesalePriceStr) 
-        : 0;
-
-      await prisma.wholesaleProduct.create({
-        data: {
-          companyId: companyId!,
-          recipeId: recipe.id,
-          price: wholesalePrice, // This should be price per unit (per slice)
-          currency: "GBP",
-          unit: `per ${yieldUnit}`, // e.g., "per each" or "per slice"
-          category: recipeData.categoryId ? null : (categoryId ? null : null),
-          isActive: true,
-          sortOrder: 0,
-        },
-      });
-    }
+      return createdRecipe;
+    });
 
     revalidatePath("/dashboard/recipes");
     redirect(`/dashboard/recipes/${recipe.id}`);
