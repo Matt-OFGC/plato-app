@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UnitConversionHelp } from "./UnitConversionHelp";
 import { SupplierSelector } from "./SupplierSelector";
+import { findDensityByName, getDensityInfo } from "@/lib/ingredient-densities";
 
 const ALLERGEN_OPTIONS = [
   "Celery",
@@ -75,6 +76,24 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
   const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
   const [otherNutType, setOtherNutType] = useState<string>("");
   const [showOtherNutInput, setShowOtherNutInput] = useState<boolean>(false);
+  
+  // Auto-density detection
+  const [ingredientName, setIngredientName] = useState<string>(initialData?.name || "");
+  const [density, setDensity] = useState<string>(initialData?.densityGPerMl?.toString() || "");
+  const [densityInfo, setDensityInfo] = useState<string>("");
+  
+  // Auto-detect density when ingredient name changes
+  useEffect(() => {
+    if (ingredientName && !initialData?.densityGPerMl) {
+      const info = getDensityInfo(ingredientName);
+      if (info.density) {
+        setDensity(info.density.toString());
+        setDensityInfo(`✓ ${info.explanation}`);
+      } else {
+        setDensityInfo(info.explanation);
+      }
+    }
+  }, [ingredientName, initialData?.densityGPerMl]);
   
   // Parse initial custom conversions
   const initialConversions: CustomConversion[] = initialData?.customConversions 
@@ -199,7 +218,8 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
             type="text"
             id="ingredient-name"
             name="name"
-            defaultValue={initialData?.name || ""}
+            value={ingredientName}
+            onChange={(e) => setIngredientName(e.target.value)}
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
             placeholder="e.g., All-Purpose Flour"
@@ -222,6 +242,21 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
         </div>
 
         {/* Pack Quantity & Unit */}
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
+          <p className="text-sm text-blue-900 font-medium mb-2">💡 Bulk/Case Pricing Made Easy</p>
+          <p className="text-xs text-blue-800 mb-2">
+            You can enter compound units for bulk purchases! Examples:
+          </p>
+          <ul className="text-xs text-blue-700 space-y-1 ml-4 list-disc">
+            <li><strong>6x12L</strong> (6 boxes of 12 liters each = 72L total)</li>
+            <li><strong>24x330ml</strong> (24 cans of 330ml each)</li>
+            <li><strong>12x750ml</strong> (12 bottles of 750ml each)</li>
+          </ul>
+          <p className="text-xs text-blue-800 mt-2">
+            Just enter <strong>Pack Quantity: 1</strong> and <strong>Pack Unit: 6x12L</strong>, then enter the price for the whole case!
+          </p>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="packQuantity" className="block text-sm font-medium text-gray-900 mb-2">
@@ -236,20 +271,27 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
               defaultValue={initialData?.packQuantity || ""}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-              placeholder="e.g., 25"
+              placeholder="e.g., 1 (for bulk) or 25"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Tip: Use 1 for bulk/case purchases with compound units
+            </p>
           </div>
           <div>
             <label htmlFor="packUnit" className="block text-sm font-medium text-gray-900 mb-2">
               Pack Unit
             </label>
-            <select
+            <input
+              type="text"
+              list="packUnitOptions"
               id="packUnit"
               name="packUnit"
               defaultValue={initialData?.packUnit || ""}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            >
+              placeholder="e.g., kg, ml, or 6x12L"
+            />
+            <datalist id="packUnitOptions">
               <option value="">Select a unit...</option>
               <optgroup label="Weight/Mass">
                 <option value="g">g (grams)</option>
@@ -298,7 +340,10 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
                 <option value="medium">medium</option>
                 <option value="small">small</option>
               </optgroup>
-            </select>
+            </datalist>
+            <p className="text-xs text-gray-500 mt-1">
+              Type any unit OR use compound format: <strong>6x12L</strong>, <strong>24x330ml</strong>, etc.
+            </p>
           </div>
         </div>
 
@@ -352,10 +397,10 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
           </div>
         </div>
 
-        {/* Density */}
+        {/* Density - Auto-detected */}
         <div>
           <label htmlFor="densityGPerMl" className="block text-sm font-medium text-gray-900 mb-2">
-            Density (g/ml) (Optional)
+            Density (g/ml) {density ? <span className="text-emerald-600 text-xs">✓ Auto-detected</span> : <span className="text-gray-500 text-xs">(Optional)</span>}
             <UnitConversionHelp />
           </label>
           <input
@@ -364,13 +409,24 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
             name="densityGPerMl"
             step="0.001"
             min="0"
-            defaultValue={initialData?.densityGPerMl || ""}
+            value={density}
+            onChange={(e) => {
+              setDensity(e.target.value);
+              setDensityInfo(""); // Clear auto-detection message if manually changed
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
             placeholder="e.g., 1.0 (for water)"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Used for converting between weight and volume (e.g., ml to grams).
-          </p>
+          {densityInfo && (
+            <p className={`text-xs mt-1 ${density ? 'text-emerald-600' : 'text-gray-500'}`}>
+              {densityInfo}
+            </p>
+          )}
+          {!densityInfo && (
+            <p className="text-xs text-gray-500 mt-1">
+              Enables weight ↔ volume conversion (e.g., grams ↔ ml)
+            </p>
+          )}
         </div>
 
         {/* Custom Unit Conversions */}
