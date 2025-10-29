@@ -45,12 +45,24 @@ export function toBase(amount: number, unit: Unit, density?: number): { amount: 
   
   // Weight units -> grams
   if (['g', 'kg', 'oz', 'lb'].includes(normalizedUnit)) {
-    return { amount: amount * CONVERSION_FACTORS[normalizedUnit], base: 'g' };
+    const factor = CONVERSION_FACTORS[normalizedUnit];
+    if (!factor) {
+      console.error(`❌ Missing conversion factor for unit: ${normalizedUnit}`);
+      return { amount: 0, base: 'g' };
+    }
+    return { amount: amount * factor, base: 'g' };
   }
   
   // Volume units -> ml
   if (['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedUnit)) {
-    return { amount: amount * CONVERSION_FACTORS[normalizedUnit], base: 'ml' };
+    const factor = CONVERSION_FACTORS[normalizedUnit];
+    if (!factor) {
+      console.error(`❌ Missing conversion factor for unit: ${normalizedUnit}`);
+      return { amount: 0, base: 'ml' };
+    }
+    const result = { amount: amount * factor, base: 'ml' as BaseUnit };
+    console.log(`✅ toBase conversion: ${amount} ${normalizedUnit} = ${result.amount} ${result.base}`);
+    return result;
   }
   
   // Count units -> each
