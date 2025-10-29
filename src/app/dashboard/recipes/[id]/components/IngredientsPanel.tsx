@@ -279,14 +279,26 @@ export default function IngredientsPanel({
               
               // Calculate cost if ingredient found
               const ingredientCost = fullIngredient && ingredient.quantity && scaledQuantity > 0
-                ? computeIngredientUsageCostWithDensity(
-                    scaledQuantity,
-                    ingredient.unit as Unit,
-                    fullIngredient.packPrice,
-                    fullIngredient.packQuantity,
-                    fullIngredient.packUnit as Unit,
-                    fullIngredient.densityGPerMl || undefined
-                  )
+                ? (() => {
+                    try {
+                      const result = computeIngredientUsageCostWithDensity(
+                        scaledQuantity,
+                        ingredient.unit as Unit,
+                        fullIngredient.packPrice,
+                        fullIngredient.packQuantity,
+                        fullIngredient.packUnit as Unit,
+                        fullIngredient.densityGPerMl || undefined
+                      );
+                      console.error('🔍 DIRECT CALCULATION RESULT:', {
+                        input: { scaledQuantity, unit: ingredient.unit, packPrice: fullIngredient.packPrice, packQuantity: fullIngredient.packQuantity, packUnit: fullIngredient.packUnit },
+                        result
+                      });
+                      return result;
+                    } catch (error) {
+                      console.error('❌ ERROR IN CALCULATION:', error);
+                      return 0;
+                    }
+                  })()
                 : 0;
               
               // TEMP DEBUG: Log to console and alert if cost is 0
