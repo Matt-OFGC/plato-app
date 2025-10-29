@@ -281,10 +281,6 @@ export default function IngredientsPanel({
               const ingredientCost = fullIngredient && ingredient.quantity && scaledQuantity > 0
                 ? (() => {
                     try {
-                      // Manual calculation test - 10 l, packPrice 5.85, packQuantity 8000 ml
-                      // Expected: (10 * 1000) / 8000 * 5.85 = 10000 / 8000 * 5.85 = 1.25 * 5.85 = 7.3125
-                      const testManual = (scaledQuantity === 10 && ingredient.unit === 'l' && fullIngredient.packQuantity === 8000 && fullIngredient.packUnit === 'ml');
-                      
                       // TEMPORARY FIX: Use manual calculation for compatible unit conversions
                       // This works while we debug why the function isn't logging
                       const volumeUnits = ['ml', 'l', 'fl oz', 'floz'];
