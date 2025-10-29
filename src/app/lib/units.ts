@@ -101,8 +101,35 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, unit, density);
+  // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
+  const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
+  const normalizedPackUnit = normalizeUnit(packUnit);
+  const normalizedUnit = normalizeUnit(unit);
+  
+  // Smart conversion: if pack is volume and recipe unit is 'oz', assume it's fluid ounces
+  let adjustedUnit: Unit = unit;
+  if (normalizedUnit === 'oz' && volumeUnits.includes(normalizedPackUnit)) {
+    adjustedUnit = 'fl oz';
+  }
+  
+  // If pack unit is volume and recipe unit is weight (or vice versa), try to use density
+  const weightUnits = ['g', 'kg', 'oz', 'lb'];
+  const isPackVolume = volumeUnits.includes(normalizedPackUnit);
+  const isRecipeWeight = weightUnits.includes(normalizeUnit(adjustedUnit));
+  const isPackWeight = weightUnits.includes(normalizedPackUnit);
+  const isRecipeVolume = volumeUnits.includes(normalizeUnit(adjustedUnit));
+  
+  // Use density if available and units are incompatible
+  const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
+  
+  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity } = toBase(packQuantity, packUnit);
+  
+  // Ensure we're comparing compatible base units
+  if (baseUnit !== 'g' && baseUnit !== 'ml' && baseUnit !== 'each') {
+    // Fallback: if conversion failed, return 0
+    return 0;
+  }
   
   const costPerBaseUnit = packPrice / basePackQuantity;
   return baseQuantity * costPerBaseUnit;

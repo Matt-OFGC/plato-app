@@ -412,23 +412,24 @@ export default function IngredientsPanel({
                         </div>
                         
                         {/* Cost per line */}
-                        {ingredient.costPerUnit && (() => {
+                        {(() => {
                           const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
-                          const ingredientCost = fullIngredient && ingredient.quantity
-                            ? computeIngredientUsageCostWithDensity(
-                                scaledQuantity,
-                                ingredient.unit as Unit,
-                                fullIngredient.packPrice,
-                                fullIngredient.packQuantity,
-                                fullIngredient.packUnit as Unit,
-                                fullIngredient.densityGPerMl || undefined
-                              )
-                            : 0;
+                          if (!fullIngredient || !ingredient.quantity) return null;
+                          
+                          const ingredientCost = computeIngredientUsageCostWithDensity(
+                            scaledQuantity,
+                            ingredient.unit as Unit,
+                            fullIngredient.packPrice,
+                            fullIngredient.packQuantity,
+                            fullIngredient.packUnit as Unit,
+                            fullIngredient.densityGPerMl || undefined
+                          );
+                          
                           return (
                             <div className="text-xs text-gray-500 ml-1">
                               Cost: £{ingredientCost.toFixed(2)}
                               <span className="text-gray-400 ml-2">
-                                (£{fullIngredient ? (fullIngredient.packPrice / fullIngredient.packQuantity).toFixed(3) : '0.000'} per {fullIngredient?.packUnit || ingredient.unit})
+                                (£{(fullIngredient.packPrice / fullIngredient.packQuantity).toFixed(3)} per {fullIngredient.packUnit})
                               </span>
                             </div>
                           );
@@ -461,18 +462,19 @@ export default function IngredientsPanel({
                           </div>
                           
                           {/* Cost - Right side */}
-                          {ingredient.costPerUnit && (() => {
+                          {(() => {
                             const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
-                            const ingredientCost = fullIngredient && ingredient.quantity
-                              ? computeIngredientUsageCostWithDensity(
-                                  scaledQuantity,
-                                  ingredient.unit as Unit,
-                                  fullIngredient.packPrice,
-                                  fullIngredient.packQuantity,
-                                  fullIngredient.packUnit as Unit,
-                                  fullIngredient.densityGPerMl || undefined
-                                )
-                              : 0;
+                            if (!fullIngredient || !ingredient.quantity) return null;
+                            
+                            const ingredientCost = computeIngredientUsageCostWithDensity(
+                              scaledQuantity,
+                              ingredient.unit as Unit,
+                              fullIngredient.packPrice,
+                              fullIngredient.packQuantity,
+                              fullIngredient.packUnit as Unit,
+                              fullIngredient.densityGPerMl || undefined
+                            );
+                            
                             return (
                               <div className={`text-sm font-semibold flex-shrink-0 ${
                                 isChecked ? "text-gray-400 line-through" : "text-gray-600"
