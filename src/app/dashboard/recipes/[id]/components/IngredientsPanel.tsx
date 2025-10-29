@@ -3,6 +3,7 @@
 import React from "react";
 import { Ingredient, RecipeStep } from "@/lib/mocks/recipe";
 import { scaleQuantity, formatQty } from "@/lib/recipe-scaling";
+import { computeIngredientUsageCostWithDensity, Unit } from "@/lib/units";
 
 interface IngredientsPanelProps {
   ingredients: Ingredient[];
@@ -17,7 +18,17 @@ interface IngredientsPanelProps {
     clear: () => void;
   };
   onIngredientsChange: (ingredients: Ingredient[]) => void;
-  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number; allergens: string[] }>;
+  availableIngredients: Array<{ 
+    id: number; 
+    name: string; 
+    unit: string; 
+    costPerUnit: number; 
+    packPrice: number;
+    packQuantity: number;
+    packUnit: string;
+    densityGPerMl: number | null;
+    allergens: string[] 
+  }>;
 }
 
 type AggregatedIngredient = Ingredient & {
@@ -171,7 +182,7 @@ export default function IngredientsPanel({
           ...ing, 
           name: ingredientData.name,
           unit: ingredientData.unit as Ingredient["unit"],
-          costPerUnit: ingredientData.costPerUnit
+          costPerUnit: ingredientData.costPerUnit, // Keep for display, but cost will be calculated properly
         };
       }
       return ing;
@@ -401,14 +412,27 @@ export default function IngredientsPanel({
                         </div>
                         
                         {/* Cost per line */}
-                        {ingredient.costPerUnit && (
-                          <div className="text-xs text-gray-500 ml-1">
-                            Cost: £{(scaledQuantity * ingredient.costPerUnit).toFixed(2)}
-                            <span className="text-gray-400 ml-2">
-                              (£{ingredient.costPerUnit.toFixed(3)} per {ingredient.unit})
-                            </span>
-                          </div>
-                        )}
+                        {ingredient.costPerUnit && (() => {
+                          const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
+                          const ingredientCost = fullIngredient && ingredient.quantity
+                            ? computeIngredientUsageCostWithDensity(
+                                scaledQuantity,
+                                ingredient.unit as Unit,
+                                fullIngredient.packPrice,
+                                fullIngredient.packQuantity,
+                                fullIngredient.packUnit as Unit,
+                                fullIngredient.densityGPerMl || undefined
+                              )
+                            : 0;
+                          return (
+                            <div className="text-xs text-gray-500 ml-1">
+                              Cost: £{ingredientCost.toFixed(2)}
+                              <span className="text-gray-400 ml-2">
+                                (£{fullIngredient ? (fullIngredient.packPrice / fullIngredient.packQuantity).toFixed(3) : '0.000'} per {fullIngredient?.packUnit || ingredient.unit})
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     ) : (
                       <div className="w-full">
@@ -437,13 +461,26 @@ export default function IngredientsPanel({
                           </div>
                           
                           {/* Cost - Right side */}
-                          {ingredient.costPerUnit && (
-                            <div className={`text-sm font-semibold flex-shrink-0 ${
-                              isChecked ? "text-gray-400 line-through" : "text-gray-600"
-                            }`}>
-                              £{(scaledQuantity * ingredient.costPerUnit).toFixed(2)}
-                            </div>
-                          )}
+                          {ingredient.costPerUnit && (() => {
+                            const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
+                            const ingredientCost = fullIngredient && ingredient.quantity
+                              ? computeIngredientUsageCostWithDensity(
+                                  scaledQuantity,
+                                  ingredient.unit as Unit,
+                                  fullIngredient.packPrice,
+                                  fullIngredient.packQuantity,
+                                  fullIngredient.packUnit as Unit,
+                                  fullIngredient.densityGPerMl || undefined
+                                )
+                              : 0;
+                            return (
+                              <div className={`text-sm font-semibold flex-shrink-0 ${
+                                isChecked ? "text-gray-400 line-through" : "text-gray-600"
+                              }`}>
+                                £{ingredientCost.toFixed(2)}
+                              </div>
+                            );
+                          })()}
                           
                           {/* Step Info - Right side (simple case) */}
                           {viewMode === "whole" && aggIngredient.stepTitles && !isMultiStep && (

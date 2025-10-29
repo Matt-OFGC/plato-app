@@ -4,6 +4,7 @@ import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
 import { saveRecipeChanges, saveSellPrice, saveRecipe } from "./actions";
+import { computeIngredientUsageCostWithDensity, Unit } from "@/lib/units";
 import RecipeHeader from "./components/RecipeHeader";
 import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
@@ -24,7 +25,17 @@ interface Props {
   storageOptions: { id: number; name: string }[];
   shelfLifeOptions: { id: number; name: string }[];
   recipeId: number | null;
-  availableIngredients: Array<{ id: number; name: string; unit: string; costPerUnit: number; allergens: string[] }>;
+  availableIngredients: Array<{ 
+    id: number; 
+    name: string; 
+    unit: string; 
+    costPerUnit: number; 
+    packPrice: number;
+    packQuantity: number;
+    packUnit: string;
+    densityGPerMl: number | null;
+    allergens: string[] 
+  }>;
   isNew?: boolean;
 }
 
@@ -48,13 +59,31 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   const [description, setDescription] = useState(recipe.notes || "");
   
-  // Calculate initial cost per serving for default sell price
-  const initialCostPerServing = useMemo(() => {
-    const totalCost = localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0);
-    return recipeType === "batch" ? totalCost / slicesPerBatch : totalCost;
-  }, []);
+  // Calculate cost properly with unit conversion
+  const calculateIngredientCost = useMemo(() => {
+    return (ingredient: typeof localIngredients[0]) => {
+      const fullIngredient = availableIngredients.find(ai => ai.name === ingredient.name);
+      if (!fullIngredient || !ingredient.quantity) return 0;
+      
+      return computeIngredientUsageCostWithDensity(
+        ingredient.quantity,
+        ingredient.unit as Unit,
+        fullIngredient.packPrice,
+        fullIngredient.packQuantity,
+        fullIngredient.packUnit as Unit,
+        fullIngredient.densityGPerMl || undefined
+      );
+    };
+  }, [availableIngredients]);
+
+  // Calculate total cost properly with unit conversion
+  const totalCost = useMemo(() => {
+    return localIngredients.reduce((sum, ing) => {
+      return sum + calculateIngredientCost(ing);
+    }, 0);
+  }, [localIngredients, calculateIngredientCost]);
   
-  const [sellPrice, setSellPrice] = useState(recipe.sellPrice || initialCostPerServing * 3);
+  const [sellPrice, setSellPrice] = useState(recipe.sellPrice || (totalCost * 3));
 
   // Collect allergens from ingredients
   const allergens = useMemo(() => {
@@ -567,22 +596,22 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-500">Cost</span>
-                  <span className="text-base font-bold text-emerald-600">£{(localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)).toFixed(2)}</span>
+                  <span className="text-base font-bold text-emerald-600">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
                 </div>
                 <div className="h-4 w-px bg-gray-300" />
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-500">Per Slice</span>
-                  <span className="text-base font-semibold text-gray-900">£{((localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
+                  <span className="text-base font-semibold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
                 </div>
                 <div className="h-4 w-px bg-gray-300" />
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-500">COGS</span>
                   <span className={`text-base font-bold ${
-                    ((((localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-emerald-600' :
-                    ((((localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 33 ? 'text-green-600' :
-                    ((((localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 40 ? 'text-yellow-600' : 'text-red-600'
+                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-emerald-600' :
+                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 33 ? 'text-green-600' :
+                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 40 ? 'text-yellow-600' : 'text-red-600'
                   }`}>
-                    {sellPrice > 0 ? `${((((localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100).toFixed(1)}%` : 'N/A'}
+                    {sellPrice > 0 ? `${((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100).toFixed(1)}%` : 'N/A'}
                   </span>
                 </div>
                 <button
@@ -757,8 +786,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
       <CostInsightsModal
         isOpen={isPricingModalOpen}
         onClose={() => setIsPricingModalOpen(false)}
-        totalCost={(localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings))}
-        costPerServing={((localIngredients.reduce((sum, ing) => sum + (ing.quantity * (ing.costPerUnit || 0)), 0) * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings))}
+        totalCost={(totalCost * (servings / recipe.baseServings))}
+        costPerServing={((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings))}
         recipeType={recipeType}
         slicesPerBatch={slicesPerBatch}
         sellPrice={sellPrice}

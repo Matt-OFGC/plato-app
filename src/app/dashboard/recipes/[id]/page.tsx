@@ -85,6 +85,7 @@ export default async function RecipePage({ params }: Props) {
         packUnit: true,
         packPrice: true,
         packQuantity: true,
+        densityGPerMl: true,
         allergens: true
       }
     }),
@@ -173,14 +174,20 @@ export default async function RecipePage({ params }: Props) {
 
   // Transform ingredients for dropdown
   const ingredientsForDropdown = availableIngredients.map(ing => {
-    const costPerUnit = ing.packPrice && ing.packQuantity
-      ? Number(ing.packPrice) / Number(ing.packQuantity)
-      : 0;
+    // Get the original ingredient data for proper cost calculation
+    const originalIngredient = availableIngredients.find(ai => ai.id === ing.id);
     return {
       id: ing.id,
       name: ing.name,
       unit: ing.packUnit,
-      costPerUnit,
+      costPerUnit: ing.packPrice && ing.packQuantity
+        ? Number(ing.packPrice) / Number(ing.packQuantity)
+        : 0,
+      // Include full data for proper cost calculation with unit conversion
+      packPrice: Number(ing.packPrice),
+      packQuantity: Number(ing.packQuantity),
+      packUnit: ing.packUnit,
+      densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : null,
       allergens: ing.allergens || [],
     };
   });
