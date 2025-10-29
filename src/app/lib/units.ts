@@ -101,15 +101,18 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  // Safety check
-  if (!quantity || !packPrice || !packQuantity || packQuantity === 0) {
-    console.log('Invalid input to cost calculation:', {
-      quantity,
-      packPrice,
-      packQuantity,
-      packUnit,
-      unit,
-    });
+  // Safety check - log if inputs are invalid
+  if (!quantity || quantity === 0) {
+    return 0;
+  }
+  
+  if (!packPrice || packPrice === 0) {
+    console.warn('Invalid packPrice:', packPrice);
+    return 0;
+  }
+  
+  if (!packQuantity || packQuantity === 0) {
+    console.warn('Invalid packQuantity:', packQuantity);
     return 0;
   }
   
@@ -139,7 +142,7 @@ export function computeIngredientUsageCostWithDensity(
   
   // Safety checks
   if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {
-    console.log('Failed base unit conversion:', {
+    console.warn('Failed base unit conversion:', {
       quantity,
       unit: adjustedUnit,
       packQuantity,
@@ -156,16 +159,6 @@ export function computeIngredientUsageCostWithDensity(
   if (baseUnit === packBaseUnit) {
     const costPerBaseUnit = packPrice / basePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
-    console.log('Cost calculation (matching base units):', {
-      quantity,
-      unit: adjustedUnit,
-      packQuantity,
-      packUnit,
-      baseQuantity,
-      basePackQuantity,
-      costPerBaseUnit,
-      result,
-    });
     return result;
   }
   
@@ -185,10 +178,12 @@ export function computeIngredientUsageCostWithDensity(
   }
   
   // If no density and units don't match, return 0
-  console.log('Units incompatible and no density:', {
+  console.warn('Units incompatible and no density:', {
     baseUnit,
     packBaseUnit,
     density,
+    unit: adjustedUnit,
+    packUnit,
   });
   return 0;
 }
