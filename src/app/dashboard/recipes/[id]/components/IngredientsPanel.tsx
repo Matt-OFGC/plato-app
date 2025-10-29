@@ -283,6 +283,9 @@ export default function IngredientsPanel({
                     try {
                       // TEMPORARY FIX: Use manual calculation for compatible unit conversions
                       // This works while we debug why the function isn't logging
+                      // TEMPORARILY DISABLED FOR DEBUGGING - set to false to test function
+                      const USE_MANUAL_CALCULATION = false; // Set to false to debug function
+                      
                       const volumeUnits = ['ml', 'l', 'fl oz', 'floz'];
                       const weightUnits = ['g', 'kg', 'oz', 'lb'];
                       
@@ -291,7 +294,7 @@ export default function IngredientsPanel({
                       const isWeightToWeight = (weightUnits.includes(ingredient.unit || '') && 
                                                 weightUnits.includes(fullIngredient.packUnit || ''));
                       
-                      if (isVolumeToVolume && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
+                      if (USE_MANUAL_CALCULATION && isVolumeToVolume && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
                         // Convert recipe quantity to ml
                         let recipeMl = scaledQuantity;
                         if (ingredient.unit === 'l') recipeMl = scaledQuantity * 1000;
@@ -312,7 +315,7 @@ export default function IngredientsPanel({
                         return manualResult;
                       }
                       
-                      if (isWeightToWeight && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
+                      if (USE_MANUAL_CALCULATION && isWeightToWeight && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
                         // Convert recipe quantity to grams
                         let recipeG = scaledQuantity;
                         if (ingredient.unit === 'kg') recipeG = scaledQuantity * 1000;
