@@ -211,6 +211,11 @@ export async function deleteIngredient(id: number) {
       companyId: true, 
       name: true,
       recipeItems: {
+        where: {
+          recipe: {
+            companyId: companyId  // CRITICAL: Only check recipes in THIS company
+          }
+        },
         select: {
           recipe: {
             select: {
