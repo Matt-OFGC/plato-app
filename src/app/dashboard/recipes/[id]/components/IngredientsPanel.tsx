@@ -284,12 +284,31 @@ export default function IngredientsPanel({
                       // Manual calculation test - 10 l, packPrice 5.85, packQuantity 8000 ml
                       // Expected: (10 * 1000) / 8000 * 5.85 = 10000 / 8000 * 5.85 = 1.25 * 5.85 = 7.3125
                       const testManual = (scaledQuantity === 10 && ingredient.unit === 'l' && fullIngredient.packQuantity === 8000 && fullIngredient.packUnit === 'ml');
-                      if (testManual) {
-                        const manualResult = (scaledQuantity * 1000 / fullIngredient.packQuantity) * fullIngredient.packPrice;
-                        console.error('🧪 MANUAL TEST CALCULATION:', {
-                          formula: `(${scaledQuantity} * 1000) / ${fullIngredient.packQuantity} * ${fullIngredient.packPrice}`,
+                      
+                      // TEMPORARY FIX: Use manual calculation for volume-to-volume conversions
+                      // This works while we debug why the function isn't logging
+                      const isVolumeToVolume = (['ml', 'l', 'fl oz', 'floz'].includes(ingredient.unit || '') && 
+                                                ['ml', 'l', 'fl oz', 'floz'].includes(fullIngredient.packUnit || ''));
+                      
+                      if (isVolumeToVolume && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
+                        // Convert recipe quantity to ml
+                        let recipeMl = scaledQuantity;
+                        if (ingredient.unit === 'l') recipeMl = scaledQuantity * 1000;
+                        else if (ingredient.unit === 'fl oz' || ingredient.unit === 'floz') recipeMl = scaledQuantity * 29.5735;
+                        
+                        // Convert pack quantity to ml
+                        let packMl = fullIngredient.packQuantity;
+                        if (fullIngredient.packUnit === 'l') packMl = fullIngredient.packQuantity * 1000;
+                        else if (fullIngredient.packUnit === 'fl oz' || fullIngredient.packUnit === 'floz') packMl = fullIngredient.packQuantity * 29.5735;
+                        
+                        const manualResult = (recipeMl / packMl) * fullIngredient.packPrice;
+                        console.error('✅ USING MANUAL CALCULATION (volume-to-volume):', {
+                          recipeMl,
+                          packMl,
+                          packPrice: fullIngredient.packPrice,
                           result: manualResult
                         });
+                        return manualResult;
                       }
                       
                       const result = computeIngredientUsageCostWithDensity(
