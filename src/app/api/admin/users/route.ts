@@ -24,12 +24,6 @@ export async function GET(request: NextRequest) {
         subscriptionStatus: true,
         createdAt: true,
         lastLoginAt: true,
-        // Add account type logic - demo accounts are typically test accounts
-        accountType: {
-          // Demo accounts: email contains 'demo', 'test', or 'example'
-          // Real accounts: everything else
-          select: true,
-        },
         memberships: includeMemberships ? {
           select: {
             id: true,
