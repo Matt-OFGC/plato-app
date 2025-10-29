@@ -113,22 +113,16 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  // IMMEDIATE DEBUG - this should always show
-  console.error('🚨 FUNCTION CALLED:', { quantity, unit, packPrice, packQuantity, packUnit, density });
-  
-  // Safety check - log if inputs are invalid
+  // Safety checks
   if (!quantity || quantity === 0) {
-    console.error('❌ quantity is 0 or falsy:', quantity);
     return 0;
   }
   
   if (!packPrice || packPrice === 0) {
-    console.error('❌ packPrice is 0 or falsy:', packPrice);
     return 0;
   }
   
   if (!packQuantity || packQuantity === 0) {
-    console.error('❌ packQuantity is 0 or falsy:', packQuantity);
     return 0;
   }
   
@@ -152,57 +146,15 @@ export function computeIngredientUsageCostWithDensity(
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, shouldUseDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit, undefined); // Never use density for pack unit
   
-  // Debug logging - use console.error so it shows even with filters
-  console.error('🔍 Cost calculation debug:', {
-    quantity,
-    unit: adjustedUnit,
-    normalizedUnit,
-    packQuantity,
-    packUnit,
-    normalizedPackUnit,
-    baseQuantity,
-    baseUnit,
-    basePackQuantity,
-    packBaseUnit,
-    packPrice,
-    density,
-    isRecipeVolume,
-    isPackVolume,
-    shouldUseDensity,
-  });
-  
   // Safety checks
   if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {
-    console.error('❌ Failed base unit conversion - returning 0:', {
-      quantity,
-      unit: adjustedUnit,
-      packQuantity,
-      packUnit,
-      baseQuantity,
-      baseUnit,
-      basePackQuantity,
-      packBaseUnit,
-      reason: !baseQuantity ? 'baseQuantity is falsy' : 
-              !basePackQuantity ? 'basePackQuantity is falsy' :
-              basePackQuantity === 0 ? 'basePackQuantity is 0' :
-              isNaN(baseQuantity) ? 'baseQuantity is NaN' :
-              isNaN(basePackQuantity) ? 'basePackQuantity is NaN' : 'unknown'
-    });
     return 0;
   }
   
   // If base units match, simple calculation
   if (baseUnit === packBaseUnit) {
     const costPerBaseUnit = packPrice / basePackQuantity;
-    const result = baseQuantity * costPerBaseUnit;
-    console.error('✅ Cost calculation successful:', { 
-      costPerBaseUnit, 
-      result, 
-      baseQuantity, 
-      basePackQuantity,
-      formula: `(${baseQuantity} / ${basePackQuantity}) * ${packPrice} = ${result}`
-    });
-    return result;
+    return baseQuantity * costPerBaseUnit;
   }
   
   // If base units don't match but we have density, convert via density
@@ -221,14 +173,6 @@ export function computeIngredientUsageCostWithDensity(
   }
   
   // If no density and units don't match, return 0
-  console.error('❌ Units incompatible and no density:', {
-    baseUnit,
-    packBaseUnit,
-    density,
-    unit: adjustedUnit,
-    packUnit,
-    message: `Cannot convert ${baseUnit} to ${packBaseUnit} without density`
-  });
   return 0;
 }
 

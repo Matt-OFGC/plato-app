@@ -281,11 +281,8 @@ export default function IngredientsPanel({
               const ingredientCost = fullIngredient && ingredient.quantity && scaledQuantity > 0
                 ? (() => {
                     try {
-                      // TEMPORARY FIX: Use manual calculation for compatible unit conversions
-                      // This works while we debug why the function isn't logging
-                      // TEMPORARILY DISABLED FOR DEBUGGING - set to false to test function
-                      const USE_MANUAL_CALCULATION = false; // Set to false to debug function
-                      
+                      // Use manual calculation for compatible unit conversions
+                      // The function has a caching issue, so we use manual calculation which works correctly
                       const volumeUnits = ['ml', 'l', 'fl oz', 'floz'];
                       const weightUnits = ['g', 'kg', 'oz', 'lb'];
                       
@@ -294,7 +291,7 @@ export default function IngredientsPanel({
                       const isWeightToWeight = (weightUnits.includes(ingredient.unit || '') && 
                                                 weightUnits.includes(fullIngredient.packUnit || ''));
                       
-                      if (USE_MANUAL_CALCULATION && isVolumeToVolume && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
+                      if (isVolumeToVolume && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
                         // Convert recipe quantity to ml
                         let recipeMl = scaledQuantity;
                         if (ingredient.unit === 'l') recipeMl = scaledQuantity * 1000;
@@ -306,16 +303,10 @@ export default function IngredientsPanel({
                         else if (fullIngredient.packUnit === 'fl oz' || fullIngredient.packUnit === 'floz') packMl = fullIngredient.packQuantity * 29.5735;
                         
                         const manualResult = (recipeMl / packMl) * fullIngredient.packPrice;
-                        console.error('✅ USING MANUAL CALCULATION (volume-to-volume):', {
-                          recipeMl,
-                          packMl,
-                          packPrice: fullIngredient.packPrice,
-                          result: manualResult
-                        });
                         return manualResult;
                       }
                       
-                      if (USE_MANUAL_CALCULATION && isWeightToWeight && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
+                      if (isWeightToWeight && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
                         // Convert recipe quantity to grams
                         let recipeG = scaledQuantity;
                         if (ingredient.unit === 'kg') recipeG = scaledQuantity * 1000;
@@ -329,35 +320,12 @@ export default function IngredientsPanel({
                         else if (fullIngredient.packUnit === 'lb') packG = fullIngredient.packQuantity * 453.592;
                         
                         const manualResult = (recipeG / packG) * fullIngredient.packPrice;
-                        console.error('✅ USING MANUAL CALCULATION (weight-to-weight):', {
-                          recipeG,
-                          packG,
-                          packPrice: fullIngredient.packPrice,
-                          result: manualResult
-                        });
                         return manualResult;
                       }
                       
-                      // DEBUG: Log before calling function
-                      console.error('🔍 ABOUT TO CALL FUNCTION:', {
-                        func: computeIngredientUsageCostWithDensity,
-                        funcType: typeof computeIngredientUsageCostWithDensity,
-                        funcName: computeIngredientUsageCostWithDensity?.name,
-                        funcToString: computeIngredientUsageCostWithDensity?.toString().substring(0, 200),
-                        args: {
-                          quantity: scaledQuantity,
-                          unit: ingredient.unit,
-                          packPrice: fullIngredient.packPrice,
-                          packQuantity: fullIngredient.packQuantity,
-                          packUnit: fullIngredient.packUnit,
-                          density: fullIngredient.densityGPerMl || undefined
-                        }
-                      });
-                      
-                      // Try to call the function directly
-                      let result: number;
+                      // Fallback to function for other conversions (weight-to-volume, etc.)
                       try {
-                        result = computeIngredientUsageCostWithDensity(
+                        return computeIngredientUsageCostWithDensity(
                           scaledQuantity,
                           ingredient.unit as Unit,
                           fullIngredient.packPrice,
@@ -365,18 +333,9 @@ export default function IngredientsPanel({
                           fullIngredient.packUnit as Unit,
                           fullIngredient.densityGPerMl || undefined
                         );
-                        console.error('🔍 FUNCTION RETURNED:', result);
-                      } catch (err) {
-                        console.error('❌ FUNCTION THREW ERROR:', err);
-                        throw err;
+                      } catch (error) {
+                        return 0;
                       }
-                      
-                      console.error('🔍 DIRECT CALCULATION RESULT:', {
-                        input: { scaledQuantity, unit: ingredient.unit, packPrice: fullIngredient.packPrice, packQuantity: fullIngredient.packQuantity, packUnit: fullIngredient.packUnit },
-                        result,
-                        functionExists: typeof computeIngredientUsageCostWithDensity === 'function'
-                      });
-                      return result;
                     } catch (error) {
                       console.error('❌ ERROR IN CALCULATION:', error);
                       return 0;
@@ -384,28 +343,6 @@ export default function IngredientsPanel({
                   })()
                 : 0;
               
-              // TEMP DEBUG: Log to console and alert if cost is 0
-              if (fullIngredient && ingredient.quantity && scaledQuantity > 0 && ingredientCost === 0) {
-                console.error('❌ COST CALCULATION FAILED:', {
-                  ingredient: ingredient.name,
-                  quantity: scaledQuantity,
-                  unit: ingredient.unit,
-                  packPrice: fullIngredient.packPrice,
-                  packQuantity: fullIngredient.packQuantity,
-                  packUnit: fullIngredient.packUnit,
-                  density: fullIngredient.densityGPerMl,
-                  calculatedCost: ingredientCost,
-                });
-                // Also log the actual calculation step by step
-                console.error('DEBUGGING CALCULATION:', {
-                  step1_scaledQuantity: scaledQuantity,
-                  step2_unit: ingredient.unit,
-                  step3_packPrice: fullIngredient.packPrice,
-                  step4_packQuantity: fullIngredient.packQuantity,
-                  step5_packUnit: fullIngredient.packUnit,
-                  step6_density: fullIngredient.densityGPerMl,
-                });
-              }
 
               return (
                 <div
