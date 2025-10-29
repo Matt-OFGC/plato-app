@@ -285,10 +285,15 @@ export default function IngredientsPanel({
                       // Expected: (10 * 1000) / 8000 * 5.85 = 10000 / 8000 * 5.85 = 1.25 * 5.85 = 7.3125
                       const testManual = (scaledQuantity === 10 && ingredient.unit === 'l' && fullIngredient.packQuantity === 8000 && fullIngredient.packUnit === 'ml');
                       
-                      // TEMPORARY FIX: Use manual calculation for volume-to-volume conversions
+                      // TEMPORARY FIX: Use manual calculation for compatible unit conversions
                       // This works while we debug why the function isn't logging
-                      const isVolumeToVolume = (['ml', 'l', 'fl oz', 'floz'].includes(ingredient.unit || '') && 
-                                                ['ml', 'l', 'fl oz', 'floz'].includes(fullIngredient.packUnit || ''));
+                      const volumeUnits = ['ml', 'l', 'fl oz', 'floz'];
+                      const weightUnits = ['g', 'kg', 'oz', 'lb'];
+                      
+                      const isVolumeToVolume = (volumeUnits.includes(ingredient.unit || '') && 
+                                                volumeUnits.includes(fullIngredient.packUnit || ''));
+                      const isWeightToWeight = (weightUnits.includes(ingredient.unit || '') && 
+                                                weightUnits.includes(fullIngredient.packUnit || ''));
                       
                       if (isVolumeToVolume && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
                         // Convert recipe quantity to ml
@@ -305,6 +310,29 @@ export default function IngredientsPanel({
                         console.error('✅ USING MANUAL CALCULATION (volume-to-volume):', {
                           recipeMl,
                           packMl,
+                          packPrice: fullIngredient.packPrice,
+                          result: manualResult
+                        });
+                        return manualResult;
+                      }
+                      
+                      if (isWeightToWeight && fullIngredient.packQuantity && fullIngredient.packQuantity > 0) {
+                        // Convert recipe quantity to grams
+                        let recipeG = scaledQuantity;
+                        if (ingredient.unit === 'kg') recipeG = scaledQuantity * 1000;
+                        else if (ingredient.unit === 'oz') recipeG = scaledQuantity * 28.3495;
+                        else if (ingredient.unit === 'lb') recipeG = scaledQuantity * 453.592;
+                        
+                        // Convert pack quantity to grams
+                        let packG = fullIngredient.packQuantity;
+                        if (fullIngredient.packUnit === 'kg') packG = fullIngredient.packQuantity * 1000;
+                        else if (fullIngredient.packUnit === 'oz') packG = fullIngredient.packQuantity * 28.3495;
+                        else if (fullIngredient.packUnit === 'lb') packG = fullIngredient.packQuantity * 453.592;
+                        
+                        const manualResult = (recipeG / packG) * fullIngredient.packPrice;
+                        console.error('✅ USING MANUAL CALCULATION (weight-to-weight):', {
+                          recipeG,
+                          packG,
                           packPrice: fullIngredient.packPrice,
                           result: manualResult
                         });
