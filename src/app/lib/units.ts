@@ -128,8 +128,13 @@ export function computeIngredientUsageCostWithDensity(
   }
   
   // Convert both to base units
-  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, density);
-  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
+  // Only use density if units are incompatible (weight vs volume)
+  const isRecipeVolume = volumeUnits.includes(normalizeUnit(adjustedUnit));
+  const isPackVolume = volumeUnits.includes(normalizedPackUnit);
+  const shouldUseDensity = density && ((isRecipeVolume && !isPackVolume) || (!isRecipeVolume && isPackVolume));
+  
+  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, shouldUseDensity ? density : undefined);
+  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit, undefined); // Never use density for pack unit
   
   // Debug logging
   console.log('Cost calculation debug:', {
