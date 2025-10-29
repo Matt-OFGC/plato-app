@@ -301,6 +301,15 @@ export default function IngredientsPanel({
                   density: fullIngredient.densityGPerMl,
                   calculatedCost: ingredientCost,
                 });
+                // Also log the actual calculation step by step
+                console.error('DEBUGGING CALCULATION:', {
+                  step1_scaledQuantity: scaledQuantity,
+                  step2_unit: ingredient.unit,
+                  step3_packPrice: fullIngredient.packPrice,
+                  step4_packQuantity: fullIngredient.packQuantity,
+                  step5_packUnit: fullIngredient.packUnit,
+                  step6_density: fullIngredient.densityGPerMl,
+                });
               }
 
               return (
