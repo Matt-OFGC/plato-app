@@ -281,6 +281,17 @@ export default function IngredientsPanel({
               const ingredientCost = fullIngredient && ingredient.quantity && scaledQuantity > 0
                 ? (() => {
                     try {
+                      // Manual calculation test - 10 l, packPrice 5.85, packQuantity 8000 ml
+                      // Expected: (10 * 1000) / 8000 * 5.85 = 10000 / 8000 * 5.85 = 1.25 * 5.85 = 7.3125
+                      const testManual = (scaledQuantity === 10 && ingredient.unit === 'l' && fullIngredient.packQuantity === 8000 && fullIngredient.packUnit === 'ml');
+                      if (testManual) {
+                        const manualResult = (scaledQuantity * 1000 / fullIngredient.packQuantity) * fullIngredient.packPrice;
+                        console.error('🧪 MANUAL TEST CALCULATION:', {
+                          formula: `(${scaledQuantity} * 1000) / ${fullIngredient.packQuantity} * ${fullIngredient.packPrice}`,
+                          result: manualResult
+                        });
+                      }
+                      
                       const result = computeIngredientUsageCostWithDensity(
                         scaledQuantity,
                         ingredient.unit as Unit,
@@ -291,7 +302,8 @@ export default function IngredientsPanel({
                       );
                       console.error('🔍 DIRECT CALCULATION RESULT:', {
                         input: { scaledQuantity, unit: ingredient.unit, packPrice: fullIngredient.packPrice, packQuantity: fullIngredient.packQuantity, packUnit: fullIngredient.packUnit },
-                        result
+                        result,
+                        functionExists: typeof computeIngredientUsageCostWithDensity === 'function'
                       });
                       return result;
                     } catch (error) {
