@@ -8,7 +8,22 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
 
-const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
+const unitEnum = z.enum([
+  // Weight
+  "g", "kg", "mg", "lb", "oz",
+  // Volume - Metric
+  "ml", "l",
+  // Volume - US
+  "floz", "fl oz", "cup", "tbsp", "tsp", "pint", "quart", "gallon",
+  // Volume - UK
+  "uk floz", "uk fl oz", "uk cup", "uk tbsp", "uk tsp",
+  // Container/Bulk
+  "case", "cases", "box", "boxes", "bottle", "bottles", "can", "cans", "pack", "packs", "carton", "cartons",
+  // Count
+  "each", "slices", "piece", "pieces",
+  // Other
+  "pinch", "dash", "large", "medium", "small"
+]);
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
 
 const ingredientSchema = z.object({
@@ -107,6 +122,7 @@ export async function createIngredient(formData: FormData) {
         }
         
         revalidatePath("/dashboard/ingredients");
+        revalidatePath("/dashboard/recipes");
         return { success: true };
   } catch (error) {
     console.error("Error in createIngredient:", error);

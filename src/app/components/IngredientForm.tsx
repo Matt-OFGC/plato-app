@@ -258,16 +258,34 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
                 <option value="lb">lb (pounds)</option>
                 <option value="oz">oz (ounces)</option>
               </optgroup>
-              <optgroup label="Volume (Liquid)">
+              <optgroup label="Volume - Metric">
                 <option value="ml">ml (milliliters)</option>
                 <option value="l">l (liters)</option>
-                <option value="tsp">tsp (teaspoons)</option>
-                <option value="tbsp">tbsp (tablespoons)</option>
-                <option value="cup">cup</option>
-                <option value="floz">fl oz (fluid ounces)</option>
-                <option value="pint">pint</option>
-                <option value="quart">quart</option>
-                <option value="gallon">gallon</option>
+              </optgroup>
+              <optgroup label="Volume - US">
+                <option value="floz">fl oz (fluid ounces US)</option>
+                <option value="cup">cup (US)</option>
+                <option value="tbsp">tbsp (tablespoons US)</option>
+                <option value="tsp">tsp (teaspoons US)</option>
+                <option value="pint">pint (US)</option>
+                <option value="quart">quart (US)</option>
+                <option value="gallon">gallon (US)</option>
+              </optgroup>
+              <optgroup label="Volume - UK/Imperial">
+                <option value="uk floz">UK fl oz (fluid ounces UK)</option>
+                <option value="uk cup">UK cup</option>
+                <option value="uk tbsp">UK tbsp (tablespoons UK)</option>
+                <option value="uk tsp">UK tsp (teaspoons UK)</option>
+              </optgroup>
+              <optgroup label="Container/Bulk">
+                <option value="case">case</option>
+                <option value="box">box</option>
+                <option value="bottle">bottle</option>
+                <option value="can">can</option>
+                <option value="pack">pack</option>
+                <option value="carton">carton</option>
+              </optgroup>
+              <optgroup label="Other">
                 <option value="pinch">pinch</option>
                 <option value="dash">dash</option>
               </optgroup>

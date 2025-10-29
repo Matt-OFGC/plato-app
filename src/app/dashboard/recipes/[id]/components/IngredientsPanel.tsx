@@ -487,12 +487,6 @@ export default function IngredientsPanel({
                             <span className="text-gray-400 ml-2">
                               (£{(fullIngredient.packPrice / fullIngredient.packQuantity).toFixed(3)} per {fullIngredient.packUnit})
                             </span>
-                            {/* Debug info - remove after fixing */}
-                            {ingredientCost === 0 && (
-                              <span className="text-red-500 ml-2 text-xs">
-                                [Debug: qty={scaledQuantity.toFixed(2)}, unit={ingredient.unit}, pack={fullIngredient.packQuantity}{fullIngredient.packUnit}, price=£{fullIngredient.packPrice}]
-                              </span>
-                            )}
                           </div>
                         ) : fullIngredient ? (
                           <div className="text-xs text-red-500 ml-1">
