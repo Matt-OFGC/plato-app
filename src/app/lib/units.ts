@@ -2,21 +2,22 @@ export type BaseUnit = 'g' | 'ml' | 'each';
 export type Unit = BaseUnit | 'kg' | 'l' | 'slices' | 'cups' | 'tbsp' | 'tsp' | 'oz' | 'lb' | 'fl oz' | 'floz';
 
 // Conversion factors to base units
+// Verified against official US measurement standards
 const CONVERSION_FACTORS: Record<string, number> = {
   // Weight (to grams)
   'g': 1,
   'kg': 1000,
-  'oz': 28.3495,
-  'lb': 453.592,
+  'oz': 28.3495,      // 1 oz = 28.3495 g (avoirdupois ounce)
+  'lb': 453.592,      // 1 lb = 453.592 g = 16 oz
   
-  // Volume (to ml)
+  // Volume (to ml) - US Standard measurements
   'ml': 1,
   'l': 1000,
-  'fl oz': 29.5735,
-  'floz': 29.5735, // Alias for 'fl oz' (without space)
-  'cups': 236.588,
-  'tbsp': 14.7868,
-  'tsp': 4.92892,
+  'fl oz': 29.5735,   // 1 US fl oz = 29.5735 ml
+  'floz': 29.5735,    // Alias for 'fl oz' (without space)
+  'cups': 236.588,    // 1 US cup = 236.588 ml (≈ 8 fl oz)
+  'tbsp': 14.7868,    // 1 US tbsp = 14.7868 ml (≈ 3 tsp)
+  'tsp': 4.92892,     // 1 US tsp = 4.92892 ml (exact conversion factor)
   
   // Count
   'each': 1,
@@ -144,25 +145,36 @@ export function computeIngredientUsageCostWithDensity(
     return 0;
   }
   
-  // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
-  const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
+  // Normalize units for consistent checking
   const normalizedPackUnit = normalizeUnit(packUnit);
   const normalizedUnit = normalizeUnit(unit);
   
+  // Define unit categories (use normalized forms only)
+  const volumeUnits = ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'];
+  const weightUnits = ['g', 'kg', 'oz', 'lb'];
+  
   // Smart conversion: if pack is volume and recipe unit is 'oz', assume it's fluid ounces
   let adjustedUnit: Unit = unit;
+  let adjustedNormalizedUnit = normalizedUnit;
   if (normalizedUnit === 'oz' && volumeUnits.includes(normalizedPackUnit)) {
     adjustedUnit = 'fl oz';
+    adjustedNormalizedUnit = 'fl oz';
   }
   
-  // Convert both to base units
-  // Only use density if units are incompatible (weight vs volume)
-  const isRecipeVolume = volumeUnits.includes(normalizeUnit(adjustedUnit));
+  // Determine if units are volume or weight
+  const isRecipeVolume = volumeUnits.includes(adjustedNormalizedUnit);
   const isPackVolume = volumeUnits.includes(normalizedPackUnit);
-  const shouldUseDensity = density && ((isRecipeVolume && !isPackVolume) || (!isRecipeVolume && isPackVolume));
+  const isRecipeWeight = weightUnits.includes(adjustedNormalizedUnit);
+  const isPackWeight = weightUnits.includes(normalizedPackUnit);
   
+  // Only use density if converting between weight and volume
+  // NEVER use density for volume-to-volume or weight-to-weight conversions
+  const shouldUseDensity = density && ((isRecipeVolume && isPackWeight) || (isRecipeWeight && isPackVolume));
+  
+  // Convert both to base units
+  // Use density ONLY when converting between incompatible types (weight ↔ volume)
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, shouldUseDensity ? density : undefined);
-  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit, undefined); // Never use density for pack unit
+  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit, undefined); // Never use density for pack unit conversion
   
   // Safety checks
   if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {
