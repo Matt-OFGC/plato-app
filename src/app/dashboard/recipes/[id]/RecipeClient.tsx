@@ -383,7 +383,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                     <div className="aspect-[3/4] bg-gradient-to-br from-emerald-100 to-blue-100 relative overflow-hidden rounded-xl">
                       <Image
                         src={recipe.imageUrl || "/images/placeholder-cake.png"}
-                        alt={recipe.name}
+                        alt={isNew ? recipeTitle || "New Recipe" : recipe.title}
                         fill
                         className="object-cover"
                         priority
@@ -395,15 +395,15 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   <div className="flex flex-col gap-6">
                     {/* Recipe Title & Info */}
                     <div>
-                      <h1 className="text-2xl font-bold text-gray-900 mb-2">{recipe.name}</h1>
+                      <h1 className="text-2xl font-bold text-gray-900 mb-2">{isNew ? recipeTitle || "New Recipe" : recipe.title}</h1>
                       <div className="flex items-center gap-3 text-gray-600 mb-3">
                         <span>{recipe.category || "Uncategorized"}</span>
                         <span>•</span>
                         <span>{servings} servings</span>
-                        {recipe.sellingPrice && (
+                        {recipe.sellPrice && (
                           <>
                             <span>•</span>
-                            <span className="font-semibold text-emerald-600">£{recipe.sellingPrice.toFixed(2)}</span>
+                            <span className="font-semibold text-emerald-600">£{recipe.sellPrice.toFixed(2)}</span>
                           </>
                         )}
                       </div>
