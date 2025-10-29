@@ -288,6 +288,20 @@ export default function IngredientsPanel({
                     fullIngredient.densityGPerMl || undefined
                   )
                 : 0;
+              
+              // TEMP DEBUG: Log to console and alert if cost is 0
+              if (fullIngredient && ingredient.quantity && scaledQuantity > 0 && ingredientCost === 0) {
+                console.error('❌ COST CALCULATION FAILED:', {
+                  ingredient: ingredient.name,
+                  quantity: scaledQuantity,
+                  unit: ingredient.unit,
+                  packPrice: fullIngredient.packPrice,
+                  packQuantity: fullIngredient.packQuantity,
+                  packUnit: fullIngredient.packUnit,
+                  density: fullIngredient.densityGPerMl,
+                  calculatedCost: ingredientCost,
+                });
+              }
 
               return (
                 <div
