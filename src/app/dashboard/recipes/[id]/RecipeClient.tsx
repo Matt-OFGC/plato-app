@@ -3,7 +3,7 @@
 import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
-import { saveRecipeChanges, saveSellPrice, saveRecipe } from "./actions";
+import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe } from "./actions";
 import { computeIngredientUsageCostWithDensity, Unit } from "@/lib/units";
 import RecipeHeader from "./components/RecipeHeader";
 import ServingsControl from "./components/ServingsControl";
@@ -353,6 +353,18 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
     }
   };
 
+  const handleDelete = async () => {
+    if (!recipeId) return;
+    
+    try {
+      await deleteRecipe(recipeId);
+      // Redirect will happen server-side, but just in case:
+      window.location.href = '/dashboard/recipes';
+    } catch (error) {
+      alert(`Failed to delete recipe: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col pb-20">
       {/* Top Header - Compact */}
@@ -383,6 +395,8 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                 categories={categories}
                 imageUrl={recipe.imageUrl}
                 onTitleChange={isNew ? setRecipeTitle : undefined}
+                onDelete={!isNew ? handleDelete : undefined}
+                recipeId={recipeId}
               />
             </div>
           </div>
