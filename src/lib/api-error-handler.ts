@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { logger } from './logger';
+import { logger } from '@/lib/logger';
 
 /**
  * Standardized API error handling utility
