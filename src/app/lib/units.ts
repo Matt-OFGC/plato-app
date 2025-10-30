@@ -1,242 +1,56 @@
 export type BaseUnit = 'g' | 'ml' | 'each';
-
-// Comprehensive unit type supporting worldwide measurements
-// Includes US, UK, metric, and compound units
-export type Unit = 
-  // Base units
-  | BaseUnit
-  // Metric weight
-  | 'kg' | 'g'
-  // Imperial weight
-  | 'oz' | 'lb'
-  // Metric volume
-  | 'ml' | 'l'
-  // US volume
-  | 'fl oz' | 'floz' | 'cups' | 'tbsp' | 'tsp'
-  // UK volume (different from US)
-  | 'uk fl oz' | 'uk cup' | 'uk tbsp' | 'uk tsp'
-  // Compound/container units (these work via parsing)
-  | 'case' | 'cases' | 'box' | 'boxes' | 'bottle' | 'bottles' | 'can' | 'cans' | 'pack' | 'packs' | 'carton' | 'cartons'
-  // Count units
-  | 'slices' | 'piece' | 'pieces';
+export type Unit = BaseUnit | 'kg' | 'l' | 'slices' | 'cups' | 'tbsp' | 'tsp' | 'oz' | 'lb' | 'fl oz' | 'floz';
 
 // Conversion factors to base units
-// Verified against official US, UK, and metric standards
 const CONVERSION_FACTORS: Record<string, number> = {
   // Weight (to grams)
   'g': 1,
   'kg': 1000,
-  'oz': 28.3495,      // 1 oz = 28.3495 g (avoirdupois ounce)
-  'lb': 453.592,      // 1 lb = 453.592 g = 16 oz
+  'oz': 28.3495,
+  'lb': 453.592,
   
-  // Volume (to ml) - Metric
+  // Volume (to ml)
   'ml': 1,
   'l': 1000,
-  'litre': 1000,      // Alternative spelling
-  'litres': 1000,
-  'liter': 1000,
-  'liters': 1000,
-  
-  // Volume (to ml) - US Standard measurements
-  'fl oz': 29.5735,   // 1 US fl oz = 29.5735 ml
-  'floz': 29.5735,    // Alias for 'fl oz' (without space)
-  'fl-oz': 29.5735,   // Alternative format
-  'cups': 236.588,    // 1 US cup = 236.588 ml (≈ 8 fl oz)
-  'cup': 236.588,     // Singular
-  'tbsp': 14.7868,    // 1 US tbsp = 14.7868 ml (≈ 3 tsp)
-  'tablespoon': 14.7868,
-  'tablespoons': 14.7868,
-  'tsp': 4.92892,     // 1 US tsp = 4.92892 ml (exact conversion factor)
-  'teaspoon': 4.92892,
-  'teaspoons': 4.92892,
-  
-  // Volume (to ml) - UK/Imperial measurements (different from US!)
-  'uk fl oz': 28.4131, // 1 UK fl oz = 28.4131 ml (different from US!)
-  'uk floz': 28.4131,
-  'uk cup': 284.131,   // 1 UK cup = 284.131 ml (different from US!)
-  'uk tbsp': 17.7582,  // 1 UK tbsp = 17.7582 ml
-  'uk tsp': 5.91939,  // 1 UK tsp = 5.91939 ml
+  'fl oz': 29.5735,
+  'floz': 29.5735, // Alias for 'fl oz' (without space)
+  'cups': 236.588,
+  'tbsp': 14.7868,
+  'tsp': 4.92892,
   
   // Count
   'each': 1,
   'slices': 1,
-  'piece': 1,
-  'pieces': 1,
-  
-  // Compound/container units - default to common sizes (can be overridden)
-  // These are generic defaults; actual size should be entered as compound unit like "6x12L"
-  'case': 1000,        // Default: 1 case = 1000ml (user should override)
-  'cases': 1000,
-  'box': 1000,         // Default: 1 box = 1000ml
-  'boxes': 1000,
-  'bottle': 750,       // Default: standard wine bottle = 750ml
-  'bottles': 750,
-  'can': 330,          // Default: standard can = 330ml
-  'cans': 330,
-  'pack': 1000,        // Default: 1 pack = 1000ml
-  'packs': 1000,
-  'carton': 1000,      // Default: 1 carton = 1000ml
-  'cartons': 1000,
 };
 
-// Parse compound unit strings like "6x12L", "case of 12x500ml", etc.
-// Returns { multiplier: number, baseUnit: string, baseQuantity: number }
-export function parseCompoundUnit(unitString: string): { multiplier: number; baseUnit: string; baseQuantity: number } | null {
-  const normalized = unitString.toLowerCase().trim();
-  
-  // Pattern: "6x12L" or "6 x 12 l" or "6*12L"
-  const compoundMatch = normalized.match(/(\d+(?:\.\d+)?)\s*[x*×]\s*(\d+(?:\.\d+)?)\s*(ml|l|litre|litres|liter|liters|g|kg|oz|lb)/i);
-  if (compoundMatch) {
-    const multiplier = parseFloat(compoundMatch[1]);
-    const quantity = parseFloat(compoundMatch[2]);
-    const baseUnit = compoundMatch[3].toLowerCase();
-    return { multiplier, baseUnit, baseQuantity: quantity };
-  }
-  
-  // Pattern: "12x500ml" (quantity x size)
-  const reverseMatch = normalized.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*(ml|l|litre|litres|liter|liters|g|kg|oz|lb)/i);
-  if (reverseMatch) {
-    const multiplier = parseFloat(reverseMatch[1]);
-    const quantity = parseFloat(reverseMatch[2]);
-    const baseUnit = reverseMatch[3].toLowerCase();
-    return { multiplier, baseUnit, baseQuantity: quantity };
-  }
-  
-  return null;
-}
-
-// Normalize unit string (handle variations, lowercase, etc.)
+// Normalize unit string (handle 'floz' -> 'fl oz', lowercase, etc.)
 function normalizeUnit(unit: string): string {
-  let lower = unit.toLowerCase().trim();
-  
-  // Normalize variations
-  const normalizations: Record<string, string> = {
-    'floz': 'fl oz',
-    'fl-oz': 'fl oz',
-    'floz': 'fl oz',
-    'liter': 'l',
-    'litre': 'l',
-    'liters': 'l',
-    'litres': 'l',
-    'cup': 'cups',
-    'tablespoon': 'tbsp',
-    'tablespoons': 'tbsp',
-    'teaspoon': 'tsp',
-    'teaspoons': 'tsp',
-    'piece': 'pieces',
-    'case': 'cases',
-    'box': 'boxes',
-    'bottle': 'bottles',
-    'can': 'cans',
-    'pack': 'packs',
-    'carton': 'cartons',
-  };
-  
-  return normalizations[lower] || lower;
-}
-
-// Convert compound unit to base unit quantity
-// Example: "case" where case is defined as "6x12L" = 72L = 72000ml
-export function convertCompoundUnitToBase(
-  quantity: number,
-  compoundUnitString: string
-): { amount: number; base: BaseUnit } | null {
-  const parsed = parseCompoundUnit(compoundUnitString);
-  if (!parsed) {
-    // Try to look up in CONVERSION_FACTORS
-    const normalized = normalizeUnit(compoundUnitString);
-    const factor = CONVERSION_FACTORS[normalized];
-    if (factor && ['ml', 'l'].includes(factor === 1 ? 'ml' : 'l')) {
-      // It's a volume unit
-      return { amount: quantity * factor, base: 'ml' };
-    }
-    return null;
+  const lower = unit.toLowerCase().trim();
+  // Normalize 'floz' to 'fl oz' for consistent handling
+  if (lower === 'floz' || lower === 'fl-oz') {
+    return 'fl oz';
   }
-  
-  // Calculate total base quantity
-  const totalBaseQuantity = parsed.multiplier * parsed.baseQuantity;
-  
-  // Convert to ml if it's a volume unit
-  const baseUnit = parsed.baseUnit.toLowerCase();
-  if (['ml', 'l', 'litre', 'litres', 'liter', 'liters'].includes(baseUnit)) {
-    const liters = baseUnit === 'l' || baseUnit.startsWith('lit') ? totalBaseQuantity : totalBaseQuantity / 1000;
-    return { amount: quantity * liters * 1000, base: 'ml' };
-  }
-  
-  // Convert to grams if it's a weight unit
-  if (['g', 'kg', 'oz', 'lb'].includes(baseUnit)) {
-    // First convert to grams
-    let grams = totalBaseQuantity;
-    if (baseUnit === 'kg') grams = totalBaseQuantity * 1000;
-    else if (baseUnit === 'oz') grams = totalBaseQuantity * 28.3495;
-    else if (baseUnit === 'lb') grams = totalBaseQuantity * 453.592;
-    return { amount: quantity * grams, base: 'g' };
-  }
-  
-  return null;
+  return lower;
 }
 
 // Convert to base unit
-export function toBase(amount: number, unit: Unit | string, density?: number): { amount: number; base: BaseUnit } {
-  const unitString = String(unit);
+export function toBase(amount: number, unit: Unit, density?: number): { amount: number; base: BaseUnit } {
+  const normalizedUnit = normalizeUnit(unit) as Unit;
   
-  // First, try parsing as compound unit (e.g., "6x12L", "case of 6x12L")
-  const compoundResult = convertCompoundUnitToBase(amount, unitString);
-  if (compoundResult) {
-    // If density provided and result is volume, apply density
-    if (compoundResult.base === 'ml' && density) {
-      return { amount: compoundResult.amount * density, base: 'g' };
-    }
-    return compoundResult;
-  }
-  
-  const normalizedUnit = normalizeUnit(unitString);
-  
-  // Map normalized units to conversion factor keys (handles UK units, etc.)
-  const volumeUnitMap: Record<string, string> = {
-    'fl oz': 'fl oz',
-    'floz': 'fl oz',
-    'fl-oz': 'fl oz',
-    'uk fl oz': 'uk fl oz',
-    'uk floz': 'uk fl oz',
-  };
-  const volumeKey = volumeUnitMap[normalizedUnit] || normalizedUnit;
-  
-  // Comprehensive volume units (US, UK, Metric)
-  const volumeUnits = [
-    'ml', 'l', 'litre', 'litres', 'liter', 'liters',
-    'fl oz', 'cups', 'cup', 'tbsp', 'tablespoon', 'tablespoons', 'tsp', 'teaspoon', 'teaspoons',
-    'uk fl oz', 'uk cup', 'uk tbsp', 'uk tsp',
-    'case', 'cases', 'box', 'boxes', 'bottle', 'bottles', 'can', 'cans', 'pack', 'packs', 'carton', 'cartons'
-  ];
-  const weightUnits = ['g', 'kg', 'oz', 'lb'];
-  
-  // Handle density conversion (volume -> weight when density is provided)
-  if (density && volumeUnits.includes(volumeKey)) {
-    const factor = CONVERSION_FACTORS[volumeKey];
-    if (!factor) {
-      return { amount: 0, base: 'g' };
-    }
-    const mlAmount = amount * factor;
+  // Handle density conversion (g/ml)
+  if (density && (normalizedUnit === 'ml' || normalizedUnit === 'l' || normalizedUnit === 'fl oz' || normalizedUnit === 'cups' || normalizedUnit === 'tbsp' || normalizedUnit === 'tsp')) {
+    const mlAmount = amount * CONVERSION_FACTORS[normalizedUnit];
     return { amount: mlAmount * density, base: 'g' };
   }
   
   // Weight units -> grams
-  if (weightUnits.includes(normalizedUnit)) {
-    const factor = CONVERSION_FACTORS[normalizedUnit];
-    if (!factor) {
-      return { amount: 0, base: 'g' };
-    }
-    return { amount: amount * factor, base: 'g' };
+  if (['g', 'kg', 'oz', 'lb'].includes(normalizedUnit)) {
+    return { amount: amount * CONVERSION_FACTORS[normalizedUnit], base: 'g' };
   }
   
   // Volume units -> ml
-  if (volumeUnits.includes(volumeKey)) {
-    const factor = CONVERSION_FACTORS[volumeKey];
-    if (!factor) {
-      return { amount: 0, base: 'ml' };
-    }
-    return { amount: amount * factor, base: 'ml' as BaseUnit };
+  if (['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedUnit)) {
+    return { amount: amount * CONVERSION_FACTORS[normalizedUnit], base: 'ml' };
   }
   
   // Count units -> each
@@ -244,41 +58,18 @@ export function toBase(amount: number, unit: Unit | string, density?: number): {
 }
 
 // Convert from base unit
-export function fromBase(amount: number, baseUnit: BaseUnit, targetUnit: Unit | string): number {
-  const unitString = String(targetUnit);
-  const normalizedTarget = normalizeUnit(unitString);
+export function fromBase(amount: number, baseUnit: BaseUnit, targetUnit: Unit): number {
+  const normalizedTarget = normalizeUnit(targetUnit);
   
-  // Map normalized units to conversion factor keys
-  const volumeUnitMap: Record<string, string> = {
-    'fl oz': 'fl oz',
-    'floz': 'fl oz',
-    'fl-oz': 'fl oz',
-    'uk fl oz': 'uk fl oz',
-    'uk floz': 'uk fl oz',
-  };
-  const volumeKey = volumeUnitMap[normalizedTarget] || normalizedTarget;
-  
-  const volumeUnits = [
-    'ml', 'l', 'litre', 'litres', 'liter', 'liters',
-    'fl oz', 'cups', 'cup', 'tbsp', 'tablespoon', 'tablespoons', 'tsp', 'teaspoon', 'teaspoons',
-    'uk fl oz', 'uk cup', 'uk tbsp', 'uk tsp',
-    'case', 'cases', 'box', 'boxes', 'bottle', 'bottles', 'can', 'cans', 'pack', 'packs', 'carton', 'cartons'
-  ];
-  const weightUnits = ['g', 'kg', 'oz', 'lb'];
-  
-  if (baseUnit === 'g' && weightUnits.includes(normalizedTarget)) {
+  if (baseUnit === 'g' && ['g', 'kg', 'oz', 'lb'].includes(normalizedTarget)) {
     return amount / CONVERSION_FACTORS[normalizedTarget];
   }
   
-  if (baseUnit === 'ml' && volumeUnits.includes(volumeKey)) {
-    const factor = CONVERSION_FACTORS[volumeKey];
-    if (!factor) {
-      return amount;
-    }
-    return amount / factor;
+  if (baseUnit === 'ml' && ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedTarget)) {
+    return amount / CONVERSION_FACTORS[normalizedTarget];
   }
   
-  if (baseUnit === 'each' && ['each', 'slices', 'piece', 'pieces'].includes(normalizedTarget)) {
+  if (baseUnit === 'each' && ['each', 'slices'].includes(normalizedTarget)) {
     return amount;
   }
   
@@ -286,27 +77,13 @@ export function fromBase(amount: number, baseUnit: BaseUnit, targetUnit: Unit | 
 }
 
 // Check if units are compatible
-export function areUnitsCompatible(unit1: Unit | string, unit2: Unit | string): boolean {
+export function areUnitsCompatible(unit1: Unit, unit2: Unit): boolean {
   const weightUnits = ['g', 'kg', 'oz', 'lb'];
-  const volumeUnits = [
-    'ml', 'l', 'litre', 'litres', 'liter', 'liters',
-    'fl oz', 'cups', 'tbsp', 'tsp',
-    'uk fl oz', 'uk cup', 'uk tbsp', 'uk tsp',
-    'case', 'cases', 'box', 'boxes', 'bottle', 'bottles', 'can', 'cans', 'pack', 'packs', 'carton', 'cartons'
-  ];
-  const countUnits = ['each', 'slices', 'piece', 'pieces'];
+  const volumeUnits = ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'];
+  const countUnits = ['each', 'slices'];
   
-  const normalized1 = normalizeUnit(String(unit1));
-  const normalized2 = normalizeUnit(String(unit2));
-  
-  // Check if either is a compound unit that can be converted
-  const isCompound1 = parseCompoundUnit(String(unit1)) !== null;
-  const isCompound2 = parseCompoundUnit(String(unit2)) !== null;
-  
-  // If either is compound, assume compatible (they'll be converted to base units)
-  if (isCompound1 || isCompound2) {
-    return true;
-  }
+  const normalized1 = normalizeUnit(unit1);
+  const normalized2 = normalizeUnit(unit2);
   
   return (
     (weightUnits.includes(normalized1) && weightUnits.includes(normalized2)) ||
@@ -318,66 +95,35 @@ export function areUnitsCompatible(unit1: Unit | string, unit2: Unit | string): 
 // Compute ingredient usage cost with density
 export function computeIngredientUsageCostWithDensity(
   quantity: number,
-  unit: Unit | string,
+  unit: Unit,
   packPrice: number,
   packQuantity: number,
-  packUnit: Unit | string,
+  packUnit: Unit,
   density?: number
 ): number {
-  // Safety checks
-  if (!quantity || quantity === 0) {
-    return 0;
-  }
-  
-  if (!packPrice || packPrice === 0) {
-    return 0;
-  }
-  
-  if (!packQuantity || packQuantity === 0) {
-    return 0;
-  }
-  
-  // Normalize units for consistent checking
-  const normalizedPackUnit = normalizeUnit(String(packUnit));
-  const normalizedUnit = normalizeUnit(String(unit));
-  
-  // Define comprehensive unit categories (includes US, UK, metric, compound)
-  const volumeUnits = [
-    'ml', 'l', 'litre', 'litres', 'liter', 'liters',
-    'fl oz', 'floz', 'fl-oz', 'cups', 'cup', 'tbsp', 'tablespoon', 'tablespoons', 'tsp', 'teaspoon', 'teaspoons',
-    'uk fl oz', 'uk floz', 'uk cup', 'uk tbsp', 'uk tsp',
-    'case', 'cases', 'box', 'boxes', 'bottle', 'bottles', 'can', 'cans', 'pack', 'packs', 'carton', 'cartons'
-  ];
-  const weightUnits = ['g', 'kg', 'oz', 'lb'];
-  
-  // Check if units are compound units (parse them)
-  const packUnitString = String(packUnit);
-  const unitString = String(unit);
-  const parsedPackUnit = parseCompoundUnit(packUnitString);
-  const parsedUnit = parseCompoundUnit(unitString);
+  // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
+  const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
+  const normalizedPackUnit = normalizeUnit(packUnit);
+  const normalizedUnit = normalizeUnit(unit);
   
   // Smart conversion: if pack is volume and recipe unit is 'oz', assume it's fluid ounces
-  let adjustedUnit: Unit | string = unit;
-  let adjustedNormalizedUnit = normalizedUnit;
-  if (normalizedUnit === 'oz' && (volumeUnits.includes(normalizedPackUnit) || parsedPackUnit !== null)) {
+  let adjustedUnit: Unit = unit;
+  if (normalizedUnit === 'oz' && volumeUnits.includes(normalizedPackUnit)) {
     adjustedUnit = 'fl oz';
-    adjustedNormalizedUnit = 'fl oz';
   }
   
-  // Determine if units are volume or weight (check both normalized and parsed)
-  const isRecipeVolume = volumeUnits.includes(adjustedNormalizedUnit) || (parsedUnit !== null && ['ml', 'l', 'litre', 'litres', 'liter', 'liters'].includes(parsedUnit.baseUnit));
-  const isPackVolume = volumeUnits.includes(normalizedPackUnit) || (parsedPackUnit !== null && ['ml', 'l', 'litre', 'litres', 'liter', 'liters'].includes(parsedPackUnit.baseUnit));
-  const isRecipeWeight = weightUnits.includes(adjustedNormalizedUnit) || (parsedUnit !== null && ['g', 'kg', 'oz', 'lb'].includes(parsedUnit.baseUnit));
-  const isPackWeight = weightUnits.includes(normalizedPackUnit) || (parsedPackUnit !== null && ['g', 'kg', 'oz', 'lb'].includes(parsedPackUnit.baseUnit));
+  // If pack unit is volume and recipe unit is weight (or vice versa), try to use density
+  const weightUnits = ['g', 'kg', 'oz', 'lb'];
+  const isPackVolume = volumeUnits.includes(normalizedPackUnit);
+  const isRecipeWeight = weightUnits.includes(normalizeUnit(adjustedUnit));
+  const isPackWeight = weightUnits.includes(normalizedPackUnit);
+  const isRecipeVolume = volumeUnits.includes(normalizeUnit(adjustedUnit));
   
-  // Only use density if converting between weight and volume
-  // NEVER use density for volume-to-volume or weight-to-weight conversions
-  const shouldUseDensity = density && ((isRecipeVolume && isPackWeight) || (isRecipeWeight && isPackVolume));
+  // Use density if available and units are incompatible
+  const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
   
-  // Convert both to base units
-  // Use density ONLY when converting between incompatible types (weight ↔ volume)
-  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, shouldUseDensity ? density : undefined);
-  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit, undefined); // Never use density for pack unit conversion
+  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
+  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
   // Safety checks
   if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {

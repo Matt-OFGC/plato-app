@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { PriceConfirmationModal } from "./PriceConfirmationModal";
 
 interface ProductionItem {
   id: number;
@@ -39,6 +41,8 @@ interface StaleIngredient {
   id: number;
   name: string;
   daysSinceUpdate: number;
+  packPrice: number;
+  currency: string;
 }
 
 interface OperationalDashboardProps {
@@ -61,6 +65,9 @@ export function OperationalDashboard({
   companyName,
 }: OperationalDashboardProps) {
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [selectedIngredient, setSelectedIngredient] = useState<StaleIngredient | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
 
   // Calculate stats
   const todayItems = todayProduction.flatMap(plan => plan.items);
@@ -433,16 +440,23 @@ export function OperationalDashboard({
               <div className="p-3 max-h-48 overflow-y-auto">
                 <div className="space-y-1.5">
                   {staleIngredients.slice(0, 5).map(ingredient => (
-                    <Link
+                    <button
                       key={ingredient.id}
-                      href={`/dashboard/ingredients/${ingredient.id}`}
-                      className="block p-2 bg-red-50 border border-red-200 rounded-lg hover:border-red-300 hover:bg-red-100 transition-all duration-200"
+                      onClick={() => {
+                        setSelectedIngredient(ingredient);
+                        setIsModalOpen(true);
+                      }}
+                      className="w-full text-left block p-2 bg-red-50 border border-red-200 rounded-lg hover:border-red-300 hover:bg-red-100 transition-all duration-200"
                     >
                       <p className="text-xs font-semibold text-gray-900">{ingredient.name}</p>
                       <p className="text-xs text-red-600 mt-0.5">
-                        {ingredient.daysSinceUpdate} days ago
+                        {ingredient.daysSinceUpdate === Infinity 
+                          ? 'Never updated' 
+                          : ingredient.daysSinceUpdate === 0 
+                          ? 'Today' 
+                          : `${ingredient.daysSinceUpdate} days ago`}
                       </p>
-                    </Link>
+                    </button>
                   ))}
                 </div>
                 {staleIngredients.length > 5 && (
@@ -576,6 +590,21 @@ export function OperationalDashboard({
           </div>
         </div>
       </div>
+
+      {/* Price Confirmation Modal */}
+      {selectedIngredient && (
+        <PriceConfirmationModal
+          ingredient={selectedIngredient}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedIngredient(null);
+          }}
+          onSuccess={() => {
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }

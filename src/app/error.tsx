@@ -13,8 +13,8 @@ export default function Error({
   const router = useRouter()
 
   useEffect(() => {
-    // Log error to console in development
-    console.error('Application error:', error)
+    // Log error to console
+    console.error('[ERROR] Application error:', error);
   }, [error])
 
   return (

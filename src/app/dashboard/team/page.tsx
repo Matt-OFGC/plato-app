@@ -32,9 +32,6 @@ export default async function TeamPage() {
           <p className="text-gray-600 mt-2">Manage your team members, permissions, and billing</p>
         </div>
 
-        {/* Device Mode Indicator */}
-        <DeviceModeIndicator />
-
         {/* Seat Management */}
         <SeatManager 
           companyId={companyId!} 

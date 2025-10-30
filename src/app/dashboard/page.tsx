@@ -144,6 +144,8 @@ export default async function DashboardPage() {
           id: true,
           name: true,
           lastPriceUpdate: true,
+          packPrice: true,
+          currency: true,
         },
         orderBy: { lastPriceUpdate: "asc" },
       }),
@@ -248,12 +250,23 @@ export default async function DashboardPage() {
 
   // Check for stale prices
   const staleIngredients = ingredients
-    .map(ing => ({
-      ...ing,
-      priceStatus: checkPriceStatus(ing.lastPriceUpdate),
-      daysSinceUpdate: Math.floor((new Date().getTime() - ing.lastPriceUpdate.getTime()) / (1000 * 60 * 60 * 24)),
-    }))
-    .filter(ing => ing.priceStatus !== 'fresh');
+    .map(ing => {
+      const priceStatusResult = checkPriceStatus(ing.lastPriceUpdate);
+      return {
+        ...ing,
+        priceStatus: priceStatusResult.status,
+        daysSinceUpdate: priceStatusResult.daysSinceUpdate,
+      };
+    })
+    .filter(ing => {
+      // Only show ingredients that are actually stale or warning (not fresh)
+      // Exclude items with 0 or negative days (just updated today or future dates)
+      // Exclude Infinity (null dates are handled separately)
+      return ing.priceStatus !== 'fresh' && 
+             ing.daysSinceUpdate > 0 && 
+             ing.daysSinceUpdate !== Infinity &&
+             ing.daysSinceUpdate < 10000; // Sanity check for reasonable dates
+    });
 
   return (
     <DashboardWithOnboarding

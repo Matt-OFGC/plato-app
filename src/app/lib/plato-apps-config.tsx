@@ -65,12 +65,16 @@ export function getAppById(id: string): PlatoApp | undefined {
 }
 
 export function getAppByRoute(route: string): PlatoApp | undefined {
-  return PLATO_APPS.find(app => {
-    // Handle exact matches and sub-routes
+  // Sort apps by route length (longest first) to match most specific routes first
+  const sortedApps = [...PLATO_APPS].sort((a, b) => b.route.length - a.route.length);
+  
+  return sortedApps.find(app => {
+    // Handle exact matches
     if (route === app.route) return true;
+    // Handle sub-routes (e.g., /dashboard/production/view matches production app)
     if (route.startsWith(app.route + '/')) return true;
     
-    // Special case for dashboard root
+    // Special case for dashboard root - only match if it's exactly /dashboard
     if (app.id === 'recipes' && route === '/dashboard') return true;
     
     return false;

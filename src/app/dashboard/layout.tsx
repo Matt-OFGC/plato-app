@@ -16,12 +16,12 @@ export default function DashboardLayout({
   return (
     <AppContextProvider>
       <KeyboardShortcutsProvider>
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-white dark:bg-white">
         {/* Sidebar Navigation */}
         <Sidebar />
         
     {/* Main Content Area */}
-    <main className="flex-1 pl-4 md:pl-16 lg:pl-20 xl:pl-24 safe-area-inset-left">
+    <main className="flex-1 pl-4 md:pl-16 lg:pl-20 xl:pl-24 safe-area-inset-left bg-white dark:bg-white">
       <div className="container-responsive">
         <div className="py-4 sm:py-6 md:py-8">
           {children}

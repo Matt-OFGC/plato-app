@@ -8,22 +8,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
 
-const unitEnum = z.enum([
-  // Weight
-  "g", "kg", "mg", "lb", "oz",
-  // Volume - Metric
-  "ml", "l",
-  // Volume - US
-  "floz", "fl oz", "cup", "tbsp", "tsp", "pint", "quart", "gallon",
-  // Volume - UK
-  "uk floz", "uk fl oz", "uk cup", "uk tbsp", "uk tsp",
-  // Container/Bulk
-  "case", "cases", "box", "boxes", "bottle", "bottles", "can", "cans", "pack", "packs", "carton", "cartons",
-  // Count
-  "each", "slices", "piece", "pieces",
-  // Other
-  "pinch", "dash", "large", "medium", "small"
-]);
+const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
 
 const ingredientSchema = z.object({
@@ -122,7 +107,6 @@ export async function createIngredient(formData: FormData) {
         }
         
         revalidatePath("/dashboard/ingredients");
-        revalidatePath("/dashboard/recipes");
         return { success: true };
   } catch (error) {
     console.error("Error in createIngredient:", error);
@@ -211,11 +195,6 @@ export async function deleteIngredient(id: number) {
       companyId: true, 
       name: true,
       recipeItems: {
-        where: {
-          recipe: {
-            companyId: companyId  // CRITICAL: Only check recipes in THIS company
-          }
-        },
         select: {
           recipe: {
             select: {
@@ -277,6 +256,73 @@ export async function getSuppliers() {
     ...supplier,
     minimumOrder: supplier.minimumOrder ? Number(supplier.minimumOrder) : null,
   }));
+}
+
+export async function confirmPriceUpdate(ingredientId: number) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+    
+    // Verify the ingredient belongs to the user's company
+    const existingIngredient = await prisma.ingredient.findUnique({
+      where: { id: ingredientId },
+      select: { companyId: true },
+    });
+    
+    if (!existingIngredient || existingIngredient.companyId !== companyId) {
+      throw new Error("Unauthorized: Cannot update ingredient from another company");
+    }
+    
+    // Update lastPriceUpdate to current date (price is still the same)
+    await prisma.ingredient.update({
+      where: { id: ingredientId },
+      data: {
+        lastPriceUpdate: new Date(),
+      },
+    });
+    
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/ingredients");
+    return { success: true };
+  } catch (error) {
+    console.error("Error confirming price update:", error);
+    throw new Error("Failed to confirm price update");
+  }
+}
+
+export async function updateIngredientPrice(ingredientId: number, newPrice: number) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+    
+    // Verify the ingredient belongs to the user's company
+    const existingIngredient = await prisma.ingredient.findUnique({
+      where: { id: ingredientId },
+      select: { companyId: true },
+    });
+    
+    if (!existingIngredient || existingIngredient.companyId !== companyId) {
+      throw new Error("Unauthorized: Cannot update ingredient from another company");
+    }
+    
+    if (newPrice < 0) {
+      throw new Error("Price cannot be negative");
+    }
+    
+    // Update price and lastPriceUpdate
+    await prisma.ingredient.update({
+      where: { id: ingredientId },
+      data: {
+        packPrice: newPrice,
+        lastPriceUpdate: new Date(),
+      },
+    });
+    
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/ingredients");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating ingredient price:", error);
+    throw new Error("Failed to update ingredient price");
+  }
 }
 
 

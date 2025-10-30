@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function saveSellPrice(recipeId: number, sellPrice: number) {
   try {
@@ -352,34 +351,32 @@ export async function saveRecipeChanges(data: {
   }
 }
 
-export async function deleteRecipe(recipeId: number) {
+export async function deleteRecipe(id: number) {
   try {
     const { companyId, user } = await getCurrentUserAndCompany();
     
-    // Verify recipe belongs to user's company
     const existingRecipe = await prisma.recipe.findUnique({
-      where: { id: recipeId },
+      where: { id },
       select: { companyId: true, name: true },
     });
     
+    // Security check: Verify recipe belongs to user's company
     if (!existingRecipe || existingRecipe.companyId !== companyId) {
       throw new Error("Unauthorized: Cannot delete recipe from another company");
     }
     
-    await prisma.recipe.delete({ where: { id: recipeId } });
+    await prisma.recipe.delete({ where: { id } });
     
-    // Audit deletion if audit log exists
+    // Audit deletion
     if (user && companyId) {
-      try {
-        const { auditLog } = await import("@/lib/audit-log");
-        await auditLog.recipeDeleted(user.id, recipeId, existingRecipe.name, companyId);
-      } catch {
-        // Audit log might not be available, continue anyway
-      }
+      const { auditLog } = await import("@/lib/audit-log");
+      await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
     }
     
-    revalidatePath('/dashboard/recipes');
-    redirect('/dashboard/recipes');
+    revalidatePath("/dashboard/recipes");
+    revalidatePath(`/dashboard/recipes/${id}`);
+    
+    return { success: true };
   } catch (error) {
     console.error("Error deleting recipe:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to delete recipe";

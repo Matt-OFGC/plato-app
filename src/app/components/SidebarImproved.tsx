@@ -10,7 +10,6 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -18,6 +17,19 @@ export function Sidebar() {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   
   const { activeApp, switchToApp } = useAppContext();
+  
+  // Debug: Log active app and filtered items
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const filtered = getFilteredNavigationItems(activeApp?.id || null);
+      console.log('🔍 Sidebar Debug:', {
+        pathname,
+        activeApp: activeApp?.id || 'null',
+        filteredItems: filtered.map(i => ({ value: i.value, appContext: i.appContext })),
+        settingsInFiltered: filtered.some(i => i.value === 'account')
+      });
+    }
+  }, [activeApp, pathname]);
 
   // Detect touch device and handle mobile behavior
   useEffect(() => {
@@ -57,13 +69,13 @@ export function Sidebar() {
   // Apply body class to adjust main padding so pages don't hide behind sidebar
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // On touch devices, don't use hover state - only use collapsed/pinned
+    // On desktop, sidebar is always compact (w-16). On touch devices, use collapsed/pinned state
     const isActuallyCollapsed = isTouchDevice 
       ? (collapsed && !pinned) 
-      : (collapsed && !pinned && !isHovered);
+      : true; // Always compact on desktop
     document.body.classList.toggle('sidebar-collapsed', isActuallyCollapsed);
     document.body.classList.toggle('sidebar-expanded', !isActuallyCollapsed);
-  }, [collapsed, pinned, isHovered, isTouchDevice]);
+  }, [collapsed, pinned, isTouchDevice]);
 
   // Get sidebar color classes based on active app
   const getSidebarColors = () => {
@@ -130,16 +142,15 @@ export function Sidebar() {
           className={`${
             isTouchDevice 
               ? (collapsed && !pinned ? 'w-16' : 'w-64')
-              : (collapsed && !pinned && !isHovered ? 'w-16' : 'w-64')
+              : 'w-16' // Always compact on desktop
           } transition-all duration-300 ease-out h-full flex flex-col py-3 ${colors.bg} backdrop-blur-md border-r ${colors.border} shadow-sm`}
-          onMouseEnter={() => !isTouchDevice && setIsHovered(true)}
-          onMouseLeave={() => !isTouchDevice && setIsHovered(false)}
         >
           {/* Header controls */}
-          <div className="flex items-center justify-between px-2">
+          <div className="flex flex-col gap-2 px-2 items-start">
+            {/* Collapse button - only on mobile/touch devices */}
             <button 
               onClick={() => setCollapsed(!collapsed)} 
-              className={`w-10 h-10 rounded-lg border ${colors.border} bg-white ${colors.text} ${colors.hover} active:bg-gray-100 transition-all duration-200 touch-manipulation`}
+              className={`${isTouchDevice ? 'block' : 'hidden'} w-10 h-10 rounded-lg border ${colors.border} bg-white ${colors.text} ${colors.hover} active:bg-gray-100 transition-all duration-200 touch-manipulation`}
               title={collapsed ? 'Expand' : 'Collapse'}
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
@@ -152,28 +163,83 @@ export function Sidebar() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
               </svg>
             </button>
+            
+            {/* Dashboard icon */}
+            <div className="relative group w-10">
+              <a
+                href="/dashboard"
+                className={`w-10 h-10 rounded-lg border ${colors.border} bg-white ${pathname === '/dashboard' ? colors.active : `${colors.text} ${colors.hover}`} active:bg-gray-100 transition-all duration-200 touch-manipulation flex items-center justify-center`}
+                title="Dashboard"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </div>
+              </a>
+              
+              {/* Desktop hover tooltip */}
+              {!isTouchDevice && (
+                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                  <div className={`px-3 py-1.5 rounded-lg border ${colors.border} bg-white ${colors.text} shadow-lg whitespace-nowrap text-sm font-medium`}>
+                    Dashboard
+                  </div>
+                  {/* Tooltip arrow pointing left */}
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px]" style={{ borderRightColor: 'white' }}></div>
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-[1px] w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px]" style={{ borderRightColor: 'rgb(209 213 219)' }}></div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Main Navigation */}
           <nav className="mt-2 space-y-1 px-2 flex-1">
-            {getFilteredNavigationItems(activeApp?.id || null).map((item) => {
+            {getFilteredNavigationItems(activeApp?.id || null)
+              .filter(item => {
+                // Exclude dashboard - it's in the header
+                if (item.value === 'dashboard') return false;
+                return true;
+              })
+              .sort((a, b) => {
+                // Sort to ensure Settings (account) appears at the bottom
+                if (a.value === 'account') return 1; // Move Settings to end
+                if (b.value === 'account') return -1; // Keep other items before Settings
+                return 0; // Keep original order for other items
+              })
+              .map((item) => {
               const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
-              // On touch devices, show labels when not collapsed or when pinned
-              // On non-touch devices, also show on hover
-              const shouldShowLabel = isTouchDevice 
-                ? !(collapsed && !pinned)
-                : (!(collapsed && !pinned) || isHovered);
               return (
-                <a key={item.value} href={item.href} className={`group flex items-center gap-3 rounded-md px-2 ${active ? colors.active : `${colors.hover} ${colors.text}`} transition-colors h-10`}>
-                  <div className={`w-8 h-8 rounded-md flex items-center justify-center ${active ? colors.text : colors.text}`}>{item.icon}</div>
-                  <span className={`${shouldShowLabel ? 'opacity-100 w-auto' : 'opacity-0 w-0'} transition-all duration-300 text-sm font-medium whitespace-nowrap`}>{item.label}</span>
-                </a>
+                <div key={item.value} className="relative group">
+                  <a 
+                    href={item.href} 
+                    className={`w-10 h-10 rounded-lg border ${colors.border} bg-white ${active ? colors.active : `${colors.text} ${colors.hover}`} active:bg-gray-100 transition-all duration-200 touch-manipulation flex items-center justify-center`}
+                    title={item.label}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <div className="w-5 h-5 flex items-center justify-center">
+                      {item.icon}
+                    </div>
+                  </a>
+                  
+                  {/* Desktop hover tooltip - styled like icon boxes */}
+                  {!isTouchDevice && (
+                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                      <div className={`px-3 py-1.5 rounded-lg border ${colors.border} bg-white ${colors.text} shadow-lg whitespace-nowrap text-sm font-medium`}>
+                        {item.label}
+                      </div>
+                      {/* Tooltip arrow pointing left */}
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px]" style={{ borderRightColor: 'white' }}></div>
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-[1px] w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px]" style={{ borderRightColor: 'rgb(209 213 219)' }}></div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
 
           {/* Plato OS App Switcher - Bottom of sidebar */}
-          <div className="px-2 pb-2">
+          <div className="px-2 pb-2 space-y-1">
             <AppSwitcher 
               activeApp={activeApp} 
               onAppChange={(app) => {
@@ -181,10 +247,11 @@ export function Sidebar() {
                 // Navigate to the app's main route using Next.js router
                 router.push(app.route);
               }}
-              collapsed={isTouchDevice ? (collapsed && !pinned) : (collapsed && !pinned && !isHovered)}
-              isHovered={isHovered}
+              collapsed={isTouchDevice ? (collapsed && !pinned) : true}
+              isHovered={false}
               isTouchDevice={isTouchDevice}
             />
+            
           </div>
         </div>
       </aside>
@@ -218,12 +285,24 @@ export function Sidebar() {
           {/* Sliding rounded drawer inspired by the provided design */}
           <div className={`absolute left-0 top-0 bottom-0 w-88 max-w-80 p-4 transform transition-transform duration-500 ${isOpen ? 'translate-x-0' : '-translate-x-6'}`}
                style={{ transitionTimingFunction: 'cubic-bezier(0.2, 0.8, 0.2, 1.05)' }}>
-            <div className="relative h-full rounded-r-3xl shadow-2xl overflow-hidden bg-gradient-to-b from-emerald-600 via-emerald-500 to-emerald-700 text-white/95 backdrop-blur-md">
+            <div className="relative h-full rounded-r-3xl shadow-2xl overflow-hidden bg-gradient-to-b from-emerald-600 via-emerald-500 to-emerald-700 text-white/95 backdrop-blur-md flex flex-col">
               <div className="pointer-events-none absolute inset-y-0 right-2 w-12 rounded-l-3xl bg-white/10 blur-2xl opacity-60" />
               {/* Drawer header */}
               <div className="flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] py-4">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 1118.88 6.196M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <div className="flex items-center gap-2">
+                  {/* Dashboard icon */}
+                  <a
+                    href="/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                      pathname === '/dashboard' ? 'bg-white/30' : 'bg-white/20 hover:bg-white/25'
+                    }`}
+                    title="Dashboard"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                  </a>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
@@ -231,8 +310,20 @@ export function Sidebar() {
               </div>
 
               {/* Menu list */}
-              <nav className="px-2 py-2">
-                {ALL_NAVIGATION_ITEMS.map((item, index) => (
+              <nav className="px-2 py-2 flex-1 overflow-y-auto">
+                {getFilteredNavigationItems(activeApp?.id || null)
+                  .filter(item => {
+                    // Exclude dashboard - it's in the header
+                    if (item.value === 'dashboard') return false;
+                    return true;
+                  })
+                  .sort((a, b) => {
+                    // Sort to ensure Settings (account) appears at the bottom
+                    if (a.value === 'account') return 1; // Move Settings to end
+                    if (b.value === 'account') return -1; // Keep other items before Settings
+                    return 0; // Keep original order for other items
+                  })
+                  .map((item, index) => (
                   <a
                     key={item.value}
                     href={item.href}

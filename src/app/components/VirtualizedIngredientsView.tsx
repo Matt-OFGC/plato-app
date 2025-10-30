@@ -148,16 +148,19 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                 </div>
 
                 {/* Price Status */}
-                {ing.lastPriceUpdate && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
-                      Last updated: {formatLastUpdate(ing.lastPriceUpdate)}
-                    </span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getPriceStatusColorClass(checkPriceStatus(ing.lastPriceUpdate))}`}>
-                      {checkPriceStatus(ing.lastPriceUpdate)}
-                    </span>
-                  </div>
-                )}
+                {ing.lastPriceUpdate && (() => {
+                  const priceStatus = checkPriceStatus(ing.lastPriceUpdate);
+                  return (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        Last updated: {formatLastUpdate(ing.lastPriceUpdate)}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${getPriceStatusColorClass(priceStatus.status)}`}>
+                        {priceStatus.status}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
@@ -230,11 +233,14 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                 <div className="text-emerald-600 font-medium">
                   {formatCurrency(ing.packPrice, ing.currency)}
                 </div>
-                {ing.lastPriceUpdate && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${getPriceStatusColorClass(checkPriceStatus(ing.lastPriceUpdate))}`}>
-                    {checkPriceStatus(ing.lastPriceUpdate)}
-                  </span>
-                )}
+                {ing.lastPriceUpdate && (() => {
+                  const priceStatus = checkPriceStatus(ing.lastPriceUpdate);
+                  return (
+                    <span className={`text-xs px-2 py-1 rounded-full ${getPriceStatusColorClass(priceStatus.status)}`}>
+                      {priceStatus.status}
+                    </span>
+                  );
+                })()}
               </div>
               
               {/* Actions */}

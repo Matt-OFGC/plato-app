@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeMemberships = searchParams.get("includeMemberships") === "true";
 
+    // Fetch all users with proper error handling
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -49,6 +50,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`[Admin API] Fetched ${users.length} users from database`);
+
     // Add account type logic based on email patterns
     const usersWithAccountType = users.map(user => ({
       ...user,
@@ -57,9 +60,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ users: usersWithAccountType });
   } catch (error) {
-    console.error("Admin users error:", error);
+    console.error("❌ Admin users API error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to fetch users" },
+      { 
+        error: "Failed to fetch users",
+        details: errorMessage,
+        users: [] // Return empty array on error
+      },
       { status: 500 }
     );
   }
