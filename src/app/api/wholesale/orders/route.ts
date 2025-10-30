@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { canAccessWholesale, createFeatureGateError } from "@/lib/subscription";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,11 +109,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error("Create wholesale order error:", error);
-    return NextResponse.json(
-      { error: "Failed to create order" },
-      { status: 500 }
-    );
+    const { handleApiError } = await import("@/lib/api-error-handler");
+    return handleApiError(error, 'Wholesale/Orders/Create');
   }
 }
 
@@ -171,13 +169,13 @@ export async function GET(request: NextRequest) {
       ],
     });
 
-    return NextResponse.json(orders);
-  } catch (error) {
-    console.error("Get wholesale orders error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch orders" },
-      { status: 500 }
+    return createOptimizedResponse(
+      orders,
+      { cacheType: 'dynamic' } // Orders change frequently
     );
+  } catch (error) {
+    const { handleApiError } = await import("@/lib/api-error-handler");
+    return handleApiError(error, 'Wholesale/Orders/Get');
   }
 }
 

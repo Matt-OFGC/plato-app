@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { resetPasswordSchema } from "@/lib/validation/auth";
 import { mapAuthError, createAuthErrorResponse, logAuthError, generateErrorId } from "@/lib/errors/auth-errors";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const errorId = generateErrorId();
@@ -45,13 +46,18 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email } });
     
     // Always return success to prevent email enumeration
-    // In a real implementation, you would send an email here
-    // For now, we'll just log it and return success
+    // NOTE: Email sending is handled by the email service module
+    // The actual reset token generation and email sending should be implemented
+    // in lib/email.ts with sendPasswordResetEmail function
     
     if (user) {
-      console.log(`Password reset requested for: ${email}`);
-      // TODO: Implement actual email sending here
-      // await sendPasswordResetEmail(email, resetToken);
+      logger.info(`Password reset requested for: ${email}`);
+      // TODO: Implement password reset token generation and email sending
+      // This requires:
+      // 1. Generate secure reset token (store in database with expiry)
+      // 2. Call sendPasswordResetEmail(email, resetToken, resetUrl)
+      // 3. The reset URL should point to /reset-password?token=...
+      // See lib/email.ts for email service integration
     }
     
     return NextResponse.json({

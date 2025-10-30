@@ -85,10 +85,8 @@ export default async function RecipesPage({ searchParams }: Props) {
       }
     });
   } catch (error) {
-    console.error('Database error in recipes page:', error);
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Failed to fetch recipes. Check database connection.');
-    }
+    const { logger } = await import("@/lib/logger");
+    logger.error('Database error in recipes page:', error);
     // Use empty array to prevent page crash
     recipesRaw = [];
   }

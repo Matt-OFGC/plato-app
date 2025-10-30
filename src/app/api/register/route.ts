@@ -7,6 +7,7 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit-log";
 import { registerSchema } from "@/lib/validation/auth";
 import { mapAuthError, createAuthErrorResponse, logAuthError, generateErrorId } from "@/lib/errors/auth-errors";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const errorId = generateErrorId();
@@ -101,6 +102,8 @@ export async function POST(req: NextRequest) {
 
     await prisma.membership.create({ data: { userId: user.id, companyId: co.id, role: "OWNER" } });
     
+    logger.info(`User registered successfully: ${email} (ID: ${user.id}), Company: ${company} (ID: ${co.id})`);
+    
     // Audit successful registration
     await auditLog.register(user.id, co.id, req);
 
@@ -111,11 +114,9 @@ export async function POST(req: NextRequest) {
         name: name || "there",
         companyName: company,
       });
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ Welcome email sent to ${email}`);
-      }
+      logger.debug(`Welcome email sent to ${email}`);
     } catch (emailError) {
-      console.error("❌ Failed to send welcome email:", emailError);
+      logger.error("Failed to send welcome email:", emailError);
       // Don't fail registration if email fails
     }
     

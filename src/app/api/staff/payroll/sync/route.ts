@@ -140,11 +140,8 @@ export async function POST(request: NextRequest) {
       throw error;
     }
   } catch (error) {
-    console.error("Sync payroll error:", error);
-    return NextResponse.json(
-      { error: "Failed to sync payroll" },
-      { status: 500 }
-    );
+    const { handleApiError } = await import("@/lib/api-error-handler");
+    return handleApiError(error, 'Staff/Payroll/Sync');
   }
 }
 

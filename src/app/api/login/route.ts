@@ -4,6 +4,8 @@ import bcrypt from "bcrypt";
 import { createSession } from "@/lib/auth-simple";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-error-handler";
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
       isAdmin: user.isAdmin,
     }, rememberMe);
 
-    console.log('Session created for user:', user.id, user.email);
+    logger.info('Session created for user:', user.id, user.email);
 
     // Audit successful login
     await auditLog.loginSuccess(user.id, request);
@@ -101,11 +103,7 @@ export async function POST(request: NextRequest) {
       company: membership?.company,
     });
   } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Auth/Login');
   }
 }
 

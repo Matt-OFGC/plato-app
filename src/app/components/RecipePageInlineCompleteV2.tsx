@@ -152,7 +152,7 @@ interface RecipePageInlineCompleteTestProps {
   onSave: (data: FormData) => Promise<void>;
 }
 
-export function RecipePageInlineCompleteV2({
+function RecipePageInlineCompleteV2Component({
   recipe,
   costBreakdown,
   ingredients,
@@ -1893,14 +1893,16 @@ function RecipeCarousel({
             <button
               key={section.id}
               onClick={() => scrollToStep(index)}
-              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              aria-label={`Go to step ${index + 1}: ${section.title}`}
+              aria-current={currentStep === index ? 'step' : undefined}
+              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
                 currentStep === index
                   ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center" aria-hidden="true">
                   {index + 1}
                 </span>
                 <span className="max-w-[120px] sm:max-w-[150px] truncate">{section.title}</span>
@@ -1917,9 +1919,10 @@ function RecipeCarousel({
       {!isLocked && (
         <button
           onClick={addSection}
-          className="absolute top-16 right-4 z-10 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+          aria-label="Add new recipe section"
+          className="absolute top-16 right-4 z-10 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Section
@@ -2523,3 +2526,16 @@ function SimpleRecipeCarousel({
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const RecipePageInlineCompleteV2 = memo(RecipePageInlineCompleteV2Component, (prevProps, nextProps) => {
+  // Only re-render if props actually change
+  return (
+    prevProps.recipe.id === nextProps.recipe.id &&
+    prevProps.recipe.name === nextProps.recipe.name &&
+    prevProps.costBreakdown.totalCost === nextProps.costBreakdown.totalCost &&
+    prevProps.ingredients.length === nextProps.ingredients.length &&
+    prevProps.categories.length === nextProps.categories.length &&
+    prevProps.wholesaleProduct?.id === nextProps.wholesaleProduct?.id
+  );
+});

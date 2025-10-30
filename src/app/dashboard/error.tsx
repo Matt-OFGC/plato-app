@@ -10,8 +10,10 @@ export default function DashboardError({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log error to console in development
-    console.error('Dashboard error:', error)
+    // Log error using logger utility
+    import("@/lib/logger").then(({ logger }) => {
+      logger.error('Dashboard error:', error);
+    });
   }, [error])
 
   return (

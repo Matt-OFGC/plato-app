@@ -6,6 +6,8 @@ import {
   getTopPerformingRecipes,
   getRecipesNeedingAttention 
 } from "@/lib/analytics/profitability";
+import { handleApiError } from "@/lib/api-error-handler";
+import { createOptimizedResponse, serializeResponse } from "@/lib/api-optimization";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,30 +51,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Serialize Decimal values to strings for JSON response
-    const serializedData = JSON.parse(
-      JSON.stringify(data, (key, value) => {
-        if (value && typeof value === 'object' && value.isDecimal) {
-          return value.toString();
-        }
-        return value;
-      })
-    );
+    const serializedData = serializeResponse(data);
 
-    return NextResponse.json({
-      reportType,
-      data: serializedData,
-      filters: {
-        startDate: startDate?.toISOString(),
-        endDate: endDate?.toISOString(),
-        categoryId,
-        recipeIds,
+    return createOptimizedResponse(
+      {
+        reportType,
+        data: serializedData,
+        filters: {
+          startDate: startDate?.toISOString(),
+          endDate: endDate?.toISOString(),
+          categoryId,
+          recipeIds,
+        },
       },
-    });
-  } catch (error) {
-    console.error("Profitability analysis error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate profitability analysis" },
-      { status: 500 }
+      { cacheType: 'dynamic' } // Profitability data changes with recipe updates
     );
+  } catch (error) {
+    return handleApiError(error, 'Analytics/Profitability');
   }
 }

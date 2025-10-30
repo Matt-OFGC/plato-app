@@ -51,7 +51,8 @@ export default async function TeamPage() {
       </div>
     );
   } catch (error) {
-    console.error("Team page error:", error);
+    const { logger } = await import("@/lib/logger");
+    logger.error("Team page error:", error);
     return (
       <div className="max-w-7xl mx-auto p-6">
         <div className="text-center">

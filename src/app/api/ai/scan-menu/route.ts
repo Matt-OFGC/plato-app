@@ -125,7 +125,8 @@ Rules:
       }
       parsedData = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
-      console.error("Failed to parse AI response:", extractedText);
+      const { logger } = await import("@/lib/logger");
+      logger.error("Failed to parse AI response:", extractedText);
       throw new Error("Failed to parse AI response");
     }
 
@@ -145,7 +146,8 @@ Rules:
     });
 
   } catch (error) {
-    console.error("Menu scan error:", error);
+    const { logger } = await import("@/lib/logger");
+    logger.error("Menu scan error:", error);
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : "Failed to scan menu",

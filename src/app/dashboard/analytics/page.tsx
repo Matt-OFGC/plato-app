@@ -52,10 +52,8 @@ export default async function AnalyticsPage() {
     categories = categoriesResult;
     recipes = recipesResult;
   } catch (error) {
-    console.error('Database error in analytics page:', error);
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Failed to fetch analytics data. Check database connection.');
-    }
+    const { logger } = await import("@/lib/logger");
+    logger.error('Database error in analytics page:', error);
     // Use empty arrays to prevent page crash
     categories = [];
     recipes = [];

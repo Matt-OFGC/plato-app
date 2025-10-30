@@ -88,11 +88,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(plan);
   } catch (error) {
-    console.error("Create production plan error:", error);
-    return NextResponse.json(
-      { error: "Failed to create production plan" },
-      { status: 500 }
-    );
+    const { handleApiError } = await import("@/lib/api-error-handler");
+    return handleApiError(error, 'Production/Plans/Create');
   }
 }
 

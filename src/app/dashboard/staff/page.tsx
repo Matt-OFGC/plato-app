@@ -61,7 +61,8 @@ export default async function StaffPage() {
       </div>
     );
   } catch (error) {
-    console.error("Staff page error:", error);
+    const { logger } = await import("@/lib/logger");
+    logger.error("Staff page error:", error);
     return (
       <div className="max-w-7xl mx-auto p-6">
         <div className="text-center">

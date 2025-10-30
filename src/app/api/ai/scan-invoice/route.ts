@@ -173,19 +173,20 @@ CRITICAL: Your response must be valid JSON only. No other text.`;
     }
 
     const aiData = await aiResponse.json();
-    console.log("AI response data:", JSON.stringify(aiData, null, 2));
+    const { logger } = await import("@/lib/logger");
+    logger.debug("AI response data:", JSON.stringify(aiData, null, 2));
     
     const extractedText = aiData.choices[0]?.message?.content;
 
     if (!extractedText) {
-      console.error("No content in AI response:", aiData);
+      logger.error("No content in AI response:", aiData);
       throw new Error("No response from AI service. Please check your OpenAI API key and try again.");
     }
 
     // Parse the JSON response
     let parsedData;
     try {
-      console.log("Raw AI response:", extractedText);
+      logger.debug("Raw AI response:", extractedText);
       
       // Clean the response text
       let cleanedText = extractedText.trim();
