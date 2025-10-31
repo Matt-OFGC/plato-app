@@ -450,36 +450,6 @@ export default function IngredientsPanel({
                           }
                           
                           try {
-                            console.log('🧮 Starting cost calculation for:', {
-                              ingredient: ingredient.name,
-                              scaledQuantity,
-                              unit: ingredient.unit,
-                              packPrice: fullIngredient.packPrice,
-                              packQuantity: fullIngredient.packQuantity,
-                              packUnit: fullIngredient.packUnit,
-                              density: fullIngredient.densityGPerMl,
-                            });
-                            
-                            // DIRECT TEST FOR FLUFF - Check if ingredient name matches first
-                            if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
-                              alert(`FLUFF FOUND!\nName: ${ingredient.name}\nScaled Qty: ${scaledQuantity}\nUnit: ${ingredient.unit}\nPack Price: ${fullIngredient.packPrice}\nPack Qty: ${fullIngredient.packQuantity}\nPack Unit: ${fullIngredient.packUnit}`);
-                            }
-                            
-                            // DIRECT TEST FOR FLUFF
-                            if (ingredient.name === 'Fluff' && scaledQuantity === 10 && ingredient.unit === 'kg') {
-                              console.error('🧪 DIRECT FLUFF TEST:', {
-                                scaledQuantity,
-                                unit: ingredient.unit,
-                                packPrice: fullIngredient.packPrice,
-                                packQuantity: fullIngredient.packQuantity,
-                                packUnit: fullIngredient.packUnit,
-                                density: fullIngredient.densityGPerMl,
-                              });
-                              // Manual calculation: 10kg = 10,000g, pack is 2556g at £22.39
-                              const manualCalc = (10000 / 2556) * 22.39;
-                              console.error('🧪 MANUAL CALCULATION RESULT:', manualCalc);
-                            }
-                            
                             const ingredientCost = computeIngredientUsageCostWithDensity(
                               scaledQuantity,
                               ingredient.unit as Unit,
@@ -488,18 +458,6 @@ export default function IngredientsPanel({
                               fullIngredient.packUnit as Unit,
                               fullIngredient.densityGPerMl || undefined
                             );
-                            
-                            // LOG RESULT FOR FLUFF
-                            if (ingredient.name === 'Fluff') {
-                              console.error('🧪 FLUFF FUNCTION RESULT:', ingredientCost);
-                            }
-                            
-                            console.log('🧮 Cost calculation result:', {
-                              ingredient: ingredient.name,
-                              cost: ingredientCost,
-                              scaledQuantity,
-                              unit: ingredient.unit,
-                            });
                             
                             // Always show the cost, even if 0
                             const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;

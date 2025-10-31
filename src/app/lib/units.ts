@@ -113,32 +113,10 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  // LOG EVERYTHING AT THE START - Use console.warn so it definitely shows
-  console.warn('🚀🚀🚀 FUNCTION CALLED 🚀🚀🚀', { quantity, unit, packPrice, packQuantity, packUnit, density });
-  
-  // REMOVED THROW ERROR - Just log instead
-  if (unit && (unit.toLowerCase().includes('kg') || unit === 'kg')) {
-    console.warn('🚀🚀🚀 KG UNIT DETECTED 🚀🚀🚀', { quantity, unit, packPrice, packQuantity, packUnit });
-  }
-  
-  // THROW ERROR TO VERIFY FUNCTION IS CALLED
-  if (quantity === 200 && unit === 'g') {
-    console.error('🚀🚀🚀 BUTTER CALCULATION - computeIngredientUsageCostWithDensity CALLED 🚀🚀🚀');
-    console.error('🚀 quantity:', quantity, 'unit:', unit);
-    console.error('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
-  }
-  if (quantity === 10 && unit === 'kg') {
-    console.error('🚀🚀🚀 FLUFF CALCULATION - computeIngredientUsageCostWithDensity CALLED 🚀🚀🚀');
-    console.error('🚀 quantity:', quantity, 'unit:', unit);
-    console.error('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
-  }
-  
   // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
   const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
   const normalizedPackUnit = normalizeUnit(packUnit);
   const normalizedUnit = normalizeUnit(unit);
-  
-  console.log('📋 Normalized units - recipe:', normalizedUnit, 'pack:', normalizedPackUnit);
   
   // Smart conversion: if pack is volume and recipe unit is 'oz', assume it's fluid ounces
   let adjustedUnit: Unit = unit;
@@ -156,136 +134,24 @@ export function computeIngredientUsageCostWithDensity(
   // Use density if available and units are incompatible
   const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
   
-  console.log('🔧 Unit analysis - isPackVolume:', isPackVolume, 'isRecipeWeight:', isRecipeWeight);
-  console.log('🔧 isPackWeight:', isPackWeight, 'isRecipeVolume:', isRecipeVolume, 'useDensity:', useDensity);
-  console.log('🔧 adjustedUnit:', adjustedUnit);
-  
-  // Additional validation - ensure inputs are positive numbers (check BEFORE conversion)
+  // Additional validation - ensure inputs are positive numbers
   if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
-    console.warn('⚠️ Invalid input values:', { quantity, packQuantity, packPrice });
     return 0;
   }
   
-  console.log('📐 Calling toBase for recipe quantity...');
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
-  console.log('📐 Recipe toBase result - amount:', baseQuantity, 'base:', baseUnit);
-  
-  console.log('📐 Calling toBase for pack quantity...');
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
-  console.log('📐 Pack toBase result - amount:', basePackQuantity, 'base:', packBaseUnit);
-  
-  // Debug logging for conversion issues - ALWAYS log for debugging
-  console.log('🔍 Cost calculation debug:', {
-    recipeQty: quantity,
-    recipeUnit: adjustedUnit,
-    normalizedRecipeUnit: normalizedUnit,
-    packQty: packQuantity,
-    packUnit: packUnit,
-    normalizedPackUnit: normalizedPackUnit,
-    baseQty: baseQuantity,
-    baseUnit: baseUnit,
-    packBaseQty: basePackQuantity,
-    packBaseUnit: packBaseUnit,
-    unitsMatch: baseUnit === packBaseUnit,
-    density: density,
-    useDensity: useDensity,
-    packPrice: packPrice,
-  });
-  
-  // Safety checks - use proper null/undefined/NaN checks (not falsy checks that exclude 0)
-  // LOG BEFORE VALIDATION TO SEE WHAT VALUES WE HAVE
-  console.error('🔍 PRE-VALIDATION CHECK:', {
-    baseQuantity,
-    basePackQuantity,
-    baseUnit,
-    packBaseUnit,
-    baseQuantityNull: baseQuantity == null,
-    basePackQuantityNull: basePackQuantity == null,
-    basePackQuantityZero: basePackQuantity === 0,
-    baseQuantityNaN: isNaN(baseQuantity),
-    basePackQuantityNaN: isNaN(basePackQuantity),
-    baseQuantityFinite: !isFinite(baseQuantity),
-    basePackQuantityFinite: !isFinite(basePackQuantity),
-  });
-  
-  // ALERT FOR FLUFF TO SEE VALIDATION VALUES
-  if (unit === 'kg' && quantity >= 9 && quantity <= 11) {
-    alert(`PRE-VALIDATION:\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\nbaseUnit: ${baseUnit}\npackBaseUnit: ${packBaseUnit}\nbaseQty null: ${baseQuantity == null}\nbasePackQty null: ${basePackQuantity == null}\nbasePackQty zero: ${basePackQuantity === 0}\nbaseQty NaN: ${isNaN(baseQuantity)}\nbasePackQty NaN: ${isNaN(basePackQuantity)}`);
-  }
-  
-  // If base units match, do calculation directly (skip validation for now to debug)
-  if (baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity)) {
-    const costPerBaseUnit = packPrice / basePackQuantity;
-    const result = baseQuantity * costPerBaseUnit;
-    
-    // ALERT FOR FLUFF TO SEE CALCULATION
-    if (unit === 'kg' && quantity >= 9 && quantity <= 11) {
-      alert(`CALCULATION SUCCESS!\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\nbaseUnit: ${baseUnit}\npackBaseUnit: ${packBaseUnit}\ncostPerBaseUnit: ${costPerBaseUnit}\nresult: ${result}`);
-    }
-    
-    console.log('✅ Cost calculated:', { 
-      costPerBaseUnit, 
-      result,
-      calculation: `${baseQuantity} * (${packPrice} / ${basePackQuantity}) = ${result}`,
-      baseUnit,
-      packBaseUnit,
-    });
-    return result;
-  }
-  
-  // Only validate if units don't match or calculation failed
-  if (baseQuantity == null || basePackQuantity == null || basePackQuantity <= 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
-    console.error('⚠️⚠️⚠️ VALIDATION FAILED - RETURNING 0 ⚠️⚠️⚠️');
-    
-    // ALERT FOR FLUFF TO SEE WHY VALIDATION FAILED
-    if (unit === 'kg' && quantity >= 9 && quantity <= 11) {
-      alert(`VALIDATION FAILED!\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\nbaseUnit: ${baseUnit}\npackBaseUnit: ${packBaseUnit}`);
-    }
-    
-    console.warn('⚠️ Invalid base conversion:', { 
-      baseQuantity, 
-      basePackQuantity, 
-      baseUnit, 
-      packBaseUnit,
-      recipeQty: quantity,
-      recipeUnit: adjustedUnit,
-      normalizedRecipeUnit: normalizedUnit,
-      packQty: packQuantity,
-      packUnit: packUnit,
-      normalizedPackUnit: normalizedPackUnit,
-    });
-    return 0;
-  }
   
   // If base units match, simple calculation
-  if (baseUnit === packBaseUnit) {
+  if (baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity)) {
     const costPerBaseUnit = packPrice / basePackQuantity;
-    const result = baseQuantity * costPerBaseUnit;
-    
-    // ALERT FOR FLUFF TO SEE CALCULATION
-    if (unit === 'kg' && quantity >= 9 && quantity <= 11) {
-      alert(`CALCULATION SUCCESS!\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\nbaseUnit: ${baseUnit}\npackBaseUnit: ${packBaseUnit}\ncostPerBaseUnit: ${costPerBaseUnit}\nresult: ${result}`);
-    }
-    
-    console.log('✅ Cost calculated:', { 
-      costPerBaseUnit, 
-      result,
-      calculation: `${baseQuantity} * (${packPrice} / ${basePackQuantity}) = ${result}`,
-      baseUnit,
-      packBaseUnit,
-    });
-    return result;
+    return baseQuantity * costPerBaseUnit;
   }
   
-  // Debug: Log when units don't match
-  console.warn('⚠️ Base units don\'t match:', {
-    baseUnit,
-    packBaseUnit,
-    recipeUnit: adjustedUnit,
-    packUnit: packUnit,
-    normalizedRecipeUnit: normalizedUnit,
-    normalizedPackUnit: normalizedPackUnit,
-  });
+  // Validate conversion results
+  if (baseQuantity == null || basePackQuantity == null || basePackQuantity <= 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
+    return 0;
+  }
   
   // If base units don't match but we have density, convert via density
   if (density) {
