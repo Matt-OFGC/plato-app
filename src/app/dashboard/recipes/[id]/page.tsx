@@ -60,7 +60,7 @@ export default async function RecipePage({ params }: Props) {
   }
 
   // Fetch categories, storage, shelf life options, and ingredients for dropdowns
-  const [categories, storageOptions, shelfLifeOptions, availableIngredients] = await Promise.all([
+  const [categories, storageOptions, shelfLifeOptions, availableIngredientsRaw] = await Promise.all([
     prisma.category.findMany({
       where: { companyId },
       orderBy: { order: "asc" },
@@ -90,6 +90,14 @@ export default async function RecipePage({ params }: Props) {
       }
     }),
   ]);
+
+  // Convert Prisma Decimal fields to numbers for client components
+  const availableIngredients = availableIngredientsRaw.map(ing => ({
+    ...ing,
+    packPrice: ing.packPrice.toNumber(),
+    packQuantity: ing.packQuantity.toNumber(),
+    densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+  }));
 
   // Helper function to clean instruction text (remove leading numbers like "1. ", "1)", "1 -", etc.)
   const cleanInstructionLine = (line: string): string => {
@@ -173,21 +181,20 @@ export default async function RecipePage({ params }: Props) {
   const recipeId = recipe ? recipe.id : null;
 
   // Transform ingredients for dropdown
+  // Note: availableIngredients are already converted from Decimal to number above
   const ingredientsForDropdown = availableIngredients.map(ing => {
-    // Get the original ingredient data for proper cost calculation
-    const originalIngredient = availableIngredients.find(ai => ai.id === ing.id);
     return {
       id: ing.id,
       name: ing.name,
       unit: ing.packUnit,
-      costPerUnit: ing.packPrice && ing.packQuantity
-        ? Number(ing.packPrice) / Number(ing.packQuantity)
+      costPerUnit: ing.packPrice && ing.packQuantity && ing.packQuantity > 0
+        ? ing.packPrice / ing.packQuantity
         : 0,
       // Include full data for proper cost calculation with unit conversion
-      packPrice: Number(ing.packPrice),
-      packQuantity: Number(ing.packQuantity),
+      packPrice: ing.packPrice,
+      packQuantity: ing.packQuantity,
       packUnit: ing.packUnit,
-      densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : null,
+      densityGPerMl: ing.densityGPerMl,
       allergens: ing.allergens || [],
     };
   });

@@ -416,25 +416,51 @@ export default function IngredientsPanel({
                           const fullIngredient = availableIngredients.find(ai => 
                             ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
                           );
-                          if (!fullIngredient || !ingredient.quantity) return null;
+                          if (!fullIngredient || !ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
+                            return null;
+                          }
                           
-                          const ingredientCost = computeIngredientUsageCostWithDensity(
-                            scaledQuantity,
-                            ingredient.unit as Unit,
-                            fullIngredient.packPrice,
-                            fullIngredient.packQuantity,
-                            fullIngredient.packUnit as Unit,
-                            fullIngredient.densityGPerMl || undefined
-                          );
+                          // Ensure we have valid numeric values
+                          if (!fullIngredient.packPrice || !fullIngredient.packQuantity || fullIngredient.packQuantity <= 0) {
+                            return null;
+                          }
                           
-                          return (
-                            <div className="text-xs text-gray-500 ml-1">
-                              Cost: £{ingredientCost.toFixed(2)}
-                              <span className="text-gray-400 ml-2">
-                                (£{(fullIngredient.packPrice / fullIngredient.packQuantity).toFixed(3)} per {fullIngredient.packUnit})
-                              </span>
-                            </div>
-                          );
+                          try {
+                            const ingredientCost = computeIngredientUsageCostWithDensity(
+                              scaledQuantity,
+                              ingredient.unit as Unit,
+                              fullIngredient.packPrice,
+                              fullIngredient.packQuantity,
+                              fullIngredient.packUnit as Unit,
+                              fullIngredient.densityGPerMl || undefined
+                            );
+                            
+                            // Only show if cost is greater than 0
+                            if (ingredientCost <= 0 || isNaN(ingredientCost)) {
+                              return null;
+                            }
+                            
+                            const costPerUnit = fullIngredient.packPrice / fullIngredient.packQuantity;
+                            
+                            return (
+                              <div className="text-xs text-gray-500 ml-1">
+                                Cost: £{ingredientCost.toFixed(2)}
+                                <span className="text-gray-400 ml-2">
+                                  (£{costPerUnit.toFixed(3)} per {fullIngredient.packUnit})
+                                </span>
+                              </div>
+                            );
+                          } catch (error) {
+                            console.error('Error calculating ingredient cost:', error, {
+                              ingredient: ingredient.name,
+                              scaledQuantity,
+                              unit: ingredient.unit,
+                              packPrice: fullIngredient.packPrice,
+                              packQuantity: fullIngredient.packQuantity,
+                              packUnit: fullIngredient.packUnit,
+                            });
+                            return null;
+                          }
                         })()}
                       </div>
                     ) : (
@@ -468,24 +494,48 @@ export default function IngredientsPanel({
                             const fullIngredient = availableIngredients.find(ai => 
                               ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
                             );
-                            if (!fullIngredient || !ingredient.quantity) return null;
+                            if (!fullIngredient || !ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
+                              return null;
+                            }
                             
-                            const ingredientCost = computeIngredientUsageCostWithDensity(
-                              scaledQuantity,
-                              ingredient.unit as Unit,
-                              fullIngredient.packPrice,
-                              fullIngredient.packQuantity,
-                              fullIngredient.packUnit as Unit,
-                              fullIngredient.densityGPerMl || undefined
-                            );
+                            // Ensure we have valid numeric values
+                            if (!fullIngredient.packPrice || !fullIngredient.packQuantity || fullIngredient.packQuantity <= 0) {
+                              return null;
+                            }
                             
-                            return (
-                              <div className={`text-sm font-semibold flex-shrink-0 ${
-                                isChecked ? "text-gray-400 line-through" : "text-gray-600"
-                              }`}>
-                                £{ingredientCost.toFixed(2)}
-                              </div>
-                            );
+                            try {
+                              const ingredientCost = computeIngredientUsageCostWithDensity(
+                                scaledQuantity,
+                                ingredient.unit as Unit,
+                                fullIngredient.packPrice,
+                                fullIngredient.packQuantity,
+                                fullIngredient.packUnit as Unit,
+                                fullIngredient.densityGPerMl || undefined
+                              );
+                              
+                              // Only show if cost is greater than 0
+                              if (ingredientCost <= 0 || isNaN(ingredientCost)) {
+                                return null;
+                              }
+                              
+                              return (
+                                <div className={`text-sm font-semibold flex-shrink-0 ${
+                                  isChecked ? "text-gray-400 line-through" : "text-gray-600"
+                                }`}>
+                                  £{ingredientCost.toFixed(2)}
+                                </div>
+                              );
+                            } catch (error) {
+                              console.error('Error calculating ingredient cost:', error, {
+                                ingredient: ingredient.name,
+                                scaledQuantity,
+                                unit: ingredient.unit,
+                                packPrice: fullIngredient.packPrice,
+                                packQuantity: fullIngredient.packQuantity,
+                                packUnit: fullIngredient.packUnit,
+                              });
+                              return null;
+                            }
                           })()}
                           
                           {/* Step Info - Right side (simple case) */}

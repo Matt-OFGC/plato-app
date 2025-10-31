@@ -125,8 +125,13 @@ export function computeIngredientUsageCostWithDensity(
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
-  // Safety checks
-  if (!baseQuantity || !basePackQuantity || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity)) {
+  // Safety checks - use proper null/undefined/NaN checks (not falsy checks that exclude 0)
+  if (baseQuantity == null || basePackQuantity == null || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
+    return 0;
+  }
+  
+  // Additional validation - ensure inputs are positive numbers
+  if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
     return 0;
   }
   

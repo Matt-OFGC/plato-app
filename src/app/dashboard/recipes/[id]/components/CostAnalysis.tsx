@@ -8,6 +8,7 @@ interface Ingredient {
   quantity: number;
   unit: string;
   costPerUnit?: number;
+  name?: string;
 }
 
 interface CostAnalysisProps {
@@ -36,7 +37,9 @@ export default function CostAnalysis({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const totalCost = useMemo(() => {
-    return calcTotalCost(ingredients, baseServings, servings);
+    // Use calcTotalCost which handles scaling and costPerUnit if available
+    const cost = calcTotalCost(ingredients, baseServings, servings);
+    return cost || 0;
   }, [ingredients, baseServings, servings]);
 
   const costPerServing = recipeType === "batch" 
