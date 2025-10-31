@@ -135,12 +135,19 @@ export function computeIngredientUsageCostWithDensity(
   // If base units match, simple calculation
   if (baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity)) {
     const costPerBaseUnit = packPrice / basePackQuantity;
-    return baseQuantity * costPerBaseUnit;
+    const result = baseQuantity * costPerBaseUnit;
+    return result;
   }
   
   // Validate conversion results
   if (baseQuantity == null || basePackQuantity == null || basePackQuantity <= 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
     return 0;
+  }
+  
+  // If base units match after validation, calculate
+  if (baseUnit === packBaseUnit) {
+    const costPerBaseUnit = packPrice / basePackQuantity;
+    return baseQuantity * costPerBaseUnit;
   }
   
   // If base units don't match but we have density, convert via density
