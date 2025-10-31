@@ -574,14 +574,6 @@ export default function IngredientsPanel({
                             try {
                               // DEBUG - Log right before function call
                               if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
-                                console.warn('🔍 ABOUT TO CALL FUNCTION FOR FLUFF:', {
-                                  scaledQuantity,
-                                  unit: ingredient.unit,
-                                  packPrice: fullIngredient.packPrice,
-                                  packQuantity: fullIngredient.packQuantity,
-                                  packUnit: fullIngredient.packUnit,
-                                  density: fullIngredient.densityGPerMl,
-                                });
                                 console.warn('🔍 VALUES AS STRINGS:', 
                                   `scaledQuantity: ${scaledQuantity}, ` +
                                   `unit: "${ingredient.unit}", ` +
@@ -590,6 +582,22 @@ export default function IngredientsPanel({
                                   `packUnit: "${fullIngredient.packUnit}", ` +
                                   `density: ${fullIngredient.densityGPerMl}`
                                 );
+                                
+                                // DIRECT TEST - Manual calculation
+                                // 10kg = 10,000g, pack is 2556g at £22.39
+                                const manualCalc = (10000 / 2556) * 22.39;
+                                console.warn('🔍 MANUAL CALCULATION:', manualCalc);
+                                
+                                // Test toBase directly
+                                const { toBase } = require('@/lib/units');
+                                const recipeBase = toBase(10, 'kg');
+                                const packBase = toBase(2556, 'g');
+                                console.warn('🔍 DIRECT TOBASE TEST:', {
+                                  recipeBase,
+                                  packBase,
+                                  unitsMatch: recipeBase.base === packBase.base,
+                                  shouldCalculate: recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0,
+                                });
                               }
                               
                               const ingredientCost = computeIngredientUsageCostWithDensity(
