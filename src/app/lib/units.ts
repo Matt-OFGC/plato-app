@@ -37,35 +37,25 @@ function normalizeUnit(unit: string): string {
 export function toBase(amount: number, unit: Unit, density?: number): { amount: number; base: BaseUnit } {
   const normalizedUnit = normalizeUnit(unit) as Unit;
   
-  // Debug: Log conversion attempts
-  console.log('📐 toBase conversion:', { amount, unit, normalizedUnit, density, hasConversionFactor: normalizedUnit in CONVERSION_FACTORS });
-  
   // Handle density conversion (g/ml)
   if (density && (normalizedUnit === 'ml' || normalizedUnit === 'l' || normalizedUnit === 'fl oz' || normalizedUnit === 'cups' || normalizedUnit === 'tbsp' || normalizedUnit === 'tsp')) {
     const mlAmount = amount * (CONVERSION_FACTORS[normalizedUnit] || 1);
-    const result = { amount: mlAmount * density, base: 'g' as BaseUnit };
-    console.log('📐 Density conversion result:', result);
-    return result;
+    return { amount: mlAmount * density, base: 'g' as BaseUnit };
   }
   
   // Weight units -> grams
   if (['g', 'kg', 'oz', 'lb'].includes(normalizedUnit)) {
     const factor = CONVERSION_FACTORS[normalizedUnit] || 1;
-    const result = { amount: amount * factor, base: 'g' as BaseUnit };
-    console.log('📐 Weight conversion result:', { ...result, factor, normalizedUnit });
-    return result;
+    return { amount: amount * factor, base: 'g' as BaseUnit };
   }
   
   // Volume units -> ml
   if (['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedUnit)) {
     const factor = CONVERSION_FACTORS[normalizedUnit] || 1;
-    const result = { amount: amount * factor, base: 'ml' as BaseUnit };
-    console.log('📐 Volume conversion result:', { ...result, factor, normalizedUnit });
-    return result;
+    return { amount: amount * factor, base: 'ml' as BaseUnit };
   }
   
   // Count units -> each
-  console.log('📐 Count unit (no conversion):', { amount, base: 'each' });
   return { amount, base: 'each' };
 }
 
