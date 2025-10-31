@@ -113,6 +113,9 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
+  // LOG EVERYTHING AT THE START
+  console.error('🚀 FUNCTION CALLED:', { quantity, unit, packPrice, packQuantity, packUnit, density });
+  
   // FORCE ERROR FOR ALL KG CALLS - This will definitely show up
   if (unit && (unit.toLowerCase().includes('kg') || unit === 'kg')) {
     throw new Error(`FUNCTION CALLED WITH KG!\nQty: ${quantity}\nUnit: "${unit}" (type: ${typeof unit})\nPack: ${packQuantity} ${packUnit} at £${packPrice}\nDensity: ${density || 'none'}`);
