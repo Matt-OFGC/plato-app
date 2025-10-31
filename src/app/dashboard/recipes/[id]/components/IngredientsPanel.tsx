@@ -598,6 +598,9 @@ export default function IngredientsPanel({
                                 console.warn('🔍 FUNCTION RESULT FOR FLUFF:', ingredientCost);
                               }
                               
+                              // Always show the cost, even if 0
+                              const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
+                              
                               return (
                                 <div className={`text-sm font-semibold flex-shrink-0 ${
                                   isChecked ? "text-gray-400 line-through" : displayCost > 0 ? "text-gray-600" : "text-gray-400"
