@@ -137,7 +137,7 @@ export function computeIngredientUsageCostWithDensity(
   
   // TEMPORARY DEBUG - Catch all kg calls
   if (unit && unit.toLowerCase().includes('kg')) {
-    console.log('🔍 KG UNIT DEBUG:', {
+    console.warn('🔍 KG UNIT DEBUG:', {
       quantity,
       unit,
       adjustedUnit,
