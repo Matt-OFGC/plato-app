@@ -518,6 +518,11 @@ export default function IngredientsPanel({
                           
                           {/* Cost - Right side - Always show */}
                           {(() => {
+                            // ALERT FOR DEBUGGING - Remove after fixing
+                            if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
+                              alert(`HORIZONTAL VIEW - COST CALC CODE REACHED FOR FLUFF!\nName: ${ingredient.name}\nScaled Qty: ${scaledQuantity}\nUnit: ${ingredient.unit}`);
+                            }
+                            
                             const fullIngredient = availableIngredients.find(ai => 
                               ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
                             );
