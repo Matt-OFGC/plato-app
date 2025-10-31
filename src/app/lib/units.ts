@@ -113,6 +113,11 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
+  // ALERT FOR DEBUGGING - Always trigger for kg units to catch Fluff
+  if (unit && unit.toLowerCase().includes('kg')) {
+    alert(`FUNCTION CALLED!\nQty: ${quantity} ${unit}\nPack: ${packQuantity} ${packUnit} at £${packPrice}\nDensity: ${density || 'none'}\nType of unit: ${typeof unit}`);
+  }
+  
   // ALERT FOR DEBUGGING - This will definitely show up for Fluff
   if (unit === 'kg' && quantity >= 9 && quantity <= 11) {
     alert(`FUNCTION CALLED!\nQty: ${quantity} ${unit}\nPack: ${packQuantity} ${packUnit} at £${packPrice}\nDensity: ${density || 'none'}`);
