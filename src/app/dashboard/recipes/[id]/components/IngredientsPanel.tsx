@@ -411,18 +411,37 @@ export default function IngredientsPanel({
                           </button>
                         </div>
                         
-                        {/* Cost per line */}
+                        {/* Cost per line - Always show */}
                         {(() => {
                           const fullIngredient = availableIngredients.find(ai => 
                             ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
                           );
-                          if (!fullIngredient || !ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
-                            return null;
+                          
+                          // If ingredient not found in available ingredients, show message
+                          if (!fullIngredient) {
+                            return (
+                              <div className="text-xs text-amber-600 ml-1">
+                                No pricing data
+                              </div>
+                            );
                           }
                           
-                          // Ensure we have valid numeric values
+                          // If no quantity, can't calculate
+                          if (!ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
+                            return (
+                              <div className="text-xs text-gray-400 ml-1">
+                                £0.00
+                              </div>
+                            );
+                          }
+                          
+                          // If missing pack price data, show message
                           if (!fullIngredient.packPrice || !fullIngredient.packQuantity || fullIngredient.packQuantity <= 0) {
-                            return null;
+                            return (
+                              <div className="text-xs text-amber-600 ml-1">
+                                No pack price set
+                              </div>
+                            );
                           }
                           
                           try {
@@ -435,16 +454,13 @@ export default function IngredientsPanel({
                               fullIngredient.densityGPerMl || undefined
                             );
                             
-                            // Only show if cost is greater than 0
-                            if (ingredientCost <= 0 || isNaN(ingredientCost)) {
-                              return null;
-                            }
-                            
+                            // Always show the cost, even if 0
+                            const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
                             const costPerUnit = fullIngredient.packPrice / fullIngredient.packQuantity;
                             
                             return (
                               <div className="text-xs text-gray-500 ml-1">
-                                Cost: £{ingredientCost.toFixed(2)}
+                                Cost: £{displayCost.toFixed(2)}
                                 <span className="text-gray-400 ml-2">
                                   (£{costPerUnit.toFixed(3)} per {fullIngredient.packUnit})
                                 </span>
@@ -459,7 +475,11 @@ export default function IngredientsPanel({
                               packQuantity: fullIngredient.packQuantity,
                               packUnit: fullIngredient.packUnit,
                             });
-                            return null;
+                            return (
+                              <div className="text-xs text-red-600 ml-1">
+                                Calculation error
+                              </div>
+                            );
                           }
                         })()}
                       </div>
@@ -489,18 +509,43 @@ export default function IngredientsPanel({
                             {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
                           </div>
                           
-                          {/* Cost - Right side */}
+                          {/* Cost - Right side - Always show */}
                           {(() => {
                             const fullIngredient = availableIngredients.find(ai => 
                               ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
                             );
-                            if (!fullIngredient || !ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
-                              return null;
+                            
+                            // If ingredient not found, show message
+                            if (!fullIngredient) {
+                              return (
+                                <div className={`text-xs flex-shrink-0 ${
+                                  isChecked ? "text-gray-400 line-through" : "text-amber-600"
+                                }`}>
+                                  No price data
+                                </div>
+                              );
                             }
                             
-                            // Ensure we have valid numeric values
+                            // If no quantity, show £0.00
+                            if (!ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
+                              return (
+                                <div className={`text-sm font-semibold flex-shrink-0 ${
+                                  isChecked ? "text-gray-400 line-through" : "text-gray-400"
+                                }`}>
+                                  £0.00
+                                </div>
+                              );
+                            }
+                            
+                            // If missing pack price data, show message
                             if (!fullIngredient.packPrice || !fullIngredient.packQuantity || fullIngredient.packQuantity <= 0) {
-                              return null;
+                              return (
+                                <div className={`text-xs flex-shrink-0 ${
+                                  isChecked ? "text-gray-400 line-through" : "text-amber-600"
+                                }`}>
+                                  No pack price
+                                </div>
+                              );
                             }
                             
                             try {
@@ -513,16 +558,14 @@ export default function IngredientsPanel({
                                 fullIngredient.densityGPerMl || undefined
                               );
                               
-                              // Only show if cost is greater than 0
-                              if (ingredientCost <= 0 || isNaN(ingredientCost)) {
-                                return null;
-                              }
+                              // Always show the cost, even if 0
+                              const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
                               
                               return (
                                 <div className={`text-sm font-semibold flex-shrink-0 ${
-                                  isChecked ? "text-gray-400 line-through" : "text-gray-600"
+                                  isChecked ? "text-gray-400 line-through" : displayCost > 0 ? "text-gray-600" : "text-gray-400"
                                 }`}>
-                                  £{ingredientCost.toFixed(2)}
+                                  £{displayCost.toFixed(2)}
                                 </div>
                               );
                             } catch (error) {
@@ -534,7 +577,13 @@ export default function IngredientsPanel({
                                 packQuantity: fullIngredient.packQuantity,
                                 packUnit: fullIngredient.packUnit,
                               });
-                              return null;
+                              return (
+                                <div className={`text-xs flex-shrink-0 ${
+                                  isChecked ? "text-gray-400 line-through" : "text-red-600"
+                                }`}>
+                                  Error
+                                </div>
+                              );
                             }
                           })()}
                           
