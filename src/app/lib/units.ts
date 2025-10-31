@@ -113,9 +113,9 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  // ALERT FOR DEBUGGING - This will definitely show up
-  if (quantity === 10 && unit === 'kg') {
-    alert(`FLUFF CALCULATION CALLED!\nQuantity: ${quantity} ${unit}\nPack: ${packQuantity} ${packUnit} at £${packPrice}\nDensity: ${density || 'none'}`);
+  // ALERT FOR DEBUGGING - This will definitely show up for Fluff
+  if (unit === 'kg' && quantity >= 9 && quantity <= 11) {
+    alert(`FUNCTION CALLED!\nQty: ${quantity} ${unit}\nPack: ${packQuantity} ${packUnit} at £${packPrice}\nDensity: ${density || 'none'}`);
   }
   
   // THROW ERROR TO VERIFY FUNCTION IS CALLED
