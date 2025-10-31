@@ -605,14 +605,27 @@ export default function IngredientsPanel({
                                 );
                               }
                               
-                              const ingredientCost = computeIngredientUsageCostWithDensity(
-                                scaledQuantity,
-                                ingredient.unit as Unit,
-                                fullIngredient.packPrice,
-                                fullIngredient.packQuantity,
-                                fullIngredient.packUnit as Unit,
-                                fullIngredient.densityGPerMl || undefined
-                              );
+                              // DIRECT CALCULATION using toBase - bypassing the function for now
+                              const recipeBase = toBase(scaledQuantity, ingredient.unit as Unit, fullIngredient.densityGPerMl || undefined);
+                              const packBase = toBase(fullIngredient.packQuantity, fullIngredient.packUnit as Unit);
+                              
+                              let ingredientCost = 0;
+                              
+                              // If base units match, calculate directly
+                              if (recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0 && isFinite(recipeBase.amount) && isFinite(packBase.amount)) {
+                                const costPerBaseUnit = fullIngredient.packPrice / packBase.amount;
+                                ingredientCost = recipeBase.amount * costPerBaseUnit;
+                              } else {
+                                // Fallback to original function if units don't match
+                                ingredientCost = computeIngredientUsageCostWithDensity(
+                                  scaledQuantity,
+                                  ingredient.unit as Unit,
+                                  fullIngredient.packPrice,
+                                  fullIngredient.packQuantity,
+                                  fullIngredient.packUnit as Unit,
+                                  fullIngredient.densityGPerMl || undefined
+                                );
+                              }
                               
                               // DEBUG - Log result
                               if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
