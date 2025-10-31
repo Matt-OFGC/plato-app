@@ -162,7 +162,7 @@ export function computeIngredientUsageCostWithDensity(
     
     // TEMPORARY DEBUG
     if (unit && unit.toLowerCase().includes('kg')) {
-      console.log('✅ KG CALCULATION RESULT:', { costPerBaseUnit, result });
+      console.warn('✅ KG CALCULATION RESULT:', { costPerBaseUnit, result });
     }
     
     return result;
