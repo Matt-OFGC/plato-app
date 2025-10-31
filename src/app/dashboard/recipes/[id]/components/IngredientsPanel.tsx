@@ -556,16 +556,6 @@ export default function IngredientsPanel({
                             }
                             
                             try {
-                              console.log('🧮 Starting cost calculation (horizontal view) for:', {
-                                ingredient: ingredient.name,
-                                scaledQuantity,
-                                unit: ingredient.unit,
-                                packPrice: fullIngredient.packPrice,
-                                packQuantity: fullIngredient.packQuantity,
-                                packUnit: fullIngredient.packUnit,
-                                density: fullIngredient.densityGPerMl,
-                              });
-                              
                               const ingredientCost = computeIngredientUsageCostWithDensity(
                                 scaledQuantity,
                                 ingredient.unit as Unit,
@@ -574,11 +564,6 @@ export default function IngredientsPanel({
                                 fullIngredient.packUnit as Unit,
                                 fullIngredient.densityGPerMl || undefined
                               );
-                              
-                              console.log('🧮 Cost calculation result (horizontal):', {
-                                ingredient: ingredient.name,
-                                cost: ingredientCost,
-                              });
                               
                               // Always show the cost, even if 0
                               const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
