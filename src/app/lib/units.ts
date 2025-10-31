@@ -133,11 +133,6 @@ export function computeIngredientUsageCostWithDensity(
   // Use density if available and units are incompatible
   const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
   
-  // Additional validation - ensure inputs are positive numbers
-  if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
-    return 0;
-  }
-  
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
