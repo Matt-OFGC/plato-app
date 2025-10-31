@@ -155,6 +155,12 @@ export function computeIngredientUsageCostWithDensity(
     packPrice: packPrice,
   });
   
+  // Additional validation - ensure inputs are positive numbers (check BEFORE conversion)
+  if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
+    console.warn('⚠️ Invalid input values:', { quantity, packQuantity, packPrice });
+    return 0;
+  }
+  
   // Safety checks - use proper null/undefined/NaN checks (not falsy checks that exclude 0)
   if (baseQuantity == null || basePackQuantity == null || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
     console.warn('⚠️ Invalid base conversion:', { 
@@ -164,14 +170,11 @@ export function computeIngredientUsageCostWithDensity(
       packBaseUnit,
       recipeQty: quantity,
       recipeUnit: adjustedUnit,
+      normalizedRecipeUnit: normalizedUnit,
       packQty: packQuantity,
       packUnit: packUnit,
+      normalizedPackUnit: normalizedPackUnit,
     });
-    return 0;
-  }
-  
-  // Additional validation - ensure inputs are positive numbers
-  if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
     return 0;
   }
   
@@ -179,9 +182,25 @@ export function computeIngredientUsageCostWithDensity(
   if (baseUnit === packBaseUnit) {
     const costPerBaseUnit = packPrice / basePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
-    console.log('✅ Cost calculated:', { costPerBaseUnit, result });
+    console.log('✅ Cost calculated:', { 
+      costPerBaseUnit, 
+      result,
+      calculation: `${baseQuantity} * (${packPrice} / ${basePackQuantity}) = ${result}`,
+      baseUnit,
+      packBaseUnit,
+    });
     return result;
   }
+  
+  // Debug: Log when units don't match
+  console.warn('⚠️ Base units don\'t match:', {
+    baseUnit,
+    packBaseUnit,
+    recipeUnit: adjustedUnit,
+    packUnit: packUnit,
+    normalizedRecipeUnit: normalizedUnit,
+    normalizedPackUnit: normalizedPackUnit,
+  });
   
   // If base units don't match but we have density, convert via density
   if (density) {
