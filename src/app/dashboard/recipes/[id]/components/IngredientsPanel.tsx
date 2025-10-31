@@ -597,6 +597,12 @@ export default function IngredientsPanel({
                                   unitsMatch: recipeBase.base === packBase.base,
                                   shouldCalculate: recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0,
                                 });
+                                console.warn('🔍 TOBASE VALUES AS STRINGS:', 
+                                  `recipeBase: amount=${recipeBase.amount}, base="${recipeBase.base}", ` +
+                                  `packBase: amount=${packBase.amount}, base="${packBase.base}", ` +
+                                  `unitsMatch: ${recipeBase.base === packBase.base}, ` +
+                                  `shouldCalculate: ${recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0}`
+                                );
                               }
                               
                               const ingredientCost = computeIngredientUsageCostWithDensity(
