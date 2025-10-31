@@ -572,6 +572,18 @@ export default function IngredientsPanel({
                             }
                             
                             try {
+                              // DEBUG - Log right before function call
+                              if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
+                                console.warn('🔍 ABOUT TO CALL FUNCTION FOR FLUFF:', {
+                                  scaledQuantity,
+                                  unit: ingredient.unit,
+                                  packPrice: fullIngredient.packPrice,
+                                  packQuantity: fullIngredient.packQuantity,
+                                  packUnit: fullIngredient.packUnit,
+                                  density: fullIngredient.densityGPerMl,
+                                });
+                              }
+                              
                               const ingredientCost = computeIngredientUsageCostWithDensity(
                                 scaledQuantity,
                                 ingredient.unit as Unit,
@@ -581,8 +593,10 @@ export default function IngredientsPanel({
                                 fullIngredient.densityGPerMl || undefined
                               );
                               
-                              // Always show the cost, even if 0
-                              const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
+                              // DEBUG - Log result
+                              if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
+                                console.warn('🔍 FUNCTION RESULT FOR FLUFF:', ingredientCost);
+                              }
                               
                               return (
                                 <div className={`text-sm font-semibold flex-shrink-0 ${
