@@ -125,8 +125,26 @@ export function computeIngredientUsageCostWithDensity(
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
+  // Debug logging for conversion issues
+  if (quantity > 0 && packPrice > 0 && packQuantity > 0) {
+    console.log('🔍 Cost calculation debug:', {
+      recipeQty: quantity,
+      recipeUnit: adjustedUnit,
+      packQty: packQuantity,
+      packUnit: packUnit,
+      baseQty: baseQuantity,
+      baseUnit: baseUnit,
+      packBaseQty: basePackQuantity,
+      packBaseUnit: packBaseUnit,
+      unitsMatch: baseUnit === packBaseUnit,
+      density: density,
+      useDensity: useDensity,
+    });
+  }
+  
   // Safety checks - use proper null/undefined/NaN checks (not falsy checks that exclude 0)
   if (baseQuantity == null || basePackQuantity == null || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
+    console.warn('⚠️ Invalid base conversion:', { baseQuantity, basePackQuantity, baseUnit, packBaseUnit });
     return 0;
   }
   
@@ -138,7 +156,9 @@ export function computeIngredientUsageCostWithDensity(
   // If base units match, simple calculation
   if (baseUnit === packBaseUnit) {
     const costPerBaseUnit = packPrice / basePackQuantity;
-    return baseQuantity * costPerBaseUnit;
+    const result = baseQuantity * costPerBaseUnit;
+    console.log('✅ Cost calculated:', { costPerBaseUnit, result });
+    return result;
   }
   
   // If base units don't match but we have density, convert via density
@@ -156,7 +176,14 @@ export function computeIngredientUsageCostWithDensity(
     }
   }
   
-  // If no density and units don't match, return 0
+  // If no density and units don't match, log warning and return 0
+  console.warn('⚠️ Units don\'t match and no density available:', {
+    recipeUnit: adjustedUnit,
+    packUnit: packUnit,
+    baseUnit: baseUnit,
+    packBaseUnit: packBaseUnit,
+    density: density,
+  });
   return 0;
 }
 

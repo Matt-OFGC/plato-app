@@ -456,7 +456,9 @@ export default function IngredientsPanel({
                             
                             // Always show the cost, even if 0
                             const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
-                            const costPerUnit = fullIngredient.packPrice / fullIngredient.packQuantity;
+                            const costPerUnit = fullIngredient.packQuantity > 0 
+                              ? fullIngredient.packPrice / fullIngredient.packQuantity 
+                              : 0;
                             
                             return (
                               <div className="text-xs text-gray-500 ml-1">
@@ -467,7 +469,7 @@ export default function IngredientsPanel({
                               </div>
                             );
                           } catch (error) {
-                            console.error('Error calculating ingredient cost:', error, {
+                            console.error('❌ Error calculating ingredient cost:', error, {
                               ingredient: ingredient.name,
                               scaledQuantity,
                               unit: ingredient.unit,
