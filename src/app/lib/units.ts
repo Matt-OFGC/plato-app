@@ -113,21 +113,17 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  console.log('🚀 computeIngredientUsageCostWithDensity called:', {
-    quantity,
-    unit,
-    packPrice,
-    packQuantity,
-    packUnit,
-    density,
-  });
+  console.log('🚀 computeIngredientUsageCostWithDensity CALLED');
+  console.log('🚀 quantity:', quantity, 'unit:', unit);
+  console.log('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
+  console.log('🚀 density:', density);
   
   // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
   const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
   const normalizedPackUnit = normalizeUnit(packUnit);
   const normalizedUnit = normalizeUnit(unit);
   
-  console.log('📋 Normalized units:', { normalizedUnit, normalizedPackUnit });
+  console.log('📋 Normalized units - recipe:', normalizedUnit, 'pack:', normalizedPackUnit);
   
   // Smart conversion: if pack is volume and recipe unit is 'oz', assume it's fluid ounces
   let adjustedUnit: Unit = unit;
@@ -145,14 +141,9 @@ export function computeIngredientUsageCostWithDensity(
   // Use density if available and units are incompatible
   const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
   
-  console.log('🔧 Unit analysis:', {
-    isPackVolume,
-    isRecipeWeight,
-    isPackWeight,
-    isRecipeVolume,
-    useDensity,
-    adjustedUnit,
-  });
+  console.log('🔧 Unit analysis - isPackVolume:', isPackVolume, 'isRecipeWeight:', isRecipeWeight);
+  console.log('🔧 isPackWeight:', isPackWeight, 'isRecipeVolume:', isRecipeVolume, 'useDensity:', useDensity);
+  console.log('🔧 adjustedUnit:', adjustedUnit);
   
   // Additional validation - ensure inputs are positive numbers (check BEFORE conversion)
   if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
@@ -162,11 +153,11 @@ export function computeIngredientUsageCostWithDensity(
   
   console.log('📐 Calling toBase for recipe quantity...');
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
-  console.log('📐 Recipe toBase result:', { baseQuantity, baseUnit });
+  console.log('📐 Recipe toBase result - amount:', baseQuantity, 'base:', baseUnit);
   
   console.log('📐 Calling toBase for pack quantity...');
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
-  console.log('📐 Pack toBase result:', { basePackQuantity, packBaseUnit });
+  console.log('📐 Pack toBase result - amount:', basePackQuantity, 'base:', packBaseUnit);
   
   // Debug logging for conversion issues - ALWAYS log for debugging
   console.log('🔍 Cost calculation debug:', {
