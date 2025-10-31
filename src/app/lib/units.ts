@@ -113,10 +113,17 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  console.error('🚀🚀🚀 computeIngredientUsageCostWithDensity CALLED 🚀🚀🚀');
-  console.error('🚀 quantity:', quantity, 'unit:', unit);
-  console.error('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
-  console.error('🚀 density:', density);
+  // THROW ERROR TO VERIFY FUNCTION IS CALLED
+  if (quantity === 200 && unit === 'g') {
+    console.error('🚀🚀🚀 BUTTER CALCULATION - computeIngredientUsageCostWithDensity CALLED 🚀🚀🚀');
+    console.error('🚀 quantity:', quantity, 'unit:', unit);
+    console.error('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
+  }
+  if (quantity === 10 && unit === 'kg') {
+    console.error('🚀🚀🚀 FLUFF CALCULATION - computeIngredientUsageCostWithDensity CALLED 🚀🚀🚀');
+    console.error('🚀 quantity:', quantity, 'unit:', unit);
+    console.error('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
+  }
   
   // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
   const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
