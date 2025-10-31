@@ -134,6 +134,12 @@ export function computeIngredientUsageCostWithDensity(
   // Use density if available and units are incompatible
   const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
   
+  // Additional validation - ensure inputs are positive numbers (check BEFORE conversion)
+  if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
+    console.warn('⚠️ Invalid input values:', { quantity, packQuantity, packPrice });
+    return 0;
+  }
+  
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
@@ -154,12 +160,6 @@ export function computeIngredientUsageCostWithDensity(
     useDensity: useDensity,
     packPrice: packPrice,
   });
-  
-  // Additional validation - ensure inputs are positive numbers (check BEFORE conversion)
-  if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
-    console.warn('⚠️ Invalid input values:', { quantity, packQuantity, packPrice });
-    return 0;
-  }
   
   // Safety checks - use proper null/undefined/NaN checks (not falsy checks that exclude 0)
   if (baseQuantity == null || basePackQuantity == null || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
