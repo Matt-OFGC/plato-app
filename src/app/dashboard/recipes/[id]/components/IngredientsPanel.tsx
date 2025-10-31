@@ -588,8 +588,7 @@ export default function IngredientsPanel({
                                 const manualCalc = (10000 / 2556) * 22.39;
                                 console.warn('🔍 MANUAL CALCULATION:', manualCalc);
                                 
-                                // Test toBase directly
-                                const { toBase } = require('@/lib/units');
+                                // Test toBase directly - using existing import
                                 const recipeBase = toBase(10, 'kg');
                                 const packBase = toBase(2556, 'g');
                                 console.warn('🔍 DIRECT TOBASE TEST:', {
