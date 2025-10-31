@@ -413,18 +413,6 @@ export default function IngredientsPanel({
                         
                         {/* Cost per line - Always show */}
                         {(() => {
-                          // DEBUG - Remove after fixing
-                          if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
-                            console.warn('🔍 VERTICAL VIEW - COST CALC CODE REACHED FOR FLUFF!', {
-                              name: ingredient.name,
-                              originalQty: ingredient.quantity,
-                              scaledQty: scaledQuantity,
-                              unit: ingredient.unit,
-                              servings,
-                              baseServings,
-                            });
-                          }
-                          
                           const fullIngredient = availableIngredients.find(ai => 
                             ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
                           );
@@ -457,14 +445,27 @@ export default function IngredientsPanel({
                           }
                           
                           try {
-                            const ingredientCost = computeIngredientUsageCostWithDensity(
-                              scaledQuantity,
-                              ingredient.unit as Unit,
-                              fullIngredient.packPrice,
-                              fullIngredient.packQuantity,
-                              fullIngredient.packUnit as Unit,
-                              fullIngredient.densityGPerMl || undefined
-                            );
+                            // DIRECT CALCULATION using toBase
+                            const recipeBase = toBase(scaledQuantity, ingredient.unit as Unit, fullIngredient.densityGPerMl || undefined);
+                            const packBase = toBase(fullIngredient.packQuantity, fullIngredient.packUnit as Unit);
+                            
+                            let ingredientCost = 0;
+                            
+                            // If base units match, calculate directly
+                            if (recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0 && isFinite(recipeBase.amount) && isFinite(packBase.amount)) {
+                              const costPerBaseUnit = fullIngredient.packPrice / packBase.amount;
+                              ingredientCost = recipeBase.amount * costPerBaseUnit;
+                            } else {
+                              // Fallback to original function if units don't match
+                              ingredientCost = computeIngredientUsageCostWithDensity(
+                                scaledQuantity,
+                                ingredient.unit as Unit,
+                                fullIngredient.packPrice,
+                                fullIngredient.packQuantity,
+                                fullIngredient.packUnit as Unit,
+                                fullIngredient.densityGPerMl || undefined
+                              );
+                            }
                             
                             // Always show the cost, even if 0
                             const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
@@ -481,7 +482,7 @@ export default function IngredientsPanel({
                               </div>
                             );
                           } catch (error) {
-                            console.error('❌ Error calculating ingredient cost:', error, {
+                            console.error('Error calculating ingredient cost:', error, {
                               ingredient: ingredient.name,
                               scaledQuantity,
                               unit: ingredient.unit,
@@ -525,15 +526,6 @@ export default function IngredientsPanel({
                           
                           {/* Cost - Right side - Always show */}
                           {(() => {
-                            // DEBUG - Remove after fixing
-                            if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
-                              console.warn('🔍 HORIZONTAL VIEW - COST CALC CODE REACHED FOR FLUFF!', {
-                                name: ingredient.name,
-                                scaledQty: scaledQuantity,
-                                unit: ingredient.unit,
-                              });
-                            }
-                            
                             const fullIngredient = availableIngredients.find(ai => 
                               ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
                             );
@@ -572,40 +564,7 @@ export default function IngredientsPanel({
                             }
                             
                             try {
-                              // DEBUG - Log right before function call
-                              if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
-                                console.warn('🔍 VALUES AS STRINGS:', 
-                                  `scaledQuantity: ${scaledQuantity}, ` +
-                                  `unit: "${ingredient.unit}", ` +
-                                  `packPrice: ${fullIngredient.packPrice}, ` +
-                                  `packQuantity: ${fullIngredient.packQuantity}, ` +
-                                  `packUnit: "${fullIngredient.packUnit}", ` +
-                                  `density: ${fullIngredient.densityGPerMl}`
-                                );
-                                
-                                // DIRECT TEST - Manual calculation
-                                // 10kg = 10,000g, pack is 2556g at £22.39
-                                const manualCalc = (10000 / 2556) * 22.39;
-                                console.warn('🔍 MANUAL CALCULATION:', manualCalc);
-                                
-                                // Test toBase directly - using existing import
-                                const recipeBase = toBase(10, 'kg');
-                                const packBase = toBase(2556, 'g');
-                                console.warn('🔍 DIRECT TOBASE TEST:', {
-                                  recipeBase,
-                                  packBase,
-                                  unitsMatch: recipeBase.base === packBase.base,
-                                  shouldCalculate: recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0,
-                                });
-                                console.warn('🔍 TOBASE VALUES AS STRINGS:', 
-                                  `recipeBase: amount=${recipeBase.amount}, base="${recipeBase.base}", ` +
-                                  `packBase: amount=${packBase.amount}, base="${packBase.base}", ` +
-                                  `unitsMatch: ${recipeBase.base === packBase.base}, ` +
-                                  `shouldCalculate: ${recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0}`
-                                );
-                              }
-                              
-                              // DIRECT CALCULATION using toBase - bypassing the function for now
+                              // DIRECT CALCULATION using toBase
                               const recipeBase = toBase(scaledQuantity, ingredient.unit as Unit, fullIngredient.densityGPerMl || undefined);
                               const packBase = toBase(fullIngredient.packQuantity, fullIngredient.packUnit as Unit);
                               
@@ -625,11 +584,6 @@ export default function IngredientsPanel({
                                   fullIngredient.packUnit as Unit,
                                   fullIngredient.densityGPerMl || undefined
                                 );
-                              }
-                              
-                              // DEBUG - Log result
-                              if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
-                                console.warn('🔍 FUNCTION RESULT FOR FLUFF:', ingredientCost);
                               }
                               
                               // Always show the cost, even if 0
