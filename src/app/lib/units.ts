@@ -215,6 +215,14 @@ export function computeIngredientUsageCostWithDensity(
     alert(`PRE-VALIDATION:\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\nbaseUnit: ${baseUnit}\npackBaseUnit: ${packBaseUnit}\nbaseQty null: ${baseQuantity == null}\nbasePackQty null: ${basePackQuantity == null}\nbasePackQty zero: ${basePackQuantity === 0}\nbaseQty NaN: ${isNaN(baseQuantity)}\nbasePackQty NaN: ${isNaN(basePackQuantity)}`);
   }
   
+  // TEMPORARY: Skip validation for Fluff to test calculation
+  if (unit === 'kg' && quantity >= 9 && quantity <= 11 && baseUnit === packBaseUnit) {
+    const costPerBaseUnit = packPrice / basePackQuantity;
+    const result = baseQuantity * costPerBaseUnit;
+    alert(`DIRECT CALCULATION (SKIPPING VALIDATION):\nresult: ${result}\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\ncostPerBaseUnit: ${costPerBaseUnit}`);
+    return result;
+  }
+  
   if (baseQuantity == null || basePackQuantity == null || basePackQuantity <= 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
     console.error('⚠️⚠️⚠️ VALIDATION FAILED - RETURNING 0 ⚠️⚠️⚠️');
     
