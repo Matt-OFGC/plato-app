@@ -113,10 +113,10 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  console.log('🚀 computeIngredientUsageCostWithDensity CALLED');
-  console.log('🚀 quantity:', quantity, 'unit:', unit);
-  console.log('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
-  console.log('🚀 density:', density);
+  console.error('🚀🚀🚀 computeIngredientUsageCostWithDensity CALLED 🚀🚀🚀');
+  console.error('🚀 quantity:', quantity, 'unit:', unit);
+  console.error('🚀 packPrice:', packPrice, 'packQuantity:', packQuantity, 'packUnit:', packUnit);
+  console.error('🚀 density:', density);
   
   // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
   const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
