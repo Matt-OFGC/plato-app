@@ -455,6 +455,11 @@ export default function IngredientsPanel({
                               density: fullIngredient.densityGPerMl,
                             });
                             
+                            // DIRECT TEST FOR FLUFF - Check if ingredient name matches first
+                            if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
+                              alert(`FLUFF FOUND!\nName: ${ingredient.name}\nScaled Qty: ${scaledQuantity}\nUnit: ${ingredient.unit}\nPack Price: ${fullIngredient.packPrice}\nPack Qty: ${fullIngredient.packQuantity}\nPack Unit: ${fullIngredient.packUnit}`);
+                            }
+                            
                             // DIRECT TEST FOR FLUFF
                             if (ingredient.name === 'Fluff' && scaledQuantity === 10 && ingredient.unit === 'kg') {
                               console.error('🧪 DIRECT FLUFF TEST:', {
