@@ -185,7 +185,23 @@ export function computeIngredientUsageCostWithDensity(
   });
   
   // Safety checks - use proper null/undefined/NaN checks (not falsy checks that exclude 0)
+  // LOG BEFORE VALIDATION TO SEE WHAT VALUES WE HAVE
+  console.error('🔍 PRE-VALIDATION CHECK:', {
+    baseQuantity,
+    basePackQuantity,
+    baseUnit,
+    packBaseUnit,
+    baseQuantityNull: baseQuantity == null,
+    basePackQuantityNull: basePackQuantity == null,
+    basePackQuantityZero: basePackQuantity === 0,
+    baseQuantityNaN: isNaN(baseQuantity),
+    basePackQuantityNaN: isNaN(basePackQuantity),
+    baseQuantityFinite: !isFinite(baseQuantity),
+    basePackQuantityFinite: !isFinite(basePackQuantity),
+  });
+  
   if (baseQuantity == null || basePackQuantity == null || basePackQuantity === 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
+    console.error('⚠️⚠️⚠️ VALIDATION FAILED - RETURNING 0 ⚠️⚠️⚠️');
     console.warn('⚠️ Invalid base conversion:', { 
       baseQuantity, 
       basePackQuantity, 
