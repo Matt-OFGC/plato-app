@@ -582,6 +582,14 @@ export default function IngredientsPanel({
                                   packUnit: fullIngredient.packUnit,
                                   density: fullIngredient.densityGPerMl,
                                 });
+                                console.warn('🔍 VALUES AS STRINGS:', 
+                                  `scaledQuantity: ${scaledQuantity}, ` +
+                                  `unit: "${ingredient.unit}", ` +
+                                  `packPrice: ${fullIngredient.packPrice}, ` +
+                                  `packQuantity: ${fullIngredient.packQuantity}, ` +
+                                  `packUnit: "${fullIngredient.packUnit}", ` +
+                                  `density: ${fullIngredient.densityGPerMl}`
+                                );
                               }
                               
                               const ingredientCost = computeIngredientUsageCostWithDensity(
