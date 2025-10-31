@@ -132,10 +132,35 @@ export function computeIngredientUsageCostWithDensity(
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
+  // TEMPORARY DEBUG - Remove after fixing
+  if (unit === 'kg' && quantity === 10) {
+    console.log('🔍 FLUFF DEBUG:', {
+      quantity,
+      unit,
+      adjustedUnit,
+      baseQuantity,
+      baseUnit,
+      basePackQuantity,
+      packBaseUnit,
+      packPrice,
+      packQuantity,
+      packUnit,
+      unitsMatch: baseUnit === packBaseUnit,
+      baseQtyValid: baseQuantity > 0 && isFinite(baseQuantity),
+      basePackQtyValid: basePackQuantity > 0 && isFinite(basePackQuantity),
+    });
+  }
+  
   // If base units match, simple calculation
   if (baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity)) {
     const costPerBaseUnit = packPrice / basePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
+    
+    // TEMPORARY DEBUG
+    if (unit === 'kg' && quantity === 10) {
+      console.log('✅ FLUFF CALCULATION:', { costPerBaseUnit, result });
+    }
+    
     return result;
   }
   
