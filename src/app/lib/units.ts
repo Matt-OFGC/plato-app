@@ -213,14 +213,27 @@ export function computeIngredientUsageCostWithDensity(
     alert(`PRE-VALIDATION:\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\nbaseUnit: ${baseUnit}\npackBaseUnit: ${packBaseUnit}\nbaseQty null: ${baseQuantity == null}\nbasePackQty null: ${basePackQuantity == null}\nbasePackQty zero: ${basePackQuantity === 0}\nbaseQty NaN: ${isNaN(baseQuantity)}\nbasePackQty NaN: ${isNaN(basePackQuantity)}`);
   }
   
-  // TEMPORARY: Skip validation for Fluff to test calculation
-  if (unit === 'kg' && quantity >= 9 && quantity <= 11 && baseUnit === packBaseUnit) {
+  // If base units match, do calculation directly (skip validation for now to debug)
+  if (baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity)) {
     const costPerBaseUnit = packPrice / basePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
-    alert(`DIRECT CALCULATION (SKIPPING VALIDATION):\nresult: ${result}\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\ncostPerBaseUnit: ${costPerBaseUnit}`);
+    
+    // ALERT FOR FLUFF TO SEE CALCULATION
+    if (unit === 'kg' && quantity >= 9 && quantity <= 11) {
+      alert(`CALCULATION SUCCESS!\nbaseQty: ${baseQuantity}\nbasePackQty: ${basePackQuantity}\nbaseUnit: ${baseUnit}\npackBaseUnit: ${packBaseUnit}\ncostPerBaseUnit: ${costPerBaseUnit}\nresult: ${result}`);
+    }
+    
+    console.log('✅ Cost calculated:', { 
+      costPerBaseUnit, 
+      result,
+      calculation: `${baseQuantity} * (${packPrice} / ${basePackQuantity}) = ${result}`,
+      baseUnit,
+      packBaseUnit,
+    });
     return result;
   }
   
+  // Only validate if units don't match or calculation failed
   if (baseQuantity == null || basePackQuantity == null || basePackQuantity <= 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
     console.error('⚠️⚠️⚠️ VALIDATION FAILED - RETURNING 0 ⚠️⚠️⚠️');
     
