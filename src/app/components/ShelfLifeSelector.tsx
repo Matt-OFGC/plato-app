@@ -57,12 +57,37 @@ export function ShelfLifeSelector({
     setSearchTerm("");
   };
 
-  const handleCreateOption = () => {
-    if (newOptionName.trim() && onCreateShelfLife) {
-      onCreateShelfLife(newOptionName.trim());
-      setNewOptionName("");
-      setShowCreateForm(false);
-      setSearchTerm("");
+  const handleCreateOption = async () => {
+    if (!newOptionName.trim()) return;
+    
+    try {
+      const response = await fetch("/api/quick-create/shelf-life", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newOptionName.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success && data.option) {
+        // Call the callback if provided (for backward compatibility)
+        if (onCreateShelfLife) {
+          onCreateShelfLife(newOptionName.trim());
+        }
+        // Update the selection to the new option
+        onChange(data.option.id);
+        setNewOptionName("");
+        setShowCreateForm(false);
+        setSearchTerm("");
+        setIsOpen(false);
+        // Refresh the page to get updated options list
+        window.location.reload();
+      } else {
+        alert(data.error || "Failed to create shelf life option");
+      }
+    } catch (error) {
+      console.error("Error creating shelf life option:", error);
+      alert("Failed to create shelf life option. Please try again.");
     }
   };
 

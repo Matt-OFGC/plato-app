@@ -59,12 +59,37 @@ export function CategorySelector({
     setSearchTerm("");
   };
 
-  const handleCreateCategory = () => {
-    if (newCategoryName.trim() && onCreateCategory) {
-      onCreateCategory(newCategoryName.trim());
-      setNewCategoryName("");
-      setShowCreateForm(false);
-      setSearchTerm("");
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    
+    try {
+      const response = await fetch("/api/quick-create/category", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success && data.category) {
+        // Call the callback if provided (for backward compatibility)
+        if (onCreateCategory) {
+          onCreateCategory(newCategoryName.trim());
+        }
+        // Update the selection to the new category
+        onChange(data.category.id);
+        setNewCategoryName("");
+        setShowCreateForm(false);
+        setSearchTerm("");
+        setIsOpen(false);
+        // Refresh the page to get updated categories list
+        window.location.reload();
+      } else {
+        alert(data.error || "Failed to create category");
+      }
+    } catch (error) {
+      console.error("Error creating category:", error);
+      alert("Failed to create category. Please try again.");
     }
   };
 

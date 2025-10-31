@@ -52,10 +52,18 @@ export default async function IngredientsPage({ searchParams }: Props) {
     } : null,
   }));
 
+  // Fetch suppliers for bulk edit
+  const suppliers = await prisma.supplier.findMany({
+    where: { companyId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   return (
     <IngredientsPageClient 
       ingredients={ingredients} 
       companyId={companyId || 0}
+      suppliers={suppliers}
       deleteIngredient={async (id: number) => {
         'use server';
         await deleteIngredient(id);

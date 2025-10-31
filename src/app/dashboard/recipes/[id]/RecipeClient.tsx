@@ -16,6 +16,7 @@ import IngredientsPanel from "./components/IngredientsPanel";
 import InstructionsPanel from "./components/InstructionsPanel";
 import CostInsightsModal from "./components/CostInsightsModal";
 import Image from "next/image";
+import { RecentItemsTracker } from "@/components/RecentItemsTracker";
 
 type ViewMode = "whole" | "steps" | "edit" | "photos";
 
@@ -415,6 +416,13 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
 
   return (
     <div className="min-h-screen bg-white dark:bg-white flex flex-col pb-20">
+      {recipeId && !isNew && (
+        <RecentItemsTracker
+          id={recipeId}
+          type="recipe"
+          name={recipe.title}
+        />
+      )}
       {/* Top Header - Compact */}
       <div className="bg-white dark:bg-white border-b border-gray-200">
         <div className="max-w-[1600px] mx-auto px-6 py-2">

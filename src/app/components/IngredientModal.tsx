@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { IngredientForm } from "./IngredientForm";
 import { createIngredient, updateIngredient, getSuppliers } from "@/app/dashboard/ingredients/actions";
 import { fromBase, Unit } from "@/lib/units";
+import { RecentItemsTracker } from "./RecentItemsTracker";
 
 interface Supplier {
   id: number;
@@ -90,6 +91,13 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
+      {editIngredient && (
+        <RecentItemsTracker
+          id={editIngredient.id}
+          type="ingredient"
+          name={editIngredient.name}
+        />
+      )}
       {/* Backdrop - Light blur effect */}
       <div 
         className="fixed inset-0 bg-white/40 backdrop-blur-sm transition-opacity"

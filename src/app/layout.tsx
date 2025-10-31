@@ -38,8 +38,29 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Plato" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png?v=2" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // Force remove dark class on mount and prevent it from being added
+                if (typeof document !== 'undefined') {
+                  document.documentElement.classList.remove('dark');
+                  const observer = new MutationObserver(function(mutations) {
+                    if (document.documentElement.classList.contains('dark')) {
+                      document.documentElement.classList.remove('dark');
+                    }
+                  });
+                  observer.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                  });
+                }
+              })();
+            `,
+          }}
+        />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white transition-colors duration-200`}>
         <Providers>
           {children}
         </Providers>

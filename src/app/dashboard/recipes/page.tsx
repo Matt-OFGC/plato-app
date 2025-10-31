@@ -3,18 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { deleteRecipe } from "./actions";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { RecipeCategoryFilter } from "@/components/RecipeCategoryFilter";
-import { SearchBar } from "@/components/SearchBar";
+import { AdvancedSearch } from "@/components/AdvancedSearch";
 import { SmartImporter } from "@/components/SmartImporter";
-import { RecipesView } from "@/components/RecipesView";
+import { RecipesViewWithBulkActions } from "@/components/RecipesViewWithBulkActions";
 
 export const dynamic = "force-dynamic";
 
 interface Props {
-  searchParams: Promise<{ category?: string; search?: string }>;
+  searchParams: Promise<{ category?: string; search?: string; minCost?: string; maxCost?: string }>;
 }
 
 export default async function RecipesPage({ searchParams }: Props) {
-  const { category, search } = await searchParams;
+  const { category, search, minCost, maxCost } = await searchParams;
   const { companyId } = await getCurrentUserAndCompany();
   
   const where = companyId 
@@ -39,6 +39,9 @@ export default async function RecipesPage({ searchParams }: Props) {
           ]
         })
       };
+  
+  // Note: Cost filtering will be applied client-side after calculating costs
+  // This is because costs are calculated from ingredients dynamically
     
   let recipesRaw: any[] = [];
   
@@ -141,8 +144,26 @@ export default async function RecipesPage({ searchParams }: Props) {
     };
   });
   
+  // Apply cost filtering if minCost or maxCost are specified
+  let filteredRecipes = recipes;
+  if (minCost || maxCost) {
+    filteredRecipes = recipes.filter((r) => {
+      const cost = r.totalCost || 0;
+      if (minCost && cost < Number(minCost)) return false;
+      if (maxCost && cost > Number(maxCost)) return false;
+      return true;
+    });
+  }
+
   // Get categories from the already fetched recipes (no extra query needed)
   const categories = Array.from(new Set(recipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();
+
+  // Fetch categories with IDs for bulk edit
+  const categoriesWithIds = await prisma.category.findMany({
+    where: { companyId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <div>
@@ -163,13 +184,16 @@ export default async function RecipesPage({ searchParams }: Props) {
       </div>
 
       <div className="mb-4 sm:mb-6 space-y-4">
-        <SearchBar placeholder="Search recipes by name, description, or method..." />
+        <AdvancedSearch 
+          placeholder="Search recipes by name, description, or method..." 
+          entityType="recipes"
+        />
         {categories.length > 0 && (
           <RecipeCategoryFilter categories={categories} selectedCategory={category} />
         )}
       </div>
 
-      <RecipesView recipes={recipes} />
+      <RecipesViewWithBulkActions recipes={filteredRecipes} categories={categoriesWithIds} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PriceConfirmationModal } from "./PriceConfirmationModal";
+import { RecentItemsPanel } from "./RecentItemsPanel";
 
 interface ProductionItem {
   id: number;
@@ -94,6 +95,9 @@ export function OperationalDashboard({
 
   return (
     <div className="space-y-4 sm:space-y-5">
+      {/* Recent Items Panel */}
+      <RecentItemsPanel />
+      
       {/* Modern Header Card with User Info - Compact */}
       <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-xl shadow-xl overflow-hidden relative">
         {/* Decorative background elements */}

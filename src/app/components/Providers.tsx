@@ -2,11 +2,11 @@
 
 import { TimerProvider } from "@/contexts/TimerContext";
 import { ThemeProvider } from "./ThemeProvider";
-import { ToastProvider } from "@/lib/design-system";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
       <ToastProvider>
         <TimerProvider>
           {children}

@@ -4,6 +4,7 @@ import { updateIngredient } from "../actions";
 import { fromBase, Unit } from "@/lib/units";
 import { IngredientForm } from "@/components/IngredientForm";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { RecentItemsTracker } from "@/components/RecentItemsTracker";
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,11 @@ export default async function EditIngredientPage({ params }: Props) {
 
   return (
     <div className="app-container">
+      <RecentItemsTracker
+        id={ing.id}
+        type="ingredient"
+        name={ing.name}
+      />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Edit Ingredient</h1>
         <p className="text-gray-600 mt-2">Update ingredient details and pricing</p>

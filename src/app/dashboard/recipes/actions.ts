@@ -122,4 +122,67 @@ export async function deleteRecipe(id: number) {
   revalidatePath("/recipes");
 }
 
+export async function bulkDeleteRecipes(ids: number[]) {
+  const { companyId, user } = await getCurrentUserAndCompany();
+  
+  // Verify all recipes belong to the user's company
+  const recipes = await prisma.recipe.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, companyId: true, name: true },
+  });
+  
+  const unauthorized = recipes.filter(r => r.companyId !== companyId);
+  if (unauthorized.length > 0) {
+    throw new Error("Unauthorized: Cannot delete recipes from another company");
+  }
+  
+  // Delete all recipes
+  await prisma.recipe.deleteMany({
+    where: { id: { in: ids }, companyId },
+  });
+  
+  // Audit deletions
+  if (user && companyId) {
+    const { auditLog } = await import("@/lib/audit-log");
+    for (const recipe of recipes) {
+      try {
+        await auditLog.recipeDeleted(user.id, recipe.id, recipe.name, companyId);
+      } catch (error) {
+        console.error("Audit log error (non-blocking):", error);
+      }
+    }
+  }
+  
+  revalidatePath("/dashboard/recipes");
+}
+
+export async function bulkUpdateRecipes(ids: number[], updates: { categoryId?: number | null }) {
+  const { companyId } = await getCurrentUserAndCompany();
+  
+  // Verify all recipes belong to the user's company
+  const recipes = await prisma.recipe.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, companyId: true },
+  });
+  
+  const unauthorized = recipes.filter(r => r.companyId !== companyId);
+  if (unauthorized.length > 0) {
+    throw new Error("Unauthorized: Cannot update recipes from another company");
+  }
+  
+  // Prepare update data
+  const updateData: any = {};
+  if (updates.categoryId !== undefined) {
+    updateData.categoryId = updates.categoryId;
+  }
+  
+  // Update all recipes
+  await prisma.recipe.updateMany({
+    where: { id: { in: ids }, companyId },
+    data: updateData,
+  });
+  
+  revalidatePath("/dashboard/recipes");
+}
+
 

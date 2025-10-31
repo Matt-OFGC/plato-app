@@ -58,12 +58,37 @@ export function StorageSelector({
     setSearchTerm("");
   };
 
-  const handleCreateOption = () => {
-    if (newOptionName.trim() && onCreateStorage) {
-      onCreateStorage(newOptionName.trim());
-      setNewOptionName("");
-      setShowCreateForm(false);
-      setSearchTerm("");
+  const handleCreateOption = async () => {
+    if (!newOptionName.trim()) return;
+    
+    try {
+      const response = await fetch("/api/quick-create/storage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newOptionName.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success && data.option) {
+        // Call the callback if provided (for backward compatibility)
+        if (onCreateStorage) {
+          onCreateStorage(newOptionName.trim());
+        }
+        // Update the selection to the new option
+        onChange(data.option.id);
+        setNewOptionName("");
+        setShowCreateForm(false);
+        setSearchTerm("");
+        setIsOpen(false);
+        // Refresh the page to get updated options list
+        window.location.reload();
+      } else {
+        alert(data.error || "Failed to create storage option");
+      }
+    } catch (error) {
+      console.error("Error creating storage option:", error);
+      alert("Failed to create storage option. Please try again.");
     }
   };
 

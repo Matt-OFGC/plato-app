@@ -91,81 +91,89 @@ export function SubscriptionStatus() {
   const isActive = user.subscriptionStatus === "active" || user.subscriptionStatus === "free";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {isPro ? "Pro Plan" : "Free Plan"}
-          </h3>
-          <p className="text-sm text-gray-600">
-            {isPro ? "Unlimited ingredients and recipes" : "Limited to 15 ingredients and 5 recipes"}
-          </p>
+    <div className="space-y-6">
+      {/* Current Plan Status */}
+      <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-1">
+              {isPro ? "✨ Pro Plan" : "Free Plan"}
+            </h3>
+            <p className="text-sm text-gray-700">
+              {isPro ? "Unlimited ingredients and recipes" : "Limited to 15 ingredients and 5 recipes"}
+            </p>
+          </div>
+          <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
+            isActive 
+              ? "bg-emerald-500 text-white shadow-md" 
+              : "bg-red-100 text-red-800"
+          }`}>
+            {user.subscriptionStatus === "free" ? "Free" : 
+             user.subscriptionStatus === "active" ? "Active" :
+             user.subscriptionStatus === "past_due" ? "Past Due" :
+             user.subscriptionStatus === "canceled" ? "Canceled" :
+             "Unknown"}
+          </div>
         </div>
-        <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-          isActive 
-            ? "bg-green-100 text-green-800" 
-            : "bg-red-100 text-red-800"
-        }`}>
-          {user.subscriptionStatus === "free" ? "Free" : 
-           user.subscriptionStatus === "active" ? "Active" :
-           user.subscriptionStatus === "past_due" ? "Past Due" :
-           user.subscriptionStatus === "canceled" ? "Canceled" :
-           "Unknown"}
+
+        {/* Plan Limits */}
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-emerald-200">
+          <div className="bg-white rounded-lg p-3">
+            <div className="text-xs text-gray-600 mb-1">Ingredients</div>
+            <div className="text-lg font-bold text-gray-900">
+              {sub.limits.maxIngredients === null ? "∞ Unlimited" : `${sub.limits.maxIngredients} max`}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3">
+            <div className="text-xs text-gray-600 mb-1">Recipes</div>
+            <div className="text-lg font-bold text-gray-900">
+              {sub.limits.maxRecipes === null ? "∞ Unlimited" : `${sub.limits.maxRecipes} max`}
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Upgrade or Manage Section */}
       {!isPro && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-blue-900">Upgrade to Pro</h4>
-              <p className="text-sm text-blue-700">Get unlimited ingredients and recipes for £9.99/month</p>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6 shadow-lg">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="text-lg font-bold text-blue-900 mb-2">Upgrade to Pro Plan</h4>
+              <p className="text-sm text-blue-800 mb-1">Get unlimited ingredients and recipes</p>
+              <p className="text-xl font-bold text-blue-900">£9.99/month</p>
             </div>
             <button
               onClick={handleUpgrade}
-              className="btn-primary"
+              className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 whitespace-nowrap"
             >
-              Upgrade Now
+              Upgrade Now →
             </button>
           </div>
         </div>
       )}
 
       {isPro && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-green-900">Pro Plan Active</h4>
-              <p className="text-sm text-green-700">
-                {user.subscriptionEndsAt && (
-                  <>Renews on {new Date(user.subscriptionEndsAt).toLocaleDateString()}</>
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="text-lg font-bold text-green-900 mb-2">Pro Plan Active</h4>
+              <p className="text-sm text-green-800">
+                {user.subscriptionEndsAt ? (
+                  <>Renews on <span className="font-semibold">{new Date(user.subscriptionEndsAt).toLocaleDateString()}</span></>
+                ) : (
+                  "Your subscription is active"
                 )}
               </p>
             </div>
             <button
               onClick={handleManageBilling}
-              className="btn-outline"
+              className="px-6 py-3 bg-white border-2 border-gray-300 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 whitespace-nowrap"
             >
               Manage Billing
             </button>
           </div>
         </div>
       )}
-
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span className="text-gray-600">Ingredients:</span>
-          <span className="ml-2 font-medium">
-            {sub.limits.maxIngredients === null ? "Unlimited" : `${sub.limits.maxIngredients} max`}
-          </span>
-        </div>
-        <div>
-          <span className="text-gray-600">Recipes:</span>
-          <span className="ml-2 font-medium">
-            {sub.limits.maxRecipes === null ? "Unlimited" : `${sub.limits.maxRecipes} max`}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

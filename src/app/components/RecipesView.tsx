@@ -29,9 +29,13 @@ interface Recipe {
 
 interface RecipesViewProps {
   recipes: Recipe[];
+  selectedIds?: Set<number>;
+  onSelect?: (id: number) => void;
+  onSelectAll?: () => void;
+  isSelecting?: boolean;
 }
 
-export function RecipesView({ recipes }: RecipesViewProps) {
+export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSelectAll, isSelecting = false }: RecipesViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -149,7 +153,18 @@ export function RecipesView({ recipes }: RecipesViewProps) {
       {viewMode === 'photos' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedRecipes.map((r) => (
-            <div key={r.id} className="group">
+            <div key={r.id} className={`group relative ${isSelecting ? 'cursor-pointer' : ''}`}>
+              {isSelecting && (
+                <div className="absolute top-3 left-3 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(r.id)}
+                    onChange={() => onSelect?.(r.id)}
+                    className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
               <Link href={`/dashboard/recipes/${r.id}`} className="block">
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   {/* Large Recipe Image */}
@@ -210,7 +225,18 @@ export function RecipesView({ recipes }: RecipesViewProps) {
       ) : viewMode === 'grid' ? (
         <div className="grid-responsive-mobile">
           {sortedRecipes.map((r) => (
-            <div key={r.id} className="card-responsive hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
+            <div key={r.id} className={`card-responsive hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 relative ${isSelecting ? 'cursor-pointer' : ''}`}>
+              {isSelecting && (
+                <div className="absolute top-3 left-3 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(r.id)}
+                    onChange={() => onSelect?.(r.id)}
+                    className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
               {/* Recipe Image Placeholder */}
               <Link href={`/dashboard/recipes/${r.id}`} className="block">
                 <div className="w-full h-32 sm:h-40 md:h-48 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-xl mb-4 flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer touch-target">
@@ -310,6 +336,16 @@ export function RecipesView({ recipes }: RecipesViewProps) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  {isSelecting && (
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size === sortedRecipes.length && sortedRecipes.length > 0}
+                        onChange={onSelectAll}
+                        className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                    </th>
+                  )}
                   <th 
                     className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                     onClick={() => handleSort('name')}
@@ -378,7 +414,17 @@ export function RecipesView({ recipes }: RecipesViewProps) {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedRecipes.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={r.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(r.id) ? 'bg-emerald-50' : ''}`}>
+                    {isSelecting && (
+                      <td className="px-3 sm:px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(r.id)}
+                          onChange={() => onSelect?.(r.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                      </td>
+                    )}
                     <td className="px-3 sm:px-6 py-4">
                       <Link href={`/dashboard/recipes/${r.id}`} className="flex items-center gap-3 group">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">

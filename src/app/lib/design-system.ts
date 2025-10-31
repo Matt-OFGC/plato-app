@@ -1,12 +1,6 @@
 // Design system utilities
-export function useToast() {
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    // In a real implementation, this would show a toast notification
-    console.log(`Toast: ${type.toUpperCase()} - ${message}`);
-  };
-
-  return { showToast };
-}
+// Re-export useToast and ToastProvider from ToastProvider for convenience
+export { useToast, ToastProvider } from "@/components/ToastProvider";
 
 export function AppHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (

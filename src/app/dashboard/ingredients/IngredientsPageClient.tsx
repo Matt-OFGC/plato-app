@@ -3,22 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IngredientModal } from "@/components/IngredientModal";
-import { IngredientsView } from "@/components/IngredientsView";
+import { IngredientsViewWithBulkActions } from "@/components/IngredientsViewWithBulkActions";
 import { SmartImporter } from "@/components/SmartImporter";
 import { SearchBar } from "@/components/SearchBar";
 import { StalePriceAlerts } from "@/components/StalePriceAlerts";
 import { Unit } from "@/lib/units";
 
 // Use the same Ingredient type as IngredientsView
-type Ingredient = Parameters<typeof IngredientsView>[0]['ingredients'][0];
+type Ingredient = Parameters<typeof IngredientsViewWithBulkActions>[0]['ingredients'][0];
+
+interface Supplier {
+  id: number;
+  name: string;
+}
 
 interface IngredientsPageClientProps {
   ingredients: Ingredient[];
   deleteIngredient: (id: number) => Promise<void>;
   companyId: number;
+  suppliers: Supplier[];
 }
 
-export function IngredientsPageClient({ ingredients, deleteIngredient, companyId }: IngredientsPageClientProps) {
+export function IngredientsPageClient({ ingredients, deleteIngredient, companyId, suppliers }: IngredientsPageClientProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
@@ -80,11 +86,12 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
         <SearchBar placeholder="Search ingredients by name, supplier, or notes..." />
       </div>
 
-      <IngredientsView 
+      <IngredientsViewWithBulkActions 
         ingredients={ingredientsList} 
         deleteIngredient={deleteIngredient}
         onEdit={handleEditIngredient}
         onNew={handleNewIngredient}
+        suppliers={suppliers}
       />
 
       {/* Modal */}

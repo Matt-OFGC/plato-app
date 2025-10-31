@@ -66,6 +66,21 @@ export function Sidebar() {
   useEffect(() => { try { localStorage.setItem('sidebar_pinned', String(pinned)); } catch {} }, [pinned]);
   useEffect(() => { try { localStorage.setItem('sidebar_collapsed', String(collapsed)); } catch {} }, [collapsed]);
 
+  // Listen for toggle-sidebar event from keyboard shortcuts
+  useEffect(() => {
+    const handleToggleSidebar = () => {
+      if (isTouchDevice) {
+        setCollapsed(!collapsed);
+      } else {
+        // On desktop, just toggle the sidebar state
+        setCollapsed(!collapsed);
+      }
+    };
+
+    window.addEventListener('toggle-sidebar', handleToggleSidebar);
+    return () => window.removeEventListener('toggle-sidebar', handleToggleSidebar);
+  }, [collapsed, isTouchDevice]);
+
   // Apply body class to adjust main padding so pages don't hide behind sidebar
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -239,7 +254,7 @@ export function Sidebar() {
           </nav>
 
           {/* Plato OS App Switcher - Bottom of sidebar */}
-          <div className="px-2 pb-2 space-y-1">
+          <div className="px-2 pb-2">
             <AppSwitcher 
               activeApp={activeApp} 
               onAppChange={(app) => {

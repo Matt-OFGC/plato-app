@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { createSupplier } from "@/app/suppliers/actions";
 
 interface Supplier {
   id: number;
@@ -62,36 +61,29 @@ export function SupplierSelector({ suppliers, value, onChange, placeholder = "Se
   const handleCreateSupplier = async () => {
     if (!newSupplierName.trim()) return;
 
-    const formData = new FormData();
-    formData.append("name", newSupplierName.trim());
-    formData.append("description", "");
-    formData.append("contactName", "");
-    formData.append("email", "");
-    formData.append("phone", "");
-    formData.append("website", "");
-    formData.append("deliveryDays", JSON.stringify([]));
-    formData.append("deliveryNotes", "");
-    formData.append("accountLogin", "");
-    formData.append("accountPassword", "");
-    formData.append("accountNumber", "");
-    formData.append("address", "");
-    formData.append("city", "");
-    formData.append("postcode", "");
-    formData.append("country", "");
-    formData.append("currency", "GBP");
-    formData.append("paymentTerms", "");
-    formData.append("minimumOrder", "");
+    try {
+      const response = await fetch("/api/quick-create/supplier", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newSupplierName.trim() }),
+      });
 
-    const result = await createSupplier(formData);
-    if (result.success && result.supplier) {
-      onChange(result.supplier.id);
-      setNewSupplierName("");
-      setIsCreating(false);
-      setSearchTerm("");
-      setIsOpen(false);
-      window.location.reload(); // Refresh to get updated suppliers list
-    } else {
-      alert(result.error || "Failed to create supplier");
+      const data = await response.json();
+
+      if (response.ok && data.success && data.supplier) {
+        onChange(data.supplier.id);
+        setNewSupplierName("");
+        setIsCreating(false);
+        setSearchTerm("");
+        setIsOpen(false);
+        // Refresh to get updated suppliers list
+        window.location.reload();
+      } else {
+        alert(data.error || "Failed to create supplier");
+      }
+    } catch (error) {
+      console.error("Error creating supplier:", error);
+      alert("Failed to create supplier. Please try again.");
     }
   };
 

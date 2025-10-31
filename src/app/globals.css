@@ -157,29 +157,30 @@
   --breakpoint-2xl: 1536px;
 }
 
+/* Dark mode disabled - forced light mode only */
 .dark {
-  /* Dark mode color scheme */
-  --background: #0f172a; /* slate-900 */
-  --foreground: #f1f5f9; /* slate-100 */
-  --primary: #10b981; /* emerald-500 */
+  /* Override all dark mode styles to use light mode values */
+  --background: #ffffff;
+  --foreground: #1f2937;
+  --primary: #059669;
   --primary-foreground: #ffffff;
-  --secondary: #1e293b; /* slate-800 */
-  --secondary-foreground: #10b981;
-  --accent: #34d399; /* emerald-400 */
-  --accent-foreground: #0f172a;
-  --muted: #1e293b; /* slate-800 */
-  --muted-foreground: #94a3b8; /* slate-400 */
-  --border: #334155; /* slate-700 */
-  --input: #1e293b; /* slate-800 */
-  --ring: #10b981;
+  --secondary: #f0fdf4;
+  --secondary-foreground: #166534;
+  --accent: #10b981;
+  --accent-foreground: #ffffff;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+  --input: #ffffff;
+  --ring: #059669;
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
   
-  --card: #1e293b; /* slate-800 */
-  --card-foreground: #f1f5f9;
-  --popover: #1e293b;
-  --popover-foreground: #f1f5f9;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 }
@@ -219,6 +220,22 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* Force light mode - override any dark styles */
+html:not(.dark) input,
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
 }
 
 /* Modern card styling */
@@ -428,6 +445,22 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Toast animations */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
 }
 
 /* Print-specific styles */

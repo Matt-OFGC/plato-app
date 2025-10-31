@@ -325,4 +325,88 @@ export async function updateIngredientPrice(ingredientId: number, newPrice: numb
   }
 }
 
+export async function bulkDeleteIngredients(ids: number[]) {
+  const { companyId, user } = await getCurrentUserAndCompany();
+  
+  // Verify all ingredients belong to the user's company and check for usage
+  const ingredients = await prisma.ingredient.findMany({
+    where: { id: { in: ids } },
+    select: { 
+      id: true, 
+      companyId: true, 
+      name: true,
+      recipeItems: {
+        select: {
+          recipe: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      }
+    },
+  });
+  
+  const unauthorized = ingredients.filter(ing => ing.companyId !== companyId);
+  if (unauthorized.length > 0) {
+    throw new Error("Unauthorized: Cannot delete ingredients from another company");
+  }
+  
+  // Check for ingredients used in recipes
+  const usedIngredients = ingredients.filter(ing => ing.recipeItems && ing.recipeItems.length > 0);
+  if (usedIngredients.length > 0) {
+    const names = usedIngredients.map(ing => ing.name).join(", ");
+    throw new Error(`Cannot delete ingredients used in recipes: ${names}. Please remove them from recipes first.`);
+  }
+  
+  // Delete all ingredients
+  await prisma.ingredient.deleteMany({
+    where: { id: { in: ids }, companyId },
+  });
+  
+  // Audit deletions
+  if (user && companyId) {
+    const { auditLog } = await import("@/lib/audit-log");
+    for (const ingredient of ingredients) {
+      try {
+        await auditLog.ingredientDeleted(user.id, ingredient.id, ingredient.name, companyId);
+      } catch (error) {
+        console.error("Audit log error (non-blocking):", error);
+      }
+    }
+  }
+  
+  revalidatePath("/dashboard/ingredients");
+}
+
+export async function bulkUpdateIngredients(ids: number[], updates: { supplierId?: number | null }) {
+  const { companyId } = await getCurrentUserAndCompany();
+  
+  // Verify all ingredients belong to the user's company
+  const ingredients = await prisma.ingredient.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, companyId: true },
+  });
+  
+  const unauthorized = ingredients.filter(ing => ing.companyId !== companyId);
+  if (unauthorized.length > 0) {
+    throw new Error("Unauthorized: Cannot update ingredients from another company");
+  }
+  
+  // Prepare update data
+  const updateData: any = {};
+  if (updates.supplierId !== undefined) {
+    updateData.supplierId = updates.supplierId;
+  }
+  
+  // Update all ingredients
+  await prisma.ingredient.updateMany({
+    where: { id: { in: ids }, companyId },
+    data: updateData,
+  });
+  
+  revalidatePath("/dashboard/ingredients");
+}
+
 

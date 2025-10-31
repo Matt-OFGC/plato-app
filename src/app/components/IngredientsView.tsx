@@ -28,9 +28,13 @@ interface IngredientsViewProps {
   deleteIngredient: (id: number) => Promise<void>; // Server action
   onEdit?: (ingredient: Ingredient) => void; // Callback for editing
   onNew?: () => void; // Callback for creating new ingredient
+  selectedIds?: Set<number>;
+  onSelect?: (id: number) => void;
+  onSelectAll?: () => void;
+  isSelecting?: boolean;
 }
 
-export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }: IngredientsViewProps) {
+export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, selectedIds = new Set(), onSelect, onSelectAll, isSelecting = false }: IngredientsViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -71,7 +75,18 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
       {viewMode === 'grid' ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {ingredients.map((ing) => (
-            <div key={ing.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
+            <div key={ing.id} className={`bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 active:scale-95 relative ${selectedIds.has(ing.id) ? 'ring-2 ring-emerald-500' : ''} ${isSelecting ? 'cursor-pointer' : ''}`}>
+              {isSelecting && (
+                <div className="absolute top-4 right-4 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(ing.id)}
+                    onChange={() => onSelect?.(ing.id)}
+                    className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
               {/* Ingredient Icon */}
               <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,6 +208,16 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  {isSelecting && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.size === ingredients.length && ingredients.length > 0}
+                        onChange={onSelectAll}
+                        className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Allergens</th>
@@ -212,7 +237,17 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew }
                   const colorClass = getPriceStatusColorClass(priceStatus.status);
                   
                   return (
-                    <tr key={ing.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={ing.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(ing.id) ? 'bg-emerald-50' : ''}`}>
+                      {isSelecting && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(ing.id)}
+                            onChange={() => onSelect?.(ing.id)}
+                            className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button 
                           onClick={() => onEdit?.(ing)}
