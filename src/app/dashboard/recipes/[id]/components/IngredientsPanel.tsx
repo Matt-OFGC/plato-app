@@ -413,9 +413,16 @@ export default function IngredientsPanel({
                         
                         {/* Cost per line - Always show */}
                         {(() => {
-                          // ALERT AT THE START - This will show if we reach this code at all
+                          // DEBUG - Remove after fixing
                           if (ingredient.name && ingredient.name.toLowerCase().includes('fluff')) {
-                            alert(`COST CALC CODE REACHED FOR FLUFF!\nName: ${ingredient.name}\nOriginal Qty: ${ingredient.quantity}\nScaled Qty: ${scaledQuantity}\nUnit: ${ingredient.unit}\nServings: ${servings}\nBase Servings: ${baseServings}`);
+                            console.warn('🔍 VERTICAL VIEW - COST CALC CODE REACHED FOR FLUFF!', {
+                              name: ingredient.name,
+                              originalQty: ingredient.quantity,
+                              scaledQty: scaledQuantity,
+                              unit: ingredient.unit,
+                              servings,
+                              baseServings,
+                            });
                           }
                           
                           const fullIngredient = availableIngredients.find(ai => 
