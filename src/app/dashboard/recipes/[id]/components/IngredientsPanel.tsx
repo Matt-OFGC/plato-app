@@ -455,8 +455,18 @@ export default function IngredientsPanel({
                             if (recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0 && isFinite(recipeBase.amount) && isFinite(packBase.amount)) {
                               const costPerBaseUnit = fullIngredient.packPrice / packBase.amount;
                               ingredientCost = recipeBase.amount * costPerBaseUnit;
+                            } else if (fullIngredient.densityGPerMl && recipeBase.base === 'ml' && packBase.base === 'g') {
+                              // Recipe is volume (ml), pack is weight (g) - convert via density
+                              const packVolume = packBase.amount / fullIngredient.densityGPerMl;
+                              const costPerMl = fullIngredient.packPrice / packVolume;
+                              ingredientCost = recipeBase.amount * costPerMl;
+                            } else if (fullIngredient.densityGPerMl && recipeBase.base === 'g' && packBase.base === 'ml') {
+                              // Recipe is weight (g), pack is volume (ml) - convert via density
+                              const packWeight = packBase.amount * fullIngredient.densityGPerMl;
+                              const costPerGram = fullIngredient.packPrice / packWeight;
+                              ingredientCost = recipeBase.amount * costPerGram;
                             } else {
-                              // Fallback to original function if units don't match
+                              // Fallback to original function if units don't match and no density conversion possible
                               ingredientCost = computeIngredientUsageCostWithDensity(
                                 scaledQuantity,
                                 ingredient.unit as Unit,
@@ -574,8 +584,18 @@ export default function IngredientsPanel({
                               if (recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0 && isFinite(recipeBase.amount) && isFinite(packBase.amount)) {
                                 const costPerBaseUnit = fullIngredient.packPrice / packBase.amount;
                                 ingredientCost = recipeBase.amount * costPerBaseUnit;
+                              } else if (fullIngredient.densityGPerMl && recipeBase.base === 'ml' && packBase.base === 'g') {
+                                // Recipe is volume (ml), pack is weight (g) - convert via density
+                                const packVolume = packBase.amount / fullIngredient.densityGPerMl;
+                                const costPerMl = fullIngredient.packPrice / packVolume;
+                                ingredientCost = recipeBase.amount * costPerMl;
+                              } else if (fullIngredient.densityGPerMl && recipeBase.base === 'g' && packBase.base === 'ml') {
+                                // Recipe is weight (g), pack is volume (ml) - convert via density
+                                const packWeight = packBase.amount * fullIngredient.densityGPerMl;
+                                const costPerGram = fullIngredient.packPrice / packWeight;
+                                ingredientCost = recipeBase.amount * costPerGram;
                               } else {
-                                // Fallback to original function if units don't match
+                                // Fallback to original function if units don't match and no density conversion possible
                                 ingredientCost = computeIngredientUsageCostWithDensity(
                                   scaledQuantity,
                                   ingredient.unit as Unit,
