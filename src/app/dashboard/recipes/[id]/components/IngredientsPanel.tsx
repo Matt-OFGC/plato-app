@@ -3,7 +3,7 @@
 import React from "react";
 import { Ingredient, RecipeStep } from "@/lib/mocks/recipe";
 import { scaleQuantity, formatQty } from "@/lib/recipe-scaling";
-import { computeIngredientUsageCostWithDensity, Unit } from "@/lib/units";
+import { computeIngredientUsageCostWithDensity, Unit, toBase } from "@/lib/units";
 
 interface IngredientsPanelProps {
   ingredients: Ingredient[];
