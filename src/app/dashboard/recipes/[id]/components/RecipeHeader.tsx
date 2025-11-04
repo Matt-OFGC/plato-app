@@ -2,15 +2,18 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { CategorySelector } from "@/components/CategorySelector";
+import Link from "next/link";
 
 interface RecipeHeaderProps {
   title: string;
   category?: string;
+  categoryId?: number | null;
   servings: number;
   viewMode: "whole" | "steps" | "edit" | "photos";
   onViewModeChange: (mode: "whole" | "steps" | "edit" | "photos") => void;
-  onCategoryChange?: (category: string) => void;
-  categories?: { id: number; name: string }[];
+  onCategoryChange?: (categoryId: number | null) => void;
+  categories?: { id: number; name: string; description?: string | null; color?: string | null }[];
   imageUrl?: string;
   onTitleChange?: (title: string) => void;
   onDelete?: () => void;
@@ -20,6 +23,7 @@ interface RecipeHeaderProps {
 export default function RecipeHeader({
   title,
   category,
+  categoryId,
   servings,
   viewMode,
   onViewModeChange,
@@ -76,19 +80,28 @@ export default function RecipeHeader({
               </h1>
             )}
             <div className="flex items-center gap-2 text-sm mt-1">
-              {viewMode === "edit" && onCategoryChange && categories.length > 0 ? (
-                <select
-                  value={category || ""}
-                  onChange={(e) => onCategoryChange(e.target.value)}
-                  className="px-2 py-0.5 rounded border border-gray-300 text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  <option value="">Uncategorized</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+              {viewMode === "edit" && onCategoryChange ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-64 min-w-[256px]">
+                    <CategorySelector
+                      categories={categories}
+                      value={categoryId || null}
+                      onChange={onCategoryChange}
+                      placeholder="Select category..."
+                      allowCreate={true}
+                      onCreateCategory={async (name) => {
+                        // CategorySelector handles creation via API
+                      }}
+                    />
+                  </div>
+                  <Link
+                    href="/dashboard/account/content"
+                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    title="Manage categories"
+                  >
+                    Manage
+                  </Link>
+                </div>
               ) : (
                 <span className="text-gray-500">{category || "Uncategorized"}</span>
               )}

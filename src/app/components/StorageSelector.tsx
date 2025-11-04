@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 
 interface StorageOption {
   id: number;
@@ -26,11 +28,16 @@ export function StorageSelector({
   allowCreate = false,
   onCreateStorage 
 }: Props) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [newOptionName, setNewOptionName] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, openUpward: false });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   const selectedOption = storageOptions.find(o => o.id === value);
 
@@ -39,8 +46,53 @@ export function StorageSelector({
   );
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      
+      // Always open upward for bottom bar selectors
+      // Position dropdown directly above button with small gap
+      // Use a smaller estimated height so it appears closer
+      const estimatedHeight = 150; // Smaller estimate for tighter positioning
+      const gap = 8; // Small gap between button and dropdown
+      
+      setDropdownPosition({
+        top: rect.top - estimatedHeight - gap,
+        left: rect.left,
+        width: rect.width,
+        openUpward: true,
+      });
+    }
+  }, [isOpen]);
+  
+  // Adjust position after dropdown renders to account for actual height
+  useEffect(() => {
+    if (isOpen && dropdownRef.current && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const dropdownRect = dropdownRef.current.getBoundingClientRect();
+      const actualHeight = dropdownRect.height;
+      const gap = 8;
+      
+      // Recalculate top position based on actual height
+      setDropdownPosition(prev => ({
+        ...prev,
+        top: buttonRect.top - actualHeight - gap,
+      }));
+    }
+  }, [isOpen, filteredOptions.length, showCreateForm]);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
         setIsOpen(false);
         setSearchTerm("");
         setShowCreateForm(false);
@@ -48,9 +100,15 @@ export function StorageSelector({
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("scroll", handleClickOutside, true);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("scroll", handleClickOutside, true);
+    };
+  }, [isOpen]);
 
   const handleSelect = (optionId: number | null) => {
     onChange(optionId);
@@ -59,7 +117,14 @@ export function StorageSelector({
   };
 
   const handleCreateOption = async () => {
-    if (!newOptionName.trim()) return;
+    if (!newOptionName.trim()) {
+      alert("Please enter a storage option name");
+      return;
+    }
+    
+    if (isCreating) return; // Prevent double submissions
+    
+    setIsCreating(true);
     
     try {
       const response = await fetch("/api/quick-create/storage", {
@@ -75,20 +140,28 @@ export function StorageSelector({
         if (onCreateStorage) {
           onCreateStorage(newOptionName.trim());
         }
-        // Update the selection to the new option
+        
+        // Immediately select the new option (optimistic update)
         onChange(data.option.id);
+        
+        // Clear form state and close dropdown
         setNewOptionName("");
         setShowCreateForm(false);
         setSearchTerm("");
         setIsOpen(false);
-        // Refresh the page to get updated options list
-        window.location.reload();
+        setIsCreating(false);
+        
+        // Refresh the router to get updated options list in the background
+        router.refresh();
       } else {
-        alert(data.error || "Failed to create storage option");
+        const errorMsg = data.error || data.details?.[0]?.message || "Failed to create storage option";
+        alert(`Error: ${errorMsg}`);
+        setIsCreating(false);
       }
     } catch (error) {
       console.error("Error creating storage option:", error);
-      alert("Failed to create storage option. Please try again.");
+      alert(`Failed to create storage option: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setIsCreating(false);
     }
   };
 
@@ -101,28 +174,33 @@ export function StorageSelector({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent bg-white flex items-center justify-between"
+        className={`w-full text-xs px-2 py-1.5 text-left border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white/80 backdrop-blur-xl border-gray-200/60 hover:bg-white hover:border-gray-300 hover:shadow-md flex items-center justify-between transition-all ${
+          isOpen 
+            ? 'border-emerald-500 shadow-lg ring-2 ring-emerald-500/20 bg-white' 
+            : ''
+        }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
           {selectedOption ? (
             <>
               {selectedOption.icon && (
-                <svg className="w-4 h-4 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={selectedOption.icon} />
                 </svg>
               )}
-              <span className="text-[var(--foreground)]">{selectedOption.name}</span>
+              <span className="text-gray-700 truncate">{selectedOption.name}</span>
             </>
           ) : (
-            <span className="text-[var(--muted-foreground)]">{placeholder}</span>
+            <span className="text-gray-500 truncate">{placeholder}</span>
           )}
         </div>
         <svg
-          className={`w-4 h-4 text-[var(--muted-foreground)] transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`w-3 h-3 text-gray-500 flex-shrink-0 ml-1 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -131,25 +209,44 @@ export function StorageSelector({
         </svg>
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
-          <div className="p-2 border-b border-gray-200">
+      {isOpen && mounted && createPortal(
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-[10000] bg-black/5"
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Dropdown */}
+          <div 
+            ref={dropdownRef}
+            className="fixed z-[10001] bg-white border border-gray-200 rounded-xl shadow-2xl"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              width: `${Math.max(dropdownPosition.width, 280)}px`, // Minimum 280px, match button width
+              maxWidth: 'calc(100vw - 2rem)',
+              maxHeight: showCreateForm ? '500px' : '240px',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+            }}
+          >
+          <div className="p-2 border-b border-gray-200/50">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search options..."
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+              className="w-full px-2 py-1.5 text-xs bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-800 placeholder:text-gray-400"
               autoFocus
             />
           </div>
 
-          <div className="max-h-48 overflow-y-auto">
+          <div className="overflow-y-auto overflow-x-visible" style={{ maxHeight: showCreateForm ? '400px' : '192px', minHeight: '100px' }}>
             {/* Clear selection option */}
             <button
               onClick={() => handleSelect(null)}
-              className="w-full px-3 py-2 text-left text-sm text-[var(--muted-foreground)] hover:bg-gray-50 flex items-center gap-2"
+              className="w-full px-2 py-1.5 text-left text-xs text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all flex items-center gap-2 rounded-lg mx-0.5 my-0.5"
             >
               <span>No storage</span>
             </button>
@@ -159,17 +256,17 @@ export function StorageSelector({
               <button
                 key={option.id}
                 onClick={() => handleSelect(option.id)}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                className="w-full px-2 py-1.5 text-left text-xs hover:bg-gray-50 transition-all flex items-center gap-2 rounded-lg mx-0.5 my-0.5"
               >
                 {option.icon && (
-                  <svg className="w-4 h-4 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={option.icon} />
                   </svg>
                 )}
-                <div>
-                  <div className="font-medium text-[var(--foreground)]">{option.name}</div>
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 truncate">{option.name}</div>
                   {option.description && (
-                    <div className="text-xs text-[var(--muted-foreground)]">{option.description}</div>
+                    <div className="text-xs text-gray-500 truncate">{option.description}</div>
                   )}
                 </div>
               </button>
@@ -179,7 +276,7 @@ export function StorageSelector({
             {allowCreate && onCreateStorage && (
               <>
                 {filteredOptions.length === 0 && searchTerm && (
-                  <div className="px-3 py-2 text-sm text-[var(--muted-foreground)] border-t border-gray-200">
+                  <div className="px-2 py-1.5 text-xs text-gray-500 border-t border-gray-200">
                     No options found
                   </div>
                 )}
@@ -188,17 +285,23 @@ export function StorageSelector({
                   <div className="border-t border-gray-200">
                     {!showCreateForm ? (
                       <button
-                        onClick={() => setShowCreateForm(true)}
-                        className="w-full px-3 py-2 text-left text-sm text-[var(--primary)] hover:bg-gray-50 flex items-center gap-2"
+                        type="button"
+                        onClick={() => {
+                          const nameToUse = searchTerm.trim() || "New Storage Option";
+                          setNewOptionName(nameToUse);
+                          setShowCreateForm(true);
+                        }}
+                        className="w-full px-2 py-1.5 text-left text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-2 rounded-lg mx-0.5 my-0.5"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Create "{searchTerm}"
+                        <span>Create "{searchTerm}"</span>
                       </button>
                     ) : (
-                      <div className="p-3 border-t border-gray-200">
-                        <div className="flex gap-2">
+                      <div className="border-t border-gray-200 mt-2 pt-2">
+                        <div className="px-2 py-2">
+                          <div className="text-xs font-medium text-gray-700 mb-2">Create new storage option</div>
                           <input
                             type="text"
                             value={newOptionName}
@@ -212,25 +315,30 @@ export function StorageSelector({
                                 setNewOptionName("");
                               }
                             }}
-                            placeholder="Option name"
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[var(--primary)] focus:border-transparent"
+                            placeholder="Storage option name"
+                            className="w-full px-2 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-800 placeholder:text-gray-400 mb-2"
                             autoFocus
                           />
-                          <button
-                            onClick={handleCreateOption}
-                            className="px-3 py-1 text-sm bg-[var(--primary)] text-[var(--primary-foreground)] rounded hover:bg-[var(--accent)] transition-colors"
-                          >
-                            Create
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowCreateForm(false);
-                              setNewOptionName("");
-                            }}
-                            className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-                          >
-                            Cancel
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleCreateOption}
+                              disabled={isCreating}
+                              className="flex-1 px-2 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isCreating ? "Creating..." : "Create"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowCreateForm(false);
+                                setNewOptionName("");
+                              }}
+                              className="flex-1 px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -240,6 +348,8 @@ export function StorageSelector({
             )}
           </div>
         </div>
+        </>,
+        document.body
       )}
     </div>
   );

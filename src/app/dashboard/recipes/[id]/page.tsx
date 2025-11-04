@@ -64,17 +64,17 @@ export default async function RecipePage({ params }: Props) {
     prisma.category.findMany({
       where: { companyId },
       orderBy: { order: "asc" },
-      select: { id: true, name: true }
+      select: { id: true, name: true, description: true, color: true }
     }),
     prisma.storageOption.findMany({
       where: { companyId },
       orderBy: { order: "asc" },
-      select: { id: true, name: true }
+      select: { id: true, name: true, description: true, icon: true }
     }),
     prisma.shelfLifeOption.findMany({
       where: { companyId },
       orderBy: { order: "asc" },
-      select: { id: true, name: true }
+      select: { id: true, name: true, description: true }
     }),
     prisma.ingredient.findMany({
       where: { companyId },
@@ -83,6 +83,7 @@ export default async function RecipePage({ params }: Props) {
         id: true, 
         name: true, 
         packUnit: true,
+        originalUnit: true,
         packPrice: true,
         packQuantity: true,
         densityGPerMl: true,
@@ -191,9 +192,10 @@ export default async function RecipePage({ params }: Props) {
         ? ing.packPrice / ing.packQuantity
         : 0,
       // Include full data for proper cost calculation with unit conversion
+      // packQuantity is already in base units, packUnit is the base unit
       packPrice: ing.packPrice,
       packQuantity: ing.packQuantity,
-      packUnit: ing.packUnit,
+      packUnit: ing.packUnit, // This is the base unit (g, ml, each) - packQuantity is already in this unit
       densityGPerMl: ing.densityGPerMl,
       allergens: ing.allergens || [],
     };

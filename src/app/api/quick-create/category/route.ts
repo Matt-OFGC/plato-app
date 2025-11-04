@@ -1,5 +1,3 @@
-"use server";
-
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { NextResponse } from "next/server";
@@ -13,11 +11,15 @@ const createCategorySchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    console.log("Category creation API called");
     const { companyId } = await getCurrentUserAndCompany();
+    console.log("Company ID:", companyId);
     const body = await request.json();
+    console.log("Request body:", body);
     
     const parsed = createCategorySchema.safeParse(body);
     if (!parsed.success) {
+      console.error("Validation failed:", parsed.error);
       return NextResponse.json(
         { error: "Invalid data", details: parsed.error.errors },
         { status: 400 }
@@ -25,6 +27,7 @@ export async function POST(request: Request) {
     }
 
     const { name, description, color } = parsed.data;
+    console.log("Creating category:", { name, description, color, companyId });
 
     // Check if category already exists
     const existing = await prisma.category.findFirst({
@@ -58,6 +61,7 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log("Category created successfully:", category);
     return NextResponse.json({ success: true, category });
   } catch (error) {
     console.error("Error creating category:", error);

@@ -223,38 +223,38 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
 
   return (
     <>
-      {/* Floating Menu Button - Top Left */}
-      <div className="fixed top-6 left-6 z-50 flex items-center gap-2">
-        {!sidebarOpen && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onMenuClick();
-            }}
-            className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 p-3 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer"
-            aria-label="Toggle menu"
-            type="button"
-          >
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        )}
-        
-        {/* Back Button - Only show on recipe pages */}
-        {isRecipePage && (
-          <a
-            href="/dashboard/recipes"
-            className="flex items-center gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 px-4 py-2 rounded-full hover:bg-white hover:shadow-xl transition-all"
-          >
-            <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="hidden sm:inline text-sm font-medium text-gray-700">Back</span>
-          </a>
-        )}
-      </div>
+              {/* Floating Menu Button - Top Left */}
+              <div className="fixed top-6 left-6 z-50 flex items-center gap-2">
+                {!sidebarOpen && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onMenuClick();
+                    }}
+                    className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 p-3 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer"
+                    aria-label="Toggle menu"
+                    type="button"
+                  >
+                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                )}
+                
+                {/* Back Button - Only show on recipe pages when sidebar is closed */}
+                {isRecipePage && !sidebarOpen && (
+                  <a
+                    href="/dashboard/recipes"
+                    className="flex items-center gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 px-4 py-2 rounded-full hover:bg-white hover:shadow-xl transition-all"
+                  >
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="hidden sm:inline text-sm font-medium text-gray-700">Back</span>
+                  </a>
+                )}
+              </div>
 
       {/* Floating Navigation Tabs or Recipe View Switchers - Top Center */}
       {isRecipePage && recipeView ? (

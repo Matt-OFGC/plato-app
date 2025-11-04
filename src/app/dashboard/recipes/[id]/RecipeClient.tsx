@@ -4,7 +4,8 @@ import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
 import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe } from "./actions";
-import { computeIngredientUsageCostWithDensity, toBase, Unit } from "@/lib/units";
+import { computeIngredientUsageCostWithDensity, toBase, Unit, BaseUnit } from "@/lib/units";
+import { getIngredientDensityOrDefault } from "@/lib/ingredient-densities";
 import RecipeHeader from "./components/RecipeHeader";
 import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
@@ -18,14 +19,18 @@ import CostInsightsModal from "./components/CostInsightsModal";
 import Image from "next/image";
 import { RecentItemsTracker } from "@/components/RecentItemsTracker";
 import { RecipeViewProvider, useRecipeView } from "@/components/RecipeViewContext";
+import { CategorySelector } from "@/components/CategorySelector";
+import { StorageSelector } from "@/components/StorageSelector";
+import { ShelfLifeSelector } from "@/components/ShelfLifeSelector";
+import Link from "next/link";
 
 type ViewMode = "whole" | "steps" | "edit" | "photos";
 
 interface Props {
   recipe: RecipeMock;
-  categories: { id: number; name: string }[];
-  storageOptions: { id: number; name: string }[];
-  shelfLifeOptions: { id: number; name: string }[];
+  categories: { id: number; name: string; description?: string | null; color?: string | null }[];
+  storageOptions: { id: number; name: string; description?: string | null; icon?: string | null }[];
+  shelfLifeOptions: { id: number; name: string; description?: string | null }[];
   recipeId: number | null;
   availableIngredients: Array<{ 
     id: number; 
@@ -54,9 +59,16 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
   const [recipeTitle, setRecipeTitle] = useState(recipe.title);
   const [recipeType, setRecipeType] = useState<"single" | "batch">("batch");
   const [slicesPerBatch, setSlicesPerBatch] = useState(recipe.baseServings);
-  const [category, setCategory] = useState(recipe.category || "Uncategorized");
-  const [storage, setStorage] = useState(recipe.storage || "");
-  const [shelfLife, setShelfLife] = useState(recipe.shelfLife || "");
+  // Store IDs instead of names for better data integrity
+  const [categoryId, setCategoryId] = useState<number | null>(
+    categories.find(c => c.name === recipe.category)?.id || null
+  );
+  const [storageId, setStorageId] = useState<number | null>(
+    storageOptions.find(s => s.name === recipe.storage)?.id || null
+  );
+  const [shelfLifeId, setShelfLifeId] = useState<number | null>(
+    shelfLifeOptions.find(s => s.name === recipe.shelfLife)?.id || null
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isAllergenModalOpen, setIsAllergenModalOpen] = useState(false);
@@ -89,13 +101,21 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         
         // Otherwise, use robust manual calculation with toBase
         const recipeUnit = ingredient.unit?.toLowerCase().trim() as Unit;
-        const packUnitLower = fullIngredient.packUnit?.toLowerCase().trim() as Unit;
         
-        // Convert recipe quantity to base unit
-        const recipeBase = toBase(ingredient.quantity, recipeUnit, fullIngredient.densityGPerMl || undefined);
+        // Convert recipe quantity to base unit (don't pass density - it's only for cross-conversion)
+        const recipeBase = toBase(ingredient.quantity, recipeUnit);
         
-        // Convert pack quantity to base unit (never use density for pack)
-        const packBase = toBase(fullIngredient.packQuantity, packUnitLower, undefined);
+        // packQuantity is already in base units, packUnit is the base unit
+        const packBase = {
+          amount: fullIngredient.packQuantity,
+          base: fullIngredient.packUnit as BaseUnit
+        };
+        
+        // Get density (user-set or auto-lookup)
+        const density = getIngredientDensityOrDefault(
+          fullIngredient.name,
+          fullIngredient.densityGPerMl
+        );
         
         // If both converted to the same base unit, calculate cost
         if (recipeBase.base === packBase.base && packBase.amount > 0) {
@@ -104,9 +124,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         }
         
         // If base units don't match and we have density, try cross-conversion
-        if (fullIngredient.densityGPerMl) {
-          const density = fullIngredient.densityGPerMl;
-          
+        if (density) {
           // Recipe is ml, pack is g - convert pack to ml
           if (recipeBase.base === 'ml' && packBase.base === 'g') {
             const packMl = packBase.amount / density;
@@ -243,15 +261,20 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
       }
 
       if (isNew) {
+        // Convert IDs to names for saving
+        const categoryName = categoryId ? categories.find(c => c.id === categoryId)?.name || "" : "";
+        const storageName = storageId ? storageOptions.find(s => s.id === storageId)?.name || "" : "";
+        const shelfLifeName = shelfLifeId ? shelfLifeOptions.find(s => s.id === shelfLifeId)?.name || "" : "";
+        
         // Create new recipe
         const result = await saveRecipe({
           recipeId: null,
           name: recipeTitle.trim(),
           yieldQuantity: servings,
           yieldUnit: recipeType === "batch" ? "slices" : "each",
-          category,
-          storage,
-          shelfLife,
+          category: categoryName,
+          storage: storageName,
+          shelfLife: shelfLifeName,
           sellPrice,
           description,
           ingredients: localIngredients,
@@ -265,12 +288,17 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
           alert("❌ Failed to create recipe: " + (result.error || "Unknown error"));
         }
       } else {
+        // Convert IDs to names for saving
+        const categoryName = categoryId ? categories.find(c => c.id === categoryId)?.name || "" : "";
+        const storageName = storageId ? storageOptions.find(s => s.id === storageId)?.name || "" : "";
+        const shelfLifeName = shelfLifeId ? shelfLifeOptions.find(s => s.id === shelfLifeId)?.name || "" : "";
+        
         // Update existing recipe
         const result = await saveRecipeChanges({
           recipeId: recipeId!,
-          category,
-          storage,
-          shelfLife,
+          category: categoryName,
+          storage: storageName,
+          shelfLife: shelfLifeName,
           sellPrice,
           description,
           ingredients: localIngredients,
@@ -290,7 +318,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
     } finally {
       setIsSaving(false);
     }
-  }, [recipeTitle, servings, recipeType, category, storage, shelfLife, sellPrice, description, localIngredients, localSteps, isNew, recipeId, recipeView.setViewMode]);
+  }, [recipeTitle, servings, recipeType, categoryId, storageId, shelfLifeId, sellPrice, description, localIngredients, localSteps, isNew, recipeId, recipeView.setViewMode, categories, storageOptions, shelfLifeOptions]);
   
   // Update context with latest save state
   useEffect(() => {
@@ -377,11 +405,11 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
             </div>
           ` : ''}
           
-          ${storage || shelfLife ? `
+          ${storageId || shelfLifeId ? `
             <div class="section">
               <h2>Storage & Shelf Life</h2>
-              ${storage ? `<p><strong>Storage:</strong> ${storage}</p>` : ''}
-              ${shelfLife ? `<p><strong>Shelf Life:</strong> ${shelfLife}</p>` : ''}
+              ${storageId ? `<p><strong>Storage:</strong> ${storageOptions.find(s => s.id === storageId)?.name || ""}</p>` : ''}
+              ${shelfLifeId ? `<p><strong>Shelf Life:</strong> ${shelfLifeOptions.find(s => s.id === shelfLifeId)?.name || ""}</p>` : ''}
             </div>
           ` : ''}
           
@@ -438,11 +466,12 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         <div className="max-w-[1600px] mx-auto">
           <RecipeHeader
             title={isNew ? recipeTitle || "New Recipe" : recipe.title}
-            category={category}
+            category={categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}
+            categoryId={categoryId}
             servings={servings}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
-            onCategoryChange={setCategory}
+            onCategoryChange={(catId) => setCategoryId(catId)}
             categories={categories}
             imageUrl={recipe.imageUrl}
             onTitleChange={isNew ? setRecipeTitle : undefined}
@@ -491,7 +520,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     <div>
                       <h1 className="text-2xl font-bold text-gray-900 mb-2">{isNew ? recipeTitle || "New Recipe" : recipe.title}</h1>
                       <div className="flex items-center gap-3 text-gray-600 mb-3">
-                        <span>{recipe.category || "Uncategorized"}</span>
+                        <span>{categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}</span>
                         <span>•</span>
                         <span>{servings} servings</span>
                         {recipe.sellPrice && (
@@ -572,9 +601,9 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
       </div>
 
       {/* Bottom Info Bar - Separate Container Cards - FIXED TO BOTTOM */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl flex-shrink-0 z-30">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 py-4">
-          <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 flex-nowrap overflow-x-auto">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl flex-shrink-0 z-30 px-2 sm:px-4 md:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto py-3 sm:py-4">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 flex-nowrap overflow-x-auto scrollbar-hide">
             
             {/* Servings Container */}
             <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
@@ -694,27 +723,49 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
             {/* Recipe Metadata Container */}
             <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0 min-w-0">
               {viewMode === "edit" ? (
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <select
-                    value={storage}
-                    onChange={(e) => setStorage(e.target.value)}
-                    className="text-xs px-2 py-1 border border-gray-300 rounded"
-                  >
-                    <option value="">Storage...</option>
-                    {storageOptions.map(opt => (
-                      <option key={opt.id} value={opt.name}>{opt.name}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={shelfLife}
-                    onChange={(e) => setShelfLife(e.target.value)}
-                    className="text-xs px-2 py-1 border border-gray-300 rounded"
-                  >
-                    <option value="">Shelf Life...</option>
-                    {shelfLifeOptions.map(opt => (
-                      <option key={opt.id} value={opt.name}>{opt.name}</option>
-                    ))}
-                  </select>
+                <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <div className="w-32">
+                      <StorageSelector
+                        storageOptions={storageOptions}
+                        value={storageId}
+                        onChange={setStorageId}
+                        placeholder="Storage..."
+                        allowCreate={true}
+                        onCreateStorage={async (name) => {
+                          // StorageSelector handles creation via API
+                        }}
+                      />
+                    </div>
+                    <Link
+                      href="/dashboard/account/content"
+                      className="text-xs text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
+                      title="Manage storage options"
+                    >
+                      Manage
+                    </Link>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-32">
+                      <ShelfLifeSelector
+                        shelfLifeOptions={shelfLifeOptions}
+                        value={shelfLifeId}
+                        onChange={setShelfLifeId}
+                        placeholder="Shelf Life..."
+                        allowCreate={true}
+                        onCreateShelfLife={async (name) => {
+                          // ShelfLifeSelector handles creation via API
+                        }}
+                      />
+                    </div>
+                    <Link
+                      href="/dashboard/account/content"
+                      className="text-xs text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
+                      title="Manage shelf life options"
+                    >
+                      Manage
+                    </Link>
+                  </div>
                   {allergens && allergens.length > 0 && (
                     <>
                       <div className="h-3 md:h-4 w-px bg-gray-300" />
@@ -808,7 +859,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                   )}
                     
                   {/* Info Button - Always visible, combines allergens + dietary on small screens */}
-                  {(allergens.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && (
+                  {(allergens.length > 0 || dietaryLabels.length > 0 || storageId || shelfLifeId) && (
                     <>
                       {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden md:block" />}
                       <button
@@ -824,19 +875,19 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                   )}
                     
                   {/* Storage & Shelf Life - Show text on lg+, icon on md, hidden on small */}
-                  {storage && (
+                  {storageId && storageOptions.find(s => s.id === storageId) && (
                     <>
                       {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
                       <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
                         <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
-                        <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{storage}</span>
+                        <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{storageOptions.find(s => s.id === storageId)?.name}</span>
                       </div>
                       <button
                         onClick={() => setIsAllergenModalOpen(true)}
                         className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex-shrink-0"
-                        title={`Storage: ${storage}`}
+                        title={`Storage: ${storageOptions.find(s => s.id === storageId)?.name || ""}`}
                       >
                         <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -844,19 +895,19 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                       </button>
                     </>
                   )}
-                  {shelfLife && (
+                  {shelfLifeId && shelfLifeOptions.find(s => s.id === shelfLifeId) && (
                     <>
-                      {(storage || allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
+                      {(storageId || allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
                       <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
                         <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{shelfLife}</span>
+                        <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{shelfLifeOptions.find(s => s.id === shelfLifeId)?.name}</span>
                       </div>
                       <button
                         onClick={() => setIsAllergenModalOpen(true)}
                         className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 transition-colors flex-shrink-0"
-                        title={`Shelf Life: ${shelfLife}`}
+                        title={`Shelf Life: ${shelfLifeOptions.find(s => s.id === shelfLifeId)?.name || ""}`}
                       >
                         <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -865,8 +916,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     </>
                   )}
                     
-                  {/* Description Button - Show text on lg+, icon on md, hidden on small */}
-                  {(allergens?.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
+                    {/* Description Button - Show text on lg+, icon on md, hidden on small */}
+                    {(allergens?.length > 0 || dietaryLabels.length > 0 || storageId || shelfLifeId) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
                   <button
                     onClick={() => setIsDescriptionModalOpen(true)}
                     className="hidden lg:flex px-5 py-2 bg-white shadow-md rounded-xl hover:shadow-lg transition-all items-center gap-2 border border-gray-200 flex-shrink-0"
@@ -889,7 +940,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     </svg>
                   </button>
                   
-                  {!allergens?.length && !dietaryLabels.length && !storage && !shelfLife && !description && (
+                  {!allergens?.length && !dietaryLabels.length && !storageId && !shelfLifeId && !description && (
                     <span className="text-xs text-gray-400 italic hidden sm:block">No metadata available</span>
                   )}
                 </div>
@@ -1094,11 +1145,11 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                 </div>
 
                 {/* Additional Info */}
-                {(storage || shelfLife) && (
+                {(storageId || shelfLifeId) && (
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 mb-2">Storage & Shelf Life</h4>
-                    {storage && <p className="text-sm text-gray-700 mb-1"><strong>Storage:</strong> {storage}</p>}
-                    {shelfLife && <p className="text-sm text-gray-700"><strong>Shelf Life:</strong> {shelfLife}</p>}
+                    {storageId && <p className="text-sm text-gray-700 mb-1"><strong>Storage:</strong> {storageOptions.find(s => s.id === storageId)?.name || ""}</p>}
+                    {shelfLifeId && <p className="text-sm text-gray-700"><strong>Shelf Life:</strong> {shelfLifeOptions.find(s => s.id === shelfLifeId)?.name || ""}</p>}
                   </div>
                 )}
               </div>
