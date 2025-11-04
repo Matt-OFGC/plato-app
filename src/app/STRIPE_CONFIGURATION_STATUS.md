@@ -91,3 +91,5 @@ STRIPE_BUSINESS_ANNUAL_PRICE_ID=price_...
 - [ ] Update `.env.local` with all product/price IDs
 - [ ] Check Admin Panel → Stripe Status to verify
 
+
+

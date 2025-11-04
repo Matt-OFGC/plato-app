@@ -169,3 +169,5 @@ Ensure these fields exist on User model:
 - User deletion requires confirmation
 - All actions are logged for audit purposes
 
+
+

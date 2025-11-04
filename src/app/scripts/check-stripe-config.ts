@@ -95,3 +95,5 @@ console.log('2. Create missing products/prices if needed');
 console.log('3. Copy Product IDs and Price IDs to .env.local');
 console.log('4. Check admin panel → Stripe Status tab for detailed status\n');
 
+
+
