@@ -2,12 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ViewToggle } from "./ViewToggle";
 import { formatCurrency } from "@/lib/currency";
 import { fromBase, Unit } from "@/lib/units";
 import { formatLastUpdate, checkPriceStatus, getPriceStatusColorClass } from "@/lib/priceTracking";
-
-type ViewMode = 'grid' | 'list';
 
 interface Ingredient {
   id: number;
@@ -35,7 +32,6 @@ interface IngredientsViewProps {
 }
 
 export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, selectedIds = new Set(), onSelect, onSelectAll, isSelecting = false }: IngredientsViewProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -65,145 +61,10 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
         <p className="text-sm text-gray-600">
           Showing {ingredients.length} ingredient{ingredients.length !== 1 ? 's' : ''}
         </p>
-        <ViewToggle 
-          defaultView="grid" 
-          onChange={setViewMode}
-          storageKey="ingredients-view-mode"
-        />
       </div>
 
-      {viewMode === 'grid' ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {ingredients.map((ing) => (
-            <div key={ing.id} className={`bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 active:scale-95 relative ${selectedIds.has(ing.id) ? 'ring-2 ring-emerald-500' : ''} ${isSelecting ? 'cursor-pointer' : ''}`}>
-              {isSelecting && (
-                <div className="absolute top-4 right-4 z-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(ing.id)}
-                    onChange={() => onSelect?.(ing.id)}
-                    className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              )}
-              {/* Ingredient Icon */}
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-
-              {/* Ingredient Info */}
-              <div className="space-y-3">
-                <div>
-                  <button 
-                    onClick={() => onEdit?.(ing)}
-                    className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors text-left"
-                  >
-                    {ing.name}
-                  </button>
-                  {(ing.supplierRef || ing.supplier) && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      Supplier: {ing.supplierRef?.name || ing.supplier}
-                      {ing.supplierRef?.contactName && (
-                        <span className="text-gray-500"> ({ing.supplierRef.contactName})</span>
-                      )}
-                    </p>
-                  )}
-                  {ing.allergens && ing.allergens.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-500 mb-1">Allergens:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {ing.allergens.map((allergen, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                          >
-                            {allergen}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Pack Size:</span>
-                    <span className="font-medium text-gray-900">
-                      {(() => {
-                        const originalUnit = ing.originalUnit || ing.packUnit;
-                        const originalQuantity = ing.originalUnit 
-                          ? fromBase(Number(ing.packQuantity), originalUnit as Unit, ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined)
-                          : Number(ing.packQuantity);
-                        return `${originalQuantity} ${originalUnit}`;
-                      })()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Price:</span>
-                    <span className="font-semibold text-emerald-600">
-                      {formatCurrency(Number(ing.packPrice), ing.currency)}
-                    </span>
-                  </div>
-                  {ing.densityGPerMl && (
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500">Density:</span>
-                      <span className="font-medium text-gray-900">
-                        {String(ing.densityGPerMl)} g/ml
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Last Price Update */}
-                {(() => {
-                  const priceStatus = checkPriceStatus(ing.lastPriceUpdate || new Date());
-                  const colorClass = getPriceStatusColorClass(priceStatus.status);
-                  return (
-                    <div className={`text-xs px-3 py-2 rounded-lg border ${colorClass} flex items-center gap-2`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Updated: {formatLastUpdate(ing.lastPriceUpdate || new Date())}</span>
-                    </div>
-                  );
-                })()}
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={() => onEdit?.(ing)}
-                    className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium text-center"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={isPending}
-                    onClick={() => {
-                      if (!confirm("Delete this ingredient? This cannot be undone.")) return;
-                      startTransition(async () => {
-                        try {
-                          await deleteIngredient(ing.id);
-                          router.refresh();
-                        } catch (error: any) {
-                          alert(error.message || "Failed to delete ingredient");
-                        }
-                      });
-                    }}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm disabled:opacity-50"
-                  >
-                    {isPending ? 'Deleting…' : 'Delete'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      {/* List view only */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -324,7 +185,6 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
             </table>
           </div>
         </div>
-      )}
     </>
   );
 }

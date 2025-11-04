@@ -1,11 +1,9 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deleteRecipe } from "./actions";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { RecipeCategoryFilter } from "@/components/RecipeCategoryFilter";
-import { AdvancedSearch } from "@/components/AdvancedSearch";
-import { SmartImporter } from "@/components/SmartImporter";
 import { RecipesViewWithBulkActions } from "@/components/RecipesViewWithBulkActions";
+import { RecipesPageClient } from "./RecipesPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -166,35 +164,24 @@ export default async function RecipesPage({ searchParams }: Props) {
   });
 
   return (
-    <div>
-      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
-        <div>
-          <h1 className="text-responsive-h2 text-[var(--foreground)]">Recipes</h1>
-          <p className="text-responsive-body text-[var(--muted-foreground)] mt-2">Create and manage your recipes with automatic cost calculation</p>
+    <RecipesPageClient>
+      <div>
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Recipes</h1>
+          <p className="text-gray-500 text-lg mb-6">Create and manage your recipes with automatic cost calculation</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <SmartImporter type="recipes" />
-          <Link href="/dashboard/recipes/new" className="btn-responsive-primary flex items-center justify-center gap-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create Recipe
-          </Link>
-        </div>
-      </div>
 
-      <div className="mb-4 sm:mb-6 space-y-4">
-        <AdvancedSearch 
-          placeholder="Search recipes by name, description, or method..." 
-          entityType="recipes"
-        />
+        {/* Category Filter */}
         {categories.length > 0 && (
-          <RecipeCategoryFilter categories={categories} selectedCategory={category} />
+          <div className="mb-6">
+            <RecipeCategoryFilter categories={categories} selectedCategory={category} />
+          </div>
         )}
-      </div>
 
-      <RecipesViewWithBulkActions recipes={filteredRecipes} categories={categoriesWithIds} />
-    </div>
+        <RecipesViewWithBulkActions recipes={filteredRecipes} categories={categoriesWithIds} />
+      </div>
+    </RecipesPageClient>
   );
 }
 

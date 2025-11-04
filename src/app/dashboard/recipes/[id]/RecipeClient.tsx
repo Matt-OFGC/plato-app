@@ -1,7 +1,7 @@
 "use client";
 
 import { RecipeMock } from "@/lib/mocks/recipe";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
 import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe } from "./actions";
 import { computeIngredientUsageCostWithDensity, toBase, Unit } from "@/lib/units";
@@ -17,6 +17,7 @@ import InstructionsPanel from "./components/InstructionsPanel";
 import CostInsightsModal from "./components/CostInsightsModal";
 import Image from "next/image";
 import { RecentItemsTracker } from "@/components/RecentItemsTracker";
+import { RecipeViewProvider, useRecipeView } from "@/components/RecipeViewContext";
 
 type ViewMode = "whole" | "steps" | "edit" | "photos";
 
@@ -40,9 +41,11 @@ interface Props {
   isNew?: boolean;
 }
 
-export default function RecipeRedesignClient({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients, isNew = false }: Props) {
-  // Start in edit mode for new recipes, steps mode for existing
-  const [viewMode, setViewMode] = useState<ViewMode>(isNew ? "edit" : "steps");
+function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients, isNew = false }: Props) {
+  const recipeView = useRecipeView();
+  if (!recipeView) throw new Error("RecipeRedesignClientContent must be used within RecipeViewProvider");
+  
+  const { viewMode, setViewMode } = recipeView;
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const { servings, setServings } = useServings(recipe.id, recipe.baseServings);
   const checklist = useIngredientChecklist(recipe.id);
@@ -229,7 +232,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       // Validation
@@ -276,7 +279,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
 
         if (result.success) {
           // Switch back to steps view after saving
-          setViewMode("steps");
+          recipeView.setViewMode("steps");
         } else {
           alert("❌ Failed to save changes: " + (result.error || "Unknown error"));
         }
@@ -287,7 +290,14 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [recipeTitle, servings, recipeType, category, storage, shelfLife, sellPrice, description, localIngredients, localSteps, isNew, recipeId, recipeView.setViewMode]);
+  
+  // Update context with latest save state
+  useEffect(() => {
+    if (recipeView.updateSaveState) {
+      recipeView.updateSaveState(handleSave, isSaving);
+    }
+  }, [handleSave, isSaving, recipeView.updateSaveState]);
 
   const handlePrintAllergenSheet = () => {
     // Create a printable window
@@ -415,53 +425,36 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-white flex flex-col pb-20">
-      {recipeId && !isNew && (
-        <RecentItemsTracker
-          id={recipeId}
-          type="recipe"
-          name={recipe.title}
-        />
-      )}
+    <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden">
+        {recipeId && !isNew && (
+          <RecentItemsTracker
+            id={recipeId}
+            type="recipe"
+            name={recipe.title}
+          />
+        )}
       {/* Top Header - Compact */}
-      <div className="bg-white dark:bg-white border-b border-gray-200">
-        <div className="max-w-[1600px] mx-auto px-6 py-2">
-          {/* Back Button + Header on same line */}
-          <div className="flex items-center gap-3">
-            <a
-              href="/dashboard/recipes"
-              className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-white transition-colors border border-gray-200 bg-white shadow-sm"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span className="hidden sm:inline">Back</span>
-            </a>
-
-            <div className="flex-1 min-w-0">
-              <RecipeHeader
-                title={isNew ? recipeTitle || "New Recipe" : recipe.title}
-                category={category}
-                servings={servings}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                onCategoryChange={setCategory}
-                onSave={handleSave}
-                isSaving={isSaving}
-                categories={categories}
-                imageUrl={recipe.imageUrl}
-                onTitleChange={isNew ? setRecipeTitle : undefined}
-                onDelete={!isNew ? handleDelete : undefined}
-                recipeId={recipeId}
-              />
-            </div>
-          </div>
+      <div className="flex-shrink-0 px-6 pt-6 pb-4">
+        <div className="max-w-[1600px] mx-auto">
+          <RecipeHeader
+            title={isNew ? recipeTitle || "New Recipe" : recipe.title}
+            category={category}
+            servings={servings}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onCategoryChange={setCategory}
+            categories={categories}
+            imageUrl={recipe.imageUrl}
+            onTitleChange={isNew ? setRecipeTitle : undefined}
+            onDelete={!isNew ? handleDelete : undefined}
+            recipeId={recipeId}
+          />
         </div>
       </div>
 
       {/* Main Content Area - Flex Grow to Fill Space */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-white">
-        <div className="max-w-[1600px] mx-auto px-6 pt-2 pb-1 bg-white dark:bg-white">
+      <div className="flex-1 min-h-0 overflow-auto">
+        <div className="max-w-[1600px] mx-auto px-6 pb-6">
           {/* Step Navigation - Show in Steps and Edit modes */}
           {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
             <div className="mb-4">
@@ -550,7 +543,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
 
           {/* Ingredients & Instructions - Main Content */}
           {viewMode !== "photos" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2 max-h-[calc(100vh-350px)]">
+            <div className="flex-1 px-6 pb-6 min-h-0 flex gap-6">
             {/* Ingredients */}
             <IngredientsPanel
               ingredients={localIngredients}
@@ -579,12 +572,12 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
       </div>
 
       {/* Bottom Info Bar - Separate Container Cards - FIXED TO BOTTOM */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-50 border-t-2 border-gray-200 py-1.5 z-30 pl-4 md:pl-16 lg:pl-20 xl:pl-24">
-        <div className="max-w-[1600px] mx-auto px-6">
-          <div className="flex items-center justify-center gap-2 md:gap-2 lg:gap-3 flex-wrap sm:flex-nowrap overflow-x-auto sm:overflow-x-visible">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl flex-shrink-0 z-30">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 py-4">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 flex-nowrap overflow-x-auto">
             
             {/* Servings Container */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
               {viewMode === "edit" ? (
                 <div className="flex items-center gap-1.5 md:gap-2">
                   <span className="text-xs font-semibold text-gray-500">Type:</span>
@@ -647,14 +640,14 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   <div className="flex items-center gap-1.5 md:gap-2">
                     <button
                       onClick={() => handleServingsChange(Math.max(1, servings - 1))}
-                      className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-xs md:text-sm"
+                      className="w-8 h-8 bg-white shadow-md rounded-lg flex items-center justify-center hover:shadow-lg transition-all border border-gray-200 text-gray-700 font-semibold text-sm"
                     >
                       −
                     </button>
-                    <span className="text-sm md:text-base font-bold text-gray-900 min-w-[1.75rem] md:min-w-[2rem] text-center">{servings}</span>
+                    <span className="text-xl font-bold text-gray-900 min-w-[2.5rem] text-center">{servings}</span>
                     <button
                       onClick={() => handleServingsChange(servings + 1)}
-                      className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-xs md:text-sm"
+                      className="w-8 h-8 bg-white shadow-md rounded-lg flex items-center justify-center hover:shadow-lg transition-all border border-gray-200 text-gray-700 font-semibold text-sm"
                     >
                       +
                     </button>
@@ -664,22 +657,22 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             </div>
 
             {/* Cost & COGS Container with Info Button */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
               <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <span className="text-xs font-semibold text-gray-500">Cost</span>
-                  <span className="text-sm md:text-base font-bold text-emerald-600">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Cost</span>
+                  <span className="text-lg font-bold text-gray-900">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
                 </div>
                 <div className="h-3 md:h-4 w-px bg-gray-300" />
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <span className="text-xs font-semibold text-gray-500">Per Slice</span>
-                  <span className="text-sm md:text-base font-semibold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Per Slice</span>
+                  <span className="text-lg font-bold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
                 </div>
                 <div className="h-3 md:h-4 w-px bg-gray-300" />
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  <span className="text-xs font-semibold text-gray-500">COGS</span>
-                  <span className={`text-sm md:text-base font-bold ${
-                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-emerald-600' :
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">COGS</span>
+                  <span className={`text-lg font-bold ${
+                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-green-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 33 ? 'text-green-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 40 ? 'text-yellow-600' : 'text-red-600'
                   }`}>
@@ -699,7 +692,7 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
             </div>
 
             {/* Recipe Metadata Container */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0 min-w-0">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0 min-w-0">
               {viewMode === "edit" ? (
                 <div className="flex items-center gap-1.5 md:gap-2">
                   <select
@@ -748,104 +741,157 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
                   </button>
                 </div>
               ) : (
-                <div>
-                  <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3 flex-wrap sm:flex-nowrap">
-                    {/* Allergens with list */}
-                    {allergens && allergens.length > 0 && (
-                      <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0" title={allergens.join(", ")}>
+                <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3 flex-nowrap">
+                  {/* Allergens - Show icon only on small screens, full badges on md+ */}
+                  {allergens && allergens.length > 0 && (
+                    <>
+                      <div className="hidden md:flex items-center gap-1 md:gap-1.5 flex-shrink-0" title={allergens.join(", ")}>
                         <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <div className="flex flex-wrap gap-0.5 md:gap-1">
-                          {allergens.slice(0, 3).map((allergen, idx) => (
-                            <span key={idx} className="inline-flex items-center px-1 md:px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        <div className="flex gap-0.5 md:gap-1 flex-nowrap">
+                          {allergens.slice(0, 2).map((allergen, idx) => (
+                            <span key={idx} className="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap">
                               {allergen}
                             </span>
                           ))}
-                          {allergens.length > 3 && (
-                            <span className="inline-flex items-center px-1 md:px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                              +{allergens.length - 3}
+                          {allergens.length > 2 && (
+                            <span className="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap">
+                              +{allergens.length - 2}
                             </span>
                           )}
                         </div>
                       </div>
-                    )}
+                      {/* Condensed icon-only version for small screens */}
+                      <button
+                        onClick={() => setIsAllergenModalOpen(true)}
+                        className="md:hidden relative flex items-center justify-center w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 transition-colors flex-shrink-0"
+                        title={`${allergens.length} allergen${allergens.length > 1 ? 's' : ''}: ${allergens.join(", ")}`}
+                      >
+                        <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.964-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        {allergens.length > 0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{allergens.length}</span>
+                        )}
+                      </button>
+                    </>
+                  )}
                     
-                    {/* Dietary Labels */}
-                    {dietaryLabels.length > 0 && (
-                      <>
-                        {allergens && allergens.length > 0 && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
-                        <div className="flex flex-wrap gap-0.5 md:gap-1 flex-shrink-0">
-                          {dietaryLabels.slice(0, 3).map((label, idx) => (
-                            <span key={idx} className="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              ✓ {label}
-                            </span>
-                          ))}
-                          {dietaryLabels.length > 3 && (
-                            <span className="inline-flex items-center px-1.5 md:px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              +{dietaryLabels.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      </>
-                    )}
+                  {/* Dietary Labels - Show on md+, condensed icon on small */}
+                  {dietaryLabels.length > 0 && (
+                    <>
+                      {allergens && allergens.length > 0 && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden md:block" />}
+                      <div className="hidden md:flex gap-1 flex-shrink-0 flex-nowrap">
+                        {dietaryLabels.slice(0, 2).map((label, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors whitespace-nowrap">
+                            ✓ {label}
+                          </span>
+                        ))}
+                        {dietaryLabels.length > 2 && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-green-50 text-green-700 whitespace-nowrap">
+                            +{dietaryLabels.length - 2}
+                          </span>
+                        )}
+                      </div>
+                      {/* Condensed icon for small screens */}
+                      <button
+                        onClick={() => setIsAllergenModalOpen(true)}
+                        className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-green-100 hover:bg-green-200 transition-colors flex-shrink-0"
+                        title={`${dietaryLabels.length} dietary label${dietaryLabels.length > 1 ? 's' : ''}: ${dietaryLabels.join(", ")}`}
+                      >
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
                     
-               {/* Info Button */}
-               {(allergens.length > 0 || dietaryLabels.length > 0) && (
-                 <button
-                   onClick={() => setIsAllergenModalOpen(true)}
-                   className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-600 flex-shrink-0"
-                   title="View detailed allergen and dietary information"
-                 >
-                   <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                   </svg>
-                 </button>
-               )}
+                  {/* Info Button - Always visible, combines allergens + dietary on small screens */}
+                  {(allergens.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && (
+                    <>
+                      {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden md:block" />}
+                      <button
+                        onClick={() => setIsAllergenModalOpen(true)}
+                        className="hidden md:flex w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors items-center justify-center text-gray-600 flex-shrink-0"
+                        title="View detailed allergen and dietary information"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
                     
-                    {storage && (
-                      <>
-                        {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
-                        <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
-                          <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                          </svg>
-                          <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{storage}</span>
-                        </div>
-                      </>
-                    )}
-                    {shelfLife && (
-                      <>
-                        {(storage || allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
-                        <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
-                          <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{shelfLife}</span>
-                        </div>
-                      </>
-                    )}
+                  {/* Storage & Shelf Life - Show text on lg+, icon on md, hidden on small */}
+                  {storage && (
+                    <>
+                      {(allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
+                      <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{storage}</span>
+                      </div>
+                      <button
+                        onClick={() => setIsAllergenModalOpen(true)}
+                        className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex-shrink-0"
+                        title={`Storage: ${storage}`}
+                      >
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  {shelfLife && (
+                    <>
+                      {(storage || allergens?.length > 0 || dietaryLabels.length > 0) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
+                      <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{shelfLife}</span>
+                      </div>
+                      <button
+                        onClick={() => setIsAllergenModalOpen(true)}
+                        className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 rounded-full bg-purple-100 hover:bg-purple-200 transition-colors flex-shrink-0"
+                        title={`Shelf Life: ${shelfLife}`}
+                      >
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
                     
-                    {/* Description Button */}
-                    {(allergens?.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0" />}
-                    <button
-                      onClick={() => setIsDescriptionModalOpen(true)}
-                      className="flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2 py-0.5 md:py-1 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
-                      title={description ? "View product description" : "Add product description"}
-                    >
-                      <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span className="text-xs font-medium text-gray-700 whitespace-nowrap">
-                        {description ? "Description" : "Add Description"}
-                      </span>
-                    </button>
-                    
-                    {!allergens?.length && !dietaryLabels.length && !storage && !shelfLife && !description && (
-                      <span className="text-xs text-gray-400 italic">No metadata available</span>
-                    )}
-                  </div>
+                  {/* Description Button - Show text on lg+, icon on md, hidden on small */}
+                  {(allergens?.length > 0 || dietaryLabels.length > 0 || storage || shelfLife) && <div className="h-3 md:h-4 w-px bg-gray-300 flex-shrink-0 hidden lg:block" />}
+                  <button
+                    onClick={() => setIsDescriptionModalOpen(true)}
+                    className="hidden lg:flex px-5 py-2 bg-white shadow-md rounded-xl hover:shadow-lg transition-all items-center gap-2 border border-gray-200 flex-shrink-0"
+                    title={description ? "View product description" : "Add product description"}
+                  >
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="font-medium text-gray-900 text-sm whitespace-nowrap">
+                      {description ? "Description" : "Add Description"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setIsDescriptionModalOpen(true)}
+                    className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex-shrink-0"
+                    title={description ? "View product description" : "Add product description"}
+                  >
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </button>
                   
+                  {!allergens?.length && !dietaryLabels.length && !storage && !shelfLife && !description && (
+                    <span className="text-xs text-gray-400 italic hidden sm:block">No metadata available</span>
+                  )}
                 </div>
               )}
             </div>
@@ -1080,6 +1126,73 @@ export default function RecipeRedesignClient({ recipe, categories, storageOption
         </div>
       )}
     </div>
+  );
+}
+
+export default function RecipeClient(props: Props) {
+  const handlePrint = useCallback(() => {
+    window.open(`/test-recipe-redesign/print/${props.recipe.title.toLowerCase().replace(/\s+/g, "-")}`, '_blank');
+  }, [props.recipe.title]);
+
+  // Check if we're inside a RecipeViewProvider (from layout)
+  const existingContext = useRecipeView();
+  
+  // If context exists from layout, update it and use it
+  if (existingContext) {
+    // Use refs to store values and avoid infinite loops
+    const printHandlerRef = useRef(handlePrint);
+    const lastTitleRef = useRef<string | undefined>(undefined);
+    const initializedRef = useRef(false);
+    
+    // Update ref when handlePrint changes
+    useEffect(() => {
+      printHandlerRef.current = handlePrint;
+    }, [handlePrint]);
+    
+    // Update print handler only when title actually changes (not on every render)
+    useEffect(() => {
+      if (!existingContext.updatePrintHandler) return;
+      
+      // Initial setup - only once
+      if (!initializedRef.current) {
+        existingContext.updatePrintHandler(() => printHandlerRef.current());
+        lastTitleRef.current = props.recipe.title;
+        initializedRef.current = true;
+        return;
+      }
+      
+      // Update only if title changed
+      if (lastTitleRef.current !== props.recipe.title) {
+        existingContext.updatePrintHandler(() => printHandlerRef.current());
+        lastTitleRef.current = props.recipe.title;
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.recipe.title]); // Only depend on title, not the context function
+    
+    useEffect(() => {
+      if (existingContext.updateTitle) {
+        existingContext.updateTitle(props.isNew ? undefined : props.recipe.title);
+      }
+    }, [existingContext.updateTitle, props.isNew, props.recipe.title]);
+    
+    useEffect(() => {
+      if (existingContext.setViewMode && props.isNew) {
+        existingContext.setViewMode("edit");
+      }
+    }, [existingContext.setViewMode, props.isNew]);
+
+    return <RecipeRedesignClientContent {...props} />;
+  }
+
+  // Otherwise, create our own provider (fallback for non-layout usage)
+  return (
+    <RecipeViewProvider
+      initialViewMode={props.isNew ? "edit" : "steps"}
+      onPrint={handlePrint}
+      title={props.isNew ? undefined : props.recipe.title}
+    >
+      <RecipeRedesignClientContent {...props} />
+    </RecipeViewProvider>
   );
 }
 

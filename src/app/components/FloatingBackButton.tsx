@@ -29,15 +29,11 @@ export function FloatingBackButton() {
   return (
     <button
       onClick={handleBack}
-      className="fixed top-4 left-4 z-50 floating-nav rounded-2xl p-3 transition-all duration-300 ease-out hover:scale-105 active:scale-95 group"
-      style={{
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-      }}
+      className="fixed top-4 left-4 z-50 liquid-glass-green liquid-glass-reflection rounded-xl p-3 transition-all duration-300 animate-spring hover:scale-105 active:scale-95 group shadow-lg"
     >
       <div className="flex items-center justify-center">
         <svg 
-          className="w-5 h-5 text-gray-600 group-hover:text-gray-800 transition-colors duration-200" 
+          className="w-5 h-5 text-gray-700 group-hover:text-emerald-700 transition-colors duration-200" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"

@@ -102,8 +102,21 @@ export function SearchableSelect({
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
+      {/* Backdrop blur when open */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/10 backdrop-blur-sm animate-spring"
+          onClick={() => setIsOpen(false)}
+          style={{ animation: 'fadeIn 0.2s ease-out' }}
+        />
+      )}
+      
       <div
-        className="w-full rounded-xl border border-gray-300 px-3 py-2 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200 transition-colors cursor-pointer bg-white"
+        className={`w-full rounded-lg px-3 py-2 transition-all duration-300 cursor-pointer bg-white border border-neutral-300 hover:border-neutral-400 hover:bg-neutral-50 ${
+          isOpen 
+            ? 'border-2 border-emerald-500 shadow-md ring-2 ring-emerald-500/20' 
+            : ''
+        }`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center justify-between">
@@ -115,11 +128,11 @@ export function SearchableSelect({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full outline-none bg-transparent text-sm"
+                className="w-full outline-none bg-transparent text-sm text-gray-800 placeholder:text-gray-400"
                 placeholder="Search ingredients..."
               />
             ) : (
-              <span className={`text-sm ${selectedOption ? 'text-gray-900' : 'text-gray-500'}`}>
+              <span className={`text-sm ${selectedOption ? 'text-gray-800' : 'text-gray-500'}`}>
                 {selectedOption ? selectedOption.name : placeholder}
               </span>
             )}
@@ -129,7 +142,7 @@ export function SearchableSelect({
               <button
                 type="button"
                 onClick={handleClear}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-emerald-600 transition-colors rounded-lg p-0.5 hover:bg-white/20"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -137,7 +150,7 @@ export function SearchableSelect({
               </button>
             )}
             <svg 
-              className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+              className={`w-4 h-4 text-gray-500 transition-transform duration-300 animate-spring ${isOpen ? 'rotate-180' : ''}`} 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -149,7 +162,9 @@ export function SearchableSelect({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-auto">
+        <div 
+          className="absolute z-50 w-full mt-2 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-auto"
+        >
           {filteredOptions.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-500">
               No ingredients found
@@ -158,15 +173,18 @@ export function SearchableSelect({
             filteredOptions.map((option, index) => (
               <div
                 key={option.id}
-                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
-                  index === highlightedIndex
-                    ? 'bg-emerald-100 text-emerald-900'
-                    : 'hover:bg-gray-100 text-gray-900'
+                className={`px-3 py-2 text-sm cursor-pointer transition-all duration-200 rounded-lg mx-1 my-0.5 ${
+                  index === highlightedIndex || option.id === value
+                    ? 'bg-emerald-50 text-emerald-700 font-medium'
+                    : 'hover:bg-neutral-50 text-neutral-800'
                 }`}
                 onClick={() => handleSelect(option)}
                 onMouseEnter={() => setHighlightedIndex(index)}
               >
                 {option.name}
+                {option.id === value && (
+                  <span className="ml-2 text-emerald-600">✓</span>
+                )}
               </div>
             ))
           )}

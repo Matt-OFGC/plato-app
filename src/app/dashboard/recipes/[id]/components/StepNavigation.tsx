@@ -26,14 +26,14 @@ export default function StepNavigation({
             onClick={() => onStepChange(index)}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
               isActive
-                ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm"
-                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                ? "bg-green-500 border-green-500 text-white shadow-lg hover:bg-green-600 hover:shadow-xl"
+                : "bg-white/80 backdrop-blur-xl border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-md"
             }`}
           >
             <span
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
                 isActive
-                  ? "bg-emerald-600 text-white"
+                  ? "bg-white/20 text-white"
                   : "bg-gray-200 text-gray-700"
               }`}
             >

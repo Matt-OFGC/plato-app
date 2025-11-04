@@ -46,23 +46,23 @@ export default async function ProductionPage() {
   }));
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Production Planning
-        </h1>
-        <p className="text-gray-600">
-          Plan production schedules, manage tasks, and track progress
-        </p>
+        <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Production Plan</h1>
+        <p className="text-gray-500 text-lg">Plan production schedules, manage tasks, and track progress</p>
       </div>
 
-      <ProductionPlannerEnhanced
-        recipes={recipes}
-        productionPlans={[]}
-        teamMembers={[]}
-        wholesaleCustomers={[]}
-        companyId={companyId}
-      />
+      {/* Main Content Container */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+        <ProductionPlannerEnhanced
+          recipes={recipes}
+          productionPlans={[]}
+          teamMembers={[]}
+          wholesaleCustomers={[]}
+          companyId={companyId}
+        />
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sidebar } from "@/components/SidebarImproved";
+import { FloatingLayoutClient } from "@/components/FloatingLayoutClient";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { AppContextProvider } from "@/components/AppContextProvider";
 
@@ -16,21 +16,9 @@ export default function DashboardLayout({
   return (
     <AppContextProvider>
       <KeyboardShortcutsProvider>
-        <div className="flex min-h-screen bg-white dark:bg-white">
-        {/* Sidebar Navigation */}
-        <Sidebar />
-        
-    {/* Main Content Area */}
-    <main className="flex-1 pl-4 md:pl-16 lg:pl-20 xl:pl-24 safe-area-inset-left bg-white dark:bg-white">
-      <div className="container-responsive">
-        <div className="py-4 sm:py-6 md:py-8">
+        <FloatingLayoutClient>
           {children}
-        </div>
-      </div>
-    </main>
-    
-    {/* Floating back button removed to avoid overlapping the sidebar */}
-        </div>
+        </FloatingLayoutClient>
       </KeyboardShortcutsProvider>
     </AppContextProvider>
   );

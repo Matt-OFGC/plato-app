@@ -41,7 +41,7 @@ export function SearchBar({ placeholder = "Search...", className = "" }: SearchB
         type="text"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+        className="block w-full pl-10 pr-10 py-2.5 border border-neutral-300 rounded-lg leading-5 bg-neutral-50 placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:bg-white transition-all"
         placeholder={placeholder}
       />
       {searchTerm && (

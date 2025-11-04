@@ -10,29 +10,13 @@ interface Props {
 }
 
 export default async function IngredientsPage({ searchParams }: Props) {
-  const { search } = await searchParams;
+  // Note: We don't use search here - filtering is done client-side for live search
   const { companyId } = await getCurrentUserAndCompany();
   
+  // Load ALL ingredients - filtering happens client-side for instant live search
   const where = companyId 
-    ? { 
-        companyId,
-        ...(search && {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { supplier: { contains: search, mode: "insensitive" as const } },
-            { notes: { contains: search, mode: "insensitive" as const } },
-          ]
-        })
-      }
-    : {
-        ...(search && {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { supplier: { contains: search, mode: "insensitive" as const } },
-            { notes: { contains: search, mode: "insensitive" as const } },
-          ]
-        })
-      };
+    ? { companyId }
+    : {};
       
   const ingredientsRaw = await prisma.ingredient.findMany({ 
     where, 

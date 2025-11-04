@@ -111,18 +111,18 @@ const InteractiveButton = forwardRef<HTMLButtonElement, InteractiveButtonProps>(
       onClick?.(e);
     };
 
-    // Enhanced base classes
-    const baseClasses = "inline-flex items-center justify-center rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden select-none";
+    // Enhanced base classes with clean design
+    const baseClasses = "inline-flex items-center justify-center rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden select-none";
     
     // Ultra-fast transitions for instant feedback
     const transitionClasses = "transition-all duration-75 ease-out transform";
     
     const variants = {
-      primary: "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 focus:ring-emerald-500 shadow-lg hover:shadow-xl active:shadow-md",
-      secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 shadow-sm hover:shadow-md active:shadow-sm",
-      outline: "border-2 border-emerald-600 bg-transparent text-emerald-600 hover:bg-emerald-50 hover:border-emerald-700 focus:ring-emerald-500",
-      ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500",
-      destructive: "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 focus:ring-red-500 shadow-lg hover:shadow-xl active:shadow-md"
+      primary: "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-sm hover:shadow-md focus:ring-emerald-500/50",
+      secondary: "bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-50 active:scale-95 shadow-sm hover:shadow-md focus:ring-gray-500/50",
+      outline: "border-2 border-neutral-300 bg-transparent text-neutral-700 hover:bg-neutral-50 hover:border-emerald-500/50 hover:text-emerald-700 active:scale-95 focus:ring-emerald-500/50",
+      ghost: "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-emerald-700 active:scale-95 focus:ring-emerald-500/50",
+      destructive: "bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow-sm hover:shadow-md focus:ring-red-500/50"
     };
     
     const sizes = {
@@ -163,14 +163,15 @@ const InteractiveButton = forwardRef<HTMLButtonElement, InteractiveButtonProps>(
         {ripples.map((ripple) => (
           <span
             key={ripple.id}
-            className="absolute pointer-events-none"
+            className="absolute pointer-events-none rounded-full"
             style={{
               left: ripple.x - 10,
               top: ripple.y - 10,
               width: 20,
               height: 20,
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.6)',
+              backgroundColor: variant === 'primary' 
+                ? 'rgba(16, 185, 129, 0.3)' 
+                : 'rgba(0, 0, 0, 0.1)',
               animation: 'ripple 0.6s ease-out',
             }}
           />
@@ -205,17 +206,17 @@ const InteractiveButton = forwardRef<HTMLButtonElement, InteractiveButtonProps>(
           {children}
         </span>
 
-        {/* Glow effect on hover */}
+        {/* Reflection highlight on hover */}
         {glowEffect && (
           <div className={cn(
-            "absolute inset-0 rounded-xl bg-gradient-to-r from-white/0 via-white/10 to-white/0 transition-opacity duration-200 pointer-events-none",
+            "absolute inset-0 rounded-lg bg-white/20 transition-opacity duration-200 pointer-events-none",
             isHovered && !disabled && !loading ? "opacity-100" : "opacity-0"
           )} />
         )}
 
         {/* Press indicator */}
         {pressFeedback && isPressed && (
-          <div className="absolute inset-0 rounded-xl bg-black/5 pointer-events-none" />
+          <div className="absolute inset-0 rounded-lg bg-black/5 pointer-events-none" />
         )}
       </button>
     );

@@ -52,6 +52,225 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
+
+  /* =============================================================================
+     LIQUID GLASS UI UTILITIES
+     Apple 2025 Liquid Glass Design Language
+     ============================================================================= */
+
+  /* Base Liquid Glass - Standard translucency with depth */
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(16, 185, 129, 0.1);
+    position: relative;
+  }
+
+  /* Liquid Glass Light - Subtle translucency */
+  .liquid-glass-light {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  /* Liquid Glass Heavy - More opaque for overlays */
+  .liquid-glass-heavy {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 
+      0 12px 48px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(16, 185, 129, 0.15);
+  }
+
+  /* Green Tinted Glass - With emerald overlay */
+  .liquid-glass-green {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(16, 185, 129, 0.1);
+    position: relative;
+  }
+
+  .liquid-glass-green::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.1) 0%,
+      rgba(5, 150, 105, 0.05) 100%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Reflection Gradient Overlay */
+  .liquid-glass-reflection {
+    position: relative;
+  }
+
+  .liquid-glass-reflection::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  /* Mobile-optimized glass (reduced blur for performance) */
+  @media (max-width: 768px) {
+    .liquid-glass,
+    .liquid-glass-green {
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+    }
+
+    .liquid-glass-heavy {
+      backdrop-filter: blur(25px) saturate(170%);
+      -webkit-backdrop-filter: blur(25px) saturate(170%);
+    }
+  }
+
+  /* Depth Layers - Z-index based opacity */
+  .liquid-glass-depth-base {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+  }
+
+  .liquid-glass-depth-elevated {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(35px);
+    -webkit-backdrop-filter: blur(35px);
+    box-shadow: 
+      0 12px 48px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .liquid-glass-depth-floating {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    box-shadow: 
+      0 16px 64px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(16, 185, 129, 0.2);
+  }
+
+  /* Spring Animation Utilities */
+  .animate-spring {
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .animate-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-bounce-gentle {
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Glass Hover Effects */
+  .liquid-glass-hover {
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .liquid-glass-hover:hover {
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 
+      0 12px 48px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -1px 0 rgba(16, 185, 129, 0.15);
+    transform: translateY(-2px);
+  }
+
+  /* Glass Active/Pressed State */
+  .liquid-glass-active {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transform: scale(0.98);
+  }
+
+  /* Glass Border Glow Effect */
+  .liquid-glass-glow {
+    position: relative;
+  }
+
+  .liquid-glass-glow::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.3),
+      rgba(5, 150, 105, 0.3),
+      rgba(16, 185, 129, 0.3)
+    );
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+    -webkit-mask-composite: xor;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+  }
+
+  .liquid-glass-glow:hover::before {
+    opacity: 1;
+  }
+
+  /* Glass Ripple Effect */
+  .liquid-glass-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .liquid-glass-ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+  }
+
+  .liquid-glass-ripple:active::after {
+    width: 300px;
+    height: 300px;
+  }
   
   /* App switcher scroll behavior */
   .app-switcher-scroll {
@@ -2056,4 +2275,20 @@ body.recipe-page-active .recipe-safe-frame {
     max-height: 100vh !important;
     overflow: hidden !important;
   }
+}
+
+/* Search dropdown animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

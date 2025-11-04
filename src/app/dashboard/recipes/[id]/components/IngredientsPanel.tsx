@@ -221,17 +221,19 @@ export default function IngredientsPanel({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px] max-h-[800px] flex flex-col">
+    <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center gap-3 z-10">
-        <div className="w-1 h-6 bg-emerald-600 rounded-sm" />
-        <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide">Ingredients</h2>
+      <div className="px-6 py-4 border-b border-gray-200/50 flex-shrink-0">
+        <h2 className="text-xl font-bold text-gray-900">INGREDIENTS</h2>
+        {viewMode === "steps" && steps.length > 0 && (
+          <p className="text-xs text-gray-500 mt-1">Step {activeStepIndex + 1}</p>
+        )}
         
         {/* Add Ingredient Button - Show in Edit mode */}
         {viewMode === "edit" && (
           <button
             onClick={handleAddIngredient}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500 text-white hover:bg-green-600 transition-colors shadow-sm"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -239,16 +241,10 @@ export default function IngredientsPanel({
             Add to Step {activeStepIndex + 1}
           </button>
         )}
-        
-        {viewMode === "steps" && steps.length > 0 && (
-          <span className="ml-auto text-xs text-gray-500">
-            Step {activeStepIndex + 1}
-          </span>
-        )}
       </div>
 
       {/* Ingredients List */}
-      <div className="overflow-y-auto flex-1">
+      <div className="flex-1 overflow-y-auto px-6 py-4">
         {displayedIngredients.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
             <p>
@@ -260,7 +256,7 @@ export default function IngredientsPanel({
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="space-y-2">
             {displayedIngredients.map((ingredient) => {
               const scaledQuantity = scaleQuantity(
                 ingredient.quantity,
@@ -280,27 +276,36 @@ export default function IngredientsPanel({
                   onDragEnd={handleDragEnd}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, ingredient.id)}
-                  className={`flex items-center gap-4 px-5 py-2.5 transition-all ${
+                  className={`flex items-center gap-4 p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 hover:border-gray-300 hover:shadow-md transition-all cursor-pointer ${
                     viewMode === "edit" ? "cursor-move" : ""
                   } ${
                     draggedId === ingredient.id
-                      ? "bg-emerald-50 border-2 border-emerald-300 rounded-lg scale-105"
-                      : "hover:bg-gray-50"
+                      ? "bg-emerald-50 border-2 border-emerald-300 scale-105"
+                      : ""
                   } ${
                     draggedId && draggedId !== ingredient.id
-                      ? "border-2 border-dashed border-gray-300 rounded-lg"
+                      ? "border-2 border-dashed border-gray-300"
                       : ""
                   } ${
                     hasDropdownOpen ? "relative z-[100]" : ""
                   }`}
                 >
                   {/* Checkbox */}
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 relative">
+                    {isChecked ? (
+                      <div className="w-5 h-5 rounded border-2 bg-green-500 border-green-500 flex items-center justify-center transition-all">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center transition-all" />
+                    )}
                     <input
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => checklist.toggle(ingredient.id)}
-                      className="w-6 h-6 rounded-full border-2 border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
+                      className="absolute inset-0 opacity-0 w-5 h-5 cursor-pointer"
                       aria-label={`Mark ${ingredient.name} as done`}
                     />
                   </div>
@@ -514,7 +519,7 @@ export default function IngredientsPanel({
                         <div className="flex items-center gap-3">
                           {/* Quantity - Compact */}
                           <div
-                            className={`font-bold text-base min-w-[80px] flex-shrink-0 ${
+                            className={`text-sm font-bold min-w-[80px] flex-shrink-0 ${
                               isChecked
                                 ? "text-gray-400 line-through"
                                 : "text-gray-900"
@@ -525,7 +530,7 @@ export default function IngredientsPanel({
                           
                           {/* Ingredient Name - Flexible */}
                           <div
-                            className={`text-base flex-1 min-w-0 ${
+                            className={`text-sm font-medium flex-1 min-w-0 ${
                               isChecked
                                 ? "text-gray-400 line-through"
                                 : "text-gray-700"
@@ -610,8 +615,8 @@ export default function IngredientsPanel({
                               const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
                               
                               return (
-                                <div className={`text-sm font-semibold flex-shrink-0 ${
-                                  isChecked ? "text-gray-400 line-through" : displayCost > 0 ? "text-gray-600" : "text-gray-400"
+                                <div className={`text-sm font-bold flex-shrink-0 ${
+                                  isChecked ? "text-gray-400" : "text-gray-900"
                                 }`}>
                                   £{displayCost.toFixed(2)}
                                 </div>

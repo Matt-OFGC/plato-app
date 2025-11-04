@@ -42,16 +42,16 @@ export function ViewToggle({ defaultView = 'grid', onChange, storageKey, options
   };
 
   return (
-    <div className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1">
-      {viewOptions.map((option) => (
+    <div className="inline-flex items-center gap-1 bg-white border border-neutral-200 rounded-full p-1">
+      {viewOptions.map((option, index) => (
         <button
           key={option.value}
           onClick={() => handleViewChange(option.value)}
-          className={`inline-flex items-center gap-2 px-3 py-2 rounded-md transition-all ${
+          className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full transition-all ${
             view === option.value
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-          }`}
+              : 'text-gray-600 hover:text-gray-900'
+          } ${index === 0 && view === option.value ? 'rounded-l-full' : ''} ${index === viewOptions.length - 1 && view === option.value ? 'rounded-r-full' : ''}`}
           title={`${option.label} view`}
         >
           {option.value === 'grid' && (
