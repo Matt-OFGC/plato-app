@@ -472,14 +472,17 @@ export default function IngredientsPanel({
                               ingredientCost = recipeBase.amount * costPerGram;
                             } else {
                               // Fallback to original function if units don't match and no density conversion possible
-                              ingredientCost = computeIngredientUsageCostWithDensity(
-                                scaledQuantity,
-                                ingredient.unit as Unit,
-                                fullIngredient.packPrice,
-                                fullIngredient.packQuantity,
-                                fullIngredient.packUnit as Unit,
-                                fullIngredient.densityGPerMl || undefined
-                              );
+                              ingredientCost = computeIngredientUsageCostWithDensity({
+                                usageQuantity: scaledQuantity,
+                                usageUnit: ingredient.unit as Unit,
+                                ingredient: {
+                                  name: ingredient.name,
+                                  packPrice: fullIngredient.packPrice,
+                                  packQuantity: fullIngredient.packQuantity,
+                                  packUnit: fullIngredient.packUnit,
+                                  densityGPerMl: fullIngredient.densityGPerMl || undefined
+                                }
+                              });
                             }
                             
                             // Always show the cost, even if 0
@@ -601,14 +604,17 @@ export default function IngredientsPanel({
                                 ingredientCost = recipeBase.amount * costPerGram;
                               } else {
                                 // Fallback to original function if units don't match and no density conversion possible
-                                ingredientCost = computeIngredientUsageCostWithDensity(
-                                  scaledQuantity,
-                                  ingredient.unit as Unit,
-                                  fullIngredient.packPrice,
-                                  fullIngredient.packQuantity,
-                                  fullIngredient.packUnit as Unit,
-                                  fullIngredient.densityGPerMl || undefined
-                                );
+                                ingredientCost = computeIngredientUsageCostWithDensity({
+                                  usageQuantity: scaledQuantity,
+                                  usageUnit: ingredient.unit as Unit,
+                                  ingredient: {
+                                    name: ingredient.name,
+                                    packPrice: fullIngredient.packPrice,
+                                    packQuantity: fullIngredient.packQuantity,
+                                    packUnit: fullIngredient.packUnit,
+                                    densityGPerMl: fullIngredient.densityGPerMl || undefined
+                                  }
+                                });
                               }
                               
                               // Always show the cost, even if 0

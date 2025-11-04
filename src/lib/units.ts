@@ -363,6 +363,8 @@ export const INGREDIENT_DENSITIES: Record<string, number> = {
   "cloves": 0.4,
   "cardamom": 0.4,
   "vanilla": 0.4,
+  "vanilla extract": 0.4,
+  "vanilla essence": 0.4,
   "paprika": 0.4,
   "cumin": 0.4,
   "coriander": 0.4,
@@ -393,10 +395,34 @@ export const INGREDIENT_DENSITIES: Record<string, number> = {
   "coconut cream": 1.0,
 };
 
-// Function to get ingredient density by name (case-insensitive)
+// Function to get ingredient density by name (case-insensitive with fuzzy matching)
 export function getIngredientDensity(ingredientName: string): number | undefined {
   const normalizedName = ingredientName.toLowerCase().trim();
-  return INGREDIENT_DENSITIES[normalizedName];
+
+  // First try exact match
+  if (INGREDIENT_DENSITIES[normalizedName]) {
+    return INGREDIENT_DENSITIES[normalizedName];
+  }
+
+  // Then try to find a partial match - check if the ingredient name contains any key
+  // Sort keys by length (longest first) to match most specific terms first
+  const sortedKeys = Object.keys(INGREDIENT_DENSITIES).sort((a, b) => b.length - a.length);
+
+  for (const key of sortedKeys) {
+    if (normalizedName.includes(key)) {
+      return INGREDIENT_DENSITIES[key];
+    }
+  }
+
+  // Also try the reverse - check if any key contains the ingredient name
+  // This helps with cases like "flour" matching "all-purpose flour"
+  for (const key of sortedKeys) {
+    if (key.includes(normalizedName) && normalizedName.length >= 3) { // min 3 chars to avoid false matches
+      return INGREDIENT_DENSITIES[key];
+    }
+  }
+
+  return undefined;
 }
 
 // Enhanced cost calculation with automatic density lookup
