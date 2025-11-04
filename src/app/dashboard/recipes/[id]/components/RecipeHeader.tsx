@@ -38,7 +38,7 @@ export default function RecipeHeader({
 
   return (
     <>
-      <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg p-6">
+      <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg py-4 px-6">
         <div className="flex items-center gap-3">
           {/* Recipe Image - Small thumbnail */}
           <button

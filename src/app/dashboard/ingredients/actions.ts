@@ -42,6 +42,25 @@ const ingredientSchema = z.object({
       return null;
     }
   }),
+  batchPricing: z.string().optional().nullable().transform((v) => {
+    // Validate and clean up the JSON array
+    if (!v || v === "" || v === "[]") return null;
+    try {
+      const parsed = JSON.parse(v);
+      // Ensure it's a valid array of {packQuantity, packPrice}
+      if (!Array.isArray(parsed)) return null;
+      const valid = parsed.every((tier: any) => 
+        tier && 
+        typeof tier.packQuantity === 'number' && 
+        typeof tier.packPrice === 'number' &&
+        tier.packQuantity > 0 &&
+        tier.packPrice > 0
+      );
+      return valid ? parsed : null;
+    } catch {
+      return null;
+    }
+  }),
   notes: z.string().optional().nullable(),
 });
 
@@ -81,6 +100,22 @@ export async function createIngredient(formData: FormData) {
       data.densityGPerMl ?? undefined
     );
     
+    // Convert batch pricing quantities to base units if provided
+    let batchPricingInBase = null;
+    if (data.batchPricing && Array.isArray(data.batchPricing)) {
+      batchPricingInBase = data.batchPricing.map(tier => {
+        const { amount: tierBaseQty } = toBase(
+          tier.packQuantity,
+          data.packUnit as Unit,
+          data.densityGPerMl ?? undefined
+        );
+        return {
+          packQuantity: tierBaseQty,
+          packPrice: tier.packPrice,
+        };
+      });
+    }
+    
     const ingredientData = {
       name: data.name,
       supplier: data.supplier ?? null,
@@ -92,6 +127,7 @@ export async function createIngredient(formData: FormData) {
       currency: data.currency,
       densityGPerMl: (data.densityGPerMl as number | null) ?? null,
       allergens: data.allergens,
+      batchPricing: batchPricingInBase,
       customConversions: data.customConversions ?? null,
       notes: data.notes ?? null,
       companyId: companyId ?? undefined,
@@ -155,6 +191,22 @@ export async function updateIngredient(id: number, formData: FormData) {
       data.densityGPerMl ?? undefined
     );
     
+    // Convert batch pricing quantities to base units if provided
+    let batchPricingInBase = null;
+    if (data.batchPricing && Array.isArray(data.batchPricing)) {
+      batchPricingInBase = data.batchPricing.map(tier => {
+        const { amount: tierBaseQty } = toBase(
+          tier.packQuantity,
+          data.packUnit as Unit,
+          data.densityGPerMl ?? undefined
+        );
+        return {
+          packQuantity: tierBaseQty,
+          packPrice: tier.packPrice,
+        };
+      });
+    }
+    
     // Check if price changed
     const priceChanged = existingIngredient && Number(existingIngredient.packPrice) !== data.packPrice;
     
@@ -171,6 +223,7 @@ export async function updateIngredient(id: number, formData: FormData) {
         currency: data.currency,
         densityGPerMl: (data.densityGPerMl as number | null) ?? null,
         allergens: data.allergens,
+        batchPricing: batchPricingInBase,
         customConversions: data.customConversions ?? null,
         notes: data.notes ?? null,
         // Update lastPriceUpdate timestamp if price changed

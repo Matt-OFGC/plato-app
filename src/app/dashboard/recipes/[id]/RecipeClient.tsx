@@ -41,7 +41,8 @@ interface Props {
     packQuantity: number;
     packUnit: string;
     densityGPerMl: number | null;
-    allergens: string[] 
+    allergens: string[];
+    batchPricing: Array<{ packQuantity: number; packPrice: number }> | null;
   }>;
   isNew?: boolean;
 }
@@ -91,7 +92,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
           fullIngredient.packPrice,
           fullIngredient.packQuantity,
           fullIngredient.packUnit as Unit,
-          fullIngredient.densityGPerMl || undefined
+          fullIngredient.densityGPerMl || undefined,
+          fullIngredient.batchPricing || null
         );
         
         // If it returns a valid result, use it
@@ -461,29 +463,31 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
             name={recipe.title}
           />
         )}
-      {/* Top Header - Compact */}
-      <div className="flex-shrink-0 px-6 pt-6 pb-4">
-        <div className="max-w-[1600px] mx-auto">
-          <RecipeHeader
-            title={isNew ? recipeTitle || "New Recipe" : recipe.title}
-            category={categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}
-            categoryId={categoryId}
-            servings={servings}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            onCategoryChange={(catId) => setCategoryId(catId)}
-            categories={categories}
-            imageUrl={recipe.imageUrl}
-            onTitleChange={isNew ? setRecipeTitle : undefined}
-            onDelete={!isNew ? handleDelete : undefined}
-            recipeId={recipeId}
-          />
+      {/* Top Header - Compact - Hidden in Photos view */}
+      {viewMode !== "photos" && (
+        <div className="flex-shrink-0 px-6 pt-6 pb-4">
+          <div className="max-w-[1600px] mx-auto">
+            <RecipeHeader
+              title={isNew ? recipeTitle || "New Recipe" : recipe.title}
+              category={categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}
+              categoryId={categoryId}
+              servings={servings}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              onCategoryChange={(catId) => setCategoryId(catId)}
+              categories={categories}
+              imageUrl={recipe.imageUrl}
+              onTitleChange={isNew ? setRecipeTitle : undefined}
+              onDelete={!isNew ? handleDelete : undefined}
+              recipeId={recipeId}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content Area - Flex Grow to Fill Space */}
       <div className="flex-1 min-h-0 overflow-auto">
-        <div className="max-w-[1600px] mx-auto px-6 pb-6">
+        <div className={`max-w-[1600px] mx-auto ${viewMode === "photos" ? "px-6 pt-0" : "px-6"} pb-6`}>
           {/* Step Navigation - Show in Steps and Edit modes */}
           {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
             <div className="mb-4">
@@ -498,7 +502,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
           {/* Photos View - Compact Layout */}
           {viewMode === "photos" && (
-            <div className="mb-6">
+            <div>
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                   {/* Recipe Image - Left Side */}
@@ -537,29 +541,72 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                       )}
                     </div>
 
-                    {/* Ingredients */}
+                    {/* Ingredients - Grouped by Section */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Ingredients</h3>
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                        {localIngredients.map((ingredient, index) => (
-                          <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
-                            <span className="text-gray-700">{ingredient.name}</span>
-                            <span className="text-sm text-gray-500">{ingredient.quantity} {ingredient.unit}</span>
-                          </div>
-                        ))}
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                        {localSteps.map((step, stepIndex) => {
+                          const stepIngredients = localIngredients.filter(ing => ing.stepId === step.id);
+                          if (stepIngredients.length === 0) return null;
+                          
+                          return (
+                            <div key={step.id || stepIndex}>
+                              {/* Section Header */}
+                              <div className="flex items-center gap-2 mb-2 pt-2">
+                                <div className="w-0.5 h-4 bg-emerald-400 rounded-full"></div>
+                                <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wide">{step.title}</h4>
+                              </div>
+                              {/* Section Ingredients */}
+                              <div className="space-y-1.5 ml-3">
+                                {stepIngredients.map((ingredient, ingIndex) => (
+                                  <div key={ingIndex} className="flex items-center justify-between py-1">
+                                    <span className="text-gray-700 text-sm">{ingredient.name}</span>
+                                    <span className="text-xs text-gray-500">{ingredient.quantity} {ingredient.unit}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {/* Subtle divider between sections */}
+                              {stepIndex < localSteps.length - 1 && (
+                                <div className="mt-3 mb-1 border-t border-gray-100"></div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* Instructions/Method */}
+                    {/* Instructions/Method - Grouped by Section */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Method</h3>
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto">
                         {localSteps.map((step, index) => (
-                          <div key={index} className="flex items-start gap-3">
-                            <div className="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
-                              {index + 1}
+                          <div key={index}>
+                            {/* Section Header */}
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-0.5 h-4 bg-blue-400 rounded-full"></div>
+                              <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wide">{step.title}</h4>
                             </div>
-                            <p className="text-gray-700 text-sm leading-relaxed">{step.instructions}</p>
+                            {/* Section Instructions */}
+                            <div className="ml-3 space-y-2">
+                              {typeof step.instructions === 'string' ? (
+                                <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{step.instructions}</p>
+                              ) : Array.isArray(step.instructions) ? (
+                                step.instructions.map((instruction, instIndex) => (
+                                  instruction.trim() && (
+                                    <div key={instIndex} className="flex items-start gap-2">
+                                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
+                                        {instIndex + 1}
+                                      </div>
+                                      <p className="text-gray-700 text-sm leading-relaxed">{instruction}</p>
+                                    </div>
+                                  )
+                                ))
+                              ) : null}
+                            </div>
+                            {/* Subtle divider between sections */}
+                            {index < localSteps.length - 1 && (
+                              <div className="mt-4 mb-2 border-t border-gray-100"></div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -572,7 +619,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
           {/* Ingredients & Instructions - Main Content */}
           {viewMode !== "photos" && (
-            <div className="flex-1 px-6 pb-6 min-h-0 flex gap-6">
+            <div className="flex-1 pb-6 min-h-0 flex gap-6">
             {/* Ingredients */}
             <IngredientsPanel
               ingredients={localIngredients}

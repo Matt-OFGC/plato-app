@@ -98,6 +98,7 @@ export default async function RecipePage({ params }: Props) {
     packPrice: ing.packPrice.toNumber(),
     packQuantity: ing.packQuantity.toNumber(),
     densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+    batchPricing: null, // TODO: Add batchPricing field to Prisma schema
   }));
 
   // Helper function to clean instruction text (remove leading numbers like "1. ", "1)", "1 -", etc.)

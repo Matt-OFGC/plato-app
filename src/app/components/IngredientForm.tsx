@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { UnitConversionHelp } from "./UnitConversionHelp";
 import { SupplierSelector } from "./SupplierSelector";
+import { BatchPricingInput } from "./BatchPricingInput";
 
 const ALLERGEN_OPTIONS = [
   "Celery",
@@ -63,6 +64,7 @@ interface IngredientFormProps {
     notes?: string;
     supplierId?: number;
     customConversions?: string;
+    batchPricing?: Array<{ packQuantity: number; packPrice: number }> | null;
   };
   onSubmit: (formData: FormData) => void;
 }
@@ -301,6 +303,12 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
             placeholder="e.g., 25.00 (use 0 for free ingredients like water)"
           />
         </div>
+
+        {/* Batch Pricing */}
+        <BatchPricingInput 
+          packUnit={initialData?.packUnit || ""}
+          initialBatchPricing={initialData?.batchPricing}
+        />
 
         {/* Yield Quantity & Unit */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,8 +1,8 @@
 generator client {
-  provider      = "prisma-client-js"
-  output        = "../src/generated/prisma"
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
-  engineType    = "library"
+  engineType = "library"
 }
 
 datasource db {
@@ -29,7 +29,6 @@ model Ingredient {
   priceHistory        String?
   supplierId          Int?
   customConversions   String?
-  batchPricing        Json?
   company             Company?                 @relation(fields: [companyId], references: [id])
   supplierRef         Supplier?                @relation(fields: [supplierId], references: [id])
   priceHistoryRecords IngredientPriceHistory[]

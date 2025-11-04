@@ -101,7 +101,8 @@ export function computeIngredientUsageCostWithDensity(
   packPrice: number,
   packQuantity: number,
   packUnit: Unit,
-  density?: number
+  density?: number,
+  batchPricing?: Array<{ packQuantity: number; packPrice: number }> | null
 ): number {
   // Additional validation - ensure inputs are positive numbers
   if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
@@ -132,9 +133,41 @@ export function computeIngredientUsageCostWithDensity(
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
+  // If batch pricing is available, find the best pricing tier
+  let effectivePackPrice = packPrice;
+  let effectivePackQuantity = basePackQuantity;
+  
+  if (batchPricing && batchPricing.length > 0 && baseUnit === packBaseUnit) {
+    // Convert batch pricing tiers to base units for comparison
+    const batchPricingInBase = batchPricing.map(tier => {
+      const { amount: tierBaseQty } = toBase(tier.packQuantity, packUnit);
+      return {
+        packQuantity: tierBaseQty,
+        packPrice: tier.packPrice,
+      };
+    });
+    
+    // Find best pricing tier
+    let bestCostPerUnit = packPrice / basePackQuantity;
+    let bestTier = { packQuantity: basePackQuantity, packPrice: packPrice };
+    
+    for (const tier of batchPricingInBase) {
+      if (tier.packQuantity > 0 && tier.packPrice > 0) {
+        const tierCostPerUnit = tier.packPrice / tier.packQuantity;
+        if (tierCostPerUnit < bestCostPerUnit) {
+          bestCostPerUnit = tierCostPerUnit;
+          bestTier = tier;
+        }
+      }
+    }
+    
+    effectivePackPrice = bestTier.packPrice;
+    effectivePackQuantity = bestTier.packQuantity;
+  }
+  
   // If base units match, simple calculation
-  if (baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity)) {
-    const costPerBaseUnit = packPrice / basePackQuantity;
+  if (baseUnit === packBaseUnit && baseQuantity > 0 && effectivePackQuantity > 0 && isFinite(baseQuantity) && isFinite(effectivePackQuantity)) {
+    const costPerBaseUnit = effectivePackPrice / effectivePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
     return result;
   }
@@ -146,7 +179,7 @@ export function computeIngredientUsageCostWithDensity(
   
   // If base units match after validation, calculate
   if (baseUnit === packBaseUnit) {
-    const costPerBaseUnit = packPrice / basePackQuantity;
+    const costPerBaseUnit = effectivePackPrice / effectivePackQuantity;
     return baseQuantity * costPerBaseUnit;
   }
   
@@ -154,13 +187,13 @@ export function computeIngredientUsageCostWithDensity(
   if (density) {
     if (baseUnit === 'ml' && packBaseUnit === 'g') {
       // Recipe is volume, pack is weight - convert pack to volume
-      const packVolume = basePackQuantity / density;
-      const costPerMl = packPrice / packVolume;
+      const packVolume = effectivePackQuantity / density;
+      const costPerMl = effectivePackPrice / packVolume;
       return baseQuantity * costPerMl;
     } else if (baseUnit === 'g' && packBaseUnit === 'ml') {
       // Recipe is weight, pack is volume - convert pack to weight
-      const packWeight = basePackQuantity * density;
-      const costPerGram = packPrice / packWeight;
+      const packWeight = effectivePackQuantity * density;
+      const costPerGram = effectivePackPrice / packWeight;
       return baseQuantity * costPerGram;
     }
   }

@@ -80,6 +80,7 @@ export default async function EditIngredientPage({ params }: Props) {
             notes: ing.notes || "",
             allergens: ing.allergens || [],
             customConversions: ing.customConversions || undefined,
+            batchPricing: ing.batchPricing ? (typeof ing.batchPricing === 'string' ? JSON.parse(ing.batchPricing) : ing.batchPricing) : null,
           }}
           onSubmit={handleSubmit}
         />
