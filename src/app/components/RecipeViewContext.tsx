@@ -65,12 +65,6 @@ export function RecipeViewProvider({
     setCurrentOnPrint(() => newOnPrint);
   }, []);
   
-  // Use ref to prevent infinite loops - only update if handler actually changed
-  const printHandlerRef = useRef<(() => void) | undefined>(onPrint);
-  useEffect(() => {
-    printHandlerRef.current = onPrint;
-  }, [onPrint]);
-  
   const updateTitle = useCallback((newTitle: string | undefined) => {
     setCurrentTitle(newTitle);
   }, []);

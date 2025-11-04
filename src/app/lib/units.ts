@@ -103,12 +103,8 @@ export function computeIngredientUsageCostWithDensity(
   packUnit: Unit,
   density?: number
 ): number {
-  // TEMPORARY DEBUG - Log ALL calls to see if function is being called
-  console.warn('🔍 FUNCTION CALLED:', { quantity, unit, packPrice, packQuantity, packUnit, density });
-  
   // Additional validation - ensure inputs are positive numbers
   if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
-    console.warn('⚠️ EARLY RETURN - Invalid inputs:', { quantity, packQuantity, packPrice });
     return 0;
   }
   
@@ -136,36 +132,10 @@ export function computeIngredientUsageCostWithDensity(
   const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
   const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
-  // TEMPORARY DEBUG - Catch all kg calls
-  if (unit && unit.toLowerCase().includes('kg')) {
-    console.warn('🔍 KG UNIT DEBUG:', {
-      quantity,
-      unit,
-      adjustedUnit,
-      baseQuantity,
-      baseUnit,
-      basePackQuantity,
-      packBaseUnit,
-      packPrice,
-      packQuantity,
-      packUnit,
-      unitsMatch: baseUnit === packBaseUnit,
-      baseQtyValid: baseQuantity > 0 && isFinite(baseQuantity),
-      basePackQtyValid: basePackQuantity > 0 && isFinite(basePackQuantity),
-      willCalculate: baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity),
-    });
-  }
-  
   // If base units match, simple calculation
   if (baseUnit === packBaseUnit && baseQuantity > 0 && basePackQuantity > 0 && isFinite(baseQuantity) && isFinite(basePackQuantity)) {
     const costPerBaseUnit = packPrice / basePackQuantity;
     const result = baseQuantity * costPerBaseUnit;
-    
-    // TEMPORARY DEBUG
-    if (unit && unit.toLowerCase().includes('kg')) {
-      console.warn('✅ KG CALCULATION RESULT:', { costPerBaseUnit, result });
-    }
-    
     return result;
   }
   
@@ -195,14 +165,7 @@ export function computeIngredientUsageCostWithDensity(
     }
   }
   
-  // If no density and units don't match, log warning and return 0
-  console.warn('⚠️ Units don\'t match and no density available:', {
-    recipeUnit: adjustedUnit,
-    packUnit: packUnit,
-    baseUnit: baseUnit,
-    packBaseUnit: packBaseUnit,
-    density: density,
-  });
+  // If no density and units don't match, return 0
   return 0;
 }
 
