@@ -16,26 +16,27 @@ export function MigrationHelper() {
   async function checkMigrationStatus() {
     setChecking(true);
     try {
-      // Try to fetch templates - if it fails with table error, migration needed
+      // Check if all required tables exist by testing the templates API
       const response = await fetch("/api/safety/templates");
-      if (response.ok) {
-        // Check if we got an error about missing tables
-        const data = await response.json();
-        // If templates API works, check temperature tables
-        try {
-          const tempResponse = await fetch("/api/safety/temperatures?date=" + new Date().toISOString().split("T")[0]);
-          if (tempResponse.ok) {
-            setNeedsMigration(false);
-          } else {
-            setNeedsMigration(true);
-          }
-        } catch {
-          setNeedsMigration(true);
-        }
+      if (!response.ok) {
+        setNeedsMigration(true);
+        setChecking(false);
+        return;
+      }
+
+      // If templates work, check if temperature tables exist by trying a simple query
+      // We'll check by trying to create a test record (which will fail if table doesn't exist)
+      // Actually, better to just check if the API endpoint exists and responds
+      const tempResponse = await fetch("/api/safety/temperatures?date=" + new Date().toISOString().split("T")[0]);
+      if (tempResponse.ok) {
+        // Both APIs work, migration complete
+        setNeedsMigration(false);
       } else {
+        // Temperature tables might not exist
         setNeedsMigration(true);
       }
     } catch (err) {
+      // If any error, assume migration needed
       setNeedsMigration(true);
     } finally {
       setChecking(false);
@@ -55,14 +56,29 @@ export function MigrationHelper() {
       const data = await response.json();
 
       if (data.success) {
-        setResult(data.message || "Migration completed successfully!");
-        setNeedsMigration(false);
-        // Reload page after 2 seconds
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        const successMessage = data.message || "Migration completed successfully!";
+        setResult(successMessage);
+        
+        // Show results if available
+        if (data.results && Array.isArray(data.results)) {
+          console.log("Migration results:", data.results);
+        }
+        
+        // Re-check migration status after a delay, then reload
+        setTimeout(async () => {
+          await checkMigrationStatus();
+          // Wait a bit more, then reload regardless (to pick up any changes)
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }, 1500);
       } else {
-        setError(data.error || "Migration failed");
+        const errorMsg = data.error || "Migration failed";
+        const details = data.details ? `\n\nDetails: ${data.details}` : "";
+        setError(`${errorMsg}${details}`);
+        
+        // Show full error in console for debugging
+        console.error("Migration error:", data);
       }
     } catch (err: any) {
       setError(err.message || "Failed to run migration");
@@ -91,12 +107,18 @@ export function MigrationHelper() {
           {result && (
             <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4">
               <p className="text-green-800 font-medium">{result}</p>
+              {result.includes("successfully") && (
+                <p className="text-sm text-green-700 mt-1">Page will reload automatically...</p>
+              )}
             </div>
           )}
 
           {error && (
             <div className="bg-red-100 border border-red-300 rounded-lg p-3 mb-4">
               <p className="text-red-800 font-medium">Error: {error}</p>
+              <p className="text-sm text-red-700 mt-2">
+                If migration failed, check your browser console or server logs for details.
+              </p>
             </div>
           )}
 
