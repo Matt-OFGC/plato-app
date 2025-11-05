@@ -1,0 +1,189 @@
+
+> plato@0.1.0 test
+> jest tests/integration/ --passWithNoTests
+
+● Validation Warning:
+
+  Unknown option "moduleNameMapping" with value {"^@/(.*)$": "<rootDir>/src/app/$1"} was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+  Configuration Documentation:
+  https://jestjs.io/docs/configuration
+
+● Validation Warning:
+
+  Unknown option "moduleNameMapping" with value {"^@/(.*)$": "<rootDir>/src/app/$1"} was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+  Configuration Documentation:
+  https://jestjs.io/docs/configuration
+
+PASS src/app/tests/integration/repository_contract.test.ts
+  ● Console
+
+    console.warn
+      ⚠️  Could not find files to check. Skipping repository boundary test.
+
+      84 |     // Handle case where glob returns undefined or empty result
+      85 |     if (!files || !Array.isArray(files)) {
+    > 86 |       console.warn('⚠️  Could not find files to check. Skipping repository boundary test.');
+         |               ^
+      87 |       return;
+      88 |     }
+      89 |
+
+      at Object.warn (src/app/tests/integration/repository_contract.test.ts:86:15)
+
+    console.warn
+      
+      ⚠️  RecipeRepository not found at: /Users/matt/plato/src/app/lib/repositories/recipe-repository.ts
+      
+      This is expected initially. After implementing RecipeRepository, this test should verify:
+      - RecipeRepository.getRecipeForDetailPage()
+      - RecipeRepository.getRecipeForListPage()
+      - RecipeRepository.getRecipeForBusinessProfile()
+      - RecipeRepository.createRecipe()
+      - RecipeRepository.updateRecipe()
+      - RecipeRepository.deleteRecipe()
+
+      152 |
+      153 |     if (!repositoryExists) {
+    > 154 |       console.warn(`
+          |               ^
+      155 | ⚠️  RecipeRepository not found at: ${repositoryPath}
+      156 |
+      157 | This is expected initially. After implementing RecipeRepository, this test should verify:
+
+      at Object.warn (src/app/tests/integration/repository_contract.test.ts:154:15)
+
+    console.log
+      
+      ✅ Allowed Recipe Query Patterns:
+        - RecipeRepository.getRecipeForDetailPage(id, companyId)
+        - RecipeRepository.getRecipeForListPage(companyId)
+        - RecipeRepository.getRecipeForBusinessProfile(id)
+        - RecipeRepository.createRecipe(data)
+        - RecipeRepository.updateRecipe(id, data)
+        - RecipeRepository.deleteRecipe(id)
+      
+      ❌ Disallowed Patterns:
+        - Direct prisma.recipe.* calls outside repository
+        - Raw SQL queries to Recipe tables outside repository
+        - Direct RecipeItem/RecipeSection queries outside repository
+
+      at Object.log (src/app/tests/integration/repository_contract.test.ts:185:13)
+
+PASS src/app/tests/integration/db_contract.test.ts
+  ● Console
+
+    console.warn
+      ⚠️  Unique constraint RecipeItem[recipeId, ingredientId] not found. Run migration 20250115120000_add_composite_unique_constraints.sql
+
+      213 |       // For now, just document the requirement:
+      214 |       if (result.length === 0) {
+    > 215 |         console.warn('⚠️  Unique constraint RecipeItem[recipeId, ingredientId] not found. Run migration 20250115120000_add_composite_unique_constraints.sql');
+          |                 ^
+      216 |       }
+      217 |     });
+      218 |
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:215:17)
+
+    console.warn
+      ⚠️  Unique constraint RecipeSection[recipeId, order] not found. Run migration 20250115120000_add_composite_unique_constraints.sql
+
+      231 |       
+      232 |       if (result.length === 0) {
+    > 233 |         console.warn('⚠️  Unique constraint RecipeSection[recipeId, order] not found. Run migration 20250115120000_add_composite_unique_constraints.sql');
+          |                 ^
+      234 |       }
+      235 |     });
+      236 |
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:233:17)
+
+    console.warn
+      ⚠️  Unique constraint Recipe[name, companyId] not found. Run migrations first.
+
+      246 |       // This constraint should exist, but skip test if migrations haven't run yet
+      247 |       if (result.length === 0) {
+    > 248 |         console.warn('⚠️  Unique constraint Recipe[name, companyId] not found. Run migrations first.');
+          |                 ^
+      249 |         return; // Skip test instead of failing
+      250 |       }
+      251 |       
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:248:17)
+
+    console.warn
+      ⚠️  Unique constraint Ingredient[name, companyId] not found. Run migrations first.
+
+      264 |       // This constraint should exist, but skip test if migrations haven't run yet
+      265 |       if (result.length === 0) {
+    > 266 |         console.warn('⚠️  Unique constraint Ingredient[name, companyId] not found. Run migrations first.');
+          |                 ^
+      267 |         return; // Skip test instead of failing
+      268 |       }
+      269 |       
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:266:17)
+
+    console.warn
+      ⚠️  CHECK constraint recipe_selling_price_positive not found. Run migration 20250115140000_add_check_constraints.sql
+
+      284 |       // This test will fail until migration is applied
+      285 |       if (result.length === 0) {
+    > 286 |         console.warn('⚠️  CHECK constraint recipe_selling_price_positive not found. Run migration 20250115140000_add_check_constraints.sql');
+          |                 ^
+      287 |       }
+      288 |     });
+      289 |
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:286:17)
+
+    console.warn
+      ⚠️  CHECK constraint ingredient_pack_price_positive not found. Run migration 20250115140000_add_check_constraints.sql
+
+      298 |       
+      299 |       if (result.length === 0) {
+    > 300 |         console.warn('⚠️  CHECK constraint ingredient_pack_price_positive not found. Run migration 20250115140000_add_check_constraints.sql');
+          |                 ^
+      301 |       }
+      302 |     });
+      303 |
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:300:17)
+
+    console.warn
+      ⚠️  CHECK constraint recipe_yield_quantity_positive not found. Run migration 20250115140000_add_check_constraints.sql
+
+      312 |       
+      313 |       if (result.length === 0) {
+    > 314 |         console.warn('⚠️  CHECK constraint recipe_yield_quantity_positive not found. Run migration 20250115140000_add_check_constraints.sql');
+          |                 ^
+      315 |       }
+      316 |     });
+      317 |
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:314:17)
+
+    console.warn
+      ⚠️  CHECK constraint recipe_item_quantity_positive not found. Run migration 20250115140000_add_check_constraints.sql
+
+      326 |       
+      327 |       if (result.length === 0) {
+    > 328 |         console.warn('⚠️  CHECK constraint recipe_item_quantity_positive not found. Run migration 20250115140000_add_check_constraints.sql');
+          |                 ^
+      329 |       }
+      330 |     });
+      331 |   });
+
+      at Object.warn (src/app/tests/integration/db_contract.test.ts:328:17)
+
+PASS src/app/tests/integration/recipe_flow.test.ts (13.816 s)
+
+Test Suites: 3 passed, 3 total
+Tests:       54 passed, 54 total
+Snapshots:   0 total
+Time:        14.398 s
+Ran all test suites matching tests/integration/.

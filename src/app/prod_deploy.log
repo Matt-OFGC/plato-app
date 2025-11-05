@@ -1,0 +1,116 @@
+[0;32m=== Production Migration Deployment ===[0m
+Database: postgresql://neondb_owner:npg_mXqCKBWa9zg5
+
+[1;33m[Pre-flight] Running Pre-Deployment Checks[0m
+[0;32m=== Pre-Deployment Checks ===[0m
+
+[1;33m[1] Checking Postgres Version[0m
+Postgres version: 170005
+  [0;32m✓[0m Version check complete
+
+[1;33m[2] Checking Required Extensions[0m
+  [1;33m⚠[0m Extension pg_trgm missing (may be created during migration)
+  [1;33m⚠[0m Extension uuid-ossp missing (may be created during migration)
+  [1;33m⚠[0m Extension citext missing (may be created during migration)
+
+[1;33m[3] Checking Index Creation Privileges[0m
+  [1;33m⚠[0m Index creation privileges unclear (will attempt during migration)
+
+[1;33m[4] Checking for Blocking Transactions[0m
+  [0;32m✓[0m No blocking transactions
+
+[1;33m[5] Checking Connection Pool[0m
+  Max connections: 901
+  Current connections: 14
+  [0;32m✓[0m Connection pool healthy (1% used)
+
+[1;33m[6] Backup Verification[0m
+  Manual check required:
+  - Verify backup was created: pg_dump $PROD_DATABASE_URL > backup.sql
+  - Verify backup size is reasonable
+  [1;33m⚠[0m For Neon databases, branches provide automatic snapshots
+  [0;32m✓[0m Backup/snapshot safety assumed (Neon branch)
+
+[1;33m[7] Staging Validation Status[0m
+  [0;32m✓[0m Staging validation passed
+
+[0;32m=== Pre-Deployment Check Summary ===[0m
+[0;32m✓ All pre-deployment checks passed[0m
+
+Ready to deploy. Run:
+  ./scripts/deploy-migrations-production.sh
+
+
+[1;33m[1] Setting Timeouts and Creating Restore Point[0m
+manual
+[1;33m⚠ Restore point creation skipped (Neon branches provide snapshot safety)[0m
+
+[1;33m[2] Applying Migrations[0m
+  Applying: migrations/20250115120000_add_composite_unique_constraints.sql
+  [0;31m✗[0m migrations/20250115120000_add_composite_unique_constraints.sql failed - check prod_migration_20250115120000_add_composite_unique_constraints.sql.log
+
+[0;31m=== ROLLBACK REQUIRED ===[0m
+Migration failed. Rollback options:
+1. Use rollback scripts: migrations/rollbacks/
+2. PITR restore to: neon_snapshot_20251105_175840
+[0;32m=== Production Migration Deployment ===[0m
+Database: postgresql://neondb_owner:npg_mXqCKBWa9zg5
+
+[1;33m[Pre-flight] Running Pre-Deployment Checks[0m
+[0;32m=== Pre-Deployment Checks ===[0m
+
+[1;33m[1] Checking Postgres Version[0m
+Postgres version: 170005
+  [0;32m✓[0m Version check complete
+
+[1;33m[2] Checking Required Extensions[0m
+  [1;33m⚠[0m Extension pg_trgm missing (may be created during migration)
+  [1;33m⚠[0m Extension uuid-ossp missing (may be created during migration)
+  [1;33m⚠[0m Extension citext missing (may be created during migration)
+
+[1;33m[3] Checking Index Creation Privileges[0m
+  [1;33m⚠[0m Index creation privileges unclear (will attempt during migration)
+
+[1;33m[4] Checking for Blocking Transactions[0m
+  [0;32m✓[0m No blocking transactions
+
+[1;33m[5] Checking Connection Pool[0m
+  Max connections: 901
+  Current connections: 14
+  [0;32m✓[0m Connection pool healthy (1% used)
+
+[1;33m[6] Backup Verification[0m
+  Manual check required:
+  - Verify backup was created: pg_dump $PROD_DATABASE_URL > backup.sql
+  - Verify backup size is reasonable
+  [1;33m⚠[0m For Neon databases, branches provide automatic snapshots
+  [0;32m✓[0m Backup/snapshot safety assumed (Neon branch)
+
+[1;33m[7] Staging Validation Status[0m
+  [0;32m✓[0m Staging validation passed
+
+[0;32m=== Pre-Deployment Check Summary ===[0m
+[0;32m✓ All pre-deployment checks passed[0m
+
+Ready to deploy. Run:
+  ./scripts/deploy-migrations-production.sh
+
+
+[1;33m[1] Setting Timeouts and Creating Restore Point[0m
+manual
+[1;33m⚠ Restore point creation skipped (Neon branches provide snapshot safety)[0m
+
+[1;33m[2] Applying Migrations[0m
+  Applying: migrations/20250115120000_add_composite_unique_constraints.sql
+  [0;32m✓[0m migrations/20250115120000_add_composite_unique_constraints.sql
+  Applying: migrations/20250115130000_add_missing_foreign_keys_production_safe.sql
+  [0;32m✓[0m migrations/20250115130000_add_missing_foreign_keys_production_safe.sql
+  Applying: migrations/20250115140000_add_check_constraints.sql
+  [0;32m✓[0m migrations/20250115140000_add_check_constraints.sql
+  Applying: migrations/20250115150000_add_performance_indexes.sql
+  [0;31m✗[0m migrations/20250115150000_add_performance_indexes.sql failed - check prod_migration_20250115150000_add_performance_indexes.sql.log
+
+[0;31m=== ROLLBACK REQUIRED ===[0m
+Migration failed. Rollback options:
+1. Use rollback scripts: migrations/rollbacks/
+2. PITR restore to: neon_snapshot_20251105_175924

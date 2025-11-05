@@ -87,7 +87,8 @@ export default async function RecipePage({ params }: Props) {
         packPrice: true,
         packQuantity: true,
         densityGPerMl: true,
-        allergens: true
+        allergens: true,
+        batchPricing: true
       }
     }),
   ]);
@@ -98,7 +99,7 @@ export default async function RecipePage({ params }: Props) {
     packPrice: ing.packPrice.toNumber(),
     packQuantity: ing.packQuantity.toNumber(),
     densityGPerMl: ing.densityGPerMl?.toNumber() || null,
-    batchPricing: null, // TODO: Add batchPricing field to Prisma schema
+    batchPricing: ing.batchPricing ? (typeof ing.batchPricing === 'string' ? JSON.parse(ing.batchPricing) : ing.batchPricing) : null,
   }));
 
   // Helper function to clean instruction text (remove leading numbers like "1. ", "1)", "1 -", etc.)
