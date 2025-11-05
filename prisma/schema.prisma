@@ -218,6 +218,8 @@ model Company {
   showTeam               Boolean                 @default(false)
   slug                   String?                 @unique
   website                String?
+  safetyEnabled          Boolean?                @default(true) @map("safety_enabled")
+  dataRetentionDays      Int?                    @default(730) @map("data_retention_days")
   activityLogs           ActivityLog[]
   analyticsSnapshots     AnalyticsSnapshot[]
   categories             Category[]
