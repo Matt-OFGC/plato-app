@@ -25,11 +25,17 @@ export async function getCurrentUserAndCompany() {
   // Fetch company details if user has a company
   let company = null;
   if (companyId) {
-    company = await prisma.company.findUnique({
-      where: { id: companyId },
-    });
+    try {
+      company = await prisma.company.findUnique({
+        where: { id: companyId },
+      });
+    } catch (error) {
+      console.error('Error fetching company:', error);
+      // Return null if there's an error - this handles missing Safety columns gracefully
+      company = null;
+    }
   }
-  
+
   return { user, companyId, company, currency };
 }
 
