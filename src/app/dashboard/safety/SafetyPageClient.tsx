@@ -8,6 +8,7 @@ import { TemplateLibrary } from "@/components/safety/TemplateLibrary";
 import { CompliancePage } from "@/components/safety/CompliancePage";
 import { TemperatureMonitoringPage } from "@/components/safety/TemperatureMonitoringPage";
 import { QuickActionsBar } from "@/components/safety/QuickActionsBar";
+import { MigrationHelper } from "@/components/safety/MigrationHelper";
 
 type SafetyPage = "diary" | "tasks" | "compliance" | "templates" | "temperatures";
 
@@ -39,6 +40,7 @@ export function SafetyPageClient() {
         {/* Main Content - FloatingNavigation handles the top nav */}
         <div className="flex-1 overflow-auto">
           <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg p-6">
+            <MigrationHelper />
             {currentPage === "diary" && (
               <SafetyDiary selectedDate={selectedDate} onDateChange={setSelectedDate} />
             )}

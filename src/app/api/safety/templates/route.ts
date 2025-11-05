@@ -20,18 +20,28 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const includeInactive = searchParams.get("includeInactive") === "true";
 
-    const templates = await prisma.$queryRaw<any[]>`
-      SELECT 
-        t.*,
-        COUNT(c.id) as "checklistItemsCount"
-      FROM "TaskTemplate" t
-      LEFT JOIN "TemplateChecklistItem" c ON c."templateId" = t.id
-      WHERE t."companyId" = ${companyId}
-        ${category ? prisma.$queryRaw`AND t.category = ${category}` : prisma.$queryRaw``}
-        ${includeInactive ? prisma.$queryRaw`` : prisma.$queryRaw`AND t."isActive" = true`}
-      GROUP BY t.id
-      ORDER BY t."isSystemTemplate" DESC, t."createdAt" DESC
-    `;
+    let templates: any[] = [];
+    try {
+      templates = await prisma.$queryRaw<any[]>`
+        SELECT 
+          t.*,
+          COUNT(c.id) as "checklistItemsCount"
+        FROM "TaskTemplate" t
+        LEFT JOIN "TemplateChecklistItem" c ON c."templateId" = t.id
+        WHERE t."companyId" = ${companyId}
+          ${category ? prisma.$queryRaw`AND t.category = ${category}` : prisma.$queryRaw``}
+          ${includeInactive ? prisma.$queryRaw`` : prisma.$queryRaw`AND t."isActive" = true`}
+        GROUP BY t.id
+        ORDER BY t."isSystemTemplate" DESC, t."createdAt" DESC
+      `;
+    } catch (error: any) {
+      // If TaskTemplate table doesn't exist, return empty array
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TaskTemplate table does not exist yet. Run migration: npx tsx src/app/scripts/migrate-safety-schema.ts');
+        return NextResponse.json([]);
+      }
+      throw error;
+    }
 
     // Get checklist items for each template
     const templatesWithItems = await Promise.all(
