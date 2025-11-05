@@ -1468,7 +1468,7 @@ model TaskTemplate {
   createdBy              Int?
   createdAt              DateTime                  @default(now())
   updatedAt              DateTime                  @default(now()) @updatedAt
-  company                Company                   @relation("CompanyTaskTemplates", fields: [companyId], references: [id], onDelete: Cascade)
+  company                Company                   @relation("safetyTaskTemplates", fields: [companyId], references: [id], onDelete: Cascade)
   checklistItems         TemplateChecklistItem[]
   scheduledTasks         ScheduledTask[]
   taskInstances          TaskInstance[]
@@ -1510,7 +1510,7 @@ model ScheduledTask {
   endDate           DateTime?      @db.Date
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @default(now()) @updatedAt
-  company           Company        @relation("CompanyScheduledTasks", fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company        @relation("safetyScheduledTasks", fields: [companyId], references: [id], onDelete: Cascade)
   template          TaskTemplate   @relation(fields: [templateId], references: [id])
   assignedUser      User?          @relation("UserScheduledTasks", fields: [assignedTo], references: [id])
   taskInstances     TaskInstance[]
@@ -1531,7 +1531,7 @@ model TaskInstance {
   priority           String               @default("normal") @db.VarChar(50)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @default(now()) @updatedAt
-  company            Company              @relation("CompanyTaskInstances", fields: [companyId], references: [id], onDelete: Cascade)
+  company            Company              @relation("safetyTaskInstances", fields: [companyId], references: [id], onDelete: Cascade)
   scheduledTask      ScheduledTask?       @relation(fields: [scheduledTaskId], references: [id], onDelete: Cascade)
   template           TaskTemplate         @relation(fields: [templateId], references: [id])
   assignedUser       User?                @relation("UserTaskInstances", fields: [assignedTo], references: [id])
@@ -1567,7 +1567,7 @@ model TaskCompletion {
   checklistItemsCompleted Int
   photosCount             Int                        @default(0)
   createdAt               DateTime                   @default(now())
-  company                 Company                    @relation("CompanyTaskCompletions", fields: [companyId], references: [id], onDelete: Cascade)
+  company                 Company                    @relation("safetyTaskCompletions", fields: [companyId], references: [id], onDelete: Cascade)
   taskInstance            TaskInstance?              @relation(fields: [taskInstanceId], references: [id])
   template                TaskTemplate               @relation(fields: [templateId], references: [id])
   completedByUser         User                       @relation("UserTaskCompletions", fields: [completedBy], references: [id])
@@ -1611,7 +1611,7 @@ model TaskPhoto {
   uploadedBy             Int
   uploadedAt             DateTime                 @default(now())
   thumbnailPath          String?                  @db.VarChar(500)
-  company                Company                  @relation("CompanyTaskPhotos", fields: [companyId], references: [id], onDelete: Cascade)
+  company                Company                  @relation("safetyTaskPhotos", fields: [companyId], references: [id], onDelete: Cascade)
   taskCompletion         TaskCompletion           @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
   checklistItem          ChecklistItemCompletion? @relation(fields: [checklistItemId], references: [id])
   uploadedByUser         User                     @relation("UserTaskPhotos", fields: [uploadedBy], references: [id])
@@ -1630,7 +1630,7 @@ model TaskComment {
   createdByName    String          @db.VarChar(255)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @default(now()) @updatedAt
-  company          Company         @relation("CompanyTaskComments", fields: [companyId], references: [id], onDelete: Cascade)
+  company          Company         @relation("safetyTaskComments", fields: [companyId], references: [id], onDelete: Cascade)
   taskInstance     TaskInstance?   @relation(fields: [taskInstanceId], references: [id], onDelete: Cascade)
   taskCompletion   TaskCompletion? @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
   createdByUser    User            @relation("UserTaskComments", fields: [createdBy], references: [id])
@@ -1651,7 +1651,7 @@ model TemperatureSensor {
   isActive          Boolean               @default(true)
   lastReadingAt     DateTime?
   createdAt         DateTime              @default(now())
-  company           Company               @relation("CompanyTemperatureSensors", fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company               @relation("temperatureSensors", fields: [companyId], references: [id], onDelete: Cascade)
   readings          TemperatureReading[]
 }
 
@@ -1663,7 +1663,7 @@ model TemperatureReading {
   temperatureUnit  String            @default("celsius") @db.VarChar(10)
   recordedAt       DateTime          @default(now())
   isOutOfRange     Boolean           @default(false)
-  company          Company           @relation("CompanyTemperatureReadings", fields: [companyId], references: [id], onDelete: Cascade)
+  company          Company           @relation("temperatureReadings", fields: [companyId], references: [id], onDelete: Cascade)
   sensor           TemperatureSensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
 
   @@index([sensorId, recordedAt(sort: Desc)])
@@ -1685,7 +1685,7 @@ model EquipmentRegister {
   notes              String?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @default(now()) @updatedAt
-  company            Company          @relation("CompanyEquipmentRegister", fields: [companyId], references: [id], onDelete: Cascade)
+  company            Company          @relation("equipmentRegister", fields: [companyId], references: [id], onDelete: Cascade)
   issues             EquipmentIssue[]
 }
 
@@ -1701,7 +1701,7 @@ model EquipmentIssue {
   resolvedAt        DateTime?
   resolvedBy        Int?
   resolutionNotes   String?
-  company           Company           @relation("CompanyEquipmentIssues", fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company           @relation("equipmentIssues", fields: [companyId], references: [id], onDelete: Cascade)
   equipment         EquipmentRegister @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   reportedByUser    User              @relation("UserEquipmentIssuesReported", fields: [reportedBy], references: [id])
   resolvedByUser    User?             @relation("UserEquipmentIssuesResolved", fields: [resolvedBy], references: [id])
@@ -1720,7 +1720,7 @@ model SmartAlert {
   isRead             Boolean  @default(false)
   isDismissed        Boolean  @default(false)
   createdAt          DateTime @default(now())
-  company            Company  @relation("CompanySmartAlerts", fields: [companyId], references: [id], onDelete: Cascade)
+  company            Company  @relation("safetyAlerts", fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId, isDismissed, createdAt(sort: Desc)])
 }
@@ -1736,7 +1736,7 @@ model TemplateAppliance {
   isActive      Boolean      @default(true)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @default(now()) @updatedAt
-  company       Company      @relation("CompanyTemplateAppliances", fields: [companyId], references: [id], onDelete: Cascade)
+  company       Company      @relation("templateAppliances", fields: [companyId], references: [id], onDelete: Cascade)
   template      TaskTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, applianceName, companyId])
@@ -1759,7 +1759,7 @@ model TemperatureRecord {
   recordedBy     Int?
   recordedAt     DateTime      @default(now())
   createdAt      DateTime      @default(now())
-  company        Company       @relation("CompanyTemperatureRecords", fields: [companyId], references: [id], onDelete: Cascade)
+  company        Company       @relation("temperatureRecords", fields: [companyId], references: [id], onDelete: Cascade)
   template       TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   taskInstance   TaskInstance? @relation(fields: [taskInstanceId], references: [id], onDelete: SetNull)
   recordedByUser User?         @relation("UserTemperatureRecords", fields: [recordedBy], references: [id])
@@ -1783,7 +1783,7 @@ model DailyTemperatureCheck {
   completedAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now()) @updatedAt
-  company         Company   @relation("CompanyDailyTemperatureChecks", fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company   @relation("dailyTemperatureChecks", fields: [companyId], references: [id], onDelete: Cascade)
   completedByUser User?     @relation("UserDailyTemperatureChecks", fields: [completedBy], references: [id])
 
   @@unique([companyId, checkDate, checkPeriod, checkType])
