@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Copy, Trash2, Star } from 'lucide-react';
 
 interface LabelTemplate {
@@ -24,6 +25,8 @@ interface TemplateLibraryViewProps {
 }
 
 export function TemplateLibraryView({ onSelectTemplate }: TemplateLibraryViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [templates, setTemplates] = useState<LabelTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -195,7 +198,11 @@ export function TemplateLibraryView({ onSelectTemplate }: TemplateLibraryViewPro
             </p>
           </div>
           <button
-            onClick={() => window.location.hash = '#design-studio'}
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('view', 'design-studio');
+              router.push(`?${params.toString()}`);
+            }}
             className="px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all flex items-center gap-2"
           >
             <Plus size={20} />
@@ -215,7 +222,11 @@ export function TemplateLibraryView({ onSelectTemplate }: TemplateLibraryViewPro
               Create your first custom template in the Design Studio
             </p>
             <button
-              onClick={() => window.location.hash = '#design-studio'}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('view', 'design-studio');
+                router.push(`?${params.toString()}`);
+              }}
               className="px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all"
             >
               Get Started

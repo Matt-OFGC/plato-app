@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, Grid3x3, List, Table } from 'lucide-react';
 
 interface AllergenSheetTemplate {
@@ -29,9 +30,12 @@ interface AllergenSheetTemplate {
 interface SheetStyleViewProps {
   selectedTemplate: AllergenSheetTemplate | null;
   onTemplateSelect: (template: AllergenSheetTemplate) => void;
+  onNavigateToPreview?: () => void;
 }
 
-export function SheetStyleView({ selectedTemplate, onTemplateSelect }: SheetStyleViewProps) {
+export function SheetStyleView({ selectedTemplate, onTemplateSelect, onNavigateToPreview }: SheetStyleViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [templates, setTemplates] = useState<AllergenSheetTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -207,7 +211,15 @@ export function SheetStyleView({ selectedTemplate, onTemplateSelect }: SheetStyl
               <p className="text-2xl font-bold text-gray-900">{selectedTemplate.templateName}</p>
             </div>
             <button
-              onClick={() => window.location.hash = '#preview'}
+              onClick={() => {
+                if (onNavigateToPreview) {
+                  onNavigateToPreview();
+                } else {
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('view', 'preview');
+                  router.push(`?${params.toString()}`);
+                }
+              }}
               className="px-8 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all shadow-lg hover:shadow-xl"
             >
               Preview Sheets →

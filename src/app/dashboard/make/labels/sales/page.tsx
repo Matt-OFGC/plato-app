@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { RecipeSelectorView } from "@/components/labels/sales-labels/RecipeSelectorView";
 import { TemplateLibraryView } from "@/components/labels/sales-labels/TemplateLibraryView";
 import { PreviewView } from "@/components/labels/sales-labels/PreviewView";
 import { HistoryView } from "@/components/labels/sales-labels/HistoryView";
+import { DesignStudioView } from "@/components/labels/sales-labels/DesignStudioView";
 
 interface Recipe {
   id: number;
@@ -48,13 +50,46 @@ interface LabelTemplate {
 }
 
 export default function SalesLabelsPage() {
-  const [currentView, setCurrentView] = useState("templates");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get("view") || "templates";
   const [selectedRecipes, setSelectedRecipes] = useState<Recipe[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<LabelTemplate | null>(null);
 
   const handleTemplateSelect = (template: any) => {
     setSelectedTemplate(template);
-    setCurrentView("select-products");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", "select-products");
+    router.push(`?${params.toString()}`);
+  };
+
+  const handleSaveTemplate = async (template: LabelTemplate) => {
+    try {
+      const response = await fetch('/api/labels/templates', {
+        method: template.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(template),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save template');
+      
+      const savedTemplate = await response.json();
+      setSelectedTemplate(savedTemplate);
+      
+      // Navigate to templates view after saving
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("view", "templates");
+      router.push(`?${params.toString()}`);
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      alert('Failed to save template. Please try again.');
+    }
+  };
+
+  const handleCancelDesign = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", "templates");
+    router.push(`?${params.toString()}`);
   };
 
   return (
@@ -63,56 +98,19 @@ export default function SalesLabelsPage() {
       <div className="px-8 pb-8">
         <div className="max-w-7xl mx-auto">
 
-          {/* Page Header with Tabs */}
+          {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold tracking-tight text-gray-900 mb-4">
               Sales Labels
             </h1>
-
-            {/* Tab Navigation - Inside content, not floating */}
-            <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2 w-fit">
-              {["Design Studio", "Templates", "Select Products", "Preview", "History"].map((tab) => {
-                const tabId = tab.toLowerCase().replace(/ /g, "-");
-                const isActive = currentView === tabId;
-
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setCurrentView(tabId)}
-                    className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
-                      isActive
-                        ? "bg-white shadow-md text-gray-900"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {currentView === "design-studio" && (
-            <div className="bg-white/70 backdrop-blur-2xl rounded-3xl border border-gray-200/60 shadow-lg p-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Design Studio
-              </h2>
-              <p className="text-gray-600">
-                Customize every aspect of your product labels. Choose colors,
-                fonts, layout, and what information to display.
-              </p>
-              <div className="mt-6 p-8 bg-gray-100/50 rounded-2xl text-center">
-                <p className="text-gray-500">
-                  Advanced label customization coming soon...
-                </p>
-                <button
-                  onClick={() => setCurrentView("templates")}
-                  className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all"
-                >
-                  Browse Templates
-                </button>
-              </div>
-            </div>
+            <DesignStudioView
+              initialTemplate={null}
+              onSave={handleSaveTemplate}
+              onCancel={handleCancelDesign}
+            />
           )}
 
           {currentView === "templates" && (

@@ -33,11 +33,21 @@ export function RecipeSelectorView({ selectedRecipes, onSelectionChange }: Recip
   const loadRecipes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/recipes');
+      const response = await fetch('/api/recipes?full=true');
+      if (!response.ok) {
+        throw new Error(`Failed to load recipes: ${response.status}`);
+      }
       const data = await response.json();
-      setRecipes(data);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setRecipes(data);
+      } else {
+        console.error('Invalid response format:', data);
+        setRecipes([]);
+      }
     } catch (error) {
       console.error('Failed to load recipes:', error);
+      setRecipes([]);
     } finally {
       setLoading(false);
     }

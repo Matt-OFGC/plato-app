@@ -67,6 +67,21 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
     };
   }
 
+  // Labels section - Allergen Sheets and Sales Labels
+  if (pathname.startsWith('/dashboard/make/labels/allergen-sheets')) {
+    return {
+      tabs: ['Recent Updates', 'Select Recipes', 'Sheet Style', 'Preview', 'History'],
+      links: [] // Will use URL params for navigation
+    };
+  }
+
+  if (pathname.startsWith('/dashboard/make/labels/sales')) {
+    return {
+      tabs: ['Design Studio', 'Templates', 'Select Products', 'Preview', 'History'],
+      links: [] // Will use URL params for navigation
+    };
+  }
+
   // Default tabs for dashboard
   return { tabs: ['Overview', 'Today', 'Week', 'Reports'] };
 };
@@ -208,6 +223,30 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
         };
         setActiveTab(pageToIndex[pageParam] ?? 0);
       }
+      // For Allergen Sheets pages, check the view param
+      else if (pathname.startsWith('/dashboard/make/labels/allergen-sheets')) {
+        const viewParam = searchParams.get('view') || 'recent-updates';
+        const viewToIndex: Record<string, number> = {
+          'recent-updates': 0,
+          'select-recipes': 1,
+          'sheet-style': 2,
+          'preview': 3,
+          'history': 4
+        };
+        setActiveTab(viewToIndex[viewParam] ?? 0);
+      }
+      // For Sales Labels pages, check the view param
+      else if (pathname.startsWith('/dashboard/make/labels/sales')) {
+        const viewParam = searchParams.get('view') || 'templates';
+        const viewToIndex: Record<string, number> = {
+          'design-studio': 0,
+          'templates': 1,
+          'select-products': 2,
+          'preview': 3,
+          'history': 4
+        };
+        setActiveTab(viewToIndex[viewParam] ?? 0);
+      }
       // For settings pages, check exact match or starts with
       else if (pathname.startsWith('/dashboard/account')) {
         const currentIndex = tabLinks.findIndex(link => {
@@ -235,17 +274,30 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
+    // For Safety pages, update URL param instead of navigating
+    if (pathname.startsWith('/dashboard/safety')) {
+      const params = new URLSearchParams(searchParams.toString());
+      const pageNames = ['diary', 'tasks', 'compliance', 'templates', 'temperatures'];
+      params.set('page', pageNames[index] || 'diary');
+      router.push(`${pathname}?${params.toString()}`);
+    }
+    // For Allergen Sheets pages, update view param
+    else if (pathname.startsWith('/dashboard/make/labels/allergen-sheets')) {
+      const params = new URLSearchParams(searchParams.toString());
+      const viewNames = ['recent-updates', 'select-recipes', 'sheet-style', 'preview', 'history'];
+      params.set('view', viewNames[index] || 'recent-updates');
+      router.push(`${pathname}?${params.toString()}`);
+    }
+    // For Sales Labels pages, update view param
+    else if (pathname.startsWith('/dashboard/make/labels/sales')) {
+      const params = new URLSearchParams(searchParams.toString());
+      const viewNames = ['design-studio', 'templates', 'select-products', 'preview', 'history'];
+      params.set('view', viewNames[index] || 'templates');
+      router.push(`${pathname}?${params.toString()}`);
+    }
     // Navigate if links are provided
-    if (tabLinks && tabLinks[index]) {
-      // For Safety pages, update URL param instead of navigating
-      if (pathname.startsWith('/dashboard/safety')) {
-        const params = new URLSearchParams(searchParams.toString());
-        const pageNames = ['diary', 'tasks', 'compliance', 'templates', 'temperatures'];
-        params.set('page', pageNames[index] || 'diary');
-        router.push(`${pathname}?${params.toString()}`);
-      } else {
-        router.push(tabLinks[index]);
-      }
+    else if (tabLinks && tabLinks[index]) {
+      router.push(tabLinks[index]);
     }
   };
 

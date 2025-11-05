@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@/generated/prisma';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { getCurrentUserAndCompany } from '@/lib/current';
 
 // GET /api/allergen-sheets/templates - Get all allergen sheet templates
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Get company_id from session
-    // const companyId = await getCompanyIdFromSession(request);
+    const { companyId } = await getCurrentUserAndCompany();
 
     const templates = await prisma.allergenSheetTemplate.findMany({
       where: {
         OR: [
           { isSystemTemplate: true },
-          // { companyId: companyId } // Add when auth is ready
+          ...(companyId ? [{ companyId }] : [])
         ]
       },
       orderBy: [
@@ -62,10 +60,13 @@ export async function GET(request: NextRequest) {
 // POST /api/allergen-sheets/templates - Create a new template
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const { companyId } = await getCurrentUserAndCompany();
+    
+    if (!companyId) {
+      return NextResponse.json({ error: 'No company found' }, { status: 404 });
+    }
 
-    // TODO: Get company_id from session
-    const companyId = 1; // Replace with actual company ID
+    const body = await request.json();
 
     const template = await prisma.allergenSheetTemplate.create({
       data: {

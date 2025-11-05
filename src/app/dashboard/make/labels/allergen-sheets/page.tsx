@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { RecipeSelectorView } from "@/components/labels/allergen-sheets/RecipeSelectorView";
 import { SheetStyleView } from "@/components/labels/allergen-sheets/SheetStyleView";
 import { PreviewView } from "@/components/labels/allergen-sheets/PreviewView";
@@ -40,18 +41,36 @@ interface AllergenSheetTemplate {
 }
 
 export default function AllergenSheetsPage() {
-  const [currentView, setCurrentView] = useState("recent-updates");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentView = searchParams.get("view") || "recent-updates";
   const [selectedRecipes, setSelectedRecipes] = useState<Recipe[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<AllergenSheetTemplate | null>(null);
 
   const handleTemplateSelect = (template: AllergenSheetTemplate) => {
     setSelectedTemplate(template);
-    setCurrentView("select-recipes");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", "select-recipes");
+    router.push(`?${params.toString()}`);
   };
 
   const handleRecentUpdatesSelect = (recipes: Recipe[]) => {
     setSelectedRecipes(recipes);
-    setCurrentView("sheet-style");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", "sheet-style");
+    router.push(`?${params.toString()}`);
+  };
+
+  const handleNavigateToSheetStyle = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", "sheet-style");
+    router.push(`?${params.toString()}`);
+  };
+
+  const handleNavigateToPreview = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", "preview");
+    router.push(`?${params.toString()}`);
   };
 
   return (
@@ -59,7 +78,7 @@ export default function AllergenSheetsPage() {
       {/* Main Content */}
       <div className="px-8 pb-8">
         <div className="max-w-7xl mx-auto">
-          {/* Page Header with Tabs */}
+          {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold tracking-tight text-gray-900 mb-2">
               Allergen Sheets
@@ -67,30 +86,6 @@ export default function AllergenSheetsPage() {
             <p className="text-lg text-gray-500 mb-4">
               Generate comprehensive allergen information sheets for legal compliance
             </p>
-
-            {/* Tab Navigation - Inside content, not floating */}
-            <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2 w-fit">
-              {["Recent Updates", "Select Recipes", "Sheet Style", "Preview", "History"].map(
-                (tab) => {
-                  const tabId = tab.toLowerCase().replace(/ /g, "-");
-                  const isActive = currentView === tabId;
-
-                  return (
-                    <button
-                      key={tab}
-                      onClick={() => setCurrentView(tabId)}
-                      className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
-                        isActive
-                          ? "bg-white shadow-md text-gray-900"
-                          : "text-gray-600 hover:text-gray-900"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  );
-                }
-              )}
-            </div>
           </div>
 
           {/* Content Area */}
@@ -102,6 +97,7 @@ export default function AllergenSheetsPage() {
             <RecipeSelectorView
               selectedRecipes={selectedRecipes}
               onSelectionChange={setSelectedRecipes}
+              onNavigateToSheetStyle={handleNavigateToSheetStyle}
             />
           )}
 
@@ -109,6 +105,7 @@ export default function AllergenSheetsPage() {
             <SheetStyleView
               selectedTemplate={selectedTemplate}
               onTemplateSelect={handleTemplateSelect}
+              onNavigateToPreview={handleNavigateToPreview}
             />
           )}
 

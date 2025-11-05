@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, AlertTriangle } from 'lucide-react';
 
 interface Recipe {
@@ -16,9 +17,12 @@ interface Recipe {
 interface RecipeSelectorViewProps {
   selectedRecipes: Recipe[];
   onSelectionChange: (recipes: Recipe[]) => void;
+  onNavigateToSheetStyle?: () => void;
 }
 
-export function RecipeSelectorView({ selectedRecipes, onSelectionChange }: RecipeSelectorViewProps) {
+export function RecipeSelectorView({ selectedRecipes, onSelectionChange, onNavigateToSheetStyle }: RecipeSelectorViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -32,11 +36,21 @@ export function RecipeSelectorView({ selectedRecipes, onSelectionChange }: Recip
   const loadRecipes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/recipes');
+      const response = await fetch('/api/recipes?full=true');
+      if (!response.ok) {
+        throw new Error(`Failed to load recipes: ${response.status}`);
+      }
       const data = await response.json();
-      setRecipes(data);
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setRecipes(data);
+      } else {
+        console.error('Invalid response format:', data);
+        setRecipes([]);
+      }
     } catch (error) {
       console.error('Failed to load recipes:', error);
+      setRecipes([]);
     } finally {
       setLoading(false);
     }
@@ -260,7 +274,15 @@ export function RecipeSelectorView({ selectedRecipes, onSelectionChange }: Recip
             {/* Next Button */}
             <div className="flex items-end">
               <button
-                onClick={() => window.location.hash = '#sheet-style'}
+                onClick={() => {
+                  if (onNavigateToSheetStyle) {
+                    onNavigateToSheetStyle();
+                  } else {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.set('view', 'sheet-style');
+                    router.push(`?${params.toString()}`);
+                  }
+                }}
                 className="w-full px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all shadow-lg hover:shadow-xl"
               >
                 Choose Style →
