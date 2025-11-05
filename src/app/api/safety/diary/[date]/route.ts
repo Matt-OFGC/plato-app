@@ -23,19 +23,40 @@ export async function GET(
     }
 
     // Get completed tasks
-    const completed = await prisma.$queryRaw<any[]>`
-      SELECT 
-        tc.*,
-        t.emoji as "templateEmoji",
-        t.category as "templateCategory",
-        u.name as "completedByName",
-        u.email as "completedByEmail"
-      FROM "TaskCompletion" tc
-      JOIN "TaskTemplate" t ON t.id = tc."templateId"
-      JOIN "User" u ON u.id = tc."completedBy"
-      WHERE tc."companyId" = ${companyId} AND tc."completionDate" = ${date}
-      ORDER BY tc."completedAt" DESC
-    `;
+    let completed: any[] = [];
+    try {
+      completed = await prisma.$queryRaw<any[]>`
+        SELECT 
+          tc.*,
+          t.emoji as "templateEmoji",
+          t.category as "templateCategory",
+          u.name as "completedByName",
+          u.email as "completedByEmail"
+        FROM "TaskCompletion" tc
+        JOIN "TaskTemplate" t ON t.id = tc."templateId"
+        JOIN "User" u ON u.id = tc."completedBy"
+        WHERE tc."companyId" = ${companyId} AND tc."completionDate" = ${date}
+        ORDER BY tc."completedAt" DESC
+      `;
+    } catch (error: any) {
+      // If tables don't exist, return empty array
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('Safety tables do not exist yet');
+        return NextResponse.json({
+          date,
+          completed: [],
+          pending: [],
+          stats: {
+            totalTasks: 0,
+            completedCount: 0,
+            pendingCount: 0,
+            flaggedCount: 0,
+            complianceScore: 100,
+          },
+        });
+      }
+      throw error;
+    }
 
     // Get checklist items and photos for each completion
     const completedWithDetails = await Promise.all(
@@ -57,21 +78,32 @@ export async function GET(
     );
 
     // Get pending tasks for this date
-    const pending = await prisma.$queryRaw<any[]>`
-      SELECT 
-        ti.*,
-        t.name as "templateName",
-        t.category as "templateCategory",
-        t.emoji as "templateEmoji",
-        u.name as "assignedToName"
-      FROM "TaskInstance" ti
-      JOIN "TaskTemplate" t ON t.id = ti."templateId"
-      LEFT JOIN "User" u ON u.id = ti."assignedTo"
-      WHERE ti."companyId" = ${companyId} 
-        AND ti."dueDate" = ${date}
-        AND ti.status != 'completed'
-      ORDER BY ti."dueTime" ASC NULLS LAST
-    `;
+    let pending: any[] = [];
+    try {
+      pending = await prisma.$queryRaw<any[]>`
+        SELECT 
+          ti.*,
+          t.name as "templateName",
+          t.category as "templateCategory",
+          t.emoji as "templateEmoji",
+          u.name as "assignedToName"
+        FROM "TaskInstance" ti
+        JOIN "TaskTemplate" t ON t.id = ti."templateId"
+        LEFT JOIN "User" u ON u.id = ti."assignedTo"
+        WHERE ti."companyId" = ${companyId} 
+          AND ti."dueDate" = ${date}
+          AND ti.status != 'completed'
+        ORDER BY ti."dueTime" ASC NULLS LAST
+      `;
+    } catch (error: any) {
+      // If tables don't exist, pending will be empty array
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TaskInstance table does not exist yet');
+        pending = [];
+      } else {
+        throw error;
+      }
+    }
 
     // Calculate compliance score
     const totalTasks = completed.length + pending.length;
@@ -93,10 +125,13 @@ export async function GET(
         complianceScore,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Get diary error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch diary entries" },
+      { 
+        error: "Failed to fetch diary entries",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
