@@ -65,6 +65,7 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
     recipes: true,
     teams: true,
     production: true,
+    make: true,
     healthSafety: true
   });
   const [searchTerm, setSearchTerm] = useState("");
@@ -144,11 +145,23 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
   const productionItems = useMemo(() => {
     // Use pre-computed production items for better performance
     if (searchTerm.trim()) {
-      return PRODUCTION_ITEMS.filter(item => 
+      return PRODUCTION_ITEMS.filter(item =>
         filteredItems.some(fi => fi.value === item.value)
       );
     }
     return PRODUCTION_ITEMS;
+  }, [searchTerm, filteredItems]);
+
+  const makeItems = useMemo(() => {
+    const items = ALL_NAVIGATION_ITEMS.filter(item =>
+      item.appContext === 'make'
+    );
+    if (searchTerm.trim()) {
+      return items.filter(item =>
+        filteredItems.some(fi => fi.value === item.value)
+      );
+    }
+    return items;
   }, [searchTerm, filteredItems]);
 
   // Health & Safety items - compute on demand to ensure ALL_NAVIGATION_ITEMS is loaded
@@ -305,7 +318,7 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                
+
                 {expandedSections.production && (
                   <div className="mt-1 space-y-0.5">
                     {productionItems.length > 0 ? (
@@ -339,6 +352,51 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
                   </div>
                 )}
               </div>
+
+            {/* Make Section - Label Generator */}
+            {(makeItems.length > 0 || !searchTerm.trim()) && (
+              <div className="px-2 py-2">
+                <button
+                  onClick={() => toggleSection('make')}
+                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
+                >
+                  <span>MAKE</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-400">Detail</span>
+                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.make ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                {expandedSections.make && (
+                  <div className="mt-1 space-y-0.5">
+                    {makeItems.map(item => {
+                      const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                      return (
+                        <a
+                          key={item.value}
+                          href={item.href}
+                          onClick={onClose}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
+                            isActive
+                              ? 'bg-blue-500/10 text-blue-600'
+                              : 'text-gray-700 hover:bg-gray-100/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <svg className={`w-3.5 h-3.5 ${isActive ? 'fill-blue-500 text-blue-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" />
+                            </svg>
+                            <span className="font-medium">{item.label}</span>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Teams Section */}
             {(teamsItems.length > 0 || !searchTerm.trim()) && (
