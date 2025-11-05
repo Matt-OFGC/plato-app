@@ -7,43 +7,41 @@ export default function AllergenSheetsPage() {
 
   return (
     <div className="h-full">
-      {/* Floating Top Navigation */}
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-30">
-        <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2">
-          {["Recent Updates", "Select Recipes", "Sheet Style", "Preview", "History"].map(
-            (tab) => {
-              const tabId = tab.toLowerCase().replace(/ /g, "-");
-              const isActive = currentView === tabId;
-
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setCurrentView(tabId)}
-                  className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-white shadow-md text-gray-900"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            }
-          )}
-        </div>
-      </div>
-
       {/* Main Content */}
-      <div className="pt-24 px-8 pb-8">
+      <div className="px-8 pb-8">
         <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
+          {/* Page Header with Tabs */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold tracking-tight text-gray-900 mb-2">
               Allergen Sheets
             </h1>
-            <p className="text-lg text-gray-500">
+            <p className="text-lg text-gray-500 mb-4">
               Generate comprehensive allergen information sheets for legal compliance
             </p>
+
+            {/* Tab Navigation - Inside content, not floating */}
+            <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2 w-fit">
+              {["Recent Updates", "Select Recipes", "Sheet Style", "Preview", "History"].map(
+                (tab) => {
+                  const tabId = tab.toLowerCase().replace(/ /g, "-");
+                  const isActive = currentView === tabId;
+
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setCurrentView(tabId)}
+                      className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        isActive
+                          ? "bg-white shadow-md text-gray-900"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  );
+                }
+              )}
+            </div>
           </div>
 
           {/* Content Area */}
