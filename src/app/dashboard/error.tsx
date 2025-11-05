@@ -1,78 +1,84 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
 
 export default function DashboardError({
   error,
   reset,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   useEffect(() => {
-    // Log error using logger utility
-    import("@/lib/logger").then(({ logger }) => {
-      logger.error('Dashboard error:', error);
+    // Log the full error details in development/production
+    console.error("Dashboard Error Details:", {
+      message: error.message,
+      digest: error.digest,
+      stack: error.stack,
+      name: error.name,
     });
-  }, [error])
+  }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full space-y-6 text-center">
-        <div className="space-y-2">
-          <div className="text-6xl">⚠️</div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            Dashboard Error
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-8 max-w-2xl w-full">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Dashboard Error</h1>
+          <p className="text-gray-600 mb-6">
             We couldn't load the dashboard. This might be a temporary issue.
           </p>
-        </div>
+          
+          {/* Show error details in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm font-semibold text-red-900 mb-2">Error Details:</p>
+              <p className="text-sm text-red-800 font-mono">{error.message}</p>
+              {error.digest && (
+                <p className="text-xs text-red-700 mt-2">Digest: {error.digest}</p>
+              )}
+            </div>
+          )}
 
-        {process.env.NODE_ENV === 'development' && error.message && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-left">
-            <p className="text-xs font-semibold text-red-800 dark:text-red-200 mb-2">
-              Error Details (Development Only):
-            </p>
-            <p className="text-sm font-mono text-red-700 dark:text-red-300 break-words">
-              {error.message}
-            </p>
-            {error.stack && (
-              <details className="mt-2">
-                <summary className="text-xs text-red-600 dark:text-red-400 cursor-pointer">
-                  Stack Trace
-                </summary>
-                <pre className="text-xs text-red-600 dark:text-red-400 mt-2 overflow-auto max-h-40">
-                  {error.stack}
-                </pre>
-              </details>
-            )}
+          {/* Show digest in production for debugging */}
+          {error.digest && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-yellow-800">
+                <strong>Error ID:</strong> {error.digest}
+              </p>
+              <p className="text-xs text-yellow-700 mt-2">
+                Check server logs for details with this digest ID.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={reset}
+              className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => window.location.href = "/dashboard"}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+            >
+              Reload Dashboard
+            </button>
           </div>
-        )}
 
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={() => reset()}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm"
-          >
-            Try Again
-          </button>
-          <button
-            onClick={() => window.location.href = '/dashboard'}
-            className="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg font-medium transition-colors"
-          >
-            Reload Dashboard
-          </button>
+          <p className="text-sm text-gray-500 mt-6">
+            If this problem persists, try{" "}
+            <a
+              href="/logout"
+              className="text-blue-600 hover:text-blue-700 underline"
+            >
+              logging out and back in
+            </a>
+            .
+          </p>
         </div>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          If this problem persists, try refreshing the page or{' '}
-          <a href="/login" className="text-blue-600 hover:underline">
-            logging out and back in
-          </a>
-          .
-        </p>
       </div>
     </div>
-  )
+  );
 }
