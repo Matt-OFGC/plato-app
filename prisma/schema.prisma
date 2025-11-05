@@ -89,6 +89,7 @@ model Recipe {
   shopifyProductMappings ShopifyProductMapping[]
   wholesaleOrderItems    WholesaleOrderItem[]
   wholesaleProducts      WholesaleProduct[]      @relation("WholesaleRecipes")
+  updateLogs             RecipeUpdateLog[]
 
   @@unique([name, companyId])
   @@index([companyId])
@@ -253,20 +254,24 @@ model Company {
   wholesaleCustomers     WholesaleCustomer[]
   wholesaleOrders        WholesaleOrder[]
   wholesaleProducts      WholesaleProduct[]
-  taskTemplates          TaskTemplate[]          @relation("CompanyTaskTemplates")
-  scheduledTasks         ScheduledTask[]         @relation("CompanyScheduledTasks")
-  taskInstances          TaskInstance[]          @relation("CompanyTaskInstances")
-  taskCompletions        TaskCompletion[]        @relation("CompanyTaskCompletions")
-  taskPhotos             TaskPhoto[]             @relation("CompanyTaskPhotos")
-  taskComments           TaskComment[]           @relation("CompanyTaskComments")
-  temperatureSensors     TemperatureSensor[]     @relation("CompanyTemperatureSensors")
-  temperatureReadings    TemperatureReading[]    @relation("CompanyTemperatureReadings")
-  equipmentRegister      EquipmentRegister[]     @relation("CompanyEquipmentRegister")
-  equipmentIssues        EquipmentIssue[]        @relation("CompanyEquipmentIssues")
-  smartAlerts            SmartAlert[]            @relation("CompanySmartAlerts")
-  templateAppliances     TemplateAppliance[]     @relation("CompanyTemplateAppliances")
-  temperatureRecords     TemperatureRecord[]     @relation("CompanyTemperatureRecords")
-  dailyTemperatureChecks DailyTemperatureCheck[] @relation("CompanyDailyTemperatureChecks")
+  labelTemplates         LabelTemplate[]
+  allergenSheetTemplates AllergenSheetTemplate[]
+  generatedDocuments     GeneratedDocument[]
+  recipeUpdateLogs       RecipeUpdateLog[]
+  safetyTaskTemplates    TaskTemplate[]          @relation("safetyTaskTemplates")
+  safetyScheduledTasks   ScheduledTask[]         @relation("safetyScheduledTasks")
+  safetyTaskInstances    TaskInstance[]          @relation("safetyTaskInstances")
+  safetyTaskCompletions  TaskCompletion[]        @relation("safetyTaskCompletions")
+  safetyTaskPhotos       TaskPhoto[]             @relation("safetyTaskPhotos")
+  safetyTaskComments     TaskComment[]           @relation("safetyTaskComments")
+  safetyAlerts           SmartAlert[]            @relation("safetyAlerts")
+  temperatureSensors     TemperatureSensor[]     @relation("temperatureSensors")
+  temperatureReadings    TemperatureReading[]    @relation("temperatureReadings")
+  equipmentRegister      EquipmentRegister[]     @relation("equipmentRegister")
+  equipmentIssues        EquipmentIssue[]        @relation("equipmentIssues")
+  templateAppliances     TemplateAppliance[]     @relation("templateAppliances")
+  temperatureRecords     TemperatureRecord[]     @relation("temperatureRecords")
+  dailyTemperatureChecks DailyTemperatureCheck[] @relation("dailyTemperatureChecks")
 }
 
 model Membership {
@@ -1331,6 +1336,123 @@ model WebhookLog {
   @@index([eventType])
   @@index([status])
   @@index([createdAt])
+}
+
+model LabelTemplate {
+  id                   Int      @id @default(autoincrement())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  companyId            Int?
+  templateName         String
+  templateType         String   @default("custom")
+  backgroundColor      String   @default("#E8E4DC")
+  textColor            String   @default("#6D7C6F")
+  accentColor          String?
+  productFont          String   @default("Poppins")
+  productFontWeight    String   @default("Bold")
+  productFontSize      Int      @default(48)
+  subtitleFont         String   @default("Poppins")
+  subtitleFontWeight   String   @default("SemiBold")
+  subtitleFontSize     Int      @default(18)
+  bodyFont             String   @default("Poppins")
+  bodyFontWeight       String   @default("Regular")
+  bodyFontSize         Int      @default(10)
+  alignment            String   @default("center")
+  textTransform        String   @default("uppercase")
+  spacingStyle         String   @default("normal")
+  marginMm             Decimal  @default(2.0)
+  widthMm              Decimal  @default(65.0)
+  heightMm             Decimal  @default(38.0)
+  showPrice            Boolean  @default(true)
+  showAllergens        Boolean  @default(true)
+  showDietaryTags      Boolean  @default(true)
+  showDate             Boolean  @default(true)
+  showWeight           Boolean  @default(false)
+  showCompanyName      Boolean  @default(false)
+  showStorageInfo      Boolean  @default(false)
+  showBarcode          Boolean  @default(false)
+  isDefault            Boolean  @default(false)
+  isSystemTemplate     Boolean  @default(false)
+  createdBy            Int?
+  company              Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, isSystemTemplate])
+}
+
+model AllergenSheetTemplate {
+  id                      Int      @id @default(autoincrement())
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  companyId               Int?
+  templateName            String
+  templateType            String   @default("custom")
+  sheetStyle              String   @default("full_detail")
+  backgroundColor         String   @default("#FFFFFF")
+  textColor               String   @default("#000000")
+  headingColor            String   @default("#2D3142")
+  warningColor            String   @default("#FF6B6B")
+  headingFont             String   @default("Poppins")
+  headingSize             Int      @default(24)
+  bodyFont                String   @default("Poppins")
+  bodySize                Int      @default(11)
+  pageMarginsMm           Decimal  @default(15.0)
+  showFullIngredients     Boolean  @default(true)
+  showAllergenList        Boolean  @default(true)
+  showDietarySuitability  Boolean  @default(true)
+  showStorageInfo         Boolean  @default(true)
+  showWeight              Boolean  @default(true)
+  showBestBefore          Boolean  @default(true)
+  showCompanyDetails      Boolean  @default(true)
+  showContactInfo         Boolean  @default(true)
+  showLastUpdated         Boolean  @default(true)
+  isDefault               Boolean  @default(false)
+  isSystemTemplate        Boolean  @default(false)
+  createdBy               Int?
+  company                 Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, isSystemTemplate])
+}
+
+model GeneratedDocument {
+  id             Int      @id @default(autoincrement())
+  createdAt      DateTime @default(now())
+  companyId      Int
+  documentType   String
+  templateId     Int?
+  products       Json
+  totalItems     Int
+  sheetsPrinted  Int?
+  pdfFilePath    String?
+  fileSizeBytes  Int?
+  generatedBy    Int
+  generatedAt    DateTime @default(now())
+  notes          String?
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, documentType, generatedAt])
+}
+
+model RecipeUpdateLog {
+  id              Int      @id @default(autoincrement())
+  createdAt       DateTime @default(now())
+  recipeId        Int
+  companyId       Int
+  updateType      String
+  changedField    String?
+  oldValue        String?
+  newValue        String?
+  allergenImpact  Boolean  @default(false)
+  updatedBy       Int?
+  updatedAt       DateTime @default(now())
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  recipe          Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([recipeId])
+  @@index([companyId, allergenImpact, updatedAt])
 }
 
 // Safety & Compliance Models
