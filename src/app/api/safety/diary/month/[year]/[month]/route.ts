@@ -29,30 +29,52 @@ export async function GET(
     const endDate = new Date(yearNum, monthNum, 0).toISOString().split("T")[0];
 
     // Get all completions for the month
-    const completions = await prisma.$queryRaw<any[]>`
-      SELECT 
-        "completionDate",
-        status,
-        COUNT(*) as count
-      FROM "TaskCompletion"
-      WHERE "companyId" = ${companyId}
-        AND "completionDate" >= ${startDate}
-        AND "completionDate" <= ${endDate}
-      GROUP BY "completionDate", status
-    `;
+    let completions: any[] = [];
+    let pending: any[] = [];
+    
+    try {
+      completions = await prisma.$queryRaw<any[]>`
+        SELECT 
+          "completionDate",
+          status,
+          COUNT(*) as count
+        FROM "TaskCompletion"
+        WHERE "companyId" = ${companyId}
+          AND "completionDate" >= ${startDate}
+          AND "completionDate" <= ${endDate}
+        GROUP BY "completionDate", status
+      `;
+    } catch (error: any) {
+      // If table doesn't exist, return empty activity
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TaskCompletion table does not exist yet');
+        return NextResponse.json({});
+      }
+      throw error;
+    }
 
-    // Get pending tasks for the month
-    const pending = await prisma.$queryRaw<any[]>`
-      SELECT 
-        "dueDate",
-        COUNT(*) as count
-      FROM "TaskInstance"
-      WHERE "companyId" = ${companyId}
-        AND "dueDate" >= ${startDate}
-        AND "dueDate" <= ${endDate}
-        AND status != 'completed'
-      GROUP BY "dueDate"
-    `;
+    try {
+      // Get pending tasks for the month
+      pending = await prisma.$queryRaw<any[]>`
+        SELECT 
+          "dueDate",
+          COUNT(*) as count
+        FROM "TaskInstance"
+        WHERE "companyId" = ${companyId}
+          AND "dueDate" >= ${startDate}
+          AND "dueDate" <= ${endDate}
+          AND status != 'completed'
+        GROUP BY "dueDate"
+      `;
+    } catch (error: any) {
+      // If table doesn't exist, pending will be empty
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TaskInstance table does not exist yet');
+        pending = [];
+      } else {
+        throw error;
+      }
+    }
 
     // Build activity map
     const activity: Record<string, { completed: number; flagged: number; pending: number }> = {};
@@ -78,10 +100,13 @@ export async function GET(
     });
 
     return NextResponse.json(activity);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Get month activity error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch month activity" },
+      { 
+        error: "Failed to fetch month activity",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

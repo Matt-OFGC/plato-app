@@ -22,24 +22,38 @@ export async function GET(request: NextRequest) {
 
     let templates: any[] = [];
     try {
-      templates = await prisma.$queryRaw<any[]>`
+      // Build query dynamically based on filters
+      let query = `
         SELECT 
           t.*,
           COUNT(c.id) as "checklistItemsCount"
         FROM "TaskTemplate" t
         LEFT JOIN "TemplateChecklistItem" c ON c."templateId" = t.id
-        WHERE t."companyId" = ${companyId}
-          ${category ? prisma.$queryRaw`AND t.category = ${category}` : prisma.$queryRaw``}
-          ${includeInactive ? prisma.$queryRaw`` : prisma.$queryRaw`AND t."isActive" = true`}
-        GROUP BY t.id
-        ORDER BY t."isSystemTemplate" DESC, t."createdAt" DESC
+        WHERE t."companyId" = $1
       `;
+      const params: any[] = [companyId];
+      let paramIndex = 2;
+
+      if (category) {
+        query += ` AND t.category = $${paramIndex}`;
+        params.push(category);
+        paramIndex++;
+      }
+
+      if (!includeInactive) {
+        query += ` AND t."isActive" = true`;
+      }
+
+      query += ` GROUP BY t.id ORDER BY t."isSystemTemplate" DESC, t."createdAt" DESC`;
+
+      templates = await prisma.$queryRawUnsafe<any[]>(query, ...params);
     } catch (error: any) {
       // If TaskTemplate table doesn't exist, return empty array
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
         console.warn('TaskTemplate table does not exist yet. Run migration: npx tsx src/app/scripts/migrate-safety-schema.ts');
         return NextResponse.json([]);
       }
+      console.error("Templates query error:", error);
       throw error;
     }
 
@@ -56,10 +70,13 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json(templatesWithItems);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Get templates error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch templates" },
+      { 
+        error: "Failed to fetch templates",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
