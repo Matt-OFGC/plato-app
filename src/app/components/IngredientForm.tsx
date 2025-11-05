@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UnitConversionHelp } from "./UnitConversionHelp";
 import { SupplierSelector } from "./SupplierSelector";
-import { BatchPricingInput } from "./BatchPricingInput";
 
 const ALLERGEN_OPTIONS = [
   "Celery",
@@ -67,16 +66,62 @@ interface IngredientFormProps {
     batchPricing?: Array<{ packQuantity: number; packPrice: number }> | null;
   };
   onSubmit: (formData: FormData) => void;
+  allergens?: string[];
+  onAllergenChange?: (allergens: string[]) => void;
+  otherAllergen?: string;
+  onOtherAllergenChange?: (value: string) => void;
+  showOtherInput?: boolean;
+  onShowOtherInputChange?: (show: boolean) => void;
 }
 
-export function IngredientForm({ companyId, suppliers = [], initialData, onSubmit }: IngredientFormProps) {
-  const [allergens, setAllergens] = useState<string[]>(initialData?.allergens || []);
+export function IngredientForm({ 
+  companyId, 
+  suppliers = [], 
+  initialData, 
+  onSubmit,
+  allergens: externalAllergens,
+  onAllergenChange,
+  otherAllergen: externalOtherAllergen,
+  onOtherAllergenChange,
+  showOtherInput: externalShowOtherInput,
+  onShowOtherInputChange
+}: IngredientFormProps) {
+  const [allergens, setAllergens] = useState<string[]>(externalAllergens || initialData?.allergens || []);
   const [selectedNutTypes, setSelectedNutTypes] = useState<string[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(initialData?.supplierId || null);
-  const [otherAllergen, setOtherAllergen] = useState<string>("");
-  const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
+  const [otherAllergen, setOtherAllergen] = useState<string>(externalOtherAllergen || "");
+  const [showOtherInput, setShowOtherInput] = useState<boolean>(externalShowOtherInput || false);
   const [otherNutType, setOtherNutType] = useState<string>("");
   const [showOtherNutInput, setShowOtherNutInput] = useState<boolean>(false);
+  const [showAdditionalDetails, setShowAdditionalDetails] = useState<boolean>(false);
+  const [packSize, setPackSize] = useState<number>(initialData?.packQuantity || 1);
+  const [packPrice, setPackPrice] = useState<number>(initialData?.packPrice || 0);
+  const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
+  
+  // Calculate price per unit
+  const pricePerUnit = packSize > 1 && packPrice > 0 ? packPrice / packSize : null;
+  
+  // Sync with external state if provided
+  useEffect(() => {
+    if (externalAllergens !== undefined) {
+      setAllergens(externalAllergens);
+    }
+  }, [externalAllergens]);
+  
+  useEffect(() => {
+    if (externalOtherAllergen !== undefined) {
+      setOtherAllergen(externalOtherAllergen);
+    }
+  }, [externalOtherAllergen]);
+  
+  useEffect(() => {
+    if (externalShowOtherInput !== undefined) {
+      setShowOtherInput(externalShowOtherInput);
+    }
+  }, [externalShowOtherInput]);
+  
+  // Use external allergens if provided, otherwise use internal state
+  const currentAllergens = externalAllergens !== undefined ? externalAllergens : allergens;
   
   // Parse initial custom conversions
   const initialConversions: CustomConversion[] = initialData?.customConversions 
@@ -97,24 +142,30 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
   const [customConversions, setCustomConversions] = useState<CustomConversion[]>(initialConversions);
 
   const handleAllergenChange = (allergen: string, checked: boolean) => {
-    if (checked) {
-      if (allergen === "Other") {
-        setShowOtherInput(true);
-      } else {
-        setAllergens(prev => [...prev, allergen]);
+    if (allergen === "Other") {
+      const newShowOther = checked;
+      setShowOtherInput(newShowOther);
+      if (onShowOtherInputChange) onShowOtherInputChange(newShowOther);
+      if (!checked) {
+        setOtherAllergen("");
+        if (onOtherAllergenChange) onOtherAllergenChange("");
+        const newAllergens = currentAllergens.filter(a => a !== "Other" && !ALLERGEN_OPTIONS.includes(a));
+        setAllergens(newAllergens);
+        if (onAllergenChange) onAllergenChange(newAllergens);
       }
     } else {
-      if (allergen === "Other") {
-        setShowOtherInput(false);
-        setOtherAllergen("");
-        setAllergens(prev => prev.filter(a => a !== otherAllergen));
+      let newAllergens: string[];
+      if (checked) {
+        newAllergens = [...currentAllergens, allergen];
       } else {
-        setAllergens(prev => prev.filter(a => a !== allergen));
+        newAllergens = currentAllergens.filter(a => a !== allergen);
         // If "Nuts" is unchecked, also clear nut types
         if (allergen === "Nuts") {
           setSelectedNutTypes([]);
         }
       }
+      setAllergens(newAllergens);
+      if (onAllergenChange) onAllergenChange(newAllergens);
     }
   };
 
@@ -128,15 +179,19 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
 
   const handleOtherAllergenChange = (value: string) => {
     setOtherAllergen(value);
+    if (onOtherAllergenChange) onOtherAllergenChange(value);
     // Remove the previous "other" allergen if it exists
-    const previousOther = allergens.find(a => !ALLERGEN_OPTIONS.includes(a) && a !== "Other");
+    const previousOther = currentAllergens.find(a => !ALLERGEN_OPTIONS.includes(a) && a !== "Other");
+    let newAllergens = currentAllergens;
     if (previousOther) {
-      setAllergens(prev => prev.filter(a => a !== previousOther));
+      newAllergens = currentAllergens.filter(a => a !== previousOther);
     }
     // Add the new "other" allergen if it has a value
-    if (value && !allergens.includes(value)) {
-      setAllergens(prev => [...prev, value]);
+    if (value && !newAllergens.includes(value)) {
+      newAllergens = [...newAllergens, value];
     }
+    setAllergens(newAllergens);
+    if (onAllergenChange) onAllergenChange(newAllergens);
   };
 
   const addCustomConversion = () => {
@@ -157,7 +212,21 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
     ev.preventDefault();
     
     // Combine allergens and nut types
-    const allAllergens = [...allergens];
+    let allAllergens = [...currentAllergens];
+    
+    // Add "Other" allergen if otherAllergen has a value
+    if (showOtherInput && otherAllergen.trim()) {
+      // Remove previous custom allergen if exists
+      allAllergens = allAllergens.filter(a => ALLERGEN_OPTIONS.includes(a) || a === "Other");
+      if (!allAllergens.includes("Other")) {
+        allAllergens.push("Other");
+      }
+      // Add the custom allergen value
+      if (!allAllergens.includes(otherAllergen.trim())) {
+        allAllergens.push(otherAllergen.trim());
+      }
+    }
+    
     const nutTypesToAdd = [...selectedNutTypes];
     
     // Add custom "Other" nut type if provided
@@ -168,7 +237,7 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
     if (nutTypesToAdd.length > 0) {
       // Replace "Nuts" with specific nut types
       const allergensWithoutNuts = allAllergens.filter(a => a !== "Nuts");
-      allAllergens.splice(0, allAllergens.length, ...allergensWithoutNuts, ...nutTypesToAdd);
+      allAllergens = [...allergensWithoutNuts, ...nutTypesToAdd];
     }
     
     const formData = new FormData(ev.currentTarget);
@@ -183,6 +252,27 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
       formData.set("customConversions", JSON.stringify(conversionsObj));
     }
     
+    // Get purchase size, purchase unit, and pack size from form
+    const purchaseSize = parseFloat((ev.currentTarget.querySelector('#purchaseSize') as HTMLInputElement)?.value || '1');
+    const purchaseUnit = (ev.currentTarget.querySelector('#purchaseUnit') as HTMLSelectElement)?.value || '';
+    const packSize = parseFloat((ev.currentTarget.querySelector('#packSize') as HTMLInputElement)?.value || '1');
+    
+    // Store packQuantity as packSize (individual units per purchase)
+    // This is what the app uses for cost calculations - it needs to know how many units are in the pack
+    formData.set("packQuantity", packSize.toString());
+    
+    // Store packUnit as purchaseUnit (e.g., "case", "box", "bottles")
+    // This is what the user purchases
+    formData.set("packUnit", purchaseUnit);
+    
+    // Store purchase info in batchPricing for reference if pack size differs from purchase size
+    // This helps the system understand the relationship between purchase and pack
+    if (packSize !== purchaseSize) {
+      formData.set("batchPricing", JSON.stringify([{ packQuantity: packSize, packPrice: 0 }]));
+    } else {
+      formData.set("batchPricing", "");
+    }
+    
     if (selectedSupplierId) {
       formData.set("supplierId", selectedSupplierId.toString());
     }
@@ -191,336 +281,445 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
 
   return (
     <div>
-      <form id="ingredient-form" onSubmit={handleSubmit} className="space-y-6">
-        {/* Name */}
-        <div>
-          <label htmlFor="ingredient-name" className="block text-sm font-medium text-gray-900 mb-2">
-            Ingredient Name
-          </label>
-          <input
-            type="text"
-            id="ingredient-name"
-            name="name"
-            defaultValue={initialData?.name || ""}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            placeholder="e.g., All-Purpose Flour"
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
-            Description (Optional)
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={3}
-            defaultValue={initialData?.description || ""}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            placeholder="e.g., Bleached, enriched, pre-sifted"
-          ></textarea>
-        </div>
-
-        {/* Pack Quantity & Unit */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="packQuantity" className="block text-sm font-medium text-gray-900 mb-2">
-              Pack Quantity
-            </label>
-            <input
-              type="number"
-              id="packQuantity"
-              name="packQuantity"
-              step="0.01"
-              min="0"
-              defaultValue={initialData?.packQuantity || ""}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-              placeholder="e.g., 25"
-            />
-          </div>
-          <div>
-            <label htmlFor="packUnit" className="block text-sm font-medium text-gray-900 mb-2">
-              Pack Unit
-            </label>
-            <select
-              id="packUnit"
-              name="packUnit"
-              defaultValue={initialData?.packUnit || ""}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            >
-              <option value="">Select a unit...</option>
-              <optgroup label="Weight/Mass">
-                <option value="g">g (grams)</option>
-                <option value="kg">kg (kilograms)</option>
-                <option value="mg">mg (milligrams)</option>
-                <option value="lb">lb (pounds)</option>
-                <option value="oz">oz (ounces)</option>
-              </optgroup>
-              <optgroup label="Volume (Liquid)">
-                <option value="ml">ml (milliliters)</option>
-                <option value="l">l (liters)</option>
-                <option value="tsp">tsp (teaspoons)</option>
-                <option value="tbsp">tbsp (tablespoons)</option>
-                <option value="cup">cup</option>
-                <option value="floz">fl oz (fluid ounces)</option>
-                <option value="pint">pint</option>
-                <option value="quart">quart</option>
-                <option value="gallon">gallon</option>
-                <option value="pinch">pinch</option>
-                <option value="dash">dash</option>
-              </optgroup>
-              <optgroup label="Count/Discrete">
-                <option value="each">each</option>
-                <option value="slices">slices</option>
-              </optgroup>
-              <optgroup label="Size-based">
-                <option value="large">large</option>
-                <option value="medium">medium</option>
-                <option value="small">small</option>
-              </optgroup>
-            </select>
-          </div>
-        </div>
-
-        {/* Pack Price */}
-        <div>
-          <label htmlFor="packPrice" className="block text-sm font-medium text-gray-900 mb-2">
-            Pack Price
-          </label>
-          <input
-            type="number"
-            id="packPrice"
-            name="packPrice"
-            step="0.01"
-            min="0"
-            defaultValue={initialData?.packPrice || ""}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            placeholder="e.g., 25.00 (use 0 for free ingredients like water)"
-          />
-        </div>
-
-        {/* Batch Pricing */}
-        <BatchPricingInput 
-          packUnit={initialData?.packUnit || ""}
-          initialBatchPricing={initialData?.batchPricing}
-        />
-
-        {/* Yield Quantity & Unit */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="yieldQuantity" className="block text-sm font-medium text-gray-900 mb-2">
-              Yield Quantity (Optional)
-            </label>
-            <input
-              type="number"
-              id="yieldQuantity"
-              name="yieldQuantity"
-              step="0.01"
-              min="0"
-              defaultValue={initialData?.yieldQuantity || ""}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-              placeholder="e.g., 1"
-            />
-          </div>
-          <div>
-            <label htmlFor="yieldUnit" className="block text-sm font-medium text-gray-900 mb-2">
-              Yield Unit (Optional)
-            </label>
-            <input
-              type="text"
-              id="yieldUnit"
-              name="yieldUnit"
-              defaultValue={initialData?.yieldUnit || ""}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-              placeholder="e.g., kg, liter, each"
-            />
-          </div>
-        </div>
-
-        {/* Density */}
-        <div>
-          <label htmlFor="densityGPerMl" className="block text-sm font-medium text-gray-900 mb-2">
-            Density (g/ml) (Optional)
-            <UnitConversionHelp />
-          </label>
-          <input
-            type="number"
-            id="densityGPerMl"
-            name="densityGPerMl"
-            step="0.001"
-            min="0"
-            defaultValue={initialData?.densityGPerMl || ""}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            placeholder="e.g., 1.0 (for water)"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Used for converting between weight and volume (e.g., ml to grams).
-          </p>
-        </div>
-
-        {/* Custom Unit Conversions */}
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-3">
+      <form id="ingredient-form" onSubmit={handleSubmit} className="space-y-4">
+        {/* Top Row: 3-Column Layout */}
+        <div className="grid grid-cols-3 gap-4">
+          {/* Basic Information Section */}
+          <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 pb-2 border-b border-gray-300">Basic Information</h3>
+            
+            {/* Name */}
             <div>
-              <label className="block text-lg font-bold text-blue-800">
-                Custom Unit Conversions (Optional)
-              </label>
-              <p className="text-sm text-blue-700 mt-1">
-                Define how recipe units (tsp, tbsp, cup, etc.) convert to your purchase unit. 
-                Example: If you buy vanilla extract in 100ml bottles but recipes use teaspoons, 
-                you can specify "1 tsp = 5 ml" here.
-              </p>
-            </div>
-          </div>
-
-          {customConversions.length > 0 && (
-            <div className="space-y-3 mb-4">
-              {customConversions.map((conversion, index) => (
-                <div key={index} className="flex gap-2 items-center bg-white p-3 rounded-lg border border-blue-200">
-                  <span className="text-sm font-medium text-gray-700">1</span>
-                  <select
-                    value={conversion.unit}
-                    onChange={(e) => updateCustomConversion(index, 'unit', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="tsp">tsp</option>
-                    <option value="tbsp">tbsp</option>
-                    <option value="cup">cup</option>
-                    <option value="floz">fl oz</option>
-                    <option value="pint">pint</option>
-                    <option value="oz">oz</option>
-                    <option value="lb">lb</option>
-                  </select>
-                  <span className="text-sm font-medium text-gray-700">=</span>
-                  <input
-                    type="number"
-                    value={conversion.value}
-                    onChange={(e) => updateCustomConversion(index, 'value', parseFloat(e.target.value) || 0)}
-                    step="0.01"
-                    min="0"
-                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="5"
-                  />
-                  <select
-                    value={conversion.targetUnit}
-                    onChange={(e) => updateCustomConversion(index, 'targetUnit', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  >
-                    <option value="ml">ml</option>
-                    <option value="l">l</option>
-                    <option value="g">g</option>
-                    <option value="kg">kg</option>
-                    <option value="oz">oz</option>
-                    <option value="lb">lb</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removeCustomConversion(index)}
-                    className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Remove conversion"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={addCustomConversion}
-            className="flex items-center gap-2 px-4 py-2 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors border-2 border-dashed border-blue-300"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add Conversion Rule
-          </button>
-          
-          {customConversions.length === 0 && (
-            <p className="text-xs text-blue-600 mt-3 italic">
-              💡 Tip: Add conversion rules if you buy this ingredient in one unit (like ml or g) 
-              but use it in recipes with different units (like tsp or cups).
-            </p>
-          )}
-        </div>
-
-        {/* Allergens */}
-        <div>
-          <label className="block text-sm font-medium text-gray-900 mb-3">
-            Allergens
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {ALLERGEN_OPTIONS.map((allergen) => (
-              <label key={allergen} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={allergens.includes(allergen) || (allergen === "Other" && showOtherInput)}
-                  onChange={(e) => handleAllergenChange(allergen, e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{allergen}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Other Allergen Input */}
-          {showOtherInput && (
-            <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-              <label htmlFor="other-allergen" className="block text-sm font-medium text-blue-800 mb-2">
-                Specify "Other" Allergen:
+              <label htmlFor="ingredient-name" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Ingredient Name <span className="text-red-500">*</span>
               </label>
               <input
-                id="other-allergen"
-                name="otherAllergen"
                 type="text"
-                value={otherAllergen}
-                onChange={(e) => handleOtherAllergenChange(e.target.value)}
-                className="w-full px-4 py-3 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="e.g., Lupin, Buckwheat, etc."
+                id="ingredient-name"
+                name="name"
+                defaultValue={initialData?.name || ""}
+                required
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                placeholder="e.g., All-Purpose Flour"
               />
-              <p className="text-xs text-blue-700 mt-1">
-                Enter any allergen not listed above. This will be saved as a custom allergen.
-              </p>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Description <span className="text-gray-400 text-xs">(Optional)</span>
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                rows={3}
+                defaultValue={initialData?.description || ""}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white resize-none"
+                placeholder="e.g., Bleached, enriched, pre-sifted"
+              ></textarea>
+            </div>
+          </div>
+
+          {/* Pack Details Section */}
+          <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 pb-2 border-b border-gray-300">Pack Details</h3>
+            
+            {/* Purchase Size & Unit */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="purchaseSize" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                  Purchase Size <span className="text-red-500">*</span>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="focus:outline-none"
+                      onMouseEnter={() => setShowTooltip({ ...showTooltip, purchaseSize: true })}
+                      onMouseLeave={() => setShowTooltip({ ...showTooltip, purchaseSize: false })}
+                    >
+                      <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
+                    {showTooltip.purchaseSize && (
+                      <div className="absolute left-0 top-6 z-50 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                        How many you buy (e.g., 1 for single, 6 for case)
+                      </div>
+                    )}
+                  </div>
+                </label>
+                <input
+                  type="number"
+                  id="purchaseSize"
+                  name="purchaseSize"
+                  step="0.01"
+                  min="0"
+                  defaultValue="1"
+                  required
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  placeholder="1"
+                />
+              </div>
+              <div>
+                <label htmlFor="purchaseUnit" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                  Purchase Unit <span className="text-red-500">*</span>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="focus:outline-none"
+                      onMouseEnter={() => setShowTooltip({ ...showTooltip, purchaseUnit: true })}
+                      onMouseLeave={() => setShowTooltip({ ...showTooltip, purchaseUnit: false })}
+                    >
+                      <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
+                    {showTooltip.purchaseUnit && (
+                      <div className="absolute left-0 top-6 z-50 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                        What you're buying (case, box, pack, or standard units)
+                      </div>
+                    )}
+                  </div>
+                </label>
+                <select
+                  id="purchaseUnit"
+                  name="purchaseUnit"
+                  defaultValue={initialData?.packUnit || ""}
+                  required
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                >
+                <option value="">Select...</option>
+                <optgroup label="Packaging">
+                  <option value="case">case</option>
+                  <option value="box">box</option>
+                  <option value="pack">pack</option>
+                  <option value="carton">carton</option>
+                  <option value="bundle">bundle</option>
+                </optgroup>
+                <optgroup label="Weight/Mass">
+                  <option value="g">g (grams)</option>
+                  <option value="kg">kg (kilograms)</option>
+                  <option value="mg">mg (milligrams)</option>
+                  <option value="lb">lb (pounds)</option>
+                  <option value="oz">oz (ounces)</option>
+                </optgroup>
+                <optgroup label="Volume (Liquid)">
+                  <option value="ml">ml (milliliters)</option>
+                  <option value="l">l (liters)</option>
+                  <option value="tsp">tsp (teaspoons)</option>
+                  <option value="tbsp">tbsp (tablespoons)</option>
+                  <option value="cup">cup</option>
+                  <option value="floz">fl oz (fluid ounces)</option>
+                  <option value="pint">pint</option>
+                  <option value="quart">quart</option>
+                  <option value="gallon">gallon</option>
+                </optgroup>
+                <optgroup label="Count/Discrete">
+                  <option value="each">each</option>
+                  <option value="slices">slices</option>
+                </optgroup>
+                <optgroup label="Size-based">
+                  <option value="large">large</option>
+                  <option value="medium">medium</option>
+                  <option value="small">small</option>
+                </optgroup>
+              </select>
+              </div>
+            </div>
+
+            {/* Pack Size (how many individual units in the purchase) */}
+            <div>
+              <label htmlFor="packSize" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                Pack Size <span className="text-red-500">*</span>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="focus:outline-none"
+                    onMouseEnter={() => setShowTooltip({ ...showTooltip, packSize: true })}
+                    onMouseLeave={() => setShowTooltip({ ...showTooltip, packSize: false })}
+                  >
+                    <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  {showTooltip.packSize && (
+                    <div className="absolute left-0 top-6 z-50 w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                      How many individual units are in this purchase? (e.g., 6 if a case contains 6 bottles)
+                    </div>
+                  )}
+                </div>
+              </label>
+              <input
+                type="number"
+                id="packSize"
+                name="packSize"
+                step="1"
+                min="1"
+                value={packSize}
+                onChange={(e) => setPackSize(parseInt(e.target.value) || 1)}
+                required
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                placeholder="1"
+              />
+            </div>
+
+            {/* Price */}
+            <div>
+              <label htmlFor="packPrice" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                Price <span className="text-red-500">*</span>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="focus:outline-none"
+                    onMouseEnter={() => setShowTooltip({ ...showTooltip, packPrice: true })}
+                    onMouseLeave={() => setShowTooltip({ ...showTooltip, packPrice: false })}
+                  >
+                    <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  {showTooltip.packPrice && (
+                    <div className="absolute left-0 top-6 z-50 w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                      Price for the purchase size above. Use 0 for free ingredients like water.
+                    </div>
+                  )}
+                </div>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">£</span>
+                <input
+                  type="number"
+                  id="packPrice"
+                  name="packPrice"
+                  step="0.01"
+                  min="0"
+                  value={packPrice || ""}
+                  onChange={(e) => setPackPrice(parseFloat(e.target.value) || 0)}
+                  required
+                  className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  placeholder="25.00"
+                />
+              </div>
+              {pricePerUnit && (
+                <p className="text-xs text-emerald-700 font-medium mt-1.5">
+                  £{pricePerUnit.toFixed(2)} per unit
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Custom Unit Conversions */}
+          <div className="bg-emerald-50 border-2 border-emerald-200 rounded-lg p-3">
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">
+              Custom Unit Conversions <span className="text-gray-400 text-xs font-normal normal-case">(Optional)</span>
+            </label>
+            <p className="text-xs text-gray-600 mb-2 leading-tight">
+              Define how recipe units (tsp, tbsp, cup, etc.) convert to your purchase unit. 
+              Example: If you buy vanilla extract in 100ml bottles but recipes use teaspoons, 
+              you can specify "1 tsp = 5 ml" here.
+            </p>
+
+            {customConversions.length > 0 && (
+              <div className="space-y-1.5 mb-2">
+                {customConversions.map((conversion, index) => (
+                  <div key={index} className="flex gap-1.5 items-center bg-white p-1.5 rounded border border-emerald-200">
+                    <span className="text-xs font-medium text-gray-600">1</span>
+                    <select
+                      value={conversion.unit}
+                      onChange={(e) => updateCustomConversion(index, 'unit', e.target.value)}
+                      className="px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
+                    >
+                      <option value="tsp">tsp</option>
+                      <option value="tbsp">tbsp</option>
+                      <option value="cup">cup</option>
+                      <option value="floz">fl oz</option>
+                      <option value="pint">pint</option>
+                      <option value="oz">oz</option>
+                      <option value="lb">lb</option>
+                    </select>
+                    <span className="text-xs font-medium text-gray-600">=</span>
+                    <input
+                      type="number"
+                      value={conversion.value}
+                      onChange={(e) => updateCustomConversion(index, 'value', parseFloat(e.target.value) || 0)}
+                      step="0.01"
+                      min="0"
+                      className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
+                      placeholder="5"
+                    />
+                    <select
+                      value={conversion.targetUnit}
+                      onChange={(e) => updateCustomConversion(index, 'targetUnit', e.target.value)}
+                      className="px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
+                    >
+                      <option value="ml">ml</option>
+                      <option value="l">l</option>
+                      <option value="g">g</option>
+                      <option value="kg">kg</option>
+                      <option value="oz">oz</option>
+                      <option value="lb">lb</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeCustomConversion(index)}
+                      className="ml-auto p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Remove"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={addCustomConversion}
+              className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100 rounded transition-colors border border-dashed border-emerald-300 w-full justify-center"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add Rule
+            </button>
+          </div>
+        </div>
+
+        {/* Second Row: Supplier and Notes */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Supplier Section */}
+          <div className="p-3 border border-gray-200 rounded-lg bg-gray-50/50">
+            <label htmlFor="supplierId" className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+              Supplier <span className="text-gray-400 text-xs font-normal normal-case">(Optional)</span>
+            </label>
+            <SupplierSelector
+              suppliers={suppliers}
+              value={selectedSupplierId}
+              onChange={setSelectedSupplierId}
+            />
+          </div>
+
+          {/* Notes Section */}
+          <div className="p-3 border border-gray-200 rounded-lg bg-gray-50/50">
+            <label htmlFor="notes" className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+              Notes <span className="text-gray-400 text-xs font-normal normal-case">(Optional)</span>
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              defaultValue={initialData?.notes || ""}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white resize-none"
+              placeholder="Any additional notes about this ingredient..."
+            ></textarea>
+          </div>
+        </div>
+
+        {/* Third Row: Additional Details - Collapsible */}
+        <div className="border border-gray-200 rounded-lg bg-gray-50/50 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-100/50 transition-colors"
+          >
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Additional Details</h3>
+            <svg
+              className={`w-5 h-5 text-gray-500 transition-transform ${showAdditionalDetails ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {showAdditionalDetails && (
+            <div className="px-4 pb-4 space-y-4 border-t border-gray-200 pt-4">
+              {/* Yield Quantity & Unit */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="yieldQuantity" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Yield Quantity <span className="text-gray-400 text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="yieldQuantity"
+                    name="yieldQuantity"
+                    step="0.01"
+                    min="0"
+                    defaultValue={initialData?.yieldQuantity || ""}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="yieldUnit" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Yield Unit <span className="text-gray-400 text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="yieldUnit"
+                    name="yieldUnit"
+                    defaultValue={initialData?.yieldUnit || ""}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                    placeholder="kg, liter, each"
+                  />
+                </div>
+              </div>
+
+              {/* Density */}
+              <div>
+                <label htmlFor="densityGPerMl" className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  Density (g/ml) <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+                  <UnitConversionHelp />
+                </label>
+                <input
+                  type="number"
+                  id="densityGPerMl"
+                  name="densityGPerMl"
+                  step="0.001"
+                  min="0"
+                  defaultValue={initialData?.densityGPerMl || ""}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  placeholder="1.0 (for water)"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Used for converting between weight and volume (e.g., ml to grams).
+                </p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Specific Nut Types */}
-        {allergens.includes("Nuts") && (
-          <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
-            <label className="block text-sm font-medium text-gray-900 mb-3">
+        {/* Specific Nut Types - Full Width if shown */}
+        {currentAllergens.includes("Nuts") && (
+          <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Specific Nut Types
               <span className="text-xs text-gray-500 font-normal ml-2">
-                (Select the specific types to replace the generic "Nuts" allergen)
+                (Select to replace generic "Nuts" allergen)
               </span>
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
+            <div className="grid grid-cols-4 lg:grid-cols-6 gap-1.5 mb-3">
               {NUT_TYPES.map((nutType) => (
-                <label key={nutType} className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                <label key={nutType} className="flex items-center space-x-1.5 cursor-pointer hover:bg-white p-1 rounded transition-colors">
                   <input
                     type="checkbox"
                     id={`nut-type-${nutType.toLowerCase().replace(/\s+/g, '-')}`}
                     name={`nutType-${nutType}`}
                     checked={selectedNutTypes.includes(nutType)}
                     onChange={(e) => handleNutTypeChange(nutType, e.target.checked)}
-                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 flex-shrink-0"
                   />
-                  <span className="text-sm text-gray-700">{nutType}</span>
+                  <span className="text-xs text-gray-700">{nutType}</span>
                 </label>
               ))}
             </div>
             
             {/* Other Nut Type Option */}
-            <div className="pt-3 border-t border-gray-200">
-              <label className="flex items-center space-x-2 cursor-pointer">
+            <div className="pt-2 border-t border-gray-200">
+              <label className="flex items-center space-x-2 cursor-pointer mb-2">
                 <input
                   type="checkbox"
                   checked={showOtherNutInput}
@@ -530,7 +729,7 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
                       setOtherNutType("");
                     }
                   }}
-                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                 />
                 <span className="text-sm text-gray-700 font-medium">Other (specify)</span>
               </label>
@@ -540,39 +739,12 @@ export function IngredientForm({ companyId, suppliers = [], initialData, onSubmi
                   value={otherNutType}
                   onChange={(e) => setOtherNutType(e.target.value)}
                   placeholder="e.g., Tiger nuts, Candlenuts..."
-                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
                 />
               )}
             </div>
           </div>
         )}
-
-        {/* Supplier */}
-        <div>
-          <label htmlFor="supplierId" className="block text-sm font-medium text-gray-900 mb-2">
-            Supplier (Optional)
-          </label>
-          <SupplierSelector
-            suppliers={suppliers}
-            value={selectedSupplierId}
-            onChange={setSelectedSupplierId}
-          />
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-900 mb-2">
-            Notes (Optional)
-          </label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows={4}
-            defaultValue={initialData?.notes || ""}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-            placeholder="Any additional notes about this ingredient..."
-          ></textarea>
-        </div>
       </form>
     </div>
   );

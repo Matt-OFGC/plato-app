@@ -6,6 +6,96 @@ import { createIngredient, updateIngredient, getSuppliers } from "@/app/dashboar
 import { fromBase, Unit } from "@/lib/units";
 import { RecentItemsTracker } from "./RecentItemsTracker";
 
+const ALLERGEN_OPTIONS = [
+  "Celery", "Gluten", "Eggs", "Fish", "Milk", "Molluscs",
+  "Mustard", "Nuts", "Peanuts", "Sesame", "Soya", "Sulphites", "Other"
+];
+
+function AllergensSidebar({
+  allergens,
+  onAllergenChange,
+  otherAllergen,
+  onOtherAllergenChange,
+  showOtherInput,
+  onShowOtherInputChange,
+}: {
+  allergens: string[];
+  onAllergenChange: (allergens: string[]) => void;
+  otherAllergen: string;
+  onOtherAllergenChange: (value: string) => void;
+  showOtherInput: boolean;
+  onShowOtherInputChange: (show: boolean) => void;
+}) {
+  const handleAllergenChange = (allergen: string, checked: boolean) => {
+    if (allergen === "Other") {
+      onShowOtherInputChange(checked);
+      if (!checked) {
+        onOtherAllergenChange("");
+        onAllergenChange(allergens.filter(a => a !== "Other" && !ALLERGEN_OPTIONS.includes(a)));
+      }
+    } else {
+      if (checked) {
+        onAllergenChange([...allergens, allergen]);
+      } else {
+        onAllergenChange(allergens.filter(a => a !== allergen));
+      }
+    }
+  };
+
+  return (
+    <div className="w-72 border-l-2 border-gray-300 bg-gradient-to-b from-gray-50 to-white p-5 flex-shrink-0 flex flex-col shadow-inner">
+      <div className="mb-4 pb-3 border-b-2 border-gray-300">
+        <label className="block text-sm font-bold text-gray-800 uppercase tracking-wider">
+          Allergens
+        </label>
+        <p className="text-xs text-gray-500 mt-1">Select all that apply</p>
+      </div>
+      <div className="flex-1 space-y-2 overflow-y-auto pr-2">
+        {ALLERGEN_OPTIONS.map((allergen) => (
+          <label 
+            key={allergen} 
+            className={`flex items-center space-x-3 cursor-pointer p-2.5 rounded-lg transition-all ${
+              allergens.includes(allergen) || (allergen === "Other" && showOtherInput)
+                ? 'bg-emerald-50 border-2 border-emerald-300' 
+                : 'bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={allergens.includes(allergen) || (allergen === "Other" && showOtherInput)}
+              onChange={(e) => handleAllergenChange(allergen, e.target.checked)}
+              className="rounded border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500 w-5 h-5 flex-shrink-0"
+            />
+            <span className={`text-sm font-medium ${
+              allergens.includes(allergen) || (allergen === "Other" && showOtherInput)
+                ? 'text-emerald-900' 
+                : 'text-gray-700'
+            }`}>
+              {allergen}
+            </span>
+          </label>
+        ))}
+      </div>
+      
+      {showOtherInput && (
+        <div className="mt-4 pt-4 border-t-2 border-gray-300">
+          <label htmlFor="other-allergen-sidebar" className="block text-sm font-semibold text-emerald-800 mb-2">
+            Specify Other Allergen:
+          </label>
+          <input
+            id="other-allergen-sidebar"
+            type="text"
+            value={otherAllergen}
+            onChange={(e) => onOtherAllergenChange(e.target.value)}
+            className="w-full px-3 py-2 text-sm border-2 border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white shadow-sm"
+            placeholder="e.g., Lupin, Buckwheat..."
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface Supplier {
   id: number;
   name: string;
@@ -39,6 +129,21 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [allergens, setAllergens] = useState<string[]>(editIngredient?.allergens || []);
+  const [otherAllergen, setOtherAllergen] = useState("");
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  
+  useEffect(() => {
+    if (editIngredient?.allergens) {
+      setAllergens(editIngredient.allergens);
+      const hasOther = editIngredient.allergens.some(a => !ALLERGEN_OPTIONS.includes(a) && a !== "Other");
+      setShowOtherInput(hasOther || editIngredient.allergens.includes("Other"));
+      if (hasOther) {
+        const other = editIngredient.allergens.find(a => !ALLERGEN_OPTIONS.includes(a) && a !== "Other");
+        setOtherAllergen(other || "");
+      }
+    }
+  }, [editIngredient]);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
@@ -106,10 +211,10 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
       
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl border border-gray-200">
+        <div className="relative w-full max-w-7xl max-h-[98vh] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+            <h2 className="text-xl font-bold text-gray-900">
               {editIngredient ? "Edit Ingredient" : "New Ingredient"}
             </h2>
             <button
@@ -124,27 +229,45 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
           </div>
 
           {/* Content */}
-          <div className="p-6">
-            <IngredientForm
-              companyId={companyId}
-              suppliers={suppliers}
-              onSubmit={handleSubmit}
-              initialData={editIngredient ? {
-                name: editIngredient.name,
-                supplierId: editIngredient.supplierId || undefined,
-                packQuantity: editIngredient.packQuantity,
-                packUnit: editIngredient.originalUnit || (editIngredient.packUnit as Unit),
-                packPrice: editIngredient.packPrice,
-                densityGPerMl: editIngredient.densityGPerMl || undefined,
-                allergens: editIngredient.allergens || [],
-                customConversions: editIngredient.customConversions || undefined,
-                notes: editIngredient.notes || "",
-              } : undefined}
+          <div className="flex-1 overflow-hidden flex">
+            <div className="flex-1 p-4 overflow-y-auto">
+              <IngredientForm
+                companyId={companyId}
+                suppliers={suppliers}
+                onSubmit={handleSubmit}
+                initialData={editIngredient ? {
+                  name: editIngredient.name,
+                  supplierId: editIngredient.supplierId || undefined,
+                  packQuantity: editIngredient.packQuantity,
+                  packUnit: editIngredient.originalUnit || (editIngredient.packUnit as Unit),
+                  packPrice: editIngredient.packPrice,
+                  densityGPerMl: editIngredient.densityGPerMl || undefined,
+                  allergens: editIngredient.allergens || [],
+                  customConversions: editIngredient.customConversions || undefined,
+                  notes: editIngredient.notes || "",
+                } : undefined}
+                allergens={allergens}
+                onAllergenChange={setAllergens}
+                otherAllergen={otherAllergen}
+                onOtherAllergenChange={setOtherAllergen}
+                showOtherInput={showOtherInput}
+                onShowOtherInputChange={setShowOtherInput}
+              />
+            </div>
+            
+            {/* Allergens Sidebar */}
+            <AllergensSidebar
+              allergens={allergens}
+              onAllergenChange={setAllergens}
+              otherAllergen={otherAllergen}
+              onOtherAllergenChange={setOtherAllergen}
+              showOtherInput={showOtherInput}
+              onShowOtherInputChange={setShowOtherInput}
             />
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
             <button
               type="button"
               onClick={handleClose}
