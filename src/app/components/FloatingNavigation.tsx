@@ -304,7 +304,11 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
   return (
     <>
               {/* Floating Menu Button - Top Left */}
-              <div className="fixed top-6 left-6 z-50 flex items-center gap-2">
+              {/* Mobile (iPhone): Larger button with safe area padding, matches desktop style */}
+              {/* iPad & Desktop: Standard size */}
+              <div className="fixed z-50 flex items-center gap-2 
+                              top-4 left-4 max-md:top-[env(safe-area-inset-top,1rem)] max-md:left-[env(safe-area-inset-left,1rem)]
+                              md:top-6 md:left-6">
                 {!sidebarOpen && (
                   <button
                     onClick={(e) => {
@@ -312,12 +316,15 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                       e.stopPropagation();
                       onMenuClick();
                     }}
-                    className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 p-3 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer"
+                    className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer
+                               max-md:p-4 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
+                               md:p-3
+                               active:scale-95 max-md:active:scale-90"
                     aria-label="Toggle menu"
                     type="button"
                   >
-                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    <svg className="text-gray-700 max-md:w-6 max-md:h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                   </button>
                 )}
@@ -326,10 +333,13 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                 {isRecipePage && !sidebarOpen && (
                   <a
                     href="/dashboard/recipes"
-                    className="flex items-center gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 px-4 py-2 rounded-full hover:bg-white hover:shadow-xl transition-all"
+                    className="flex items-center gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all
+                             max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
+                             md:px-4 md:py-2
+                             active:scale-95 max-md:active:scale-90"
                   >
-                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    <svg className="text-gray-700 max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
                     <span className="hidden sm:inline text-sm font-medium text-gray-700">Back</span>
                   </a>
@@ -337,17 +347,21 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
               </div>
 
       {/* Floating Navigation Tabs or Recipe View Switchers - Top Center */}
+      {/* Mobile (iPhone): Scrollable tabs with smaller padding, positioned below menu button */}
+      {/* iPad & Desktop: Centered tabs with standard padding */}
       {isRecipePage && recipeView ? (
         // Recipe View Switchers
-        <div className={`fixed top-6 z-50 transition-all duration-300 ${
-          sidebarOpen 
-            ? 'left-[340px]' // Start after sidebar (320px width + 20px margin)
-            : 'left-1/2 -translate-x-1/2' // Center when sidebar closed
-        }`}>
-          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2">
+        <div className={`fixed z-50 transition-all duration-300
+                        max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
+                        md:top-6 md:left-1/2 md:-translate-x-1/2
+                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2 overflow-x-auto max-md:scrollbar-hide">
             <button
               onClick={() => recipeView.setViewMode("whole")}
-              className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
+                         max-md:px-3 max-md:py-1.5 max-md:text-xs
+                         md:px-5 md:py-1.5 md:text-sm
+                         ${
                 recipeView.viewMode === "whole"
                   ? 'bg-white shadow-md text-gray-900'
                   : 'text-gray-600 hover:text-gray-900'
@@ -358,7 +372,10 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
 
             <button
               onClick={() => recipeView.setViewMode("steps")}
-              className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
+                         max-md:px-3 max-md:py-1.5 max-md:text-xs
+                         md:px-5 md:py-1.5 md:text-sm
+                         ${
                 recipeView.viewMode === "steps"
                   ? 'bg-white shadow-md text-gray-900'
                   : 'text-gray-600 hover:text-gray-900'
@@ -369,7 +386,10 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
 
             <button
               onClick={() => recipeView.setViewMode("photos")}
-              className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
+                         max-md:px-3 max-md:py-1.5 max-md:text-xs
+                         md:px-5 md:py-1.5 md:text-sm
+                         ${
                 recipeView.viewMode === "photos"
                   ? 'bg-white shadow-md text-gray-900'
                   : 'text-gray-600 hover:text-gray-900'
@@ -381,17 +401,19 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
         </div>
       ) : tabs.length > 0 ? (
         // Regular Navigation Tabs
-        <div className={`fixed top-6 z-50 transition-all duration-300 ${
-          sidebarOpen 
-            ? 'left-[340px]' // Start after sidebar (320px width + 20px margin)
-            : 'left-1/2 -translate-x-1/2' // Center when sidebar closed
-        }`}>
-          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2">
+        <div className={`fixed z-50 transition-all duration-300
+                        max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
+                        md:top-6 md:left-1/2 md:-translate-x-1/2
+                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2 overflow-x-auto max-md:scrollbar-hide">
             {tabs.map((tab, index) => (
               <button
                 key={index}
                 onClick={() => handleTabClick(index)}
-                className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
+                           max-md:px-3 max-md:py-1.5 max-md:text-xs
+                           md:px-5 md:py-1.5 md:text-sm
+                           ${
                   activeTab === index && activeTab >= 0
                     ? 'bg-white shadow-md text-gray-900'
                     : 'text-gray-600 hover:text-gray-900'
@@ -405,8 +427,12 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
       ) : null}
 
       {/* Recipe Page Action Buttons - Edit & Print - Top Right when on recipe page */}
+      {/* Mobile (iPhone): Positioned with safe area and smaller spacing */}
+      {/* iPad & Desktop: Standard positioning */}
       {isRecipePage && recipeView && (
-        <div className="fixed top-6 right-6 z-30 flex items-center gap-2 flex-wrap">
+        <div className="fixed z-30 flex items-center gap-2 flex-wrap
+                       max-md:top-[calc(env(safe-area-inset-top,1rem)+1rem)] max-md:right-4 max-md:gap-1.5
+                       md:top-6 md:right-6">
           <button
             onClick={() => {
               if (recipeView.viewMode === "edit" && recipeView.onSave) {
@@ -416,30 +442,31 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
               }
             }}
             disabled={recipeView.isSaving}
-            className={`px-4 py-2 bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2 ${
-              recipeView.isSaving ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2
+                       max-md:px-3 max-md:py-1.5 max-md:gap-1.5
+                       md:px-4 md:py-2
+                       ${recipeView.isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
             title={recipeView.viewMode === "edit" ? "Save" : "Edit"}
           >
             {recipeView.viewMode === "edit" ? (
               <>
                 {recipeView.isSaving ? (
-                  <svg className="w-4 h-4 text-gray-700 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="text-gray-700 max-md:w-3.5 max-md:h-3.5 md:w-4 md:h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="text-gray-700 max-md:w-3.5 max-md:h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
-                <span className="text-sm font-medium text-gray-700">Save</span>
+                <span className="text-gray-700 font-medium max-md:text-xs md:text-sm">Save</span>
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="text-gray-700 max-md:w-3.5 max-md:h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                <span className="text-sm font-medium text-gray-700">Edit</span>
+                <span className="text-gray-700 font-medium max-md:text-xs md:text-sm">Edit</span>
               </>
             )}
           </button>
@@ -447,31 +474,38 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           {recipeView.onPrint && (
             <button
               onClick={recipeView.onPrint}
-              className="px-4 py-2 bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2"
+              className="bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2
+                       max-md:px-3 max-md:py-1.5 max-md:gap-1.5
+                       md:px-4 md:py-2"
               title="Print"
             >
-              <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="text-gray-700 max-md:w-3.5 max-md:h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
-              <span className="text-sm font-medium text-gray-700">Print</span>
+              <span className="text-gray-700 font-medium max-md:text-xs md:text-sm">Print</span>
             </button>
           )}
         </div>
       )}
 
       {/* Floating Action Buttons - Top Right - Only show on recipes and ingredients list pages */}
+      {/* Mobile (iPhone): Positioned with safe area, smaller buttons, stacked vertically if needed */}
+      {/* iPad & Desktop: Standard positioning */}
       {showActionButtons && (
-        <div className="fixed top-6 right-6 z-30 flex items-center gap-2 flex-wrap">
+        <div className="fixed z-30 flex items-center gap-2 flex-wrap
+                       max-md:top-[calc(env(safe-area-inset-top,1rem)+1rem)] max-md:right-4 max-md:gap-1.5
+                       md:top-6 md:right-6">
           {/* Search Button with Dropdown */}
           <div className="relative">
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 p-3 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0 ${
-                isSearchOpen ? 'bg-emerald-100 border-emerald-300' : ''
-              }`}
+              className={`bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
+                         max-md:p-2.5
+                         md:p-3
+                         ${isSearchOpen ? 'bg-emerald-100 border-emerald-300' : ''}`}
               aria-label="Search"
             >
-              <svg className={`w-4.5 h-4.5 ${isSearchOpen ? 'text-emerald-600' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5 ${isSearchOpen ? 'text-emerald-600' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
@@ -549,10 +583,12 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           {/* Other Action Buttons */}
           <button 
             onClick={() => setIsFilterOpen(true)}
-            className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 p-3 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0"
+            className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
+                       max-md:p-2.5
+                       md:p-3"
             aria-label="Filter"
           >
-            <svg className="w-4.5 h-4.5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="text-gray-700 max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
           </button>
@@ -561,12 +597,14 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           )}
           <button 
             onClick={triggerNewAction}
-            className="bg-blue-500 shadow-lg px-5 py-3 rounded-full hover:bg-blue-600 hover:shadow-xl transition-all duration-200 flex items-center gap-2 flex-shrink-0"
+            className="bg-blue-500 shadow-lg rounded-full hover:bg-blue-600 hover:shadow-xl transition-all duration-200 flex items-center gap-2 flex-shrink-0
+                       max-md:px-3 max-md:py-2 max-md:gap-1.5
+                       md:px-5 md:py-3"
           >
-            <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="text-white max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-white font-medium text-sm">New</span>
+            <span className="text-white font-medium max-md:text-xs md:text-sm">New</span>
           </button>
         </div>
       )}

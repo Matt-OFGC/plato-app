@@ -34,9 +34,15 @@ export function FloatingLayoutClient({
         <FloatingNavigation onMenuClick={handleMenuClick} sidebarOpen={sidebarOpen} />
         
         {/* Main Content Area */}
+        {/* Mobile (iPhone): More top padding for tabs, less horizontal padding, safe area bottom */}
+        {/* iPad & Desktop: Standard padding */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
-          <div className="flex-1 overflow-auto pt-24 px-6 pb-6">
-            <div className="max-w-[95%] mx-auto">
+          <div className="flex-1 overflow-auto 
+                         max-md:pt-32 max-md:px-4 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]
+                         md:pt-24 md:px-6 md:pb-6">
+            <div className="max-w-full mx-auto
+                           max-md:max-w-none
+                           md:max-w-[95%]">
               {children}
             </div>
           </div>

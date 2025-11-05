@@ -195,18 +195,25 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed left-0 top-0 h-full w-80 bg-white/70 backdrop-blur-2xl border-r border-gray-200/80 flex flex-col z-50 transform transition-transform duration-300 ease-out ${
+      {/* Mobile (iPhone): Account for safe areas, iPad & Desktop: Standard */}
+      <div className={`fixed left-0 top-0 h-full w-80 bg-white/70 backdrop-blur-2xl border-r border-gray-200/80 flex flex-col z-50 transform transition-transform duration-300 ease-out
+                      max-md:pt-[env(safe-area-inset-top,0px)] max-md:h-[100dvh]
+                      ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Sidebar Header */}
-        <div className="px-4 py-3 border-b border-gray-200/80">
+        {/* Mobile (iPhone): Larger padding for safe area, iPad & Desktop: Standard */}
+        <div className="px-4 py-3 border-b border-gray-200/80 max-md:pt-[env(safe-area-inset-top,0.75rem)]">
           <div className="flex items-center justify-end mb-3">
             <button 
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 p-1 transition-colors"
+              className="text-gray-500 hover:text-gray-700 transition-colors
+                         max-md:p-2 max-md:bg-gray-100/50 max-md:rounded-lg max-md:active:bg-gray-200/50
+                         md:p-1"
+              aria-label="Close menu"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg className="max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
