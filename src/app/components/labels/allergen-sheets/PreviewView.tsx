@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, Printer } from 'lucide-react';
 import { AllergenSheetCanvas } from '../shared/AllergenSheetCanvas';
+import { generateAllergenSheetsPDF, downloadPDF } from '@/lib/pdfService';
 
 interface AllergenSheetTemplate {
   id: number;
@@ -66,9 +67,17 @@ export function PreviewView({ template, recipes }: PreviewViewProps) {
   const endIdx = startIdx + recipesPerPage;
   const currentPageRecipes = recipes.slice(startIdx, endIdx);
 
-  const handleDownload = () => {
-    alert('PDF generation will be implemented with jsPDF library');
-    // TODO: Implement PDF generation with jsPDF
+  const handleDownload = async () => {
+    try {
+      if (!template) return;
+
+      const pdfBlob = await generateAllergenSheetsPDF(template, recipes);
+      const filename = `allergen-sheets-${template.templateName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      downloadPDF(pdfBlob, filename);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
   };
 
   const handlePrint = () => {

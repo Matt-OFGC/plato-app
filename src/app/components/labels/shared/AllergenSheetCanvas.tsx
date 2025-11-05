@@ -30,6 +30,7 @@ interface Recipe {
   allergens?: string[];
   dietary_tags?: string[];
   category?: string;
+  ingredients?: string;
 }
 
 interface AllergenSheetCanvasProps {
@@ -53,6 +54,29 @@ const COMMON_ALLERGENS = [
   'Sulphites',
   'Molluscs'
 ];
+
+/**
+ * Highlight allergens in ingredients text
+ * Returns HTML string with allergens wrapped in <strong> tags
+ */
+function highlightAllergens(text: string, allergens: string[]): string {
+  if (!text || allergens.length === 0) {
+    return text;
+  }
+
+  let highlightedText = text;
+
+  // Create a case-insensitive regex pattern for each allergen
+  allergens.forEach(allergen => {
+    const pattern = new RegExp(`\\b(${allergen})\\b`, 'gi');
+    highlightedText = highlightedText.replace(
+      pattern,
+      '<strong style="color: #DC2626; font-weight: 700;">$1</strong>'
+    );
+  });
+
+  return highlightedText;
+}
 
 export function AllergenSheetCanvas({ template, recipes }: AllergenSheetCanvasProps) {
 
@@ -138,6 +162,32 @@ export function AllergenSheetCanvas({ template, recipes }: AllergenSheetCanvasPr
                   );
                 })}
               </div>
+
+              {/* Ingredients with Allergen Highlighting */}
+              {recipe.ingredients && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p
+                    className="text-xs font-semibold mb-2"
+                    style={{
+                      fontFamily: template.bodyFont,
+                      color: template.textColor
+                    }}
+                  >
+                    Ingredients:
+                  </p>
+                  <p
+                    className="text-xs leading-relaxed"
+                    style={{
+                      fontFamily: template.bodyFont,
+                      fontSize: `${template.bodyFontSize - 1}px`,
+                      color: template.textColor
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: highlightAllergens(recipe.ingredients, recipeAllergens)
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Dietary Info */}
               {template.showDietaryInfo && recipe.dietary_tags && recipe.dietary_tags.length > 0 && (

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Printer, Download } from 'lucide-react';
 import { LabelCanvas } from '../shared/LabelCanvas';
+import { generateLabelsPDF, downloadPDF } from '@/lib/pdfService';
 
 interface Recipe {
   id: number;
@@ -128,8 +129,56 @@ export function PreviewView({ template, recipes }: PreviewViewProps) {
   };
 
   const handleDownloadPDF = async () => {
-    alert('PDF download will be implemented with jsPDF in next update');
-    // PDF generation implementation coming next
+    try {
+      if (!template) return;
+
+      // Convert template format to match PDF service expectations
+      const pdfTemplate = {
+        id: 1,
+        templateName: template.templateName || 'Sales Labels',
+        width: template.widthMm || 65,
+        height: template.heightMm || 38,
+        backgroundColor: template.backgroundColor,
+        textColor: template.textColor,
+        accentColor: template.accentColor,
+        borderStyle: 'solid',
+        borderColor: template.textColor,
+        borderWidth: 0.5,
+        cornerRadius: 2,
+        headerFont: template.productFont || 'helvetica',
+        headerFontSize: template.productFontSize || 12,
+        headerFontWeight: template.productFontWeight || '700',
+        bodyFont: template.bodyFont || 'helvetica',
+        bodyFontSize: template.bodyFontSize || 9,
+        bodyFontWeight: template.bodyFontWeight || '400',
+        showProductName: true,
+        showIngredients: false,
+        showAllergens: template.showAllergens ?? true,
+        showNutritionalInfo: false,
+        showPrice: template.showPrice ?? true,
+        showBestBefore: template.showDate ?? true,
+        showStorageInstructions: template.showStorageInfo ?? false,
+        showBarcode: template.showBarcode ?? false,
+        logoPosition: undefined
+      };
+
+      // Prepare recipes with label data
+      const recipesForPDF = allLabels.map(label => ({
+        id: label.recipe.id,
+        name: label.labelData.productName,
+        allergens: label.labelData.allergens,
+        dietary_tags: label.labelData.dietaryTags,
+        price: label.labelData.price,
+        ingredients: ''
+      }));
+
+      const pdfBlob = await generateLabelsPDF(pdfTemplate, recipesForPDF);
+      const filename = `sales-labels-${new Date().toISOString().split('T')[0]}.pdf`;
+      downloadPDF(pdfBlob, filename);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
   };
 
   return (
