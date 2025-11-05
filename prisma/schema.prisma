@@ -178,6 +178,15 @@ model User {
   notifications              Notification[]
   subscription               Subscription?
   preferences                UserPreference?
+  scheduledTasks             ScheduledTask[]         @relation("UserScheduledTasks")
+  taskInstances              TaskInstance[]          @relation("UserTaskInstances")
+  taskCompletions            TaskCompletion[]        @relation("UserTaskCompletions")
+  taskPhotos                 TaskPhoto[]             @relation("UserTaskPhotos")
+  taskComments               TaskComment[]           @relation("UserTaskComments")
+  equipmentIssuesReported    EquipmentIssue[]        @relation("UserEquipmentIssuesReported")
+  equipmentIssuesResolved    EquipmentIssue[]        @relation("UserEquipmentIssuesResolved")
+  temperatureRecords         TemperatureRecord[]     @relation("UserTemperatureRecords")
+  dailyTemperatureChecks     DailyTemperatureCheck[] @relation("UserDailyTemperatureChecks")
 }
 
 model Company {
@@ -209,6 +218,8 @@ model Company {
   showTeam               Boolean                 @default(false)
   slug                   String?                 @unique
   website                String?
+  safetyEnabled          Boolean?                @default(true) @map("safety_enabled")
+  dataRetentionDays      Int?                    @default(730) @map("data_retention_days")
   activityLogs           ActivityLog[]
   analyticsSnapshots     AnalyticsSnapshot[]
   categories             Category[]
@@ -242,6 +253,20 @@ model Company {
   wholesaleCustomers     WholesaleCustomer[]
   wholesaleOrders        WholesaleOrder[]
   wholesaleProducts      WholesaleProduct[]
+  taskTemplates          TaskTemplate[]          @relation("CompanyTaskTemplates")
+  scheduledTasks         ScheduledTask[]         @relation("CompanyScheduledTasks")
+  taskInstances          TaskInstance[]          @relation("CompanyTaskInstances")
+  taskCompletions        TaskCompletion[]        @relation("CompanyTaskCompletions")
+  taskPhotos             TaskPhoto[]             @relation("CompanyTaskPhotos")
+  taskComments           TaskComment[]           @relation("CompanyTaskComments")
+  temperatureSensors     TemperatureSensor[]     @relation("CompanyTemperatureSensors")
+  temperatureReadings    TemperatureReading[]    @relation("CompanyTemperatureReadings")
+  equipmentRegister      EquipmentRegister[]     @relation("CompanyEquipmentRegister")
+  equipmentIssues        EquipmentIssue[]        @relation("CompanyEquipmentIssues")
+  smartAlerts            SmartAlert[]            @relation("CompanySmartAlerts")
+  templateAppliances     TemplateAppliance[]     @relation("CompanyTemplateAppliances")
+  temperatureRecords     TemperatureRecord[]     @relation("CompanyTemperatureRecords")
+  dailyTemperatureChecks DailyTemperatureCheck[] @relation("CompanyDailyTemperatureChecks")
 }
 
 model Membership {
@@ -1306,6 +1331,341 @@ model WebhookLog {
   @@index([eventType])
   @@index([status])
   @@index([createdAt])
+}
+
+// Safety & Compliance Models
+model TaskTemplate {
+  id                     Int                       @id @default(autoincrement())
+  companyId              Int
+  category               String                    @db.VarChar(100)
+  name                   String                    @db.VarChar(255)
+  description            String?
+  emoji                  String?                   @db.VarChar(10)
+  isSystemTemplate       Boolean                   @default(false)
+  isActive               Boolean                   @default(true)
+  createdBy              Int?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @default(now()) @updatedAt
+  company                Company                   @relation("CompanyTaskTemplates", fields: [companyId], references: [id], onDelete: Cascade)
+  checklistItems         TemplateChecklistItem[]
+  scheduledTasks         ScheduledTask[]
+  taskInstances          TaskInstance[]
+  taskCompletions        TaskCompletion[]
+  appliances             TemplateAppliance[]
+  temperatureRecords     TemperatureRecord[]
+
+  @@index([companyId, category, isActive])
+}
+
+model TemplateChecklistItem {
+  id                  Int                       @id @default(autoincrement())
+  templateId          Int
+  itemText            String
+  itemOrder           Int
+  requiresPhoto       Boolean                   @default(false)
+  requiresTemperature Boolean                   @default(false)
+  requiresNotes       Boolean                   @default(false)
+  createdAt           DateTime                  @default(now())
+  template            TaskTemplate              @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  completions         ChecklistItemCompletion[]
+}
+
+model ScheduledTask {
+  id                Int            @id @default(autoincrement())
+  companyId         Int
+  siteId            Int?
+  templateId        Int
+  assignedTo        Int?
+  scheduleType      String         @db.VarChar(50)
+  scheduleTime      DateTime?      @db.Time
+  scheduleDays      Json?
+  timeWindow        String?        @db.VarChar(50)
+  timeWindowStart   DateTime?      @db.Time
+  timeWindowEnd     DateTime?      @db.Time
+  enforceTimeWindow Boolean        @default(false)
+  isActive          Boolean        @default(true)
+  startDate         DateTime       @db.Date
+  endDate           DateTime?      @db.Date
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @default(now()) @updatedAt
+  company           Company        @relation("CompanyScheduledTasks", fields: [companyId], references: [id], onDelete: Cascade)
+  template          TaskTemplate   @relation(fields: [templateId], references: [id])
+  assignedUser      User?          @relation("UserScheduledTasks", fields: [assignedTo], references: [id])
+  taskInstances     TaskInstance[]
+
+  @@index([companyId, isActive])
+}
+
+model TaskInstance {
+  id                 Int                  @id @default(autoincrement())
+  scheduledTaskId    Int?
+  companyId          Int
+  siteId             Int?
+  templateId         Int
+  assignedTo         Int?
+  dueDate            DateTime             @db.Date
+  dueTime            DateTime?            @db.Time
+  status             String               @default("pending") @db.VarChar(50)
+  priority           String               @default("normal") @db.VarChar(50)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @default(now()) @updatedAt
+  company            Company              @relation("CompanyTaskInstances", fields: [companyId], references: [id], onDelete: Cascade)
+  scheduledTask      ScheduledTask?       @relation(fields: [scheduledTaskId], references: [id], onDelete: Cascade)
+  template           TaskTemplate         @relation(fields: [templateId], references: [id])
+  assignedUser       User?                @relation("UserTaskInstances", fields: [assignedTo], references: [id])
+  completion         TaskCompletion?
+  comments           TaskComment[]
+  temperatureRecords TemperatureRecord[]
+
+  @@index([companyId, dueDate(sort: Desc)])
+}
+
+model TaskCompletion {
+  id                      Int                        @id @default(autoincrement())
+  taskInstanceId          Int?                       @unique
+  companyId               Int
+  siteId                  Int?
+  templateId              Int
+  completedBy             Int
+  completedByName         String                     @db.VarChar(255)
+  completedByRole         String                     @db.VarChar(50)
+  completedAt             DateTime                   @default(now())
+  completionDate          DateTime                   @db.Date
+  pinVerified             Boolean                    @default(true)
+  deviceId                String?                    @db.VarChar(255)
+  ipAddress               String?                    @db.Inet
+  taskName                String                     @db.VarChar(255)
+  taskCategory            String                     @db.VarChar(100)
+  durationMinutes         Int?
+  notes                   String?
+  status                  String                     @db.VarChar(50)
+  flagReason              String?
+  priorityLevel           String?                    @db.VarChar(50)
+  checklistItemsTotal     Int
+  checklistItemsCompleted Int
+  photosCount             Int                        @default(0)
+  createdAt               DateTime                   @default(now())
+  company                 Company                    @relation("CompanyTaskCompletions", fields: [companyId], references: [id], onDelete: Cascade)
+  taskInstance            TaskInstance?              @relation(fields: [taskInstanceId], references: [id])
+  template                TaskTemplate               @relation(fields: [templateId], references: [id])
+  completedByUser         User                       @relation("UserTaskCompletions", fields: [completedBy], references: [id])
+  checklistItems          ChecklistItemCompletion[]
+  photos                  TaskPhoto[]
+  comments                TaskComment[]
+
+  @@index([companyId, completionDate(sort: Desc)])
+  @@index([completedBy, completionDate(sort: Desc)])
+  @@index([companyId, status, completionDate(sort: Desc)])
+}
+
+model ChecklistItemCompletion {
+  id               Int                      @id @default(autoincrement())
+  taskCompletionId Int
+  checklistItemId  Int?
+  itemText         String
+  itemOrder        Int
+  checked          Boolean                  @default(true)
+  isCompleted      Boolean?                 @default(false)
+  temperatureValue Decimal?                 @db.Decimal(5, 2)
+  temperatureUnit  String?                  @db.VarChar(10)
+  notes            String?
+  checkedAt        DateTime?
+  createdAt        DateTime                 @default(now())
+  taskCompletion   TaskCompletion           @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
+  checklistItem    TemplateChecklistItem?   @relation(fields: [checklistItemId], references: [id])
+  photos           TaskPhoto[]
+}
+
+model TaskPhoto {
+  id                     Int                      @id @default(autoincrement())
+  taskCompletionId       Int
+  checklistItemId        Int?
+  companyId              Int
+  filePath               String                   @db.VarChar(500)
+  fileName               String                   @db.VarChar(255)
+  fileSize               Int?
+  mimeType               String?                  @db.VarChar(100)
+  isBeforePhoto          Boolean                  @default(false)
+  uploadedBy             Int
+  uploadedAt             DateTime                 @default(now())
+  thumbnailPath          String?                  @db.VarChar(500)
+  company                Company                  @relation("CompanyTaskPhotos", fields: [companyId], references: [id], onDelete: Cascade)
+  taskCompletion         TaskCompletion           @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
+  checklistItem          ChecklistItemCompletion? @relation(fields: [checklistItemId], references: [id])
+  uploadedByUser         User                     @relation("UserTaskPhotos", fields: [uploadedBy], references: [id])
+
+  @@index([taskCompletionId])
+}
+
+model TaskComment {
+  id               Int             @id @default(autoincrement())
+  taskInstanceId   Int?
+  taskCompletionId Int?
+  companyId        Int
+  commentText      String
+  mentionedUsers   Json?
+  createdBy        Int
+  createdByName    String          @db.VarChar(255)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+  company          Company         @relation("CompanyTaskComments", fields: [companyId], references: [id], onDelete: Cascade)
+  taskInstance     TaskInstance?   @relation(fields: [taskInstanceId], references: [id], onDelete: Cascade)
+  taskCompletion   TaskCompletion? @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
+  createdByUser    User            @relation("UserTaskComments", fields: [createdBy], references: [id])
+
+  @@index([taskInstanceId, createdAt(sort: Desc)])
+}
+
+model TemperatureSensor {
+  id                Int                   @id @default(autoincrement())
+  companyId         Int
+  siteId            Int?
+  sensorName        String                @db.VarChar(255)
+  sensorType        String?               @db.VarChar(100)
+  location          String?               @db.VarChar(255)
+  targetTemperature Decimal?              @db.Decimal(5, 2)
+  minThreshold      Decimal?              @db.Decimal(5, 2)
+  maxThreshold      Decimal?              @db.Decimal(5, 2)
+  isActive          Boolean               @default(true)
+  lastReadingAt     DateTime?
+  createdAt         DateTime              @default(now())
+  company           Company               @relation("CompanyTemperatureSensors", fields: [companyId], references: [id], onDelete: Cascade)
+  readings          TemperatureReading[]
+}
+
+model TemperatureReading {
+  id               Int               @id @default(autoincrement())
+  sensorId         Int
+  companyId        Int
+  temperatureValue Decimal           @db.Decimal(5, 2)
+  temperatureUnit  String            @default("celsius") @db.VarChar(10)
+  recordedAt       DateTime          @default(now())
+  isOutOfRange     Boolean           @default(false)
+  company          Company           @relation("CompanyTemperatureReadings", fields: [companyId], references: [id], onDelete: Cascade)
+  sensor           TemperatureSensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([sensorId, recordedAt(sort: Desc)])
+  @@index([companyId, recordedAt(sort: Desc)])
+}
+
+model EquipmentRegister {
+  id                 Int              @id @default(autoincrement())
+  companyId          Int
+  siteId             Int?
+  equipmentName      String           @db.VarChar(255)
+  equipmentCategory  String?          @db.VarChar(100)
+  location           String?          @db.VarChar(255)
+  qrCode             String?          @unique @db.VarChar(100)
+  lastServiceDate    DateTime?        @db.Date
+  nextServiceDate    DateTime?        @db.Date
+  warrantyExpiry     DateTime?        @db.Date
+  status             String           @default("good") @db.VarChar(50)
+  notes              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @default(now()) @updatedAt
+  company            Company          @relation("CompanyEquipmentRegister", fields: [companyId], references: [id], onDelete: Cascade)
+  issues             EquipmentIssue[]
+}
+
+model EquipmentIssue {
+  id                Int               @id @default(autoincrement())
+  equipmentId       Int
+  companyId         Int
+  issueDescription  String
+  severity          String?           @db.VarChar(50)
+  status            String            @default("open") @db.VarChar(50)
+  reportedBy        Int
+  reportedAt        DateTime          @default(now())
+  resolvedAt        DateTime?
+  resolvedBy        Int?
+  resolutionNotes   String?
+  company           Company           @relation("CompanyEquipmentIssues", fields: [companyId], references: [id], onDelete: Cascade)
+  equipment         EquipmentRegister @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  reportedByUser    User              @relation("UserEquipmentIssuesReported", fields: [reportedBy], references: [id])
+  resolvedByUser    User?             @relation("UserEquipmentIssuesResolved", fields: [resolvedBy], references: [id])
+}
+
+model SmartAlert {
+  id                 Int      @id @default(autoincrement())
+  companyId          Int
+  alertType          String   @db.VarChar(50)
+  severity           String   @db.VarChar(50)
+  title              String   @db.VarChar(255)
+  message            String
+  actionRequired     String?  @db.VarChar(255)
+  relatedEntityType  String?  @db.VarChar(50)
+  relatedEntityId    Int?
+  isRead             Boolean  @default(false)
+  isDismissed        Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  company            Company  @relation("CompanySmartAlerts", fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, isDismissed, createdAt(sort: Desc)])
+}
+
+model TemplateAppliance {
+  id            Int          @id @default(autoincrement())
+  templateId    Int
+  companyId     Int
+  applianceName String       @db.VarChar(255)
+  applianceType String       @default("fridge") @db.VarChar(50)
+  location      String?      @db.VarChar(255)
+  orderIndex    Int          @default(0)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+  company       Company      @relation("CompanyTemplateAppliances", fields: [companyId], references: [id], onDelete: Cascade)
+  template      TaskTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, applianceName, companyId])
+  @@index([templateId, companyId, isActive])
+}
+
+model TemperatureRecord {
+  id             Int           @id @default(autoincrement())
+  companyId      Int
+  templateId     Int?
+  taskInstanceId Int?
+  applianceName  String        @db.VarChar(255)
+  applianceType  String        @db.VarChar(50)
+  recordType     String        @default("fridge_freezer") @db.VarChar(50)
+  temperature    Decimal       @db.Decimal(5, 2)
+  unit           String        @default("celsius") @db.VarChar(10)
+  checkPeriod    String?       @db.VarChar(10)
+  location       String?       @db.VarChar(255)
+  notes          String?
+  recordedBy     Int?
+  recordedAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  company        Company       @relation("CompanyTemperatureRecords", fields: [companyId], references: [id], onDelete: Cascade)
+  template       TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  taskInstance   TaskInstance? @relation(fields: [taskInstanceId], references: [id], onDelete: SetNull)
+  recordedByUser User?         @relation("UserTemperatureRecords", fields: [recordedBy], references: [id])
+
+  @@index([companyId, recordedAt(sort: Desc)])
+  @@index([templateId, recordedAt(sort: Desc)])
+  @@index([applianceName, recordedAt(sort: Desc)])
+}
+
+model DailyTemperatureCheck {
+  id              Int       @id @default(autoincrement())
+  companyId       Int
+  checkDate       DateTime  @db.Date
+  checkPeriod     String    @db.VarChar(10)
+  checkType       String    @db.VarChar(100)
+  temperature     Decimal?  @db.Decimal(5, 2)
+  unit            String    @default("celsius") @db.VarChar(10)
+  notes           String?
+  completed       Boolean   @default(false)
+  completedBy     Int?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+  company         Company   @relation("CompanyDailyTemperatureChecks", fields: [companyId], references: [id], onDelete: Cascade)
+  completedByUser User?     @relation("UserDailyTemperatureChecks", fields: [completedBy], references: [id])
+
+  @@unique([companyId, checkDate, checkPeriod, checkType])
+  @@index([companyId, checkDate(sort: Desc), checkPeriod])
 }
 
 enum BaseUnit {
