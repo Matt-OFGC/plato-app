@@ -1,9 +1,52 @@
 "use client";
 
 import { useState } from "react";
+import { RecipeSelectorView } from "@/components/labels/allergen-sheets/RecipeSelectorView";
+import { SheetStyleView } from "@/components/labels/allergen-sheets/SheetStyleView";
+import { PreviewView } from "@/components/labels/allergen-sheets/PreviewView";
+import { HistoryView } from "@/components/labels/sales-labels/HistoryView";
+
+interface Recipe {
+  id: number;
+  name: string;
+  allergens?: string[];
+  dietary_tags?: string[];
+  category?: string;
+  has_recent_changes?: boolean;
+}
+
+interface AllergenSheetTemplate {
+  id: number;
+  templateName: string;
+  layoutType: string;
+  backgroundColor: string;
+  textColor: string;
+  accentColor?: string;
+  headerFont: string;
+  headerFontSize: number;
+  headerFontWeight: string;
+  bodyFont: string;
+  bodyFontSize: number;
+  bodyFontWeight: string;
+  showIcons: boolean;
+  showAllergenCodes: boolean;
+  showDietaryInfo: boolean;
+  showWarnings: boolean;
+  showCompanyInfo: boolean;
+  gridColumns: number;
+  isDefault: boolean;
+  isSystemTemplate: boolean;
+}
 
 export default function AllergenSheetsPage() {
   const [currentView, setCurrentView] = useState("recent-updates");
+  const [selectedRecipes, setSelectedRecipes] = useState<Recipe[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<AllergenSheetTemplate | null>(null);
+
+  const handleTemplateSelect = (template: AllergenSheetTemplate) => {
+    setSelectedTemplate(template);
+    setCurrentView("select-recipes");
+  };
 
   return (
     <div className="h-full">
@@ -45,8 +88,8 @@ export default function AllergenSheetsPage() {
           </div>
 
           {/* Content Area */}
-          <div className="bg-white/70 backdrop-blur-2xl rounded-3xl border border-gray-200/60 shadow-lg p-8">
-            {currentView === "recent-updates" && (
+          {currentView === "recent-updates" && (
+            <div className="bg-white/70 backdrop-blur-2xl rounded-3xl border border-gray-200/60 shadow-lg p-8">
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">
                   Recent Updates
@@ -97,80 +140,43 @@ export default function AllergenSheetsPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {currentView === "select-recipes" && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                  Select Recipes
-                </h2>
-                <p className="text-gray-600">
-                  Choose which recipes to include in your allergen information sheets.
-                </p>
-              </div>
-            )}
-
-            {currentView === "sheet-style" && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                  Sheet Style
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  Choose from 3 different allergen sheet formats:
-                </p>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    {
-                      name: "Full Detail",
-                      desc: "Legal compliance - complete information",
-                    },
-                    {
-                      name: "Simple Reference",
-                      desc: "Quick lookup format",
-                    },
-                    {
-                      name: "Visual Matrix",
-                      desc: "At-a-glance checkboxes",
-                    },
-                  ].map((style) => (
-                    <div
-                      key={style.name}
-                      className="p-6 rounded-2xl border-2 border-gray-200 hover:border-blue-500 transition-all cursor-pointer bg-white"
-                    >
-                      <div className="h-32 bg-gray-100 rounded-xl mb-3"></div>
-                      <p className="text-sm font-semibold text-gray-900 mb-1">
-                        {style.name}
-                      </p>
-                      <p className="text-xs text-gray-500">{style.desc}</p>
-                    </div>
-                  ))}
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={() => setCurrentView("sheet-style")}
+                    className="px-8 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-all shadow-lg"
+                  >
+                    Generate New Sheets →
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {currentView === "preview" && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                  Preview
-                </h2>
-                <p className="text-gray-600">
-                  Preview your allergen sheets before printing.
-                </p>
-              </div>
-            )}
+          {currentView === "select-recipes" && (
+            <RecipeSelectorView
+              selectedRecipes={selectedRecipes}
+              onSelectionChange={setSelectedRecipes}
+            />
+          )}
 
-            {currentView === "history" && (
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                  History
-                </h2>
-                <p className="text-gray-600">
-                  View previously generated allergen information sheets.
-                </p>
-              </div>
-            )}
-          </div>
+          {currentView === "sheet-style" && (
+            <SheetStyleView
+              selectedTemplate={selectedTemplate}
+              onTemplateSelect={handleTemplateSelect}
+            />
+          )}
+
+          {currentView === "preview" && (
+            <PreviewView
+              template={selectedTemplate}
+              recipes={selectedRecipes}
+            />
+          )}
+
+          {currentView === "history" && (
+            <HistoryView documentType="allergen_sheet" />
+          )}
         </div>
       </div>
     </div>
