@@ -245,26 +245,17 @@ export default function CostInsightsModal({
               Industry Recommendations
             </h3>
             <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Ideal Food Cost: 25-33%</p>
-                  <p className="text-xs text-gray-600">Most profitable range for food businesses</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-800">Ideal Food Cost: 25-33%</p>
+                <p className="text-xs text-gray-600">Most profitable range for food businesses</p>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Acceptable Range: 33-40%</p>
-                  <p className="text-xs text-gray-600">Still viable, but less room for overheads</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-800">Acceptable Range: 33-40%</p>
+                <p className="text-xs text-gray-600">Still viable, but less room for overheads</p>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Too High: Above 40%</p>
-                  <p className="text-xs text-gray-600">May not cover labor, rent, and other costs</p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-800">Too High: Above 40%</p>
+                <p className="text-xs text-gray-600">May not cover labor, rent, and other costs</p>
               </div>
             </div>
           </div>
@@ -294,9 +285,9 @@ export default function CostInsightsModal({
             </div>
             <div className="flex justify-between mt-2 text-xs text-gray-500">
               <span>0%</span>
-              <span className="text-emerald-600 font-medium">25%</span>
-              <span className="text-yellow-600 font-medium">33%</span>
-              <span className="text-red-600 font-medium">40%</span>
+              <span>25%</span>
+              <span>33%</span>
+              <span>40%</span>
               <span>100%</span>
             </div>
           </div>

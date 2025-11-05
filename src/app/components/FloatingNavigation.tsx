@@ -59,6 +59,14 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
     return { tabs: ['Settings', 'Billing', 'Team', 'Integrations'] };
   }
 
+  // Safety section - Diary, Tasks, Compliance, Templates, Temperatures
+  if (pathname.startsWith('/dashboard/safety')) {
+    return { 
+      tabs: ['Diary', 'Tasks', 'Compliance', 'Templates', 'Temperatures'],
+      links: ['/dashboard/safety?page=diary', '/dashboard/safety?page=tasks', '/dashboard/safety?page=compliance', '/dashboard/safety?page=templates', '/dashboard/safety?page=temperatures']
+    };
+  }
+
   // Default tabs for dashboard
   return { tabs: ['Overview', 'Today', 'Week', 'Reports'] };
 };
@@ -188,8 +196,20 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
   // Set active tab based on current pathname
   useEffect(() => {
     if (tabLinks.length > 0) {
+      // For Safety pages, check the page param
+      if (pathname.startsWith('/dashboard/safety')) {
+        const pageParam = searchParams.get('page') || 'diary';
+        const pageToIndex: Record<string, number> = {
+          'diary': 0,
+          'tasks': 1,
+          'compliance': 2,
+          'templates': 3,
+          'temperatures': 4
+        };
+        setActiveTab(pageToIndex[pageParam] ?? 0);
+      }
       // For settings pages, check exact match or starts with
-      if (pathname.startsWith('/dashboard/account')) {
+      else if (pathname.startsWith('/dashboard/account')) {
         const currentIndex = tabLinks.findIndex(link => {
           // Exact match for sub-pages, or check if pathname starts with the link
           return pathname === link || pathname.startsWith(link + '/');
@@ -211,13 +231,21 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
     } else {
       setActiveTab(0);
     }
-  }, [pathname, tabLinksString, tabLinks.length]); // Use stable dependencies
+  }, [pathname, tabLinksString, tabLinks.length, searchParams]); // Use stable dependencies
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
     // Navigate if links are provided
     if (tabLinks && tabLinks[index]) {
-      router.push(tabLinks[index]);
+      // For Safety pages, update URL param instead of navigating
+      if (pathname.startsWith('/dashboard/safety')) {
+        const params = new URLSearchParams(searchParams.toString());
+        const pageNames = ['diary', 'tasks', 'compliance', 'templates', 'temperatures'];
+        params.set('page', pageNames[index] || 'diary');
+        router.push(`${pathname}?${params.toString()}`);
+      } else {
+        router.push(tabLinks[index]);
+      }
     }
   };
 
