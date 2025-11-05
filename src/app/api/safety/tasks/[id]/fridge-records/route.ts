@@ -30,21 +30,30 @@ export async function GET(
     const templateId = task[0].templateId;
 
     // Get saved appliances for this template
-    const appliances = await prisma.$queryRaw<any[]>`
-      SELECT 
-        id,
-        "applianceName",
-        "applianceType",
-        location,
-        "orderIndex"
-      FROM "TemplateAppliance"
-      WHERE "templateId" = ${templateId} 
-        AND "companyId" = ${companyId}
-        AND "isActive" = true
-      ORDER BY "orderIndex" ASC, "applianceName" ASC
-    `;
-
-    return NextResponse.json(appliances);
+    // Handle case where table doesn't exist yet (migration not run)
+    try {
+      const appliances = await prisma.$queryRaw<any[]>`
+        SELECT 
+          id,
+          "applianceName",
+          "applianceType",
+          location,
+          "orderIndex"
+        FROM "TemplateAppliance"
+        WHERE "templateId" = ${templateId} 
+          AND "companyId" = ${companyId}
+          AND "isActive" = true
+        ORDER BY "orderIndex" ASC, "applianceName" ASC
+      `;
+      return NextResponse.json(appliances);
+    } catch (error: any) {
+      // If table doesn't exist, return empty array
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TemplateAppliance table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        return NextResponse.json([]);
+      }
+      throw error;
+    }
   } catch (error) {
     console.error("Get fridge appliances error:", error);
     return NextResponse.json(
@@ -94,53 +103,71 @@ export async function POST(
 
     // Save appliances to template if requested (so they persist for future tasks)
     if (saveAppliances) {
-      for (let i = 0; i < records.length; i++) {
-        const record = records[i];
-        if (record.applianceName) {
-          // Use INSERT ... ON CONFLICT to update if exists
-          await prisma.$executeRaw`
-            INSERT INTO "TemplateAppliance" (
-              "templateId", "companyId", "applianceName", "applianceType", 
-              location, "orderIndex", "isActive"
-            )
-            VALUES (
-              ${templateId}, ${companyId}, ${record.applianceName}, 
-              ${record.type || 'fridge'}, 
-              ${record.location || null}, ${i}, true
-            )
-            ON CONFLICT ("templateId", "applianceName", "companyId")
-            DO UPDATE SET
-              "applianceType" = EXCLUDED."applianceType",
-              location = EXCLUDED.location,
-              "orderIndex" = EXCLUDED."orderIndex",
-              "isActive" = true,
-              "updatedAt" = CURRENT_TIMESTAMP
-          `;
+      try {
+        for (let i = 0; i < records.length; i++) {
+          const record = records[i];
+          if (record.applianceName) {
+            // Use INSERT ... ON CONFLICT to update if exists
+            await prisma.$executeRaw`
+              INSERT INTO "TemplateAppliance" (
+                "templateId", "companyId", "applianceName", "applianceType", 
+                location, "orderIndex", "isActive"
+              )
+              VALUES (
+                ${templateId}, ${companyId}, ${record.applianceName}, 
+                ${record.type || 'fridge'}, 
+                ${record.location || null}, ${i}, true
+              )
+              ON CONFLICT ("templateId", "applianceName", "companyId")
+              DO UPDATE SET
+                "applianceType" = EXCLUDED."applianceType",
+                location = EXCLUDED.location,
+                "orderIndex" = EXCLUDED."orderIndex",
+                "isActive" = true,
+                "updatedAt" = CURRENT_TIMESTAMP
+            `;
+          }
+        }
+      } catch (error: any) {
+        // If table doesn't exist, log warning but continue
+        if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+          console.warn('TemplateAppliance table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        } else {
+          throw error;
         }
       }
     }
 
     // Save temperature records
     const savedRecords = [];
-    for (const record of records) {
-      if (record.applianceName && record.temperature !== null) {
-        const result = await prisma.$executeRaw<Array<{ id: number }>>`
-          INSERT INTO "TemperatureRecord" (
-            "companyId", "templateId", "taskInstanceId", "applianceName",
-            "applianceType", "recordType", "temperature", "unit", 
-            "recordedBy", "recordedAt"
-          )
-          VALUES (
-            ${companyId}, ${templateId}, ${taskInstanceId}, ${record.applianceName},
-            ${record.type || 'fridge'}, 'fridge_freezer', ${record.temperature}, 
-            'celsius', ${userId}, CURRENT_TIMESTAMP
-          )
-          RETURNING id
-        `;
-        savedRecords.push({
-          ...record,
-          id: result[0]?.id,
-        });
+    try {
+      for (const record of records) {
+        if (record.applianceName && record.temperature !== null) {
+          const result = await prisma.$executeRaw<Array<{ id: number }>>`
+            INSERT INTO "TemperatureRecord" (
+              "companyId", "templateId", "taskInstanceId", "applianceName",
+              "applianceType", "recordType", "temperature", "unit", 
+              "recordedBy", "recordedAt"
+            )
+            VALUES (
+              ${companyId}, ${templateId}, ${taskInstanceId}, ${record.applianceName},
+              ${record.type || 'fridge'}, 'fridge_freezer', ${record.temperature}, 
+              'celsius', ${userId}, CURRENT_TIMESTAMP
+            )
+            RETURNING id
+          `;
+          savedRecords.push({
+            ...record,
+            id: result[0]?.id,
+          });
+        }
+      }
+    } catch (error: any) {
+      // If table doesn't exist, log warning but return empty records
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+      } else {
+        throw error;
       }
     }
 

@@ -43,9 +43,17 @@ export async function GET(request: NextRequest) {
 
     query += ` ORDER BY tr."recordedAt" DESC LIMIT 1000`;
 
-    const records = await prisma.$queryRawUnsafe<any[]>(query, ...params);
-
-    return NextResponse.json(records);
+    try {
+      const records = await prisma.$queryRawUnsafe<any[]>(query, ...params);
+      return NextResponse.json(records);
+    } catch (error: any) {
+      // If table doesn't exist, return empty array
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        return NextResponse.json([]);
+      }
+      throw error;
+    }
   } catch (error) {
     console.error("Get temperature records error:", error);
     return NextResponse.json(
@@ -75,32 +83,41 @@ export async function POST(request: NextRequest) {
     }
 
     const savedRecords = [];
-    for (const record of records) {
-      if (record.temperature !== null && record.temperature !== undefined) {
-        const result = await prisma.$executeRaw<Array<{ id: number }>>`
-          INSERT INTO "TemperatureRecord" (
-            "companyId", "applianceName", "applianceType", "recordType",
-            "temperature", "unit", "location", "notes", "recordedBy", "recordedAt"
-          )
-          VALUES (
-            ${companyId}, 
-            ${record.applianceName || record.itemName || 'Unknown'}, 
-            ${record.applianceType || record.type || 'other'},
-            ${recordType || 'other'},
-            ${record.temperature}, 
-            'celsius',
-            ${record.location || null},
-            ${record.notes || null},
-            ${userId}, 
-            CURRENT_TIMESTAMP
-          )
-          RETURNING id
-        `;
-        savedRecords.push({
-          ...record,
-          id: result[0]?.id,
-        });
+    try {
+      for (const record of records) {
+        if (record.temperature !== null && record.temperature !== undefined) {
+          const result = await prisma.$executeRaw<Array<{ id: number }>>`
+            INSERT INTO "TemperatureRecord" (
+              "companyId", "applianceName", "applianceType", "recordType",
+              "temperature", "unit", "location", "notes", "recordedBy", "recordedAt"
+            )
+            VALUES (
+              ${companyId}, 
+              ${record.applianceName || record.itemName || 'Unknown'}, 
+              ${record.applianceType || record.type || 'other'},
+              ${recordType || 'other'},
+              ${record.temperature}, 
+              'celsius',
+              ${record.location || null},
+              ${record.notes || null},
+              ${userId}, 
+              CURRENT_TIMESTAMP
+            )
+            RETURNING id
+          `;
+          savedRecords.push({
+            ...record,
+            id: result[0]?.id,
+          });
+        }
       }
+    } catch (error: any) {
+      // If table doesn't exist, log warning but return empty records
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        return NextResponse.json({ success: false, error: 'Database tables not migrated. Please run migration script.' });
+      }
+      throw error;
     }
 
     return NextResponse.json({ success: true, records: savedRecords });

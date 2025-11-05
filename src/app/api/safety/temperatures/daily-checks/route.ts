@@ -16,26 +16,34 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get("period"); // AM or PM
     const { companyId } = await getCurrentUserAndCompany();
 
-    let query = `
-      SELECT 
-        dtc.*,
-        u.name as "completedByName"
-      FROM "DailyTemperatureCheck" dtc
-      LEFT JOIN "User" u ON u.id = dtc."completedBy"
-      WHERE dtc."companyId" = $1 AND dtc."checkDate" = $2
-    `;
-    const params: any[] = [companyId, date];
+    try {
+      let query = `
+        SELECT 
+          dtc.*,
+          u.name as "completedByName"
+        FROM "DailyTemperatureCheck" dtc
+        LEFT JOIN "User" u ON u.id = dtc."completedBy"
+        WHERE dtc."companyId" = $1 AND dtc."checkDate" = $2
+      `;
+      const params: any[] = [companyId, date];
 
-    if (period) {
-      query += ` AND dtc."checkPeriod" = $${params.length + 1}`;
-      params.push(period);
+      if (period) {
+        query += ` AND dtc."checkPeriod" = $${params.length + 1}`;
+        params.push(period);
+      }
+
+      query += ` ORDER BY dtc."checkType" ASC`;
+
+      const checks = await prisma.$queryRawUnsafe<any[]>(query, ...params);
+      return NextResponse.json(checks);
+    } catch (error: any) {
+      // If table doesn't exist, return empty array
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('DailyTemperatureCheck table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        return NextResponse.json([]);
+      }
+      throw error;
     }
-
-    query += ` ORDER BY dtc."checkType" ASC`;
-
-    const checks = await prisma.$queryRawUnsafe<any[]>(query, ...params);
-
-    return NextResponse.json(checks);
   } catch (error) {
     console.error("Get daily checks error:", error);
     return NextResponse.json(
@@ -65,34 +73,43 @@ export async function POST(request: NextRequest) {
     }
 
     const savedChecks = [];
-    for (const check of checks) {
-      if (check.checkType) {
-        const result = await prisma.$executeRaw<Array<{ id: number }>>`
-          INSERT INTO "DailyTemperatureCheck" (
-            "companyId", "checkDate", "checkPeriod", "checkType",
-            "temperature", "unit", "notes", "completed", "completedBy", "completedAt"
-          )
-          VALUES (
-            ${companyId}, ${date}, ${period}, ${check.checkType},
-            ${check.temperature || null}, 'celsius', ${check.notes || null},
-            ${check.completed || false}, ${check.completed ? userId : null},
-            ${check.completed ? new Date() : null}
-          )
-          ON CONFLICT ("companyId", "checkDate", "checkPeriod", "checkType")
-          DO UPDATE SET
-            "temperature" = EXCLUDED."temperature",
-            "notes" = EXCLUDED."notes",
-            "completed" = EXCLUDED."completed",
-            "completedBy" = EXCLUDED."completedBy",
-            "completedAt" = EXCLUDED."completedAt",
-            "updatedAt" = CURRENT_TIMESTAMP
-          RETURNING id
-        `;
-        savedChecks.push({
-          ...check,
-          id: result[0]?.id,
-        });
+    try {
+      for (const check of checks) {
+        if (check.checkType) {
+          const result = await prisma.$executeRaw<Array<{ id: number }>>`
+            INSERT INTO "DailyTemperatureCheck" (
+              "companyId", "checkDate", "checkPeriod", "checkType",
+              "temperature", "unit", "notes", "completed", "completedBy", "completedAt"
+            )
+            VALUES (
+              ${companyId}, ${date}, ${period}, ${check.checkType},
+              ${check.temperature || null}, 'celsius', ${check.notes || null},
+              ${check.completed || false}, ${check.completed ? userId : null},
+              ${check.completed ? new Date() : null}
+            )
+            ON CONFLICT ("companyId", "checkDate", "checkPeriod", "checkType")
+            DO UPDATE SET
+              "temperature" = EXCLUDED."temperature",
+              "notes" = EXCLUDED."notes",
+              "completed" = EXCLUDED."completed",
+              "completedBy" = EXCLUDED."completedBy",
+              "completedAt" = EXCLUDED."completedAt",
+              "updatedAt" = CURRENT_TIMESTAMP
+            RETURNING id
+          `;
+          savedChecks.push({
+            ...check,
+            id: result[0]?.id,
+          });
+        }
       }
+    } catch (error: any) {
+      // If table doesn't exist, log warning but return empty checks
+      if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+        console.warn('DailyTemperatureCheck table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        return NextResponse.json({ success: false, error: 'Database tables not migrated. Please run migration script.' });
+      }
+      throw error;
     }
 
     return NextResponse.json({ success: true, checks: savedChecks });
