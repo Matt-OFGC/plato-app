@@ -217,10 +217,19 @@ export async function GET(
     });
 
     return NextResponse.json({ modules });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Admin get features error:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+      stack: error?.stack,
+    });
     return NextResponse.json(
-      { error: "Failed to fetch feature modules" },
+      { 
+        error: "Failed to fetch feature modules",
+        details: error?.message || "Unknown error",
+      },
       { status: 500 }
     );
   }
