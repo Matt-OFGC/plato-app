@@ -181,6 +181,7 @@ model User {
   notifications              Notification[]
   subscription               Subscription?
   preferences                UserPreference?
+  featureModules             FeatureModule[]
   scheduledTasks             ScheduledTask[]         @relation("UserScheduledTasks")
   taskInstances              TaskInstance[]          @relation("UserTaskInstances")
   taskCompletions            TaskCompletion[]        @relation("UserTaskCompletions")
@@ -371,6 +372,28 @@ model Subscription {
   maxRecipes           Int?
   metadata             Json?
   user                 User      @relation(fields: [userId], references: [id])
+}
+
+model FeatureModule {
+  id                       Int       @id @default(autoincrement())
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  userId                   Int
+  moduleName               String // recipes|production|make|teams|safety
+  stripeSubscriptionItemId String?
+  stripePriceId            String?
+  status                   String    @default("active") // active|canceled|trialing|past_due
+  isTrial                  Boolean   @default(false) // true for Recipes free trial
+  unlockedAt               DateTime  @default(now())
+  currentPeriodEnd         DateTime?
+  cancelAtPeriodEnd        Boolean   @default(false)
+  canceledAt               DateTime?
+  User                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleName])
+  @@index([userId])
+  @@index([moduleName])
+  @@index([status])
 }
 
 model Category {
