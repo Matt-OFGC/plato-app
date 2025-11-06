@@ -81,7 +81,22 @@ export async function verifyAdminCredentials(username: string, password: string)
       const fallbackUsername = process.env.ADMIN_USERNAME;
       const fallbackPassword = process.env.ADMIN_PASSWORD;
       
-      if (fallbackUsername && fallbackPassword && username === fallbackUsername && password === fallbackPassword) {
+      // Debug logging (remove in production)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Admin fallback check:', {
+          hasUsername: !!fallbackUsername,
+          hasPassword: !!fallbackPassword,
+          usernameMatch: username.toLowerCase().trim() === fallbackUsername?.toLowerCase().trim(),
+        });
+      }
+      
+      // Normalize inputs for comparison (case-insensitive, trimmed)
+      const normalizedUsername = username.toLowerCase().trim();
+      const normalizedFallbackUsername = fallbackUsername?.toLowerCase().trim();
+      
+      if (fallbackUsername && fallbackPassword && 
+          normalizedUsername === normalizedFallbackUsername && 
+          password === fallbackPassword) {
         // Return a temporary session for fallback admin
         // In production, you should create a proper admin user in the database
         return {
