@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, STRIPE_CONFIG, getTierFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { getModuleFromStripePriceId } from "@/lib/stripe-features";
 import Stripe from "stripe";
 
 // Subscription tier seat limits
@@ -83,8 +84,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Get subscription details from Stripe
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const price = subscription.items.data[0].price;
+  const subscriptionItem = subscription.items.data[0];
+  const price = subscriptionItem.price;
 
+  // Check if this is a feature module subscription
+  const moduleName = getModuleFromStripePriceId(price.id);
+  const isFeatureModule = session.metadata?.type === "feature_module" || moduleName !== null;
+
+  if (isFeatureModule && moduleName) {
+    // Handle feature module subscription
+    await handleFeatureModuleCheckout(user.id, moduleName, subscription, subscriptionItem);
+    return;
+  }
+
+  // Legacy: Handle tier-based subscription (backwards compatibility)
   // Determine tier from price ID
   const tierInfo = getTierFromPriceId(price.id);
   const tier = tierInfo?.tier || "professional";
@@ -162,6 +175,80 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   await prisma.$transaction(operations);
 }
 
+async function handleFeatureModuleCheckout(
+  userId: number,
+  moduleName: string,
+  subscription: Stripe.Subscription,
+  subscriptionItem: Stripe.SubscriptionItem
+) {
+  // Convert trial to paid if it's Recipes
+  const existingTrial = await prisma.featureModule.findUnique({
+    where: {
+      userId_moduleName: {
+        userId,
+        moduleName: moduleName,
+      },
+    },
+  });
+
+  if (existingTrial && existingTrial.isTrial) {
+    // Upgrade from trial to paid
+    await prisma.featureModule.update({
+      where: {
+        userId_moduleName: {
+          userId,
+          moduleName: moduleName,
+        },
+      },
+      data: {
+        stripeSubscriptionItemId: subscriptionItem.id,
+        stripePriceId: subscriptionItem.price.id,
+        status: subscription.status,
+        isTrial: false,
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      },
+    });
+
+    // For Recipes, remove trial limits (set to unlimited)
+    if (moduleName === "recipes") {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          maxIngredients: null,
+          maxRecipes: null,
+        },
+      });
+    }
+  } else {
+    // Create new feature module
+    await prisma.featureModule.create({
+      data: {
+        userId,
+        moduleName: moduleName,
+        stripeSubscriptionItemId: subscriptionItem.id,
+        stripePriceId: subscriptionItem.price.id,
+        status: subscription.status,
+        isTrial: false,
+        unlockedAt: new Date(),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      },
+    });
+
+    // For Recipes, remove trial limits (set to unlimited)
+    if (moduleName === "recipes") {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          maxIngredients: null,
+          maxRecipes: null,
+        },
+      });
+    }
+  }
+}
+
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const user = await prisma.user.findUnique({
     where: { stripeCustomerId: subscription.customer as string },
@@ -175,8 +262,41 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   if (!user) return;
 
+  const subscriptionItem = subscription.items.data[0];
+  const price = subscriptionItem.price;
+
+  // Check if this is a feature module subscription
+  const moduleName = getModuleFromStripePriceId(price.id);
+  if (moduleName) {
+    // Update feature module
+    await prisma.featureModule.updateMany({
+      where: {
+        userId: user.id,
+        moduleName: moduleName,
+      },
+      data: {
+        status: subscription.status,
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+      },
+    });
+
+    // If canceled and it's Recipes, restore trial limits
+    if (subscription.status === "canceled" && moduleName === "recipes") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          maxIngredients: 10,
+          maxRecipes: 5,
+        },
+      });
+    }
+    return;
+  }
+
+  // Legacy: Handle tier-based subscription (backwards compatibility)
   // Get the main price to determine tier
-  const price = subscription.items.data[0].price;
   const tierInfo = getTierFromPriceId(price.id);
   const tier = tierInfo?.tier || "professional";
   const interval = tierInfo?.interval || "month";
@@ -246,6 +366,39 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   if (!user) return;
 
+  // Check if this is a feature module subscription
+  if (subscription.items.data.length > 0) {
+    const price = subscription.items.data[0].price;
+    const moduleName = getModuleFromStripePriceId(price.id);
+    
+    if (moduleName) {
+      // Cancel feature module
+      await prisma.featureModule.updateMany({
+        where: {
+          userId: user.id,
+          moduleName: moduleName,
+        },
+        data: {
+          status: "canceled",
+          canceledAt: new Date(),
+        },
+      });
+
+      // If Recipes, restore trial limits
+      if (moduleName === "recipes") {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            maxIngredients: 10,
+            maxRecipes: 5,
+          },
+        });
+      }
+      return;
+    }
+  }
+
+  // Legacy: Handle tier-based subscription (backwards compatibility)
   // Update subscription, user, and company in a transaction
   const operations: any[] = [
     prisma.subscription.updateMany({

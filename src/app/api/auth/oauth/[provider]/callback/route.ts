@@ -154,7 +154,17 @@ export async function GET(
       isAdmin: newUser.isAdmin,
     }, true, { headers: request.headers });
 
-    // Redirect to onboarding or dashboard
+    // Check if user has a company - if not, redirect to onboarding/company creation
+    const membership = await prisma.membership.findFirst({
+      where: { userId: newUser.id },
+    });
+
+    if (!membership) {
+      // New OAuth user needs to create/join a company
+      return NextResponse.redirect(new URL('/dashboard?onboarding=true', request.url));
+    }
+
+    // User has a company, go to dashboard
     return NextResponse.redirect(new URL('/dashboard', request.url));
   } catch (error) {
     console.error(`OAuth callback error for ${provider}:`, error);

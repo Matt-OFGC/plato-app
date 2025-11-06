@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
 import { useAppContext } from "./AppContextProvider";
+import { SectionUnlockModal } from "./unlock/SectionUnlockModal";
+import { FeatureModuleName } from "@/lib/stripe-features";
 
 // Pre-compute production items since ALL_NAVIGATION_ITEMS is constant
 const PRODUCTION_ITEMS_BY_APPCONTEXT = ALL_NAVIGATION_ITEMS.filter(item => 
@@ -69,6 +71,20 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
     healthSafety: true
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean }> | null>(null);
+  const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
+
+  // Fetch unlock status on mount
+  useEffect(() => {
+    fetch("/api/features/unlock-status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.unlockStatus) {
+          setUnlockStatus(data.unlockStatus);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch unlock status:", err));
+  }, []);
 
   // Get all navigation items for global search
   const allNavigationItems = ALL_NAVIGATION_ITEMS;

@@ -25,28 +25,38 @@ export default async function TrainingPage() {
   //   redirect("/dashboard");
   // }
 
-  // Get modules
-  const modules = await prisma.trainingModule.findMany({
-    where: { companyId },
-    include: {
-      content: {
-        orderBy: { order: "asc" },
-      },
-      recipes: {
+  // Get modules - with defensive check if model doesn't exist yet
+  let modules: any[] = [];
+  
+  if (prisma.trainingModule) {
+    try {
+      modules = await prisma.trainingModule.findMany({
+        where: { companyId },
         include: {
-          recipe: {
-            select: {
-              id: true,
-              name: true,
+          content: {
+            orderBy: { order: "asc" },
+          },
+          recipes: {
+            include: {
+              recipe: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    } catch (error) {
+      // If trainingModule doesn't exist yet, use empty array
+      console.warn('TrainingModule model not available:', error);
+      modules = [];
+    }
+  }
 
   return <TrainingDashboardClient modules={modules} companyId={companyId} />;
 }
