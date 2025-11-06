@@ -71,11 +71,18 @@ export function getAppByRoute(route: string): PlatoApp | undefined {
   return sortedApps.find(app => {
     // Handle exact matches
     if (route === app.route) return true;
+    
     // Handle sub-routes (e.g., /dashboard/production/view matches production app)
+    // Check if route starts with app.route followed by / or is the same
     if (route.startsWith(app.route + '/')) return true;
     
     // Special case for dashboard root - only match if it's exactly /dashboard
     if (app.id === 'recipes' && route === '/dashboard') return true;
+    
+    // Special handling for teams app - match /dashboard/team and all sub-routes
+    if (app.id === 'teams' && (route.startsWith('/dashboard/team') || route.startsWith('/dashboard/scheduling') || route.startsWith('/dashboard/training'))) {
+      return true;
+    }
     
     return false;
   });

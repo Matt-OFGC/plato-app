@@ -214,72 +214,176 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Main Navigation */}
-          <nav className="mt-2 space-y-1 px-2 flex-1 overflow-y-auto">
-            {getFilteredNavigationItems(activeApp?.id || null)
-              .filter(item => {
-                // Exclude dashboard - it's in the header
-                if (item.value === 'dashboard') return false;
-                return true;
-              })
-              .sort((a, b) => {
-                // Sort to ensure Settings (account) appears at the bottom
-                if (a.value === 'account') return 1; // Move Settings to end
-                if (b.value === 'account') return -1; // Keep other items before Settings
-                return 0; // Keep original order for other items
-              })
-              .map((item) => {
-              const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
-              return (
-                <div key={item.value} className="relative group/nav-item">
-                  <a 
-                    href={item.href} 
-                    className={`w-10 h-10 rounded-xl liquid-glass liquid-glass-hover liquid-glass-ripple flex items-center justify-center transition-all duration-200 touch-manipulation ${
-                      active 
-                        ? 'liquid-glass-glow scale-105 shadow-lg shadow-emerald-500/20 text-emerald-700' 
-                        : `${colors.text}`
-                    }`}
-                    title={item.label}
-                    style={{ WebkitTapHighlightColor: 'transparent' }}
-                  >
-                    <div className="w-5 h-5 flex items-center justify-center relative z-10">
-                      {item.icon}
-                    </div>
-                    {/* Active indicator pill */}
-                    {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full opacity-80" />
-                    )}
-                  </a>
-                  
-                  {/* Desktop hover tooltip with glass styling */}
-                  {!isTouchDevice && (
-                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/nav-item:opacity-100 pointer-events-none transition-all duration-200 z-50 animate-spring">
-                      <div className="px-3 py-1.5 rounded-xl liquid-glass liquid-glass-reflection text-gray-800 shadow-xl whitespace-nowrap text-sm font-medium">
-                        {item.label}
+          {/* Main Navigation - Grouped by App Context */}
+          <nav className="mt-2 space-y-4 px-2 flex-1 overflow-y-auto">
+            {(() => {
+              const filteredItems = getFilteredNavigationItems(activeApp?.id || null)
+                .filter(item => item.value !== 'dashboard' && item.value !== 'account');
+              
+              // Group items by app context
+              const grouped = filteredItems.reduce((acc, item) => {
+                const context = item.appContext || 'global';
+                if (!acc[context]) acc[context] = [];
+                acc[context].push(item);
+                return acc;
+              }, {} as Record<string, typeof filteredItems>);
+
+              // Define section order and labels
+              const sectionOrder = ['recipes', 'teams', 'production', 'safety', 'global'];
+              const sectionLabels: Record<string, string> = {
+                recipes: 'RECIPES',
+                teams: 'TEAMS',
+                production: 'PRODUCTION DETAIL',
+                safety: 'HYGIENE & SAFETY',
+                global: 'OTHER'
+              };
+
+              return sectionOrder.map(sectionKey => {
+                const items = grouped[sectionKey] || [];
+                if (items.length === 0) return null;
+
+                return (
+                  <div key={sectionKey} className="space-y-1">
+                    {/* Section Header - only show on expanded sidebar */}
+                    {(!isTouchDevice || !collapsed || pinned) && (
+                      <div className="px-2 py-1.5 flex items-center justify-between group/section">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                          {sectionLabels[sectionKey] || sectionKey.toUpperCase()}
+                        </span>
+                        {sectionKey !== 'global' && (
+                          <span className="text-[9px] text-gray-400 opacity-0 group-hover/section:opacity-100 transition-opacity">
+                            DETAIL
+                          </span>
+                        )}
                       </div>
-                      {/* Tooltip arrow pointing left */}
-                      <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white/60"></div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    )}
+                    
+                    {/* Section Items */}
+                    {items.map((item) => {
+                      const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+                      return (
+                        <div key={item.value} className="relative group/nav-item">
+                          <a 
+                            href={item.href} 
+                            className={`w-10 h-10 rounded-xl liquid-glass liquid-glass-hover liquid-glass-ripple flex items-center justify-center transition-all duration-200 touch-manipulation ${
+                              active 
+                                ? 'liquid-glass-glow scale-105 shadow-lg shadow-emerald-500/20 text-emerald-700' 
+                                : `${colors.text}`
+                            }`}
+                            title={item.label}
+                            style={{ WebkitTapHighlightColor: 'transparent' }}
+                          >
+                            <div className="w-5 h-5 flex items-center justify-center relative z-10">
+                              {item.icon}
+                            </div>
+                            {/* Active indicator pill */}
+                            {active && (
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-500 rounded-r-full opacity-80" />
+                            )}
+                          </a>
+                          
+                          {/* Desktop hover tooltip with glass styling */}
+                          {!isTouchDevice && (
+                            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/nav-item:opacity-100 pointer-events-none transition-all duration-200 z-50 animate-spring">
+                              <div className="px-3 py-1.5 rounded-xl liquid-glass liquid-glass-reflection text-gray-800 shadow-xl whitespace-nowrap text-sm font-medium">
+                                {item.label}
+                              </div>
+                              {/* Tooltip arrow pointing left */}
+                              <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white/60"></div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }).filter(Boolean);
+            })()}
           </nav>
 
-          {/* Plato OS App Switcher - Bottom of sidebar */}
-          <div className="px-2 pb-2">
-            <AppSwitcher 
-              activeApp={activeApp} 
-              onAppChange={(app) => {
-                switchToApp(app.id);
-                // Navigate to the app's main route using Next.js router
-                router.push(app.route);
-              }}
-              collapsed={isTouchDevice ? (collapsed && !pinned) : true}
-              isHovered={false}
-              isTouchDevice={isTouchDevice}
-            />
-            
+          {/* Settings and Logout - Bottom of sidebar */}
+          <div className="px-2 pb-2 space-y-2">
+            {/* Settings Link */}
+            <div className="relative group/nav-item">
+              <a 
+                href="/dashboard/account" 
+                className={`w-10 h-10 rounded-xl liquid-glass liquid-glass-hover liquid-glass-ripple flex items-center justify-center transition-all duration-200 touch-manipulation ${
+                  pathname.startsWith('/dashboard/account')
+                    ? 'liquid-glass-glow scale-105 shadow-lg shadow-indigo-500/20 text-indigo-700' 
+                    : `${colors.text}`
+                }`}
+                title="Settings"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <div className="w-5 h-5 flex items-center justify-center relative z-10">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                {pathname.startsWith('/dashboard/account') && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full opacity-80" />
+                )}
+              </a>
+              
+              {/* Desktop hover tooltip */}
+              {!isTouchDevice && (
+                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/nav-item:opacity-100 pointer-events-none transition-all duration-200 z-50 animate-spring">
+                  <div className="px-3 py-1.5 rounded-xl liquid-glass liquid-glass-reflection text-gray-800 shadow-xl whitespace-nowrap text-sm font-medium">
+                    Settings
+                  </div>
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white/60"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Logout Button */}
+            <div className="relative group/logout">
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch('/api/logout', { method: 'POST' });
+                    router.push('/');
+                    router.refresh();
+                  } catch (error) {
+                    console.error('Logout error:', error);
+                  }
+                }}
+                className="w-10 h-10 rounded-xl liquid-glass liquid-glass-hover liquid-glass-ripple flex items-center justify-center transition-all duration-200 touch-manipulation text-red-600 hover:text-red-700 hover:bg-red-50/50"
+                title="Logout"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <div className="w-5 h-5 flex items-center justify-center relative z-10">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </div>
+              </button>
+              
+              {/* Desktop hover tooltip */}
+              {!isTouchDevice && (
+                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/logout:opacity-100 pointer-events-none transition-all duration-200 z-50 animate-spring">
+                  <div className="px-3 py-1.5 rounded-xl liquid-glass liquid-glass-reflection text-gray-800 shadow-xl whitespace-nowrap text-sm font-medium">
+                    Logout
+                  </div>
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white/60"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Plato OS App Switcher */}
+            <div className="pt-2 border-t border-white/10">
+              <AppSwitcher 
+                activeApp={activeApp} 
+                onAppChange={(app) => {
+                  switchToApp(app.id);
+                  router.push(app.route);
+                }}
+                collapsed={isTouchDevice ? (collapsed && !pinned) : true}
+                isHovered={false}
+                isTouchDevice={isTouchDevice}
+              />
+            </div>
           </div>
         </div>
       </aside>
@@ -347,46 +451,130 @@ export function Sidebar() {
                 </button>
               </div>
 
-              {/* Menu list */}
+              {/* Menu list - Grouped by App Context */}
               <nav className="px-2 py-2 flex-1 overflow-y-auto relative z-10">
-                {getFilteredNavigationItems(activeApp?.id || null)
-                  .filter(item => {
-                    // Exclude dashboard - it's in the header
-                    if (item.value === 'dashboard') return false;
-                    return true;
-                  })
-                  .sort((a, b) => {
-                    // Sort to ensure Settings (account) appears at the bottom
-                    if (a.value === 'account') return 1; // Move Settings to end
-                    if (b.value === 'account') return -1; // Keep other items before Settings
-                    return 0; // Keep original order for other items
-                  })
-                  .map((item, index) => {
-                    const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+                {(() => {
+                  const filteredItems = getFilteredNavigationItems(activeApp?.id || null)
+                    .filter(item => item.value !== 'dashboard' && item.value !== 'account');
+                  
+                  // Group items by app context
+                  const grouped = filteredItems.reduce((acc, item) => {
+                    const context = item.appContext || 'global';
+                    if (!acc[context]) acc[context] = [];
+                    acc[context].push(item);
+                    return acc;
+                  }, {} as Record<string, typeof filteredItems>);
+
+                  // Define section order and labels
+                  const sectionOrder = ['recipes', 'teams', 'production', 'safety', 'global'];
+                  const sectionLabels: Record<string, string> = {
+                    recipes: 'RECIPES',
+                    teams: 'TEAMS',
+                    production: 'PRODUCTION DETAIL',
+                    safety: 'HYGIENE & SAFETY',
+                    global: 'OTHER'
+                  };
+
+                  let itemIndex = 0;
+                  return sectionOrder.map(sectionKey => {
+                    const items = grouped[sectionKey] || [];
+                    if (items.length === 0) return null;
+
                     return (
-                      <a
-                        key={item.value}
-                        href={item.href}
-                        onClick={() => setIsOpen(false)}
-                        className={`flex items-center gap-4 px-4 py-3 rounded-xl liquid-glass-hover transition-all duration-200 animate-drawer-item ${
-                          active 
-                            ? 'bg-emerald-500/20 text-emerald-700 scale-[1.02] shadow-md' 
-                            : 'hover:bg-white/10 active:bg-white/15 text-gray-700'
-                        }`}
-                        style={{ animationDelay: `${index * 40}ms` }}
-                      >
-                        <div className={`${active ? 'text-emerald-600' : 'text-gray-600'}`}>
-                          {item.icon}
+                      <div key={sectionKey} className="mb-4">
+                        {/* Section Header */}
+                        <div className="px-4 py-2 flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            {sectionLabels[sectionKey] || sectionKey.toUpperCase()}
+                          </span>
+                          {sectionKey !== 'global' && (
+                            <span className="text-[9px] text-gray-400">
+                              DETAIL
+                            </span>
+                          )}
                         </div>
-                        <span className="text-[16px] font-medium tracking-tight">
-                          {item.label}
-                        </span>
-                        {active && (
-                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        )}
-                      </a>
+                        
+                        {/* Section Items */}
+                        <div className="space-y-1">
+                          {items.map((item) => {
+                            const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+                            const currentIndex = itemIndex++;
+                            return (
+                              <a
+                                key={item.value}
+                                href={item.href}
+                                onClick={() => setIsOpen(false)}
+                                className={`flex items-center gap-4 px-4 py-3 rounded-xl liquid-glass-hover transition-all duration-200 animate-drawer-item ${
+                                  active 
+                                    ? 'bg-emerald-500/20 text-emerald-700 scale-[1.02] shadow-md' 
+                                    : 'hover:bg-white/10 active:bg-white/15 text-gray-700'
+                                }`}
+                                style={{ animationDelay: `${currentIndex * 40}ms` }}
+                              >
+                                <div className={`${active ? 'text-emerald-600' : 'text-gray-600'}`}>
+                                  {item.icon}
+                                </div>
+                                <span className="text-[16px] font-medium tracking-tight">
+                                  {item.label}
+                                </span>
+                                {active && (
+                                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                )}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
-                  })}
+                  }).filter(Boolean);
+                })()}
+
+                {/* Settings and Logout - Bottom of drawer */}
+                <div className="mt-4 pt-4 border-t border-white/10 space-y-1">
+                  {/* Settings Link */}
+                  <a
+                    href="/dashboard/account"
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center gap-4 px-4 py-3 rounded-xl liquid-glass-hover transition-all duration-200 ${
+                      pathname.startsWith('/dashboard/account')
+                        ? 'bg-indigo-500/20 text-indigo-700 scale-[1.02] shadow-md' 
+                        : 'hover:bg-white/10 active:bg-white/15 text-gray-700'
+                    }`}
+                  >
+                    <div className={`${pathname.startsWith('/dashboard/account') ? 'text-indigo-600' : 'text-gray-600'}`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-[16px] font-medium tracking-tight">Settings</span>
+                    {pathname.startsWith('/dashboard/account') && (
+                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    )}
+                  </a>
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={async () => {
+                      setIsOpen(false);
+                      try {
+                        await fetch('/api/logout', { method: 'POST' });
+                        router.push('/');
+                        router.refresh();
+                      } catch (error) {
+                        console.error('Logout error:', error);
+                      }
+                    }}
+                    className="w-full flex items-center gap-4 px-4 py-3 rounded-xl liquid-glass-hover hover:bg-red-50/50 active:bg-red-50/70 text-red-600 hover:text-red-700 transition-all duration-200"
+                  >
+                    <div className="text-red-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                    </div>
+                    <span className="text-[16px] font-medium tracking-tight">Logout</span>
+                  </button>
+                </div>
               </nav>
             </div>
           </div>

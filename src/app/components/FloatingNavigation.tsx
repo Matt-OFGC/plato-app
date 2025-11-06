@@ -29,11 +29,19 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
     };
   }
 
-  // Teams section - Scheduling, Rota, Holidays, Staff
-  if (pathname.startsWith('/dashboard/staff') || pathname.startsWith('/dashboard/team')) {
+  // Teams section - Team, Scheduling, Training
+  if (pathname.startsWith('/dashboard/team') || pathname.startsWith('/dashboard/scheduling') || pathname.startsWith('/dashboard/training')) {
     return { 
-      tabs: ['Scheduling', 'Rota', 'Holidays', 'Staff'],
-      links: ['/dashboard/staff', '/dashboard/staff', '/dashboard/staff', '/dashboard/staff']
+      tabs: ['Team', 'Scheduling', 'Training'],
+      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
+    };
+  }
+  
+  // Legacy staff routes - redirect to team
+  if (pathname.startsWith('/dashboard/staff')) {
+    return { 
+      tabs: ['Team', 'Scheduling', 'Training'],
+      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
     };
   }
 

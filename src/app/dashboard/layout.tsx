@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FloatingLayoutClient } from "@/components/FloatingLayoutClient";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { AppContextProvider } from "@/components/AppContextProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Dashboard - Plato",
@@ -14,13 +15,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <AppContextProvider>
-      <KeyboardShortcutsProvider>
-        <FloatingLayoutClient>
-          {children}
-        </FloatingLayoutClient>
-      </KeyboardShortcutsProvider>
-    </AppContextProvider>
+    <ToastProvider>
+      <AppContextProvider>
+        <KeyboardShortcutsProvider>
+          <FloatingLayoutClient>
+            {children}
+          </FloatingLayoutClient>
+        </KeyboardShortcutsProvider>
+      </AppContextProvider>
+    </ToastProvider>
   );
 }
 

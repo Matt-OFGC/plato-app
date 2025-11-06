@@ -1,5 +1,6 @@
 // NextAuth configuration
 import { NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
 import bcrypt from 'bcrypt';
@@ -67,3 +68,6 @@ export const authOptions: NextAuthOptions = {
 };
 
 export { authOptions as auth };
+
+// Export NextAuth handlers
+export const handlers = NextAuth(authOptions);

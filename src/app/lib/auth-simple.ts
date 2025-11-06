@@ -1,5 +1,7 @@
 import { cookies } from 'next/headers';
 import { prisma } from './prisma';
+import { SignJWT, jwtVerify } from 'jose';
+import { randomBytes } from 'crypto';
 
 export interface SessionUser {
   id: number;
@@ -15,58 +17,228 @@ export interface Session {
   isAdmin: boolean;
 }
 
-// Create a session for a user
-export async function createSession(user: SessionUser, rememberMe: boolean = true): Promise<void> {
-  const cookieStore = await cookies();
-  
-  // Create session token (in production, use proper JWT or session tokens)
-  const sessionToken = Buffer.from(JSON.stringify({
+// JWT configuration
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret-change-in-production';
+const ACCESS_TOKEN_EXPIRY = 15 * 60; // 15 minutes
+const REFRESH_TOKEN_EXPIRY = 30 * 24 * 60 * 60; // 30 days
+const SESSION_COOKIE_NAME = 'session';
+const REFRESH_COOKIE_NAME = 'refresh_token';
+
+// Get JWT secret key
+function getSecretKey() {
+  return new TextEncoder().encode(JWT_SECRET);
+}
+
+// Generate a secure random token
+function generateToken(): string {
+  return randomBytes(32).toString('hex');
+}
+
+// Create access token (short-lived JWT)
+async function createAccessToken(user: SessionUser): Promise<string> {
+  const secret = getSecretKey();
+  const token = await new SignJWT({
     userId: user.id,
     email: user.email,
     name: user.name,
     isAdmin: user.isAdmin,
-    createdAt: Date.now()
-  })).toString('base64');
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(`${ACCESS_TOKEN_EXPIRY}s`)
+    .sign(secret);
 
-  // Set cookie with appropriate expiration
-  const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 1 day
+  return token;
+}
+
+// Verify access token
+async function verifyAccessToken(token: string): Promise<SessionUser | null> {
+  try {
+    const secret = getSecretKey();
+    const { payload } = await jwtVerify(token, secret);
+    
+    return {
+      id: payload.userId as number,
+      email: payload.email as string,
+      name: payload.name as string | undefined,
+      isAdmin: payload.isAdmin as boolean,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+// Create a session for a user with database storage
+export async function createSession(
+  user: SessionUser,
+  rememberMe: boolean = true,
+  request?: { headers: Headers },
+): Promise<void> {
+  const cookieStore = await cookies();
   
-  cookieStore.set('session', sessionToken, {
+  // Generate refresh token
+  const refreshToken = generateToken();
+  
+  // Create access token
+  const accessToken = await createAccessToken(user);
+  
+  // Calculate expiration times
+  const accessTokenExpires = new Date(Date.now() + ACCESS_TOKEN_EXPIRY * 1000);
+  const refreshTokenExpires = rememberMe
+    ? new Date(Date.now() + REFRESH_TOKEN_EXPIRY * 1000)
+    : new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day if not remember me
+
+  // Extract device info from request
+  const ipAddress = request?.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     request?.headers.get('x-real-ip') || 
+                     'unknown';
+  const userAgent = request?.headers.get('user-agent') || 'unknown';
+  
+  // Store session in database
+  await prisma.session.create({
+    data: {
+      userId: user.id,
+      token: accessToken,
+      refreshToken: refreshToken,
+      ipAddress: ipAddress,
+      userAgent: userAgent,
+      expiresAt: refreshTokenExpires,
+      lastUsedAt: new Date(),
+    },
+  });
+
+  // Set access token cookie (short-lived)
+  cookieStore.set(SESSION_COOKIE_NAME, accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: maxAge,
-    path: '/'
+    maxAge: ACCESS_TOKEN_EXPIRY,
+    path: '/',
+  });
+
+  // Set refresh token cookie (long-lived)
+  cookieStore.set(REFRESH_COOKIE_NAME, refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: rememberMe ? REFRESH_TOKEN_EXPIRY : 24 * 60 * 60,
+    path: '/',
   });
 }
 
-// Get current session
+// Get current session from access token or refresh token
 export async function getSession(): Promise<Session | null> {
   try {
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('session')?.value;
+    const accessToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     
-    if (!sessionToken) {
-      return null;
+    // Try to verify access token first
+    if (accessToken) {
+      const user = await verifyAccessToken(accessToken);
+      if (user) {
+        // Verify session exists in database and is not revoked
+        const session = await prisma.session.findFirst({
+          where: {
+            token: accessToken,
+            revokedAt: null,
+            expiresAt: { gt: new Date() },
+          },
+        });
+
+        if (session) {
+          // Update last used timestamp
+          await prisma.session.update({
+            where: { id: session.id },
+            data: { lastUsedAt: new Date() },
+          });
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            isAdmin: user.isAdmin,
+          };
+        }
+      }
     }
 
-    // Decode session token
-    const sessionData = JSON.parse(Buffer.from(sessionToken, 'base64').toString());
-    
-    // Check if session is expired (30 days)
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    if (sessionData.createdAt < thirtyDaysAgo) {
-      return null;
+    // Access token invalid or expired, try refresh token
+    const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value;
+    if (refreshToken) {
+      return await refreshSession(refreshToken);
     }
 
-    return {
-      id: sessionData.userId,
-      email: sessionData.email,
-      name: sessionData.name,
-      isAdmin: sessionData.isAdmin
-    };
+    return null;
   } catch (error) {
     console.error('Session error:', error);
+    return null;
+  }
+}
+
+// Refresh session using refresh token
+async function refreshSession(refreshToken: string): Promise<Session | null> {
+  try {
+    // Find session by refresh token
+    const session = await prisma.session.findFirst({
+      where: {
+        refreshToken: refreshToken,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            isAdmin: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!session || !session.user.isActive) {
+      return null;
+    }
+
+    // Create new access token
+    const user: SessionUser = {
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name || undefined,
+      isAdmin: session.user.isAdmin,
+    };
+
+    const newAccessToken = await createAccessToken(user);
+
+    // Update session with new access token
+    await prisma.session.update({
+      where: { id: session.id },
+      data: {
+        token: newAccessToken,
+        lastUsedAt: new Date(),
+      },
+    });
+
+    // Set new access token cookie
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: ACCESS_TOKEN_EXPIRY,
+      path: '/',
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      isAdmin: user.isAdmin,
+    };
+  } catch (error) {
+    console.error('Refresh session error:', error);
     return null;
   }
 }
@@ -77,10 +249,56 @@ export async function getUserFromSession(): Promise<SessionUser | null> {
   return session;
 }
 
-// Destroy session
-export async function destroySession(): Promise<void> {
+// Destroy session (revoke in database and clear cookies)
+export async function destroySession(sessionToken?: string): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete('session');
+  
+  // If no token provided, get from cookie
+  const token = sessionToken || cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value;
+
+  if (token) {
+    // Revoke session in database
+    await prisma.session.updateMany({
+      where: {
+        token: token,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+  }
+
+  if (refreshToken) {
+    // Also revoke by refresh token
+    await prisma.session.updateMany({
+      where: {
+        refreshToken: refreshToken,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+  }
+
+  // Clear cookies
+  cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.delete(REFRESH_COOKIE_NAME);
+}
+
+// Revoke all sessions for a user
+export async function revokeAllUserSessions(userId: number): Promise<void> {
+  await prisma.session.updateMany({
+    where: {
+      userId: userId,
+      revokedAt: null,
+    },
+    data: {
+      revokedAt: new Date(),
+    },
+  });
 }
 
 // Verify session and get user with database data
@@ -90,7 +308,7 @@ export async function verifySession(): Promise<SessionUser | null> {
     return null;
   }
 
-  // Verify user still exists in database
+  // Verify user still exists in database and is active
   const user = await prisma.user.findUnique({
     where: { id: session.id },
     select: {
@@ -98,8 +316,8 @@ export async function verifySession(): Promise<SessionUser | null> {
       email: true,
       name: true,
       isAdmin: true,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   if (!user || !user.isActive) {
@@ -108,4 +326,15 @@ export async function verifySession(): Promise<SessionUser | null> {
   }
 
   return user;
+}
+
+// Clean up expired sessions (call periodically)
+export async function cleanupExpiredSessions(): Promise<number> {
+  const result = await prisma.session.deleteMany({
+    where: {
+      expiresAt: { lt: new Date() },
+    },
+  });
+
+  return result.count;
 }

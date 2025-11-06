@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { generateUniqueSlug, getCurrencyFromCountry } from "@/lib/slug";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendWelcomeEmail, sendEmailVerificationEmail } from "@/lib/email";
+import crypto from "crypto";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit-log";
 import { registerSchema } from "@/lib/validation/auth";
@@ -69,6 +70,11 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenExpiresAt = new Date();
+    verificationTokenExpiresAt.setHours(verificationTokenExpiresAt.getHours() + 24); // 24 hours
+    
     // Generate unique slug for company
     const slug = await generateUniqueSlug(company, async (slug) => {
       const existing = await prisma.company.findUnique({ where: { slug } });
@@ -93,6 +99,8 @@ export async function POST(req: NextRequest) {
           email,
           name,
           passwordHash,
+          verificationToken,
+          verificationTokenExpiresAt,
           preferences: {
             create: { currency }
           }
@@ -107,7 +115,22 @@ export async function POST(req: NextRequest) {
     // Audit successful registration
     await auditLog.register(user.id, co.id, req);
 
-    // Send welcome email
+    // Send verification email
+    try {
+      const verificationUrl = `${req.nextUrl.origin}/api/auth/verify-email?token=${verificationToken}`;
+      await sendEmailVerificationEmail({
+        to: email,
+        name: name || "there",
+        verificationToken,
+        verificationUrl,
+      });
+      logger.debug(`Verification email sent to ${email}`);
+    } catch (emailError) {
+      logger.error("Failed to send verification email:", emailError);
+      // Don't fail registration if email fails
+    }
+    
+    // Send welcome email (after verification email)
     try {
       await sendWelcomeEmail({
         to: email,

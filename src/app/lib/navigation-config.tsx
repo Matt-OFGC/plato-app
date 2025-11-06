@@ -74,14 +74,26 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
     )
   },
   { 
-    value: "staff",
-    href: "/dashboard/staff", 
-    label: "Staff", 
-    shortLabel: "Staff",
+    value: "scheduling",
+    href: "/dashboard/scheduling", 
+    label: "Scheduling", 
+    shortLabel: "Schedule",
     appContext: "teams",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+  { 
+    value: "training",
+    href: "/dashboard/training", 
+    label: "Training", 
+    shortLabel: "Training",
+    appContext: "teams",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     )
   },
@@ -181,18 +193,20 @@ export const getNavigationItemsByApp = (appContext: string): NavigationItem[] =>
 // Excludes settings which is rendered separately at the bottom
 export const getFilteredNavigationItems = (activeApp: string | null): NavigationItem[] => {
   if (!activeApp) {
-    // Show global items + recipes (default) + safety (always available)
+    // Show global items + recipes (default) + teams (always available) + safety (always available)
     return ALL_NAVIGATION_ITEMS.filter(item => 
       item.appContext === 'global' || 
       item.appContext === 'recipes' ||
+      item.appContext === 'teams' ||
       item.appContext === 'safety'
     );
   }
   
-  // Show global items + active app items + safety (always available)
+  // Show global items + active app items + teams (always available) + safety (always available)
   return ALL_NAVIGATION_ITEMS.filter(item => 
     item.appContext === 'global' || 
     item.appContext === activeApp ||
+    item.appContext === 'teams' ||
     item.appContext === 'safety'
   );
 };

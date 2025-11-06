@@ -77,7 +77,15 @@ export default function ModernScheduler({
   const [quickCreateData, setQuickCreateData] = useState<{ member: Member; date: Date; startHour: number } | null>(null);
   const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
 
-  const { success, error: showError } = useToast();
+  // Get toast function safely - wrap in try-catch to handle any React Context errors
+  let showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning', options?: any) => void;
+  try {
+    const toastHook = useToast();
+    showToast = toastHook?.showToast || ((msg: string, t?: any, opts?: any) => console.log(`[${t || 'INFO'}] ${msg}`));
+  } catch (error) {
+    // Fallback if useToast throws an error
+    showToast = (msg: string, t?: any, opts?: any) => console.log(`[${t || 'INFO'}] ${msg}`);
+  }
 
   // Hours to display (6 AM to 12 AM)
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
@@ -184,21 +192,23 @@ export default function ModernScheduler({
         await loadShifts();
 
         // Show success toast with undo
-        success('Shift updated!', {
-          label: 'Undo',
-          onClick: () => handleUndo({
-            type: 'update',
-            shiftId: shift.id,
-            previousData,
-            newData,
-          }),
+        showToast('Shift updated!', 'success', {
+          action: {
+            label: 'Undo',
+            onClick: () => handleUndo({
+              type: 'update',
+              shiftId: shift.id,
+              previousData,
+              newData,
+            }),
+          },
         });
       } else {
-        showError('Failed to update shift');
+        showToast('Failed to update shift', 'error');
       }
     } catch (error) {
       console.error("Failed to update shift:", error);
-      showError('Failed to update shift');
+      showToast('Failed to update shift', 'error');
     }
   }
 
@@ -252,20 +262,22 @@ export default function ModernScheduler({
         setQuickCreateData(null);
 
         // Show success toast with undo
-        success('Shift created!', {
-          label: 'Undo',
-          onClick: () => handleUndo({
-            type: 'create',
-            shiftId: newShift.shift?.id || newShift.id,
-            newData: shiftData,
-          }),
+        showToast('Shift created!', 'success', {
+          action: {
+            label: 'Undo',
+            onClick: () => handleUndo({
+              type: 'create',
+              shiftId: newShift.shift?.id || newShift.id,
+              newData: shiftData,
+            }),
+          },
         });
       } else {
-        showError('Failed to create shift');
+        showToast('Failed to create shift', 'error');
       }
     } catch (error) {
       console.error("Failed to create shift:", error);
-      showError('Failed to create shift');
+      showToast('Failed to create shift', 'error');
     }
   }
 
@@ -279,7 +291,7 @@ export default function ModernScheduler({
 
         if (res.ok) {
           await loadShifts();
-          success('Shift creation undone');
+          showToast('Shift creation undone', 'success');
         }
       } else if (action.type === 'update' && action.previousData) {
         // Restore previous values
@@ -291,7 +303,7 @@ export default function ModernScheduler({
 
         if (res.ok) {
           await loadShifts();
-          success('Shift restored');
+          showToast('Shift restored', 'success');
         }
       } else if (action.type === 'delete' && action.previousData) {
         // Recreate the deleted shift
@@ -303,12 +315,12 @@ export default function ModernScheduler({
 
         if (res.ok) {
           await loadShifts();
-          success('Shift restored');
+          showToast('Shift restored', 'success');
         }
       }
     } catch (error) {
       console.error("Failed to undo action:", error);
-      showError('Failed to undo');
+      showToast('Failed to undo', 'error');
     }
   }
 

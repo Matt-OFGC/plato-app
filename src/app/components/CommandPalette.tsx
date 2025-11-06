@@ -57,10 +57,16 @@ export function CommandPalette() {
       action: () => router.push("/dashboard/analytics"),
     },
     {
-      id: "staff",
-      label: "Go to Staff",
+      id: "team",
+      label: "Go to Team",
       category: "Navigation",
-      action: () => router.push("/dashboard/staff"),
+      action: () => router.push("/dashboard/team"),
+    },
+    {
+      id: "scheduling",
+      label: "Go to Scheduling",
+      category: "Navigation",
+      action: () => router.push("/dashboard/scheduling"),
     },
     {
       id: "wholesale",

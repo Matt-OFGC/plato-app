@@ -45,14 +45,14 @@ export function AppLauncher({
     },
     {
       icon: "👥",
-      name: "Staff & Scheduling",
-      description: "AI-powered staff scheduling, timesheets, leave tracking & payroll integration",
+      name: "Team & Scheduling",
+      description: "Team management, AI-powered scheduling, timesheets, leave tracking & payroll integration",
       stats: [
         { label: "Team Size", value: staffCount, trend: "+2" },
         { label: "Weekly Shifts", value: shiftsThisWeek, trend: "↑" },
       ],
       color: "violet",
-      href: "/dashboard/staff",
+      href: "/dashboard/team",
       available: true,
       badge: "Popular",
     },

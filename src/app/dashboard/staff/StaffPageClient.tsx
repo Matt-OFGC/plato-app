@@ -41,6 +41,8 @@ export default function StaffPageClient({
     { id: "roster", label: "Roster (Classic)" },
     { id: "timesheets", label: "Timesheets" },
     { id: "leave", label: "Leave" },
+    { id: "training", label: "Training" },
+    { id: "cleaning", label: "Cleaning Jobs" },
   ];
 
   return (
@@ -114,6 +116,36 @@ export default function StaffPageClient({
             canManageAll={canManageAll}
             members={members}
           />
+        )}
+
+        {activeTab === "training" && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Training Management</h2>
+              <p className="text-gray-600 mt-1">View and manage staff training records</p>
+            </div>
+            <a
+              href="/dashboard/training"
+              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Go to Training Dashboard
+            </a>
+          </div>
+        )}
+
+        {activeTab === "cleaning" && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Cleaning Jobs</h2>
+              <p className="text-gray-600 mt-1">Manage cleaning job assignments</p>
+            </div>
+            <a
+              href="/dashboard/staff/cleaning"
+              className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              View Cleaning Jobs
+            </a>
+          </div>
         )}
       </div>
     </div>

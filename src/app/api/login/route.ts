@@ -6,11 +6,19 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit-log";
 import { logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-error-handler";
+import { getPrimaryMfaDevice } from "@/lib/mfa/totp";
+import { checkSuspiciousActivity } from "@/lib/security-alerts";
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const rateLimitResult = rateLimit(request, RATE_LIMITS.LOGIN);
+    const body = await request.json();
+    const { email, password, rememberMe = true } = body;
+
+    // Apply rate limiting (both IP and email-based)
+    const rateLimitResult = rateLimit(request, RATE_LIMITS.LOGIN, { 
+      email: email, 
+      perEmail: true 
+    });
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: `Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.` },
@@ -20,9 +28,6 @@ export async function POST(request: NextRequest) {
         }
       );
     }
-
-    const body = await request.json();
-    const { email, password, rememberMe = true } = body;
 
     // Regular email/password authentication
     if (!email || !password) {
@@ -56,19 +61,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user has MFA enabled
+    const mfaDevice = await getPrimaryMfaDevice(user.id);
+    const requiresMfa = !!mfaDevice && mfaDevice.isVerified;
+
+    if (requiresMfa) {
+      // Return MFA challenge instead of creating session
+      return NextResponse.json({
+        success: true,
+        requiresMfa: true,
+        mfaType: mfaDevice.type,
+        message: "MFA verification required",
+      });
+    }
+
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
 
-    // Create session with remember me option
+    // Check for suspicious activity
+    const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                      request.headers.get('x-real-ip') || 
+                      'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    
+    await checkSuspiciousActivity(user.id, ipAddress, userAgent);
+
+    // Create session with remember me option and request info for device tracking
     await createSession({
       id: user.id,
       email: user.email,
       name: user.name || undefined,
       isAdmin: user.isAdmin,
-    }, rememberMe);
+    }, rememberMe, { headers: request.headers });
 
     logger.info('Session created for user:', user.id, user.email);
 

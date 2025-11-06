@@ -192,16 +192,32 @@ export default async function DashboardPage() {
     // All values already set to defaults above
   }
 
-  // Serialize for client components
+  // Helper function to convert Prisma Decimal to number (for serialization to client components)
+  const serializeDecimal = (value: any): number => {
+    if (value === null || value === undefined) return value as any;
+    if (typeof value === 'object' && value !== null) {
+      // Check if it's a Prisma Decimal object
+      if ('toNumber' in value) {
+        return (value as any).toNumber();
+      }
+      if ('toString' in value) {
+        return parseFloat((value as any).toString());
+      }
+    }
+    return typeof value === 'number' ? value : Number(value);
+  };
+
+  // Serialize for client components - convert all Decimal fields
   const todayProduction = todayProductionPlansRaw.map(plan => ({
     ...plan,
     startDate: plan.startDate.toISOString(),
     endDate: plan.endDate.toISOString(),
     items: plan.items.map(item => ({
       ...item,
+      quantity: serializeDecimal(item.quantity),
       recipe: {
         ...item.recipe,
-        yieldQuantity: item.recipe.yieldQuantity.toString(),
+        yieldQuantity: serializeDecimal(item.recipe.yieldQuantity),
       },
     })),
   }));
@@ -212,9 +228,10 @@ export default async function DashboardPage() {
     endDate: plan.endDate.toISOString(),
     items: plan.items.map(item => ({
       ...item,
+      quantity: serializeDecimal(item.quantity),
       recipe: {
         ...item.recipe,
-        yieldQuantity: item.recipe.yieldQuantity.toString(),
+        yieldQuantity: serializeDecimal(item.recipe.yieldQuantity),
       },
     })),
   }));
@@ -248,12 +265,17 @@ export default async function DashboardPage() {
     })
   );
 
-  // Check for stale prices
+  // Check for stale prices and serialize Decimal values
   const staleIngredients = ingredients
     .map(ing => {
       const priceStatusResult = checkPriceStatus(ing.lastPriceUpdate);
+      
       return {
-        ...ing,
+        id: ing.id,
+        name: ing.name,
+        lastPriceUpdate: ing.lastPriceUpdate,
+        currency: ing.currency,
+        packPrice: serializeDecimal(ing.packPrice), // Convert Decimal to number
         priceStatus: priceStatusResult.status,
         daysSinceUpdate: priceStatusResult.daysSinceUpdate,
       };

@@ -42,6 +42,7 @@ psql $DATABASE_URL -f migrations/rollbacks/20250115120000_add_composite_unique_c
 3. **20250115140000_add_check_constraints.sql** - Add validation constraints
 4. **20250115150000_add_performance_indexes.sql** - Add performance indexes
 5. **20250115160000_fix_recipe_category_fields.sql** - Migrate category data
+6. **20250116000000_staff_training_system.sql** - Staff profiles, training system, cleaning jobs, permissions
 
 ## Safety Checks
 

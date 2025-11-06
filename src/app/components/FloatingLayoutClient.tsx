@@ -5,6 +5,7 @@ import { FloatingNavigation } from "@/components/FloatingNavigation";
 import { FloatingSidebar } from "@/components/FloatingSidebar";
 import { PageActionProvider } from "@/components/PageActionContext";
 import { RecipeViewProvider } from "@/components/RecipeViewContext";
+import { ToastProvider } from "@/components/ToastProvider";
 import { usePathname } from "next/navigation";
 
 export function FloatingLayoutClient({
@@ -25,8 +26,9 @@ export function FloatingLayoutClient({
   }, []);
 
   const content = (
-    <PageActionProvider>
-      <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex overflow-hidden" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif' }}>
+    <ToastProvider>
+      <PageActionProvider>
+        <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex overflow-hidden" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif' }}>
         {/* Floating Sidebar */}
         <FloatingSidebar isOpen={sidebarOpen} onClose={handleClose} />
         
@@ -49,6 +51,7 @@ export function FloatingLayoutClient({
         </div>
       </div>
     </PageActionProvider>
+    </ToastProvider>
   );
 
   // Wrap in RecipeViewProvider if on a recipe page so FloatingNavigation can access it

@@ -131,16 +131,63 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
   }, [navigationItems, searchTerm, filteredItems]);
 
   const teamsItems = useMemo(() => {
-    const items = navigationItems.filter(item => 
-      item.appContext === 'teams'
+    // Get teams items directly from ALL_NAVIGATION_ITEMS (like production items)
+    // Fallback to hardcoded items if ALL_NAVIGATION_ITEMS doesn't have them (cache issue)
+    let items = ALL_NAVIGATION_ITEMS.filter(item => 
+      item.appContext === 'teams' || ['team', 'scheduling', 'training'].includes(item.value)
     );
+    
+    // If we don't have all 3 items, use hardcoded fallback
+    if (items.length < 3) {
+      items = [
+        {
+          value: "team",
+          href: "/dashboard/team",
+          label: "Team",
+          shortLabel: "Team",
+          appContext: "teams",
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+          )
+        },
+        {
+          value: "scheduling",
+          href: "/dashboard/scheduling",
+          label: "Scheduling",
+          shortLabel: "Schedule",
+          appContext: "teams",
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )
+        },
+        {
+          value: "training",
+          href: "/dashboard/training",
+          label: "Training",
+          shortLabel: "Training",
+          appContext: "teams",
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          )
+        }
+      ];
+    }
+    
     if (searchTerm.trim()) {
       return items.filter(item => 
-        filteredItems.some(fi => fi.value === item.value)
+        filteredItems.some(fi => fi.value === item.value) ||
+        item.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.value.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     return items;
-  }, [navigationItems, searchTerm, filteredItems]);
+  }, [searchTerm, filteredItems]);
 
   const productionItems = useMemo(() => {
     // Use pre-computed production items for better performance
@@ -405,25 +452,25 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
               </div>
             )}
 
-            {/* Teams Section */}
-            {(teamsItems.length > 0 || !searchTerm.trim()) && (
-              <div className="px-2 py-2">
-                <button
-                  onClick={() => toggleSection('teams')}
-                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
-                >
-                  <span>Teams</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-400">Detail</span>
-                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.teams ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </button>
-                
-                {expandedSections.teams && (
-                  <div className="mt-1 space-y-0.5">
-                    {teamsItems.map(item => {
+            {/* Teams Section - Always show, even if empty (like production) */}
+            <div className="px-2 py-2">
+              <button
+                onClick={() => toggleSection('teams')}
+                className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
+              >
+                <span>TEAMS</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-400">Detail</span>
+                  <svg className={`w-3 h-3 transform transition-transform ${expandedSections.teams ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+              
+              {expandedSections.teams && (
+                <div className="mt-1 space-y-0.5">
+                  {teamsItems.length > 0 ? (
+                    teamsItems.map(item => {
                       const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
                       return (
                         <a
@@ -444,11 +491,15 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
                           </div>
                         </a>
                       );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+                    })
+                  ) : (
+                    <div className="px-2 py-1.5 text-sm text-gray-400 italic">
+                      No items found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Hygiene & Safety Section - Always show */}
             <div className="px-2 py-2">
@@ -502,7 +553,7 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
 
           {/* Settings at Bottom */}
           {settingsItem && (
-            <div className="px-2 py-2 border-t border-gray-200/80 mt-auto">
+            <div className="px-2 py-2 border-t border-gray-200/80 mt-auto space-y-1">
               <a
                 href={settingsItem.href}
                 onClick={onClose}
@@ -515,6 +566,28 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
                 <div className="w-4 h-4">{settingsItem.icon}</div>
                 <span className="font-medium">{settingsItem.label}</span>
               </a>
+              
+              {/* Logout Button */}
+              <button
+                onClick={async () => {
+                  onClose();
+                  try {
+                    await fetch('/api/logout', { method: 'POST' });
+                    router.push('/');
+                    router.refresh();
+                  } catch (error) {
+                    console.error('Logout error:', error);
+                  }
+                }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-red-600 hover:bg-red-50"
+              >
+                <div className="w-4 h-4">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </div>
+                <span className="font-medium">Logout</span>
+              </button>
             </div>
           )}
         </div>

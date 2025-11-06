@@ -31,7 +31,7 @@ export const RATE_LIMITS = {
 } as const;
 
 // Simple in-memory rate limiting (in production, use Redis or similar)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const rateLimitStore = new Map<string, { count: number; resetTime: number; attempts: number }>();
 
 // Get client identifier
 function getClientId(request: NextRequest): string {
@@ -40,54 +40,93 @@ function getClientId(request: NextRequest): string {
   return ip;
 }
 
-// Rate limiting function
-export function rateLimit(request: NextRequest, config: RateLimitConfig): RateLimitResult {
-  const clientId = getClientId(request);
+// Get email identifier for per-email rate limiting
+function getEmailId(email?: string): string | null {
+  if (!email) return null;
+  return `email:${email.toLowerCase().trim()}`;
+}
+
+// Rate limiting function with support for per-email limiting
+export function rateLimit(
+  request: NextRequest, 
+  config: RateLimitConfig,
+  options?: { email?: string; perEmail?: boolean }
+): RateLimitResult {
   const now = Date.now();
-  const windowStart = now - config.windowMs;
   
-  // Clean up expired entries
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (value.resetTime < now) {
-      rateLimitStore.delete(key);
+  // Clean up expired entries periodically
+  if (Math.random() < 0.1) { // 10% chance to clean up (avoids doing it every time)
+    for (const [key, value] of rateLimitStore.entries()) {
+      if (value.resetTime < now) {
+        rateLimitStore.delete(key);
+      }
     }
   }
   
-  // Get or create client record
-  let clientRecord = rateLimitStore.get(clientId);
+  // Check per-email rate limiting if email is provided
+  if (options?.perEmail && options.email) {
+    const emailId = getEmailId(options.email);
+    if (emailId) {
+      const emailResult = checkRateLimit(emailId, config, now);
+      if (!emailResult.allowed) {
+        return emailResult;
+      }
+    }
+  }
   
-  if (!clientRecord || clientRecord.resetTime < now) {
+  // Check IP-based rate limiting
+  const clientId = getClientId(request);
+  return checkRateLimit(clientId, config, now);
+}
+
+// Internal function to check rate limit for a given identifier
+function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig,
+  now: number
+): RateLimitResult {
+  let record = rateLimitStore.get(identifier);
+  
+  if (!record || record.resetTime < now) {
     // New window or expired
-    clientRecord = {
+    record = {
       count: 1,
-      resetTime: now + config.windowMs
+      resetTime: now + config.windowMs,
+      attempts: 1,
     };
-    rateLimitStore.set(clientId, clientRecord);
+    rateLimitStore.set(identifier, record);
     
     return {
       allowed: true,
       retryAfter: 0,
-      remaining: config.maxRequests - 1
+      remaining: config.maxRequests - 1,
     };
   }
   
+  // Increment attempt counter for progressive delays
+  record.attempts++;
+  
   // Check if limit exceeded
-  if (clientRecord.count >= config.maxRequests) {
+  if (record.count >= config.maxRequests) {
+    // Progressive delay: increase retry time based on attempts
+    const baseRetryAfter = Math.ceil((record.resetTime - now) / 1000);
+    const progressiveDelay = Math.min(record.attempts * 60, 3600); // Max 1 hour delay
+    
     return {
       allowed: false,
-      retryAfter: Math.ceil((clientRecord.resetTime - now) / 1000),
-      remaining: 0
+      retryAfter: baseRetryAfter + progressiveDelay,
+      remaining: 0,
     };
   }
   
   // Increment counter
-  clientRecord.count++;
-  rateLimitStore.set(clientId, clientRecord);
+  record.count++;
+  rateLimitStore.set(identifier, record);
   
   return {
     allowed: true,
     retryAfter: 0,
-    remaining: config.maxRequests - clientRecord.count
+    remaining: config.maxRequests - record.count,
   };
 }
 

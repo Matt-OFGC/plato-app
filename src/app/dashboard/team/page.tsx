@@ -2,8 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
-import { SeatManager } from "@/components/SeatManager";
-import { TeamManagerWithPins } from "@/components/TeamManagerWithPins";
+import TeamManagementClient from "./components/TeamManagementClient";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';
@@ -15,7 +14,7 @@ export default async function TeamPage() {
     
     const { companyId } = await getCurrentUserAndCompany();
     
-    // Test Prisma Membership query
+    // Get membership
     const membership = await prisma.membership.findUnique({
       where: {
         userId_companyId: {
@@ -25,26 +24,64 @@ export default async function TeamPage() {
       },
     });
     
+    // Get team members for selection
+    const membersRaw = await prisma.membership.findMany({
+      where: { 
+        companyId: companyId || 0,
+        isActive: true 
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Get staff profiles separately to avoid Prisma relation issues
+    const membershipIds = membersRaw.map(m => m.id);
+    let profiles: any[] = [];
+    
+    // Check if staffProfile model exists (defensive check)
+    if (membershipIds.length > 0 && prisma.staffProfile) {
+      try {
+        profiles = await prisma.staffProfile.findMany({
+          where: {
+            membershipId: { in: membershipIds },
+          },
+        });
+      } catch (error) {
+        // If staffProfile doesn't exist yet, just use empty array
+        console.warn('StaffProfile model not available:', error);
+        profiles = [];
+      }
+    }
+
+    // Create a map of membershipId -> profile
+    const profileMap = new Map(profiles.map(p => [p.membershipId, p]));
+
+    // Merge profiles into members
+    const members = membersRaw.map(member => ({
+      ...member,
+      staffProfile: profileMap.get(member.id) || null,
+    }));
+    
     return (
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
-          <p className="text-gray-600 mt-2">Manage your team members, permissions, and billing</p>
+          <p className="text-gray-600 mt-2">Manage your team members, profiles, training, and assignments</p>
         </div>
 
-        {/* Seat Management */}
-        <SeatManager 
-          companyId={companyId!} 
-          canManageBilling={membership?.role === "OWNER"} 
+        <TeamManagementClient 
+          companyId={companyId!}
+          currentUserRole={membership?.role || "VIEWER"}
+          members={members}
         />
-
-        {/* Team Management */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <TeamManagerWithPins 
-            companyId={companyId!} 
-            currentUserRole={membership?.role || "VIEWER"} 
-          />
-        </div>
       </div>
     );
   } catch (error) {
@@ -53,9 +90,8 @@ export default async function TeamPage() {
     return (
       <div className="max-w-7xl mx-auto p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error in Team Page</h1>
-          <p className="text-gray-600">There was an error loading the team page.</p>
-          <p className="text-gray-500 text-sm mt-2">Error: {error instanceof Error ? error.message : "Unknown error"}</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Team Page</h1>
+          <p className="text-gray-600">{error instanceof Error ? error.message : "Unknown error"}</p>
         </div>
       </div>
     );

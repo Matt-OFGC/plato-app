@@ -43,12 +43,26 @@ const fallbackShowToast = (
   }
 };
 
-const ToastContext = createContext<ToastContextType>({ showToast: fallbackShowToast });
+// Create context WITHOUT default value - we'll handle it manually
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function useToast() {
-  const context = useContext(ToastContext);
-  // Always return a valid context (either from provider or fallback)
-  return context;
+  try {
+    // Try to get context - will be undefined if no provider
+    const context = useContext(ToastContext);
+    
+    // If no context (no provider), return fallback
+    if (!context) {
+      return { showToast: fallbackShowToast };
+    }
+    
+    return context;
+  } catch (error: any) {
+    // Catch any errors (including React's development mode errors)
+    // and return fallback instead
+    console.warn('ToastProvider not found, using fallback:', error?.message);
+    return { showToast: fallbackShowToast };
+  }
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {

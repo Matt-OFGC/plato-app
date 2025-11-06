@@ -48,7 +48,7 @@ export function BatchPricingInput({ packUnit, initialBatchPricing }: BatchPricin
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+    <div className="bg-gray-50 p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-1">
