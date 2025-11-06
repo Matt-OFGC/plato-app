@@ -193,15 +193,19 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
       
       if (res.ok) {
         console.log("✅ Onboarding completed successfully");
+        setSkipped(true);
         // Force a hard refresh to get updated user data
         window.location.href = "/dashboard";
       } else {
         console.error("Failed to complete onboarding");
+        setSkipped(true);
         router.push("/dashboard");
         router.refresh();
       }
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
+      // Even if API fails, hide the modal
+      setSkipped(true);
       router.push("/dashboard");
       router.refresh();
     }
@@ -209,18 +213,43 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
 
   async function handleSkip() {
     setSkipped(true);
-    await handleComplete();
+    try {
+      await handleComplete();
+    } catch (error) {
+      console.error("Failed to skip onboarding:", error);
+      // Even if API fails, hide the modal
+      setSkipped(true);
+    }
   }
 
   if (skipped) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        // Close if clicking the backdrop
+        if (e.target === e.currentTarget) {
+          handleSkip();
+        }
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden relative"
       >
+        {/* Close Button */}
+        <button
+          onClick={handleSkip}
+          className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Close tour"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
         {/* Progress Bar */}
         <div className="h-2 bg-gray-200">
           <div
@@ -251,7 +280,7 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
         <div className="border-t p-6 bg-gray-50 flex items-center justify-between">
           <button
             onClick={handleSkip}
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors underline"
           >
             Skip tour
           </button>
