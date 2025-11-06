@@ -46,43 +46,29 @@ export async function POST(
     }
 
     if (action === "grant") {
-      // Grant access to module (create or activate)
-      const existing = await prisma.featureModule.findUnique({
+      // Grant access to module (create or activate) - use upsert for atomic operation
+      await prisma.featureModule.upsert({
         where: {
           userId_moduleName: {
             userId,
             moduleName: moduleName as FeatureModuleName,
           },
         },
+        update: {
+          status: "active",
+          isTrial: false,
+          unlockedAt: new Date(),
+          updatedAt: new Date(),
+        },
+        create: {
+          userId,
+          moduleName: moduleName as FeatureModuleName,
+          status: "active",
+          isTrial: false,
+          unlockedAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
-
-      if (existing) {
-        // Update existing module to active
-        await prisma.featureModule.update({
-          where: {
-            userId_moduleName: {
-              userId,
-              moduleName: moduleName as FeatureModuleName,
-            },
-          },
-          data: {
-            status: "active",
-            isTrial: false,
-            unlockedAt: new Date(),
-          },
-        });
-      } else {
-        // Create new module
-        await prisma.featureModule.create({
-          data: {
-            userId,
-            moduleName: moduleName as FeatureModuleName,
-            status: "active",
-            isTrial: false,
-            unlockedAt: new Date(),
-          },
-        });
-      }
 
       // If it's recipes, remove trial limits
       if (moduleName === "recipes") {
@@ -121,6 +107,7 @@ export async function POST(
           data: {
             status: "active",
             isTrial: false,
+            updatedAt: new Date(),
           },
         });
 
@@ -166,6 +153,7 @@ export async function POST(
           },
           data: {
             status: "canceled",
+            updatedAt: new Date(),
           },
         });
       }
@@ -188,10 +176,19 @@ export async function POST(
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Admin feature management error:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+      stack: error?.stack,
+    });
     return NextResponse.json(
-      { error: "Failed to manage feature access" },
+      { 
+        error: "Failed to manage feature access",
+        details: error?.message || "Unknown error",
+      },
       { status: 500 }
     );
   }

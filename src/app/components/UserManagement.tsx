@@ -290,7 +290,7 @@ export function UserManagement() {
         }
       } else {
         const error = await res.json();
-        alert(`Failed: ${error.error}`);
+        alert(`Failed: ${error.error}${error.details ? `\n\nDetails: ${error.details}` : ''}`);
       }
     } catch (error) {
       console.error("Failed to manage feature:", error);
