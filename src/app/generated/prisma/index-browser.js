@@ -1095,6 +1095,22 @@ exports.Prisma.SubscriptionScalarFieldEnum = {
   metadata: 'metadata'
 };
 
+exports.Prisma.FeatureModuleScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId',
+  moduleName: 'moduleName',
+  stripeSubscriptionItemId: 'stripeSubscriptionItemId',
+  stripePriceId: 'stripePriceId',
+  status: 'status',
+  isTrial: 'isTrial',
+  unlockedAt: 'unlockedAt',
+  currentPeriodEnd: 'currentPeriodEnd',
+  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
+  canceledAt: 'canceledAt'
+};
+
 exports.Prisma.SupplierScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -1374,6 +1390,9 @@ exports.Prisma.UserScalarFieldEnum = {
   subscriptionInterval: 'subscriptionInterval',
   subscriptionStatus: 'subscriptionStatus',
   subscriptionTier: 'subscriptionTier',
+  maxIngredients: 'maxIngredients',
+  maxRecipes: 'maxRecipes',
+  recipesTrialStartedAt: 'recipesTrialStartedAt',
   emailVerified: 'emailVerified',
   verificationToken: 'verificationToken',
   verificationTokenExpiresAt: 'verificationTokenExpiresAt'
@@ -1601,6 +1620,7 @@ exports.Prisma.ModelName = {
   StaffProfile: 'StaffProfile',
   StorageOption: 'StorageOption',
   Subscription: 'Subscription',
+  FeatureModule: 'FeatureModule',
   Supplier: 'Supplier',
   TaskComment: 'TaskComment',
   TaskCompletion: 'TaskCompletion',
