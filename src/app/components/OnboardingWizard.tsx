@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,10 +9,22 @@ interface OnboardingWizardProps {
   companyName: string;
 }
 
+const ONBOARDING_DISMISSED_KEY = "plato_onboarding_dismissed";
+
 export function OnboardingWizard({ userName, companyName }: OnboardingWizardProps) {
   const [step, setStep] = useState(0);
   const [skipped, setSkipped] = useState(false);
   const router = useRouter();
+
+  // Check if user has already dismissed onboarding in this session
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const dismissed = localStorage.getItem(ONBOARDING_DISMISSED_KEY);
+      if (dismissed === "true") {
+        setSkipped(true);
+      }
+    }
+  }, []);
 
   const steps = [
     {
@@ -185,41 +197,55 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
   ];
 
   async function handleComplete() {
-    try {
-      const res = await fetch("/api/user/complete-onboarding", { 
-        method: "POST",
-        credentials: "include",
-      });
-      
-      if (res.ok) {
-        console.log("✅ Onboarding completed successfully");
-        setSkipped(true);
-        // Force a hard refresh to get updated user data
-        window.location.href = "/dashboard";
-      } else {
-        console.error("Failed to complete onboarding");
-        setSkipped(true);
-        router.push("/dashboard");
-        router.refresh();
-      }
-    } catch (error) {
-      console.error("Failed to complete onboarding:", error);
-      // Even if API fails, hide the modal
-      setSkipped(true);
-      router.push("/dashboard");
-      router.refresh();
+    // Mark as dismissed in localStorage immediately
+    if (typeof window !== "undefined") {
+      localStorage.setItem(ONBOARDING_DISMISSED_KEY, "true");
     }
+    
+    // Hide modal immediately
+    setSkipped(true);
+    
+    // Call API in background without blocking or refreshing
+    fetch("/api/user/complete-onboarding", { 
+      method: "POST",
+      credentials: "include",
+    })
+      .then(res => {
+        if (res.ok) {
+          console.log("✅ Onboarding completed successfully");
+        } else {
+          console.error("Failed to complete onboarding");
+        }
+      })
+      .catch(error => {
+        console.error("Failed to complete onboarding:", error);
+      });
   }
 
   async function handleSkip() {
-    setSkipped(true);
-    try {
-      await handleComplete();
-    } catch (error) {
-      console.error("Failed to skip onboarding:", error);
-      // Even if API fails, hide the modal
-      setSkipped(true);
+    // Mark as dismissed immediately
+    if (typeof window !== "undefined") {
+      localStorage.setItem(ONBOARDING_DISMISSED_KEY, "true");
     }
+    
+    // Hide modal immediately
+    setSkipped(true);
+    
+    // Call API in background without blocking or refreshing
+    fetch("/api/user/complete-onboarding", { 
+      method: "POST",
+      credentials: "include",
+    })
+      .then(res => {
+        if (res.ok) {
+          console.log("✅ Onboarding skipped successfully");
+        } else {
+          console.error("Failed to skip onboarding");
+        }
+      })
+      .catch(error => {
+        console.error("Failed to skip onboarding:", error);
+      });
   }
 
   if (skipped) return null;
