@@ -1,72 +1,38 @@
-/**
- * Generate a URL-friendly slug from a string
- */
-export function generateSlug(text: string): string {
-  return text
+// Slug generation utilities
+export function generateUniqueSlug(name: string): string {
+  return name
     .toLowerCase()
-    .trim()
-    // Remove special characters
-    .replace(/[^\w\s-]/g, '')
-    // Replace spaces with hyphens
-    .replace(/\s+/g, '-')
-    // Replace multiple hyphens with single hyphen
-    .replace(/-+/g, '-')
-    // Remove leading/trailing hyphens
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    + '-' + Math.random().toString(36).substr(2, 6);
 }
 
-/**
- * Generate a unique slug by appending a number if needed
- */
-export async function generateUniqueSlug(
-  baseText: string,
-  checkExists: (slug: string) => Promise<boolean>
-): Promise<string> {
-  let slug = generateSlug(baseText);
-  let counter = 1;
-  
-  // Check if slug exists, if so, append number
-  while (await checkExists(slug)) {
-    slug = `${generateSlug(baseText)}-${counter}`;
-    counter++;
-  }
-  
-  return slug;
-}
-
-/**
- * Map country to currency code
- */
 export function getCurrencyFromCountry(country: string): string {
   const currencyMap: Record<string, string> = {
-    'United Kingdom': 'GBP',
-    'United States': 'USD',
-    'Canada': 'CAD',
-    'Australia': 'AUD',
-    'Ireland': 'EUR',
-    'France': 'EUR',
-    'Germany': 'EUR',
-    'Spain': 'EUR',
-    'Italy': 'EUR',
-    'Netherlands': 'EUR',
-    'Belgium': 'EUR',
-    'Portugal': 'EUR',
-    'Switzerland': 'CHF',
-    'Sweden': 'SEK',
-    'Norway': 'NOK',
-    'Denmark': 'DKK',
-    'Poland': 'PLN',
-    'Japan': 'JPY',
-    'China': 'CNY',
-    'India': 'INR',
-    'Singapore': 'SGD',
-    'Hong Kong': 'HKD',
-    'New Zealand': 'NZD',
-    'South Africa': 'ZAR',
-    'Brazil': 'BRL',
-    'Mexico': 'MXN',
+    'US': 'USD',
+    'GB': 'GBP',
+    'CA': 'CAD',
+    'AU': 'AUD',
+    'DE': 'EUR',
+    'FR': 'EUR',
+    'IT': 'EUR',
+    'ES': 'EUR',
+    'NL': 'EUR',
+    'BE': 'EUR',
+    'AT': 'EUR',
+    'PT': 'EUR',
+    'IE': 'EUR',
+    'FI': 'EUR',
+    'LU': 'EUR',
+    'GR': 'EUR',
+    'CY': 'EUR',
+    'MT': 'EUR',
+    'SI': 'EUR',
+    'SK': 'EUR',
+    'EE': 'EUR',
+    'LV': 'EUR',
+    'LT': 'EUR',
   };
-
-  return currencyMap[country] || 'GBP'; // Default to GBP
+  
+  return currencyMap[country] || 'GBP';
 }
-

@@ -1,63 +1,73 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcrypt";
+// NextAuth configuration
+import { NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { prisma } from './prisma';
+import bcrypt from 'bcrypt';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
+export const authOptions: NextAuthOptions = {
   providers: [
-    Credentials({
-      name: "credentials",
+    CredentialsProvider({
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
       },
-      authorize: async (credentials) => {
-        if (!credentials?.email || !credentials.password) return null;
-        
-        try {
-          const user = await prisma.user.findUnique({ 
-            where: { email: credentials.email as string } 
-          });
-          
-          if (!user || !user.passwordHash) return null;
-          
-          const isValid = await bcrypt.compare(
-            credentials.password as string, 
-            user.passwordHash
-          );
-          
-          if (!isValid) return null;
-          
-          return {
-            id: String(user.id),
-            email: user.email,
-            name: user.name,
-          };
-        } catch (error) {
-          console.error("Auth error:", error);
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
           return null;
         }
-      },
-    }),
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email }
+        });
+
+        if (!user || !user.passwordHash) {
+          return null;
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.passwordHash
+        );
+
+        if (!isPasswordValid) {
+          return null;
+        }
+
+        return {
+          id: user.id.toString(),
+          email: user.email,
+          name: user.name,
+          isAdmin: user.isAdmin,
+        };
+      }
+    })
   ],
+  session: {
+    strategy: 'jwt',
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.isAdmin = user.isAdmin;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
+      if (token) {
+        session.user.id = token.sub!;
+        session.user.isAdmin = token.isAdmin as boolean;
       }
       return session;
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: '/login',
   },
-});
+};
 
+export { authOptions as auth };
 
+// Export NextAuth handlers
+export const handlers = NextAuth(authOptions);

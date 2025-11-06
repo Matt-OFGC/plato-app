@@ -1,101 +1,54 @@
-/**
- * Ingredient price tracking and staleness detection utilities
- */
-
-export interface PriceStatus {
-  status: 'current' | 'warning' | 'stale';
-  daysSinceUpdate: number;
-  monthsSinceUpdate: number;
-  message: string;
-}
-
-/**
- * Check if ingredient price needs updating
- * Warning: 6+ months old
- * Stale: 12+ months old
- */
-export function checkPriceStatus(lastPriceUpdate: Date): PriceStatus {
+// Price tracking utilities
+export function formatLastUpdate(date: Date | string | null): string {
+  if (!date) return 'Never';
+  
+  const updateDate = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
-  const daysSinceUpdate = Math.floor((now.getTime() - lastPriceUpdate.getTime()) / (1000 * 60 * 60 * 24));
-  const monthsSinceUpdate = Math.floor(daysSinceUpdate / 30);
-
-  if (daysSinceUpdate < 180) {
-    // Less than 6 months
-    return {
-      status: 'current',
-      daysSinceUpdate,
-      monthsSinceUpdate,
-      message: 'Price is current',
-    };
-  } else if (daysSinceUpdate < 365) {
-    // 6-12 months
-    return {
-      status: 'warning',
-      daysSinceUpdate,
-      monthsSinceUpdate,
-      message: `Last updated ${monthsSinceUpdate} months ago - consider reviewing`,
-    };
-  } else {
-    // 12+ months
-    return {
-      status: 'stale',
-      daysSinceUpdate,
-      monthsSinceUpdate,
-      message: `Last updated ${monthsSinceUpdate} months ago - price likely outdated`,
-    };
-  }
+  const diffMs = now.getTime() - updateDate.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} years ago`;
 }
 
-/**
- * Get color class for price status
- */
-export function getPriceStatusColorClass(status: 'current' | 'warning' | 'stale'): string {
-  switch (status) {
-    case 'current':
-      return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-    case 'warning':
-      return 'text-amber-600 bg-amber-50 border-amber-200';
-    case 'stale':
-      return 'text-red-600 bg-red-50 border-red-200';
+export function checkPriceStatus(lastUpdate: Date | string | null): { status: 'fresh' | 'warning' | 'stale', daysSinceUpdate: number } {
+  if (!lastUpdate) {
+    return { status: 'stale', daysSinceUpdate: Infinity };
   }
-}
-
-/**
- * Format last update date nicely
- */
-export function formatLastUpdate(lastPriceUpdate: Date): string {
+  
+  const updateDate = typeof lastUpdate === 'string' ? new Date(lastUpdate) : lastUpdate;
   const now = new Date();
-  const daysSince = Math.floor((now.getTime() - lastPriceUpdate.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (daysSince === 0) {
-    return 'Today';
-  } else if (daysSince === 1) {
-    return 'Yesterday';
-  } else if (daysSince < 7) {
-    return `${daysSince} days ago`;
-  } else if (daysSince < 30) {
-    const weeks = Math.floor(daysSince / 7);
-    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
-  } else if (daysSince < 365) {
-    const months = Math.floor(daysSince / 30);
-    return `${months} ${months === 1 ? 'month' : 'months'} ago`;
-  } else {
-    const years = Math.floor(daysSince / 365);
-    return `${years} ${years === 1 ? 'year' : 'years'} ago`;
+  const diffMs = now.getTime() - updateDate.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  // Handle future dates or same-day updates (should be considered fresh)
+  if (diffDays <= 0) {
+    return { status: 'fresh', daysSinceUpdate: 0 };
   }
+  
+  // Prices need updating every 6 months (180 days)
+  // fresh = less than 6 months old
+  // warning = 6-12 months old (should consider updating)
+  // stale = 12+ months old (definitely needs updating)
+  if (diffDays < 180) return { status: 'fresh', daysSinceUpdate: diffDays };
+  if (diffDays < 365) return { status: 'warning', daysSinceUpdate: diffDays };
+  return { status: 'stale', daysSinceUpdate: diffDays };
 }
 
-/**
- * Get icon for price status
- */
-export function getPriceStatusIcon(status: 'current' | 'warning' | 'stale'): string {
+export function getPriceStatusColorClass(status: 'fresh' | 'warning' | 'stale'): string {
   switch (status) {
-    case 'current':
-      return '✅';
+    case 'fresh':
+      return 'bg-green-100 text-green-800';
     case 'warning':
-      return '⚠️';
+      return 'bg-amber-100 text-amber-800';
     case 'stale':
-      return '🔴';
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
 }
 

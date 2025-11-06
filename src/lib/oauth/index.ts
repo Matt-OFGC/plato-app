@@ -1,5 +1,5 @@
 // OAuth provider registry
-import { OAuthProvider } from './base';
+import { OAuthProvider, linkOAuthAccount, findUserByOAuthAccount } from './base';
 import { createGoogleProvider, GoogleOAuthProvider } from './google';
 import { createGitHubProvider, GitHubOAuthProvider } from './github';
 
@@ -40,6 +40,9 @@ export function getOAuthProvider(name: string): OAuthProvider | null {
 export function getAvailableProviders(): string[] {
   return Array.from(providers.keys());
 }
+
+// Re-export utility functions
+export { linkOAuthAccount, findUserByOAuthAccount };
 
 // Initialize providers on module load
 registerOAuthProviders();

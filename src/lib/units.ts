@@ -1,433 +1,236 @@
-export type BaseUnit = "g" | "ml" | "each" | "slices";
-export type Unit =
-  | "g"
-  | "kg"
-  | "mg"
-  | "lb"
-  | "oz"
-  | "ml"
-  | "l"
-  | "pint"
-  | "quart"
-  | "gallon"
-  | "tsp"
-  | "tbsp"
-  | "cup"
-  | "floz"
-  | "each"
-  | "slices"
-  | "pinch"
-  | "dash"
-  | "large"
-  | "medium"
-  | "small";
+export type BaseUnit = 'g' | 'ml' | 'each';
+export type Unit = BaseUnit | 'kg' | 'l' | 'slices' | 'cups' | 'tbsp' | 'tsp' | 'oz' | 'lb' | 'fl oz' | 'floz';
 
-type UnitKind = "mass" | "volume" | "each" | "slices" | "pinch" | "dash" | "size";
-
-const MASS_TO_G: Record<"g" | "kg" | "mg" | "lb" | "oz", number> = {
-  g: 1,
-  kg: 1000,
-  mg: 1 / 1000,
-  lb: 453.59237,
-  oz: 28.349523125,
-};
-
-// British-first: metric culinary measures and UK imperial where applicable
-const VOLUME_TO_ML: Record<"ml" | "l" | "tsp" | "tbsp" | "cup" | "floz" | "pint" | "quart" | "gallon", number> = {
-  ml: 1,
-  l: 1000,
-  tsp: 5, // metric teaspoon
-  tbsp: 15, // metric tablespoon
-  cup: 250, // metric cup
-  floz: 28.4130625, // UK imperial fluid ounce
-  pint: 568.26125, // UK imperial pint
-  quart: 1136.5225, // UK imperial quart (2 pints)
-  gallon: 4546.09, // UK imperial gallon (8 pints)
-};
-
-// Small volume measurements
-const PINCH_TO_ML: Record<"pinch" | "dash", number> = {
-  pinch: 0.5, // approximately 1/8 tsp
-  dash: 0.25, // approximately 1/16 tsp
-};
-
-// Size-based measurements (approximate weights)
-const SIZE_TO_G: Record<"large" | "medium" | "small", number> = {
-  large: 100, // approximate weight for large items like eggs, onions
-  medium: 60, // approximate weight for medium items
-  small: 30, // approximate weight for small items
-};
-
-// Discrete items - slices are treated as discrete items
-const DISCRETE_TO_EACH: Record<"each" | "slices", number> = {
-  each: 1,
-  slices: 1, // 1 slice = 1 slice
-};
-
-const UNIT_KIND: Record<Unit, UnitKind> = {
-  g: "mass",
-  kg: "mass",
-  mg: "mass",
-  lb: "mass",
-  oz: "mass",
-  ml: "volume",
-  l: "volume",
-  pint: "volume",
-  quart: "volume",
-  gallon: "volume",
-  tsp: "volume",
-  tbsp: "volume",
-  cup: "volume",
-  floz: "volume",
-  each: "each",
-  slices: "slices",
-  pinch: "pinch",
-  dash: "dash",
-  large: "size",
-  medium: "size",
-  small: "size",
-};
-
-/**
- * Convert a quantity from any unit to its base unit (g, ml, each, or slices).
- *
- * This function normalizes measurements to base units for consistent calculations.
- * Volume-to-mass conversions require density when available.
- *
- * @param quantity - The amount to convert
- * @param unit - The source unit (e.g., "kg", "cup", "tbsp")
- * @param densityGPerMl - Optional density for volume-to-mass conversions (grams per milliliter)
- *
- * @returns Object with normalized amount and base unit
- *
- * @example
- * ```typescript
- * // Convert 2 cups of flour to grams (requires density)
- * const flour = toBase(2, "cup", 0.6); // { amount: 300, base: "g" }
- *
- * // Convert 1 kg to grams
- * const weight = toBase(1, "kg"); // { amount: 1000, base: "g" }
- * ```
- */
-export function toBase(quantity: number, unit: Unit, densityGPerMl?: number): { amount: number; base: BaseUnit } {
-  const kind = UNIT_KIND[unit];
-  if (kind === "each") return { amount: quantity, base: "each" };
-  if (kind === "slices") return { amount: quantity, base: "slices" };
-
-  if (kind === "mass") {
-    const amountG = MASS_TO_G[unit as keyof typeof MASS_TO_G] * quantity;
-    return { amount: amountG, base: "g" };
-  }
-
-  if (kind === "pinch" || kind === "dash") {
-    const amountMl = PINCH_TO_ML[unit as keyof typeof PINCH_TO_ML] * quantity;
-    if (densityGPerMl == null) return { amount: amountMl, base: "ml" };
-    return { amount: amountMl * densityGPerMl, base: "g" };
-  }
-
-  if (kind === "size") {
-    const amountG = SIZE_TO_G[unit as keyof typeof SIZE_TO_G] * quantity;
-    return { amount: amountG, base: "g" };
-  }
-
-  // volume
-  const amountMl = VOLUME_TO_ML[unit as keyof typeof VOLUME_TO_ML] * quantity;
-  if (densityGPerMl == null) return { amount: amountMl, base: "ml" };
-  return { amount: amountMl * densityGPerMl, base: "g" };
-}
-
-export function fromBase(amount: number, target: Unit, densityGPerMl?: number): number {
-  const kind = UNIT_KIND[target];
-  if (kind === "each") return amount; // amount is already count
-  if (kind === "slices") return amount; // amount is already count
-
-  if (kind === "mass") {
-    const per = MASS_TO_G[target as keyof typeof MASS_TO_G];
-    return amount / per;
-  }
-
-  if (kind === "pinch" || kind === "dash") {
-    const perMl = PINCH_TO_ML[target as keyof typeof PINCH_TO_ML];
-    // if amount is in grams but converting to volume and density provided, convert g -> ml first
-    const amountMl = densityGPerMl ? amount / densityGPerMl : amount;
-    return amountMl / perMl;
-  }
-
-  if (kind === "size") {
-    const per = SIZE_TO_G[target as keyof typeof SIZE_TO_G];
-    return amount / per;
-  }
-
-  // target is volume
-  const perMl = VOLUME_TO_ML[target as keyof typeof VOLUME_TO_ML];
-  // if amount is in grams but converting to volume and density provided, convert g -> ml first
-  const amountMl = densityGPerMl ? amount / densityGPerMl : amount;
-  return amountMl / perMl;
-}
-
-export function normalizeToBaseUnit(quantity: number, unit: Unit, densityGPerMl?: number): { base: BaseUnit; amount: number } {
-  return toBase(quantity, unit, densityGPerMl);
-}
-
-/**
- * Convert a quantity from one unit to another unit.
- *
- * Handles conversions within the same category (mass-to-mass, volume-to-volume) and
- * cross-category conversions (volume-to-mass) when density is provided.
- *
- * @param quantity - The amount to convert
- * @param from - The source unit
- * @param to - The target unit
- * @param densityGPerMl - Optional density for cross-category conversions (grams per milliliter)
- *
- * @returns The converted quantity in the target unit
- *
- * @example
- * ```typescript
- * // Convert 2 kg to grams
- * const grams = convertBetweenUnits(2, "kg", "g"); // 2000
- *
- * // Convert 250ml of milk to grams (requires density)
- * const milkGrams = convertBetweenUnits(250, "ml", "g", 1.03); // 257.5
- * ```
- */
-export function convertBetweenUnits(
-  quantity: number,
-  from: Unit,
-  to: Unit,
-  densityGPerMl?: number
-): number {
-  if (from === to) return quantity;
-  const { amount, base } = toBase(quantity, from, densityGPerMl);
-  return fromBase(amount, to, densityGPerMl);
-}
-
-export function costPerBaseUnit(packPrice: number, packQuantity: number, packUnit: BaseUnit): number {
-  // price per gram/ml/each depending on packUnit
-  return packPrice / packQuantity;
-}
-
-export function computeIngredientUsageCost(params: {
-  usageQuantity: number;
-  usageUnit: Unit;
-  ingredient: {
-    packQuantity: number;
-    packUnit: BaseUnit;
-    packPrice: number;
-    densityGPerMl?: number | null;
-  } | null;
-}): number {
-  const { usageQuantity, usageUnit, ingredient } = params;
+// Conversion factors to base units
+const CONVERSION_FACTORS: Record<string, number> = {
+  // Weight (to grams)
+  'g': 1,
+  'kg': 1000,
+  'oz': 28.3495,
+  'lb': 453.592,
   
-  // Return 0 if ingredient is null/undefined
-  if (!ingredient) {
+  // Volume (to ml)
+  'ml': 1,
+  'l': 1000,
+  'fl oz': 29.5735,
+  'floz': 29.5735, // Alias for 'fl oz' (without space)
+  'cups': 236.588,
+  'tbsp': 14.7868,
+  'tsp': 4.92892,
+  
+  // Count
+  'each': 1,
+  'slices': 1,
+};
+
+// Normalize unit string (handle 'floz' -> 'fl oz', lowercase, etc.)
+function normalizeUnit(unit: string): string {
+  const lower = unit.toLowerCase().trim();
+  // Normalize 'floz' to 'fl oz' for consistent handling
+  if (lower === 'floz' || lower === 'fl-oz') {
+    return 'fl oz';
+  }
+  return lower;
+}
+
+// Convert to base unit
+export function toBase(amount: number, unit: Unit, density?: number): { amount: number; base: BaseUnit } {
+  const normalizedUnit = normalizeUnit(unit) as Unit;
+  
+  // Handle density conversion (g/ml)
+  if (density && (normalizedUnit === 'ml' || normalizedUnit === 'l' || normalizedUnit === 'fl oz' || normalizedUnit === 'cups' || normalizedUnit === 'tbsp' || normalizedUnit === 'tsp')) {
+    const mlAmount = amount * (CONVERSION_FACTORS[normalizedUnit] || 1);
+    return { amount: mlAmount * density, base: 'g' as BaseUnit };
+  }
+  
+  // Weight units -> grams
+  if (['g', 'kg', 'oz', 'lb'].includes(normalizedUnit)) {
+    const factor = CONVERSION_FACTORS[normalizedUnit] || 1;
+    return { amount: amount * factor, base: 'g' as BaseUnit };
+  }
+  
+  // Volume units -> ml
+  if (['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedUnit)) {
+    const factor = CONVERSION_FACTORS[normalizedUnit] || 1;
+    return { amount: amount * factor, base: 'ml' as BaseUnit };
+  }
+  
+  // Count units -> each
+  return { amount, base: 'each' };
+}
+
+// Convert from base unit
+export function fromBase(amount: number, baseUnit: BaseUnit, targetUnit: Unit): number {
+  const normalizedTarget = normalizeUnit(targetUnit);
+  
+  if (baseUnit === 'g' && ['g', 'kg', 'oz', 'lb'].includes(normalizedTarget)) {
+    return amount / CONVERSION_FACTORS[normalizedTarget];
+  }
+  
+  if (baseUnit === 'ml' && ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedTarget)) {
+    return amount / CONVERSION_FACTORS[normalizedTarget];
+  }
+  
+  if (baseUnit === 'each' && ['each', 'slices'].includes(normalizedTarget)) {
+    return amount;
+  }
+  
+  return amount;
+}
+
+// Check if units are compatible
+export function areUnitsCompatible(unit1: Unit, unit2: Unit): boolean {
+  const weightUnits = ['g', 'kg', 'oz', 'lb'];
+  const volumeUnits = ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'];
+  const countUnits = ['each', 'slices'];
+  
+  const normalized1 = normalizeUnit(unit1);
+  const normalized2 = normalizeUnit(unit2);
+  
+  return (
+    (weightUnits.includes(normalized1) && weightUnits.includes(normalized2)) ||
+    (volumeUnits.includes(normalized1) && volumeUnits.includes(normalized2)) ||
+    (countUnits.includes(normalized1) && countUnits.includes(normalized2))
+  );
+}
+
+// Compute ingredient usage cost with density
+export function computeIngredientUsageCostWithDensity(
+  quantity: number,
+  unit: Unit,
+  packPrice: number,
+  packQuantity: number,
+  packUnit: Unit,
+  density?: number,
+  batchPricing?: Array<{ packQuantity: number; packPrice: number }> | null
+): number {
+  // Additional validation - ensure inputs are positive numbers
+  if (quantity <= 0 || packQuantity <= 0 || packPrice <= 0) {
     return 0;
   }
   
-  const { amount: usageBaseAmount, base: usageBase } = toBase(
-    usageQuantity,
-    usageUnit,
-    ingredient.densityGPerMl == null ? undefined : Number(ingredient.densityGPerMl)
-  );
-
-  // Ensure packUnit matches the base kind; if pack is ml but usage converts to g via density, both are base units
-  const pricePerBase = ingredient.packPrice / Number(ingredient.packQuantity);
-  return pricePerBase * usageBaseAmount;
-}
-
-export function computeRecipeCost(params: {
-  items: Array<{
-    quantity: number;
-    unit: Unit;
-    ingredient: {
-      packQuantity: number;
-      packUnit: BaseUnit;
-      packPrice: number;
-      densityGPerMl?: number | null;
-    };
-  }>;
-}): number {
-  const subtotal = params.items.reduce((sum, item) => {
-    return sum +
-      computeIngredientUsageCost({
-        usageQuantity: item.quantity,
-        usageUnit: item.unit,
-        ingredient: item.ingredient,
-      });
-  }, 0);
-  return subtotal;
-}
-
-// Enhanced recipe cost calculation with automatic density lookup
-export function computeRecipeCostWithDensity(params: {
-  items: Array<{
-    quantity: number;
-    unit: Unit;
-    ingredient: {
-      name: string;
-      packQuantity: number;
-      packUnit: BaseUnit;
-      packPrice: number;
-      densityGPerMl?: number | null;
-    };
-  }>;
-}): number {
-  const subtotal = params.items.reduce((sum, item) => {
-    return sum +
-      computeIngredientUsageCostWithDensity({
-        usageQuantity: item.quantity,
-        usageUnit: item.unit,
-        ingredient: item.ingredient,
-      });
-  }, 0);
-  return subtotal;
-}
-
-export function computeCostPerOutputUnit(params: {
-  totalCost: number;
-  yieldQuantity: number;
-}): number {
-  if (params.yieldQuantity <= 0) return params.totalCost;
-  return params.totalCost / params.yieldQuantity;
-}
-
-// Comprehensive ingredient density database for accurate volume-to-weight conversions
-export const INGREDIENT_DENSITIES: Record<string, number> = {
-  // Baking ingredients (grams per ml)
-  "flour": 0.6,
-  "plain flour": 0.6,
-  "all-purpose flour": 0.6,
-  "bread flour": 0.6,
-  "cake flour": 0.5,
-  "self-raising flour": 0.6,
-  "whole wheat flour": 0.6,
-  "sugar": 0.85,
-  "granulated sugar": 0.85,
-  "caster sugar": 0.85,
-  "brown sugar": 0.8,
-  "icing sugar": 0.6,
-  "powdered sugar": 0.6,
-  "baking powder": 0.8,
-  "baking soda": 0.87,
-  "bicarbonate of soda": 0.87,
-  "salt": 1.2,
-  "table salt": 1.2,
-  "sea salt": 1.1,
-  "cocoa powder": 0.4,
-  "cornstarch": 0.6,
-  "corn flour": 0.6,
-  "coconut flour": 0.4,
-  "almond flour": 0.4,
-  "ground almonds": 0.4,
+  // If pack unit is volume and recipe unit is 'oz', treat it as 'fl oz'
+  const volumeUnits = ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp'];
+  const normalizedPackUnit = normalizeUnit(packUnit);
+  const normalizedUnit = normalizeUnit(unit);
   
-  // Dairy products
-  "milk": 1.03,
-  "whole milk": 1.03,
-  "skim milk": 1.03,
-  "butter": 0.91,
-  "margarine": 0.91,
-  "cream": 1.0,
-  "heavy cream": 1.0,
-  "double cream": 1.0,
-  "single cream": 1.0,
-  "yogurt": 1.05,
-  "greek yogurt": 1.05,
-  "cream cheese": 1.0,
-  "sour cream": 1.0,
+  // Smart conversion: if pack is volume and recipe unit is 'oz', assume it's fluid ounces
+  let adjustedUnit: Unit = unit;
+  if (normalizedUnit === 'oz' && volumeUnits.includes(normalizedPackUnit)) {
+    adjustedUnit = 'fl oz';
+  }
   
-  // Oils and fats
-  "vegetable oil": 0.92,
-  "olive oil": 0.92,
-  "coconut oil": 0.92,
-  "sunflower oil": 0.92,
-  "rapeseed oil": 0.92,
-  "sesame oil": 0.92,
+  // If pack unit is volume and recipe unit is weight (or vice versa), try to use density
+  const weightUnits = ['g', 'kg', 'oz', 'lb'];
+  const isPackVolume = volumeUnits.includes(normalizedPackUnit);
+  const isRecipeWeight = weightUnits.includes(normalizeUnit(adjustedUnit));
+  const isPackWeight = weightUnits.includes(normalizedPackUnit);
+  const isRecipeVolume = volumeUnits.includes(normalizeUnit(adjustedUnit));
   
-  // Nuts and seeds
-  "almonds": 0.6,
-  "walnuts": 0.6,
-  "pecans": 0.6,
-  "hazelnuts": 0.6,
-  "peanuts": 0.6,
-  "cashews": 0.6,
-  "pistachios": 0.6,
-  "sesame seeds": 0.6,
-  "poppy seeds": 0.6,
-  "chia seeds": 0.6,
-  "flax seeds": 0.6,
+  // Use density if available and units are incompatible
+  const useDensity = density && ((isPackVolume && isRecipeWeight) || (isPackWeight && isRecipeVolume));
   
-  // Spices and herbs
-  "cinnamon": 0.4,
-  "ginger": 0.4,
-  "nutmeg": 0.4,
-  "cloves": 0.4,
-  "cardamom": 0.4,
-  "vanilla": 0.4,
-  "paprika": 0.4,
-  "cumin": 0.4,
-  "coriander": 0.4,
-  "oregano": 0.1,
-  "basil": 0.1,
-  "thyme": 0.1,
-  "rosemary": 0.1,
-  "parsley": 0.1,
+  const { amount: baseQuantity, base: baseUnit } = toBase(quantity, adjustedUnit, useDensity ? density : undefined);
+  const { amount: basePackQuantity, base: packBaseUnit } = toBase(packQuantity, packUnit);
   
-  // Other common ingredients
-  "honey": 1.4,
-  "maple syrup": 1.3,
-  "molasses": 1.4,
-  "golden syrup": 1.4,
-  "jam": 1.3,
-  "jelly": 1.3,
-  "peanut butter": 1.0,
-  "almond butter": 1.0,
-  "tahini": 1.0,
-  "vinegar": 1.0,
-  "balsamic vinegar": 1.0,
-  "lemon juice": 1.0,
-  "lime juice": 1.0,
-  "orange juice": 1.0,
-  "tomato paste": 1.2,
-  "tomato puree": 1.0,
-  "coconut milk": 1.0,
-  "coconut cream": 1.0,
-};
-
-// Function to get ingredient density by name (case-insensitive)
-export function getIngredientDensity(ingredientName: string): number | undefined {
-  const normalizedName = ingredientName.toLowerCase().trim();
-  return INGREDIENT_DENSITIES[normalizedName];
-}
-
-// Enhanced cost calculation with automatic density lookup
-export function computeIngredientUsageCostWithDensity(params: {
-  usageQuantity: number;
-  usageUnit: Unit;
-  ingredient: {
-    name: string;
-    packQuantity: number;
-    packUnit: BaseUnit;
-    packPrice: number;
-    densityGPerMl?: number | null;
-  } | null;
-}): number {
-  const { usageQuantity, usageUnit, ingredient } = params;
+  // If batch pricing is available, find the best pricing tier
+  let effectivePackPrice = packPrice;
+  let effectivePackQuantity = basePackQuantity;
   
-  if (!ingredient) return 0;
-  
-  // Use provided density or look it up from the database
-  const density = ingredient.densityGPerMl || getIngredientDensity(ingredient.name);
-  
-  return computeIngredientUsageCost({
-    usageQuantity,
-    usageUnit,
-    ingredient: {
-      packQuantity: ingredient.packQuantity,
-      packUnit: ingredient.packUnit,
-      packPrice: ingredient.packPrice,
-      densityGPerMl: density || undefined,
+  if (batchPricing && batchPricing.length > 0 && baseUnit === packBaseUnit) {
+    // Convert batch pricing tiers to base units for comparison
+    const batchPricingInBase = batchPricing.map(tier => {
+      const { amount: tierBaseQty } = toBase(tier.packQuantity, packUnit);
+      return {
+        packQuantity: tierBaseQty,
+        packPrice: tier.packPrice,
+      };
+    });
+    
+    // Find best pricing tier
+    let bestCostPerUnit = packPrice / basePackQuantity;
+    let bestTier = { packQuantity: basePackQuantity, packPrice: packPrice };
+    
+    for (const tier of batchPricingInBase) {
+      if (tier.packQuantity > 0 && tier.packPrice > 0) {
+        const tierCostPerUnit = tier.packPrice / tier.packQuantity;
+        if (tierCostPerUnit < bestCostPerUnit) {
+          bestCostPerUnit = tierCostPerUnit;
+          bestTier = tier;
+        }
+      }
     }
-  });
+    
+    effectivePackPrice = bestTier.packPrice;
+    effectivePackQuantity = bestTier.packQuantity;
+  }
+  
+  // If base units match, simple calculation
+  if (baseUnit === packBaseUnit && baseQuantity > 0 && effectivePackQuantity > 0 && isFinite(baseQuantity) && isFinite(effectivePackQuantity)) {
+    const costPerBaseUnit = effectivePackPrice / effectivePackQuantity;
+    const result = baseQuantity * costPerBaseUnit;
+    return result;
+  }
+  
+  // Validate conversion results
+  if (baseQuantity == null || basePackQuantity == null || basePackQuantity <= 0 || isNaN(baseQuantity) || isNaN(basePackQuantity) || !isFinite(baseQuantity) || !isFinite(basePackQuantity)) {
+    return 0;
+  }
+  
+  // If base units match after validation, calculate
+  if (baseUnit === packBaseUnit) {
+    const costPerBaseUnit = effectivePackPrice / effectivePackQuantity;
+    return baseQuantity * costPerBaseUnit;
+  }
+  
+  // If base units don't match but we have density, convert via density
+  if (density) {
+    if (baseUnit === 'ml' && packBaseUnit === 'g') {
+      // Recipe is volume, pack is weight - convert pack to volume
+      const packVolume = effectivePackQuantity / density;
+      const costPerMl = effectivePackPrice / packVolume;
+      return baseQuantity * costPerMl;
+    } else if (baseUnit === 'g' && packBaseUnit === 'ml') {
+      // Recipe is weight, pack is volume - convert pack to weight
+      const packWeight = effectivePackQuantity * density;
+      const costPerGram = effectivePackPrice / packWeight;
+      return baseQuantity * costPerGram;
+    }
+  }
+  
+  // If no density and units don't match, return 0
+  return 0;
 }
 
+// Compute recipe cost with density
+export function computeRecipeCostWithDensity(
+  ingredients: Array<{
+    quantity: number;
+    unit: Unit;
+    packPrice: number;
+    packQuantity: number;
+    packUnit: Unit;
+    density?: number;
+  }>
+): number {
+  return ingredients.reduce((total, ingredient) => {
+    return total + computeIngredientUsageCostWithDensity(
+      ingredient.quantity,
+      ingredient.unit,
+      ingredient.packPrice,
+      ingredient.packQuantity,
+      ingredient.packUnit,
+      ingredient.density
+    );
+  }, 0);
+}
+
+// Compute cost per output unit
+export function computeCostPerOutputUnit(
+  totalCost: number,
+  outputQuantity: number,
+  outputUnit: Unit
+): number {
+  return totalCost / outputQuantity;
+}
 

@@ -1,39 +1,41 @@
-import { z } from "zod";
+// Validation schemas for authentication
+import { z } from 'zod';
 
-// Shared validation schemas for authentication
+// Schema for requesting password reset (email only)
+export const requestPasswordResetSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+// Schema for completing password reset (token + password)
+export const completePasswordResetSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+// Legacy schema for backward compatibility
+export const resetPasswordSchema = z.object({
+  email: z.string().email('Invalid email address').optional(),
+  token: z.string().min(1, 'Token is required').optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
+}).refine((data) => {
+  // Either email (request) or token+password (complete)
+  return (data.email && !data.token && !data.password) || 
+         (!data.email && data.token && data.password);
+}, {
+  message: 'Either provide email (for request) or token+password (for completion)',
+});
+
 export const registerSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string()
-    .min(8, "Password must be at least 8 characters long")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
-  company: z.string().min(1, "Business name is required"),
-  name: z.string().optional(),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  companyName: z.string().min(2, 'Company name must be at least 2 characters'),
   businessType: z.string().optional(),
-  country: z.string().default("United Kingdom"),
-  phone: z.string().optional(),
+  country: z.string().optional(),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().default(true),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional(),
 });
-
-export const resetPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-});
-
-export const updatePasswordSchema = z.object({
-  password: z.string()
-    .min(8, "Password must be at least 8 characters long")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
-
-export type RegisterData = z.infer<typeof registerSchema>;
-export type LoginData = z.infer<typeof loginSchema>;
-export type ResetPasswordData = z.infer<typeof resetPasswordSchema>;
-export type UpdatePasswordData = z.infer<typeof updatePasswordSchema>;

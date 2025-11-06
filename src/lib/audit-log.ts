@@ -1,238 +1,165 @@
-/**
- * Audit Logging System
- * Logs all security-sensitive operations for compliance and security monitoring
- */
+import { NextRequest } from 'next/server';
+import { prisma } from './prisma';
 
-import { prisma } from "@/lib/prisma";
-
-export type AuditAction =
-  // Authentication events
-  | "USER_LOGIN"
-  | "USER_LOGOUT"
-  | "USER_REGISTER"
-  | "LOGIN_FAILED"
-  | "PASSWORD_CHANGED"
-  
-  // Authorization events
-  | "ROLE_CHANGED"
-  | "PERMISSION_GRANTED"
-  | "PERMISSION_DENIED"
-  | "UNAUTHORIZED_ACCESS_ATTEMPT"
-  
-  // Data events
-  | "RECIPE_CREATED"
-  | "RECIPE_UPDATED"
-  | "RECIPE_DELETED"
-  | "INGREDIENT_CREATED"
-  | "INGREDIENT_UPDATED"
-  | "INGREDIENT_DELETED"
-  
-  // Team events
-  | "MEMBER_INVITED"
-  | "MEMBER_ADDED"
-  | "MEMBER_REMOVED"
-  | "MEMBER_ROLE_CHANGED"
-  
-  // Admin events
-  | "ADMIN_LOGIN"
-  | "ADMIN_ACTION"
-  | "SYSTEM_CONFIG_CHANGED"
-  
-  // File events
-  | "FILE_UPLOADED"
-  | "FILE_DELETED";
-
-export type AuditLevel = "INFO" | "WARNING" | "ERROR" | "CRITICAL";
-
-interface AuditLogEntry {
-  action: AuditAction;
+export interface AuditLogEntry {
+  id?: number;
   userId?: number;
-  companyId?: number;
+  action: string;
+  resource?: string;
+  resourceId?: string;
+  details?: any;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: Record<string, any>;
-  level?: AuditLevel;
+  timestamp?: Date;
 }
 
-/**
- * Create an audit log entry
- */
-export async function createAuditLog({
-  action,
-  userId,
-  companyId,
-  ipAddress,
-  userAgent,
-  metadata = {},
-  level = "INFO",
-}: AuditLogEntry): Promise<void> {
+// Get client information from request
+function getClientInfo(request: NextRequest) {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown';
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+  
+  return { ipAddress: ip, userAgent };
+}
+
+// Log successful login
+export async function loginSuccess(userId: number, request: NextRequest): Promise<void> {
   try {
-    // For now, just log to console since audit_logs table doesn't exist yet
-    console.log('[AUDIT]', {
-      timestamp: new Date().toISOString(),
-      action,
-      userId,
-      companyId,
-      ipAddress,
-      metadata,
-      level,
+    const { ipAddress, userAgent } = getClientInfo(request);
+    
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action: 'LOGIN_SUCCESS',
+        resource: 'auth',
+        details: { ipAddress, userAgent },
+        ipAddress,
+        userAgent,
+        timestamp: new Date()
+      }
     });
   } catch (error) {
-    // Never let audit logging break the main application
-    console.error('Audit log error:', error);
+    console.error('Failed to log login success:', error);
   }
 }
 
-/**
- * Helper to extract request info for audit logs
- */
-export function getRequestInfo(request: Request): {
-  ipAddress: string;
-  userAgent: string;
-} {
-  const headers = request.headers;
-  
-  // Get IP from various headers
-  const forwardedFor = headers.get("x-forwarded-for");
-  const realIp = headers.get("x-real-ip");
-  const ipAddress = forwardedFor?.split(",")[0].trim() || realIp || "unknown";
-  
-  const userAgent = headers.get("user-agent") || "unknown";
-  
-  return { ipAddress, userAgent };
+// Log failed login attempt
+export async function loginFailed(email: string, request: NextRequest, reason: string): Promise<void> {
+  try {
+    const { ipAddress, userAgent } = getClientInfo(request);
+    
+    await prisma.auditLog.create({
+      data: {
+        action: 'LOGIN_FAILED',
+        resource: 'auth',
+        resourceId: email,
+        details: { reason, ipAddress, userAgent },
+        ipAddress,
+        userAgent,
+        timestamp: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Failed to log login failure:', error);
+  }
 }
 
-/**
- * Convenience functions for common audit log scenarios
- */
-export const auditLog = {
-  // Authentication
-  async loginSuccess(userId: number, request: Request) {
-    const { ipAddress, userAgent } = getRequestInfo(request);
-    await createAuditLog({
-      action: "USER_LOGIN",
-      userId,
-      ipAddress,
-      userAgent,
-      level: "INFO",
+// Log user action
+export async function logAction(
+  userId: number,
+  action: string,
+  resource?: string,
+  resourceId?: string,
+  details?: any,
+  request?: NextRequest
+): Promise<void> {
+  try {
+    const clientInfo = request ? getClientInfo(request) : {};
+    
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action,
+        resource,
+        resourceId,
+        details,
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        timestamp: new Date()
+      }
     });
-  },
+  } catch (error) {
+    console.error('Failed to log action:', error);
+  }
+}
 
-  async loginFailed(email: string, request: Request, reason: string) {
-    const { ipAddress, userAgent } = getRequestInfo(request);
-    await createAuditLog({
-      action: "LOGIN_FAILED",
-      ipAddress,
-      userAgent,
-      metadata: { email, reason },
-      level: "WARNING",
+// Log system event
+export async function logSystemEvent(
+  action: string,
+  resource?: string,
+  resourceId?: string,
+  details?: any
+): Promise<void> {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        action,
+        resource,
+        resourceId,
+        details,
+        timestamp: new Date()
+      }
     });
-  },
+  } catch (error) {
+    console.error('Failed to log system event:', error);
+  }
+}
 
-  async register(userId: number, companyId: number, request: Request) {
-    const { ipAddress, userAgent } = getRequestInfo(request);
-    await createAuditLog({
-      action: "USER_REGISTER",
-      userId,
-      companyId,
-      ipAddress,
-      userAgent,
-      level: "INFO",
+// Get audit logs for a user
+export async function getUserAuditLogs(
+  userId: number,
+  limit: number = 50,
+  offset: number = 0
+): Promise<AuditLogEntry[]> {
+  try {
+    const logs = await prisma.auditLog.findMany({
+      where: { userId },
+      orderBy: { timestamp: 'desc' },
+      take: limit,
+      skip: offset
     });
-  },
+    
+    return logs;
+  } catch (error) {
+    console.error('Failed to get user audit logs:', error);
+    return [];
+  }
+}
 
-  // Authorization
-  async unauthorizedAccess(userId: number | undefined, resource: string, request: Request) {
-    const { ipAddress, userAgent } = getRequestInfo(request);
-    await createAuditLog({
-      action: "UNAUTHORIZED_ACCESS_ATTEMPT",
-      userId,
-      ipAddress,
-      userAgent,
-      metadata: { resource },
-      level: "WARNING",
+// Get recent audit logs
+export async function getRecentAuditLogs(
+  limit: number = 100,
+  offset: number = 0
+): Promise<AuditLogEntry[]> {
+  try {
+    const logs = await prisma.auditLog.findMany({
+      orderBy: { timestamp: 'desc' },
+      take: limit,
+      skip: offset,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        }
+      }
     });
-  },
-
-  async roleChanged(
-    adminUserId: number,
-    targetUserId: number,
-    oldRole: string,
-    newRole: string,
-    companyId: number
-  ) {
-    await createAuditLog({
-      action: "ROLE_CHANGED",
-      userId: adminUserId,
-      companyId,
-      metadata: { targetUserId, oldRole, newRole },
-      level: "INFO",
-    });
-  },
-
-  // Data operations
-  async recipeDeleted(userId: number, recipeId: number, recipeName: string, companyId: number) {
-    await createAuditLog({
-      action: "RECIPE_DELETED",
-      userId,
-      companyId,
-      metadata: { recipeId, recipeName },
-      level: "INFO",
-    });
-  },
-
-  async ingredientDeleted(
-    userId: number,
-    ingredientId: number,
-    ingredientName: string,
-    companyId: number
-  ) {
-    await createAuditLog({
-      action: "INGREDIENT_DELETED",
-      userId,
-      companyId,
-      metadata: { ingredientId, ingredientName },
-      level: "INFO",
-    });
-  },
-
-  // Team management
-  async memberRemoved(
-    adminUserId: number,
-    removedUserId: number,
-    removedUserEmail: string,
-    companyId: number
-  ) {
-    await createAuditLog({
-      action: "MEMBER_REMOVED",
-      userId: adminUserId,
-      companyId,
-      metadata: { removedUserId, removedUserEmail },
-      level: "INFO",
-    });
-  },
-
-  // Admin actions
-  async adminLogin(username: string, request: Request) {
-    const { ipAddress, userAgent } = getRequestInfo(request);
-    await createAuditLog({
-      action: "ADMIN_LOGIN",
-      ipAddress,
-      userAgent,
-      metadata: { username },
-      level: "INFO",
-    });
-  },
-
-  // File operations
-  async fileUploaded(userId: number, companyId: number, fileName: string, fileSize: number) {
-    await createAuditLog({
-      action: "FILE_UPLOADED",
-      userId,
-      companyId,
-      metadata: { fileName, fileSize },
-      level: "INFO",
-    });
-  },
-};
-
+    
+    return logs;
+  } catch (error) {
+    console.error('Failed to get recent audit logs:', error);
+    return [];
+  }
+}

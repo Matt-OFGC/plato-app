@@ -1,102 +1,138 @@
-/**
- * Rate Limiting Utility
- * Prevents abuse of API endpoints by limiting requests per IP/user
- */
+import { NextRequest } from 'next/server';
 
-import { NextRequest } from "next/server";
-
-interface RateLimitConfig {
-  windowMs: number; // Time window in milliseconds
-  maxRequests: number; // Max requests per window
+export interface RateLimitResult {
+  allowed: boolean;
+  retryAfter: number;
+  remaining: number;
 }
 
-// In-memory store (use Redis in production for distributed systems)
-const requestCounts = new Map<string, { count: number; resetAt: number }>();
-
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of requestCounts.entries()) {
-    if (value.resetAt < now) {
-      requestCounts.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
-
-/**
- * Check if a request should be rate limited
- * @returns null if allowed, or { error, retryAfter } if rate limited
- */
-export function checkRateLimit(
-  identifier: string,
-  config: RateLimitConfig
-): { allowed: boolean; retryAfter?: number } {
-  const now = Date.now();
-  const record = requestCounts.get(identifier);
-
-  // No record or window expired - create new one
-  if (!record || record.resetAt < now) {
-    requestCounts.set(identifier, {
-      count: 1,
-      resetAt: now + config.windowMs,
-    });
-    return { allowed: true };
-  }
-
-  // Within window - check count
-  if (record.count >= config.maxRequests) {
-    const retryAfter = Math.ceil((record.resetAt - now) / 1000);
-    return { allowed: false, retryAfter };
-  }
-
-  // Increment count
-  record.count++;
-  return { allowed: true };
+export interface RateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
 }
 
-/**
- * Get client identifier (IP address)
- */
-export function getClientIdentifier(request: NextRequest): string {
-  // Try to get real IP from headers (for reverse proxies)
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
-  }
-  
-  if (realIp) {
-    return realIp;
-  }
-
-  // Fallback: use a combination of headers for fingerprinting
-  // Note: NextRequest doesn't expose IP directly, so we use headers
-  return "unknown";
-}
-
-/**
- * Rate limit configurations for different endpoints
- */
 export const RATE_LIMITS = {
-  // Strict limits for auth endpoints
-  LOGIN: { windowMs: 15 * 60 * 1000, maxRequests: 5 }, // 5 attempts per 15 minutes
-  REGISTER: { windowMs: 60 * 60 * 1000, maxRequests: 3 }, // 3 accounts per hour
-  PASSWORD_RESET: { windowMs: 60 * 60 * 1000, maxRequests: 3 }, // 3 resets per hour
-  
-  // Moderate limits for data operations
-  UPLOAD: { windowMs: 60 * 1000, maxRequests: 10 }, // 10 uploads per minute
-  CREATE: { windowMs: 60 * 1000, maxRequests: 30 }, // 30 creates per minute
-  
-  // Generous limits for read operations
-  API: { windowMs: 60 * 1000, maxRequests: 100 }, // 100 requests per minute
+  LOGIN: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 5
+  },
+  REGISTER: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 3
+  },
+  API: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 100
+  },
+  PASSWORD_RESET: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 3
+  }
 } as const;
 
-/**
- * Helper to apply rate limiting in API routes
- */
-export function rateLimit(request: NextRequest, config: RateLimitConfig) {
-  const identifier = getClientIdentifier(request);
-  return checkRateLimit(identifier, config);
+// Simple in-memory rate limiting (in production, use Redis or similar)
+const rateLimitStore = new Map<string, { count: number; resetTime: number; attempts: number }>();
+
+// Get client identifier
+function getClientId(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown';
+  return ip;
 }
 
+// Get email identifier for per-email rate limiting
+function getEmailId(email?: string): string | null {
+  if (!email) return null;
+  return `email:${email.toLowerCase().trim()}`;
+}
+
+// Rate limiting function with support for per-email limiting
+export function rateLimit(
+  request: NextRequest, 
+  config: RateLimitConfig,
+  options?: { email?: string; perEmail?: boolean }
+): RateLimitResult {
+  const now = Date.now();
+  
+  // Clean up expired entries periodically
+  if (Math.random() < 0.1) { // 10% chance to clean up (avoids doing it every time)
+    for (const [key, value] of rateLimitStore.entries()) {
+      if (value.resetTime < now) {
+        rateLimitStore.delete(key);
+      }
+    }
+  }
+  
+  // Check per-email rate limiting if email is provided
+  if (options?.perEmail && options.email) {
+    const emailId = getEmailId(options.email);
+    if (emailId) {
+      const emailResult = checkRateLimit(emailId, config, now);
+      if (!emailResult.allowed) {
+        return emailResult;
+      }
+    }
+  }
+  
+  // Check IP-based rate limiting
+  const clientId = getClientId(request);
+  return checkRateLimit(clientId, config, now);
+}
+
+// Internal function to check rate limit for a given identifier
+function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig,
+  now: number
+): RateLimitResult {
+  let record = rateLimitStore.get(identifier);
+  
+  if (!record || record.resetTime < now) {
+    // New window or expired
+    record = {
+      count: 1,
+      resetTime: now + config.windowMs,
+      attempts: 1,
+    };
+    rateLimitStore.set(identifier, record);
+    
+    return {
+      allowed: true,
+      retryAfter: 0,
+      remaining: config.maxRequests - 1,
+    };
+  }
+  
+  // Increment attempt counter for progressive delays
+  record.attempts++;
+  
+  // Check if limit exceeded
+  if (record.count >= config.maxRequests) {
+    // Progressive delay: increase retry time based on attempts
+    const baseRetryAfter = Math.ceil((record.resetTime - now) / 1000);
+    const progressiveDelay = Math.min(record.attempts * 60, 3600); // Max 1 hour delay
+    
+    return {
+      allowed: false,
+      retryAfter: baseRetryAfter + progressiveDelay,
+      remaining: 0,
+    };
+  }
+  
+  // Increment counter
+  record.count++;
+  rateLimitStore.set(identifier, record);
+  
+  return {
+    allowed: true,
+    retryAfter: 0,
+    remaining: config.maxRequests - record.count,
+  };
+}
+
+// Middleware helper for rate limiting
+export function withRateLimit(config: RateLimitConfig) {
+  return function(request: NextRequest) {
+    return rateLimit(request, config);
+  };
+}
