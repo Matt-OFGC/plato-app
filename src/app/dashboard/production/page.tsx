@@ -6,6 +6,7 @@ import { ProductionPlannerEnhanced } from "@/components/ProductionPlannerEnhance
 // Temporarily disabled to fix build error
 // import { checkSectionAccess } from "@/lib/features";
 
+export const dynamic = 'force-dynamic';
 // Cache for 2 minutes to improve performance
 export const revalidate = 120;
 
