@@ -1420,20 +1420,20 @@ model Subscription {
 }
 
 model FeatureModule {
-  id                      Int       @id @default(autoincrement())
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime
-  userId                  Int
-  moduleName              String    // recipes|production|make|teams|safety
+  id                       Int       @id @default(autoincrement())
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  userId                   Int
+  moduleName               String // recipes|production|make|teams|safety
   stripeSubscriptionItemId String?
-  stripePriceId           String?
-  status                  String    @default("active") // active|canceled|trialing|past_due
-  isTrial                 Boolean   @default(false) // true for Recipes free trial
-  unlockedAt              DateTime  @default(now())
-  currentPeriodEnd        DateTime?
+  stripePriceId            String?
+  status                   String    @default("active") // active|canceled|trialing|past_due
+  isTrial                  Boolean   @default(false) // true for Recipes free trial
+  unlockedAt               DateTime  @default(now())
+  currentPeriodEnd         DateTime?
   cancelAtPeriodEnd        Boolean   @default(false)
-  canceledAt              DateTime?
-  User                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  canceledAt               DateTime?
+  User                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, moduleName])
   @@index([userId])
@@ -1828,8 +1828,8 @@ model User {
   subscriptionInterval                           String                  @default("month")
   subscriptionStatus                             String                  @default("free")
   subscriptionTier                               String                  @default("starter")
-  maxIngredients                                 Int?                   @default(10) // Recipes trial limit
-  maxRecipes                                     Int?                   @default(5) // Recipes trial limit
+  maxIngredients                                 Int?                    @default(10) // Recipes trial limit
+  maxRecipes                                     Int?                    @default(5) // Recipes trial limit
   recipesTrialStartedAt                          DateTime?
   emailVerified                                  Boolean                 @default(false)
   verificationToken                              String?                 @unique

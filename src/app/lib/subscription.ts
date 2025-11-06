@@ -5,7 +5,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { checkSectionAccess } from "./features";
+import { checkSectionAccess, checkRecipesLimits, isRecipesTrial } from "./features";
 
 /**
  * Legacy: Check if user can access production features (via tier)
@@ -24,6 +24,50 @@ export async function canAccessWholesale(userId: number): Promise<boolean> {
   // For now, wholesale is part of Production module
   // In future, might be separate module
   return checkSectionAccess(userId, "production");
+}
+
+/**
+ * Check if user can add more ingredients (Recipes trial limits)
+ */
+export async function canAddIngredient(userId: number): Promise<boolean> {
+  const limits = await checkRecipesLimits(userId);
+  return limits.withinIngredientsLimit;
+}
+
+/**
+ * Check if user can add more recipes (Recipes trial limits)
+ */
+export async function canAddRecipe(userId: number): Promise<boolean> {
+  const limits = await checkRecipesLimits(userId);
+  return limits.withinRecipesLimit;
+}
+
+/**
+ * Update ingredient count after creation
+ */
+export async function updateIngredientCount(userId: number): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ingredientCount: {
+        increment: 1,
+      },
+    },
+  });
+}
+
+/**
+ * Update recipe count after creation
+ */
+export async function updateRecipeCount(userId: number): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      recipeCount: {
+        increment: 1,
+      },
+    },
+  });
 }
 
 /**

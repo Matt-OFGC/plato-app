@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { canAddRecipe, updateRecipeCount } from "@/lib/subscription";
+import { isRecipesTrial } from "@/lib/features";
 import { z } from "zod";
 
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
@@ -40,7 +42,22 @@ export async function createRecipe(formData: FormData) {
   const parsed = recipeSchema.safeParse(raw);
   if (!parsed.success) return { ok: false as const, error: parsed.error.flatten() };
   const data = parsed.data;
-  const { companyId } = await getCurrentUserAndCompany();
+  const { companyId, user } = await getCurrentUserAndCompany();
+  const userId = user?.id;
+
+  // Check Recipes trial limits
+  if (userId) {
+    const isTrial = await isRecipesTrial(userId);
+    if (isTrial && !(await canAddRecipe(userId))) {
+      return { 
+        ok: false as const, 
+        error: { 
+          formErrors: ["Recipe limit reached (5 recipes max on trial). Upgrade to Recipes Pro (£10/month) for unlimited recipes."], 
+          fieldErrors: {} 
+        } 
+      };
+    }
+  }
 
   await prisma.recipe.create({
     data: {
@@ -54,6 +71,12 @@ export async function createRecipe(formData: FormData) {
       },
     },
   });
+
+  // Update user's recipe count
+  if (userId) {
+    await updateRecipeCount(userId);
+  }
+
   revalidatePath("/recipes");
   redirect("/recipes");
 }

@@ -1,4 +1,5 @@
-import { FeatureModuleName } from "./stripe-features";
+import React from "react";
+import type { FeatureModuleName } from "./stripe-features";
 
 export interface UnlockContent {
   title: string;

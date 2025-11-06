@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { ProductionPlannerEnhanced } from "@/components/ProductionPlannerEnhanced";
+import { checkSectionAccess } from "@/lib/features";
 
 // Cache for 2 minutes to improve performance
 export const revalidate = 120;
@@ -10,6 +11,12 @@ export const revalidate = 120;
 export default async function ProductionPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login");
+
+  // Check if user has Production module unlocked
+  const hasAccess = await checkSectionAccess(user.id, "production");
+  if (!hasAccess) {
+    redirect("/dashboard?locked=production");
+  }
 
   const { companyId } = await getCurrentUserAndCompany();
   if (!companyId) redirect("/dashboard");

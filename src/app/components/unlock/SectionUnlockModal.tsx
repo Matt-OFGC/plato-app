@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { getUnlockContent, FeatureModuleName } from "@/lib/unlock-content";
+import React, { useState } from "react";
+import { getUnlockContent } from "@/lib/unlock-content";
+import type { FeatureModuleName } from "@/lib/stripe-features";
 
 interface SectionUnlockModalProps {
   isOpen: boolean;

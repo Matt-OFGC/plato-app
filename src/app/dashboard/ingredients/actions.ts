@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
+import { isRecipesTrial } from "@/lib/features";
 
 const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);
@@ -139,7 +140,7 @@ export async function createIngredient(formData: FormData) {
         
         // Update user's ingredient count
         if (userId) {
-          await updateIngredientCount(userId, 1);
+          await updateIngredientCount(userId);
         }
         
         revalidatePath("/dashboard/ingredients");

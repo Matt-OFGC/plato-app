@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
 import { AppSwitcher } from "./AppSwitcher";
 import { useAppContext } from "./AppContextProvider";
+import { SectionUnlockModal } from "./unlock/SectionUnlockModal";
+import type { FeatureModuleName } from "@/lib/stripe-features";
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +19,20 @@ export function Sidebar() {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   
   const { activeApp, switchToApp } = useAppContext();
+  const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean }> | null>(null);
+  const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
+
+  // Fetch unlock status on mount
+  useEffect(() => {
+    fetch("/api/features/unlock-status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.unlockStatus) {
+          setUnlockStatus(data.unlockStatus);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch unlock status:", err));
+  }, []);
   
   // Debug: Log active app and filtered items
   useEffect(() => {
@@ -229,28 +245,58 @@ export function Sidebar() {
               }, {} as Record<string, typeof filteredItems>);
 
               // Define section order and labels
-              const sectionOrder = ['recipes', 'teams', 'production', 'safety', 'global'];
+              const sectionOrder = ['recipes', 'teams', 'production', 'make', 'safety', 'global'];
               const sectionLabels: Record<string, string> = {
                 recipes: 'RECIPES',
                 teams: 'TEAMS',
                 production: 'PRODUCTION DETAIL',
+                make: 'MAKE',
                 safety: 'HYGIENE & SAFETY',
                 global: 'OTHER'
+              };
+              
+              const moduleMap: Record<string, FeatureModuleName> = {
+                recipes: 'recipes',
+                teams: 'teams',
+                production: 'production',
+                make: 'make',
+                safety: 'safety',
               };
 
               return sectionOrder.map(sectionKey => {
                 const items = grouped[sectionKey] || [];
                 if (items.length === 0) return null;
 
+                const moduleName = moduleMap[sectionKey];
+                const isLocked = moduleName && !unlockStatus?.[moduleName]?.unlocked;
+                const isTrial = moduleName && unlockStatus?.[moduleName]?.isTrial;
+
                 return (
                   <div key={sectionKey} className="space-y-1">
                     {/* Section Header - only show on expanded sidebar */}
                     {(!isTouchDevice || !collapsed || pinned) && (
                       <div className="px-2 py-1.5 flex items-center justify-between group/section">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                          {sectionLabels[sectionKey] || sectionKey.toUpperCase()}
-                        </span>
-                        {sectionKey !== 'global' && (
+                        <button
+                          onClick={() => {
+                            if (isLocked && moduleName) {
+                              setUnlockModal(moduleName);
+                            }
+                          }}
+                          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          <span>{sectionLabels[sectionKey] || sectionKey.toUpperCase()}</span>
+                          {isTrial && (
+                            <span className="px-1.5 py-0.5 text-[9px] bg-emerald-100 text-emerald-700 rounded uppercase">
+                              Trial
+                            </span>
+                          )}
+                          {isLocked && (
+                            <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                          )}
+                        </button>
+                        {sectionKey !== 'global' && !isLocked && (
                           <span className="text-[9px] text-gray-400 opacity-0 group-hover/section:opacity-100 transition-opacity">
                             DETAIL
                           </span>
@@ -259,7 +305,7 @@ export function Sidebar() {
                     )}
                     
                     {/* Section Items */}
-                    {items.map((item) => {
+                    {!isLocked && items.map((item) => {
                       const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
                       return (
                         <div key={item.value} className="relative group/nav-item">
@@ -579,6 +625,15 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Unlock Modal */}
+      {unlockModal && (
+        <SectionUnlockModal
+          isOpen={!!unlockModal}
+          onClose={() => setUnlockModal(null)}
+          moduleName={unlockModal}
+        />
       )}
     </>
   );

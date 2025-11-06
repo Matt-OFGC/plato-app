@@ -339,7 +339,14 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
                   onClick={() => toggleSection('recipes')}
                   className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
                 >
-                  <span>Recipes</span>
+                  <div className="flex items-center gap-2">
+                    <span>Recipes</span>
+                    {unlockStatus?.recipes?.isTrial && (
+                      <span className="px-1.5 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded uppercase">
+                        Trial
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1">
                     <span className="text-gray-400">Detail</span>
                     <svg className={`w-3 h-3 transform transition-transform ${expandedSections.recipes ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,16 +387,31 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
             {/* Production Section - Always show */}
             <div className="px-2 py-2">
                 <button
-                  onClick={() => toggleSection('production')}
+                  onClick={() => {
+                    if (!unlockStatus?.production?.unlocked) {
+                      setUnlockModal("production");
+                    } else {
+                      toggleSection('production');
+                    }
+                  }}
                   className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
                 >
-                  <span>PRODUCTION DETAIL</span>
-                  <svg className={`w-3 h-3 transform transition-transform ${expandedSections.production ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <div className="flex items-center gap-2">
+                    <span>PRODUCTION DETAIL</span>
+                    {!unlockStatus?.production?.unlocked && (
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    )}
+                  </div>
+                  {unlockStatus?.production?.unlocked && (
+                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.production ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
                 </button>
 
-                {expandedSections.production && (
+                {expandedSections.production && unlockStatus?.production?.unlocked && (
                   <div className="mt-1 space-y-0.5">
                     {productionItems.length > 0 ? (
                       productionItems.map(item => {
@@ -427,19 +449,34 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
             {(makeItems.length > 0 || !searchTerm.trim()) && (
               <div className="px-2 py-2">
                 <button
-                  onClick={() => toggleSection('make')}
+                  onClick={() => {
+                    if (!unlockStatus?.make?.unlocked) {
+                      setUnlockModal("make");
+                    } else {
+                      toggleSection('make');
+                    }
+                  }}
                   className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
                 >
-                  <span>MAKE</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-400">Detail</span>
-                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.make ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                  <div className="flex items-center gap-2">
+                    <span>MAKE</span>
+                    {!unlockStatus?.make?.unlocked && (
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    )}
+                    {unlockStatus?.make?.unlocked && (
+                      <>
+                        <span className="text-gray-400">Detail</span>
+                        <svg className={`w-3 h-3 transform transition-transform ${expandedSections.make ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </>
+                    )}
                   </div>
                 </button>
 
-                {expandedSections.make && (
+                {expandedSections.make && unlockStatus?.make?.unlocked && (
                   <div className="mt-1 space-y-0.5">
                     {makeItems.map(item => {
                       const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -471,19 +508,34 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
             {/* Teams Section - Always show, even if empty (like production) */}
             <div className="px-2 py-2">
               <button
-                onClick={() => toggleSection('teams')}
+                onClick={() => {
+                  if (!unlockStatus?.teams?.unlocked) {
+                    setUnlockModal("teams");
+                  } else {
+                    toggleSection('teams');
+                  }
+                }}
                 className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
               >
-                <span>TEAMS</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-400">Detail</span>
-                  <svg className={`w-3 h-3 transform transition-transform ${expandedSections.teams ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                <div className="flex items-center gap-2">
+                  <span>TEAMS</span>
+                  {!unlockStatus?.teams?.unlocked && (
+                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  )}
                 </div>
+                {unlockStatus?.teams?.unlocked && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-400">Detail</span>
+                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.teams ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                )}
               </button>
               
-              {expandedSections.teams && (
+              {expandedSections.teams && unlockStatus?.teams?.unlocked && (
                 <div className="mt-1 space-y-0.5">
                   {teamsItems.length > 0 ? (
                     teamsItems.map(item => {
@@ -520,19 +572,34 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
             {/* Hygiene & Safety Section - Always show */}
             <div className="px-2 py-2">
               <button
-                onClick={() => toggleSection('healthSafety')}
+                onClick={() => {
+                  if (!unlockStatus?.safety?.unlocked) {
+                    setUnlockModal("safety");
+                  } else {
+                    toggleSection('healthSafety');
+                  }
+                }}
                 className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
               >
-                <span>Hygiene & Safety</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-400">Detail</span>
-                  <svg className={`w-3 h-3 transform transition-transform ${expandedSections.healthSafety ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                <div className="flex items-center gap-2">
+                  <span>Hygiene & Safety</span>
+                  {!unlockStatus?.safety?.unlocked && (
+                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  )}
                 </div>
+                {unlockStatus?.safety?.unlocked && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-400">Detail</span>
+                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.healthSafety ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                )}
               </button>
               
-              {expandedSections.healthSafety && (
+              {expandedSections.healthSafety && unlockStatus?.safety?.unlocked && (
                 <div className="mt-1 space-y-0.5">
                   {healthSafetyItems.length > 0 ? (
                     healthSafetyItems.map(item => {
@@ -608,6 +675,15 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
           )}
         </div>
       </div>
+
+      {/* Unlock Modal */}
+      {unlockModal && (
+        <SectionUnlockModal
+          isOpen={!!unlockModal}
+          onClose={() => setUnlockModal(null)}
+          moduleName={unlockModal}
+        />
+      )}
     </>
   );
 }

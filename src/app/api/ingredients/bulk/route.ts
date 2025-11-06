@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
+import { isRecipesTrial } from "@/lib/features";
 
 export async function POST(request: NextRequest) {
   try {
-    const { companyId } = await getCurrentUserAndCompany();
+    const { companyId, user } = await getCurrentUserAndCompany();
     if (!companyId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -13,6 +15,24 @@ export async function POST(request: NextRequest) {
 
     if (!Array.isArray(ingredients) || ingredients.length === 0) {
       return NextResponse.json({ error: "Invalid ingredients data" }, { status: 400 });
+    }
+
+    // Check Recipes trial limits
+    if (user?.id) {
+      const isTrial = await isRecipesTrial(user.id);
+      if (isTrial) {
+        // Check if adding these ingredients would exceed limit
+        const currentCount = user.ingredientCount || 0;
+        if (currentCount + ingredients.length > (user.maxIngredients || 10)) {
+          return NextResponse.json(
+            {
+              error: "Ingredient limit reached",
+              message: `You can only add ${(user.maxIngredients || 10) - currentCount} more ingredients on trial. Upgrade to Recipes Pro (£10/month) for unlimited ingredients.`,
+            },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // Create ingredients in batch
@@ -32,6 +52,11 @@ export async function POST(request: NextRequest) {
       })),
       skipDuplicates: true, // Skip if ingredient with same name already exists
     });
+
+    // Update ingredient count
+    if (user?.id && createdIngredients.count > 0) {
+      await updateIngredientCount(user.id);
+    }
 
     return NextResponse.json({
       success: true,
