@@ -145,9 +145,8 @@ export async function POST(req: NextRequest) {
     // Send welcome email (after verification email)
     try {
       await sendWelcomeEmail({
-        to: email,
+        email,
         name: name || "there",
-        companyName: company,
       });
       logger.debug(`Welcome email sent to ${email}`);
     } catch (emailError) {
