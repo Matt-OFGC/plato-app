@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { getUserFromSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import MessagingPageClient from "./MessagingPageClient";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "Team Chat - Plato",
@@ -9,13 +11,13 @@ export const metadata = {
 };
 
 export default async function MessagingPage() {
-  const session = await auth();
+  const user = await getUserFromSession();
 
-  if (!session?.user?.id) {
-    redirect("/auth/signin");
+  if (!user?.id) {
+    redirect("/login");
   }
 
-  const userId = parseInt(session.user.id);
+  const userId = user.id;
 
   // Get user's company
   const membership = await prisma.membership.findFirst({
@@ -28,7 +30,7 @@ export default async function MessagingPage() {
   }
 
   // Get all channels user is a member of
-  const channels = await prisma.channel.findMany({
+  const channelsRaw = await prisma.channel.findMany({
     where: {
       companyId: membership.companyId,
       members: {
@@ -55,6 +57,17 @@ export default async function MessagingPage() {
     },
     orderBy: { updatedAt: "desc" },
   });
+
+  // Serialize Date objects to ISO strings for client component
+  const channels = channelsRaw.map(channel => ({
+    ...channel,
+    updatedAt: channel.updatedAt.toISOString(),
+    createdAt: channel.createdAt.toISOString(),
+    messages: channel.messages.map(msg => ({
+      ...msg,
+      createdAt: msg.createdAt.toISOString(),
+    })),
+  }));
 
   // Get all company team members for DM creation
   const teamMembers = await prisma.membership.findMany({

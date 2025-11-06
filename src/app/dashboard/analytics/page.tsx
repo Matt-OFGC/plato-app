@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { AnalyticsPageClient } from "./AnalyticsPageClient";
 
+export const dynamic = 'force-dynamic';
 // Cache for 5 minutes to improve performance
 export const revalidate = 300;
 

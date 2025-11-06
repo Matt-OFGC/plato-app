@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { InventoryManager } from "@/components/InventoryManager";
 
+export const dynamic = 'force-dynamic';
 // Cache for 2 minutes to improve performance
 export const revalidate = 120;
 

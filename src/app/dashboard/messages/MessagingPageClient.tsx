@@ -19,13 +19,15 @@ interface Channel {
   }>;
   messages: Array<{
     content: string;
-    createdAt: Date;
+    createdAt: string; // ISO string from server
     sender: {
       id: number;
       name: string | null;
       email: string;
     };
   }>;
+  updatedAt: string; // ISO string from server
+  createdAt: string; // ISO string from server
 }
 
 interface TeamMember {

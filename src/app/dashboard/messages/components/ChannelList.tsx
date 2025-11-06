@@ -16,7 +16,7 @@ interface Channel {
   }>;
   messages: Array<{
     content: string;
-    createdAt: Date;
+    createdAt: string; // ISO string from server
     sender: {
       id: number;
       name: string | null;
