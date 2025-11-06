@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserFromSession } from "@/lib/auth-simple";
-import { getCurrentUserAndCompany } from "@/lib/auth";
+import { getCurrentUserAndCompany } from "@/lib/current";
 import { canManageTeam } from "@/lib/permissions";
 import RoleManagerClient from "./components/RoleManager";
 
