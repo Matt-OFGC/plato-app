@@ -4,6 +4,8 @@ import { createRecipeUnified } from "../../dashboard/recipes/actionsSimplified";
 import { UnifiedRecipeForm } from "@/components/UnifiedRecipeForm";
 import { getCurrentUserAndCompany } from "@/lib/current";
 
+export const dynamic = 'force-dynamic';
+
 interface NewRecipePageProps {
   searchParams: {
     error?: string;
