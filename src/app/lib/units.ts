@@ -24,7 +24,8 @@ const CONVERSION_FACTORS: Record<string, number> = {
 };
 
 // Normalize unit string (handle 'floz' -> 'fl oz', lowercase, etc.)
-function normalizeUnit(unit: string): string {
+function normalizeUnit(unit: string | null | undefined): string {
+  if (!unit) return 'each'; // Default to 'each' if unit is null/undefined
   const lower = unit.toLowerCase().trim();
   // Normalize 'floz' to 'fl oz' for consistent handling
   if (lower === 'floz' || lower === 'fl-oz') {

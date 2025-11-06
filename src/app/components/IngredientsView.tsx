@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/currency";
-import { fromBase, Unit } from "@/lib/units";
+import { Unit } from "@/lib/units";
 import { formatLastUpdate, checkPriceStatus, getPriceStatusColorClass } from "@/lib/priceTracking";
 
 interface Ingredient {
@@ -90,10 +90,9 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {ingredients.map((ing) => {
-                  const originalUnit = ing.originalUnit || ing.packUnit;
-                  const originalQuantity = ing.originalUnit 
-                    ? fromBase(Number(ing.packQuantity), originalUnit as Unit, ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined)
-                    : Number(ing.packQuantity);
+                  // Use originalUnit if available, otherwise use packUnit
+                  const displayUnit = ing.originalUnit || ing.packUnit || 'each';
+                  const displayQuantity = Number(ing.packQuantity);
                   const priceStatus = checkPriceStatus(ing.lastPriceUpdate || new Date());
                   const colorClass = getPriceStatusColorClass(priceStatus.status);
                   
@@ -142,7 +141,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {originalQuantity} {originalUnit}
+                        {displayQuantity} {displayUnit}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-emerald-600">
                         {formatCurrency(Number(ing.packPrice), ing.currency)}
