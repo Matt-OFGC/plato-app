@@ -1,6 +1,6 @@
 // Security alerts and notifications
-import { prisma } from './prisma';
-import { sendEmail } from './email';
+import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/email';
 
 export interface SecurityEvent {
   type: 'new_device' | 'password_change' | 'suspicious_login' | 'failed_login_attempts' | 'mfa_enabled' | 'mfa_disabled';
