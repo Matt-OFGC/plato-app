@@ -119,9 +119,8 @@ export async function POST(req: NextRequest) {
     //   logger.debug(`Recipes trial initialized for user ${user.id}`);
     // } catch (trialError) {
     //   logger.error("Failed to initialize Recipes trial:", trialError);
+    //   // Don't fail registration if trial init fails
     // }
-      // Don't fail registration if trial init fails
-    }
     
     logger.info(`User registered successfully: ${email} (ID: ${user.id}), Company: ${company} (ID: ${co.id})`);
     
