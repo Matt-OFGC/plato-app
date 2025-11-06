@@ -54,8 +54,8 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
       
       switch (sortField) {
         case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
           break;
         case 'category':
           aValue = (a.categoryRef?.name || a.category || '').toLowerCase();
@@ -82,8 +82,8 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
           bValue = b.totalTime || 0;
           break;
         default:
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
       }
       
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;

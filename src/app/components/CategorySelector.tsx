@@ -51,7 +51,7 @@ export function CategorySelector({
   );
 
   const filteredCategories = uniqueCategories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (category.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -357,7 +357,7 @@ export function CategorySelector({
                 )}
                 
                 {/* Show create button when there's a search term that doesn't match and form is not showing */}
-                {!showCreateForm && searchTerm && !uniqueCategories.some(c => c.name.toLowerCase() === searchTerm.toLowerCase()) && (
+                {!showCreateForm && searchTerm && !uniqueCategories.some(c => (c.name || '').toLowerCase() === searchTerm.toLowerCase()) && (
                   <div className="border-t border-gray-200/50 mt-1">
                     <button
                       type="button"

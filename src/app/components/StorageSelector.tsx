@@ -42,7 +42,7 @@ export function StorageSelector({
   const selectedOption = storageOptions.find(o => o.id === value);
 
   const filteredOptions = storageOptions.filter(option =>
-    option.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (option.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -281,7 +281,7 @@ export function StorageSelector({
                   </div>
                 )}
                 
-                {searchTerm && !storageOptions.some(o => o.name.toLowerCase() === searchTerm.toLowerCase()) && (
+                {searchTerm && !storageOptions.some(o => (o.name || '').toLowerCase() === searchTerm.toLowerCase()) && (
                   <div className="border-t border-gray-200">
                     {!showCreateForm ? (
                       <button

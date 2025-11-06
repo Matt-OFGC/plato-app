@@ -46,7 +46,7 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
   const ingredientsWithLowercase = useMemo(() => {
     return ingredients.map(ing => ({
       ...ing,
-      _searchName: ing.name.toLowerCase(),
+      _searchName: (ing.name || '').toLowerCase(),
       _searchSupplier: ing.supplier?.toLowerCase() || '',
       _searchSupplierRef: ing.supplierRef?.name?.toLowerCase() || '',
       _searchNotes: ing.notes?.toLowerCase() || '',

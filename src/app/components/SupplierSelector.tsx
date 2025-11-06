@@ -55,7 +55,7 @@ export function SupplierSelector({ suppliers, value, onChange, placeholder = "Se
   }, []);
 
   const filteredSuppliers = suppliers.filter(supplier =>
-    supplier.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (supplier.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCreateSupplier = async () => {

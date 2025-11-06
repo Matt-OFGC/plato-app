@@ -63,8 +63,8 @@ function RecipesViewContent({ recipes }: RecipesViewProps) {
       
       switch (sortField) {
         case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
           break;
         case 'category':
           aValue = (a.categoryRef?.name || a.category || '').toLowerCase();
@@ -91,8 +91,8 @@ function RecipesViewContent({ recipes }: RecipesViewProps) {
           bValue = b.totalTime || 0;
           break;
         default:
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = (a.name || '').toLowerCase();
+          bValue = (b.name || '').toLowerCase();
       }
       
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
