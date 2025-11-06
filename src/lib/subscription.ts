@@ -88,3 +88,34 @@ export function createFeatureGateError(
   };
 }
 
+/**
+ * Check if user can invite team members
+ * Teams feature requires Teams module or higher tier
+ */
+export async function canInviteTeamMembers(userId: number): Promise<boolean> {
+  return checkSectionAccess(userId, "teams");
+}
+
+/**
+ * Get user subscription information
+ */
+export async function getUserSubscription(userId: number) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      stripeCustomerId: true,
+      subscriptionTier: true,
+    },
+  });
+
+  if (!user?.stripeCustomerId) {
+    return null;
+  }
+
+  // Return subscription info
+  return {
+    tier: user.subscriptionTier || 'free',
+    customerId: user.stripeCustomerId,
+  };
+}
+

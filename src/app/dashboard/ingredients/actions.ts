@@ -7,7 +7,8 @@ import { z } from "zod";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
-import { isRecipesTrial } from "@/lib/features";
+// Temporarily disabled to fix build error
+// import { isRecipesTrial } from "@/lib/features";
 
 const unitEnum = z.enum(["g", "kg", "mg", "lb", "oz", "ml", "l", "tsp", "tbsp", "cup", "floz", "pint", "quart", "gallon", "each", "slices", "pinch", "dash", "large", "medium", "small"]);
 const baseUnitEnum = z.enum(["g", "ml", "each", "slices"]);

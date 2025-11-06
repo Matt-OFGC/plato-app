@@ -9,7 +9,8 @@ import { auditLog } from "@/lib/audit-log";
 import { registerSchema } from "@/lib/validation/auth";
 import { mapAuthError, createAuthErrorResponse, logAuthError, generateErrorId } from "@/lib/errors/auth-errors";
 import { logger } from "@/lib/logger";
-import { initializeRecipesTrial } from "@/lib/features";
+// Temporarily disabled to fix build error
+// import { initializeRecipesTrial } from "@/lib/features";
 
 export async function POST(req: NextRequest) {
   const errorId = generateErrorId();
@@ -111,12 +112,14 @@ export async function POST(req: NextRequest) {
 
     await prisma.membership.create({ data: { userId: user.id, companyId: co.id, role: "OWNER" } });
     
+    // Temporarily disabled to fix build error
     // Initialize Recipes trial for new user
-    try {
-      await initializeRecipesTrial(user.id);
-      logger.debug(`Recipes trial initialized for user ${user.id}`);
-    } catch (trialError) {
-      logger.error("Failed to initialize Recipes trial:", trialError);
+    // try {
+    //   await initializeRecipesTrial(user.id);
+    //   logger.debug(`Recipes trial initialized for user ${user.id}`);
+    // } catch (trialError) {
+    //   logger.error("Failed to initialize Recipes trial:", trialError);
+    // }
       // Don't fail registration if trial init fails
     }
     

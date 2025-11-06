@@ -156,3 +156,89 @@ export async function createFeatureModuleCheckout(
   });
 }
 
+// Create billing portal session
+export async function createBillingPortalSession(
+  customerId: string,
+  returnUrl: string
+): Promise<Stripe.BillingPortal.Session> {
+  return await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: returnUrl,
+  });
+}
+
+// Get subscription seat count
+export async function getSubscriptionSeatCount(customerId: string): Promise<number> {
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: 'active',
+    limit: 1,
+  });
+
+  if (subscriptions.data.length === 0) {
+    return 0;
+  }
+
+  const subscription = subscriptions.data[0];
+  // Find seat quantity in subscription items
+  const seatItem = subscription.items.data.find(
+    item => item.price.id === STRIPE_CONFIG.products.seat.priceId
+  );
+
+  return seatItem?.quantity || 0;
+}
+
+// Update subscription seats
+export async function updateSubscriptionSeats(
+  customerId: string,
+  newSeatCount: number
+): Promise<void> {
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: 'active',
+    limit: 1,
+  });
+
+  if (subscriptions.data.length === 0) {
+    throw new Error('No active subscription found');
+  }
+
+  const subscription = subscriptions.data[0];
+  const seatPriceId = STRIPE_CONFIG.products.seat.priceId;
+
+  if (!seatPriceId) {
+    throw new Error('Seat price ID not configured');
+  }
+
+  // Find existing seat item
+  const seatItem = subscription.items.data.find(
+    item => item.price.id === seatPriceId
+  );
+
+  if (newSeatCount === 0 && seatItem) {
+    // Remove seat addon
+    await stripe.subscriptions.update(subscription.id, {
+      items: [{
+        id: seatItem.id,
+        deleted: true,
+      }],
+    });
+  } else if (seatItem) {
+    // Update existing seat quantity
+    await stripe.subscriptions.update(subscription.id, {
+      items: [{
+        id: seatItem.id,
+        quantity: newSeatCount,
+      }],
+    });
+  } else if (newSeatCount > 0) {
+    // Add seat addon
+    await stripe.subscriptions.update(subscription.id, {
+      items: [{
+        price: seatPriceId,
+        quantity: newSeatCount,
+      }],
+    });
+  }
+}
+

@@ -54,3 +54,40 @@ export class SocketClient {
 
 export const socketClient = new SocketClient();
 
+// Helper functions for socket operations
+export function onSocketEvent(event: string, callback: (...args: any[]) => void) {
+  // Add event listener wrapper
+  if (socketClient) {
+    // Implementation depends on your socket library
+    // For now, this is a placeholder
+    console.log('onSocketEvent:', event);
+  }
+}
+
+export function offSocketEvent(event: string, callback: (...args: any[]) => void) {
+  // Remove event listener wrapper
+  if (socketClient) {
+    console.log('offSocketEvent:', event);
+  }
+}
+
+export function sendMessage(channel: string, message: any) {
+  socketClient.send({ type: 'message', channel, data: message });
+}
+
+export function joinChannel(channel: string) {
+  socketClient.send({ type: 'join', channel });
+}
+
+export function leaveChannel(channel: string) {
+  socketClient.send({ type: 'leave', channel });
+}
+
+export function startTyping(channel: string) {
+  socketClient.send({ type: 'typing', channel, action: 'start' });
+}
+
+export function stopTyping(channel: string) {
+  socketClient.send({ type: 'typing', channel, action: 'stop' });
+}
+

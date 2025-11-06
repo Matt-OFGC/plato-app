@@ -163,3 +163,32 @@ export async function getRecentAuditLogs(
     return [];
   }
 }
+
+// Export auditLog object for backwards compatibility
+export const auditLog = {
+  loginSuccess,
+  loginFailed,
+  logAction,
+  logSystemEvent,
+  // Additional convenience methods
+  async register(userId: number, companyId: number, request: NextRequest): Promise<void> {
+    await logAction(userId, 'USER_REGISTERED', 'user', String(userId), { companyId }, request);
+  },
+  async roleChanged(
+    userId: number,
+    targetUserId: number,
+    oldRole: string,
+    newRole: string,
+    companyId: number
+  ): Promise<void> {
+    await logAction(userId, 'ROLE_CHANGED', 'membership', String(targetUserId), {
+      targetUserId,
+      oldRole,
+      newRole,
+      companyId,
+    });
+  },
+  async fileUploaded(userId: number, companyId: number, filename: string, size: number): Promise<void> {
+    await logAction(userId, 'FILE_UPLOADED', 'file', filename, { companyId, size });
+  },
+};
