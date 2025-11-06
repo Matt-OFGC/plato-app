@@ -17,11 +17,31 @@ interface User {
     id: number;
     role: string;
     isActive: boolean;
+    pin?: string | null;
     company: {
       id: number;
       name: string;
     };
   }>;
+}
+
+interface FeatureModule {
+  id: number;
+  userId: number;
+  moduleName: string;
+  status: string;
+  isTrial: boolean;
+  unlockedAt: Date | null;
+}
+
+interface PinInfo {
+  membershipId: number;
+  companyId: number;
+  companyName: string;
+  pin: string | null;
+  hasPin: boolean;
+  role: string;
+  isActive: boolean;
 }
 
 export function UserManagement() {
@@ -32,6 +52,12 @@ export function UserManagement() {
   const [filterTier, setFilterTier] = useState<"all" | "starter" | "professional" | "team" | "business">("all");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [featureModules, setFeatureModules] = useState<FeatureModule[]>([]);
+  const [pins, setPins] = useState<PinInfo[]>([]);
+  const [loadingFeatures, setLoadingFeatures] = useState(false);
+  const [editingUser, setEditingUser] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -181,16 +207,135 @@ export function UserManagement() {
 
   const handleViewDetails = async (userId: number) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSelectedUser(data.user);
+      const [userRes, featuresRes, pinsRes] = await Promise.all([
+        fetch(`/api/admin/users/${userId}`),
+        fetch(`/api/admin/users/${userId}/features`),
+        fetch(`/api/admin/users/${userId}/reset-pin`),
+      ]);
+
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setSelectedUser(userData.user);
+        setEditName(userData.user.name || "");
+        setEditEmail(userData.user.email || "");
+        setEditingUser(false);
       } else {
         alert("Failed to load user details");
+        return;
+      }
+
+      if (featuresRes.ok) {
+        const featuresData = await featuresRes.json();
+        setFeatureModules(featuresData.modules || []);
+      }
+
+      if (pinsRes.ok) {
+        const pinsData = await pinsRes.json();
+        setPins(pinsData.pins || []);
       }
     } catch (error) {
       console.error("Failed to fetch user details:", error);
       alert("Failed to load user details");
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          email: editEmail,
+        }),
+      });
+
+      if (res.ok) {
+        alert("User updated successfully");
+        setEditingUser(false);
+        await fetchUsers();
+        await handleViewDetails(selectedUser.id);
+      } else {
+        const error = await res.json();
+        alert(`Failed to update user: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      alert("Failed to update user");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleManageFeature = async (userId: number, moduleName: string, action: "grant" | "revoke" | "upgrade-trial") => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/features`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleName, action }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(data.message || `Successfully ${action}ed ${moduleName}`);
+        // Refresh features
+        const featuresRes = await fetch(`/api/admin/users/${userId}/features`);
+        if (featuresRes.ok) {
+          const featuresData = await featuresRes.json();
+          setFeatureModules(featuresData.modules || []);
+        }
+      } else {
+        const error = await res.json();
+        alert(`Failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Failed to manage feature:", error);
+      alert("Failed to manage feature");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetPin = async (userId: number, membershipId: number, companyName: string) => {
+    const customPin = prompt(`Enter new PIN for ${companyName} (4-6 digits, or leave empty for random):`);
+    if (customPin && !/^\d{4,6}$/.test(customPin)) {
+      alert("PIN must be 4-6 digits");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/reset-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          membershipId, 
+          newPin: customPin || undefined 
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`PIN reset successfully!\n\nCompany: ${data.membership.companyName}\nNew PIN: ${data.pin}\n\nShare this PIN with the user.`);
+        // Refresh PINs
+        const pinsRes = await fetch(`/api/admin/users/${userId}/reset-pin`);
+        if (pinsRes.ok) {
+          const pinsData = await pinsRes.json();
+          setPins(pinsData.pins || []);
+        }
+      } else {
+        const error = await res.json();
+        alert(`Failed to reset PIN: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Failed to reset PIN:", error);
+      alert("Failed to reset PIN");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -413,6 +558,16 @@ export function UserManagement() {
                       >
                         Reset PW
                       </button>
+                      {user.memberships && user.memberships.length > 0 && (
+                        <button
+                          onClick={() => handleViewDetails(user.id)}
+                          disabled={actionLoading}
+                          className="px-3 py-1 text-xs rounded bg-orange-100 text-orange-700 hover:bg-orange-200"
+                          title="Manage PINs"
+                        >
+                          Manage PINs
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteUser(user.id, user.email)}
                         disabled={actionLoading}
@@ -473,11 +628,29 @@ export function UserManagement() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <p className="text-sm text-gray-900">{selectedUser.email}</p>
+                  {editingUser ? (
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-900">{selectedUser.email}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <p className="text-sm text-gray-900">{selectedUser.name || "Not set"}</p>
+                  {editingUser ? (
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-900">{selectedUser.name || "Not set"}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
@@ -522,39 +695,155 @@ export function UserManagement() {
 
               {selectedUser.memberships && selectedUser.memberships.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Companies</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Companies & PINs</label>
                   <div className="space-y-2">
-                    {selectedUser.memberships.map((m) => (
-                      <div key={m.id} className="bg-gray-50 p-3 rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium text-gray-900">{m.company.name}</p>
-                            <p className="text-sm text-gray-500">Role: {m.role} | Status: {m.isActive ? "Active" : "Inactive"}</p>
+                    {selectedUser.memberships.map((m) => {
+                      const pinInfo = pins.find(p => p.membershipId === m.id);
+                      return (
+                        <div key={m.id} className="bg-gray-50 p-3 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{m.company.name}</p>
+                              <p className="text-sm text-gray-500">Role: {m.role} | Status: {m.isActive ? "Active" : "Inactive"}</p>
+                              {pinInfo && pinInfo.hasPin && (
+                                <p className="text-sm text-gray-600 mt-1">
+                                  PIN: <span className="font-mono font-semibold">{pinInfo.pin}</span>
+                                </p>
+                              )}
+                              {(!pinInfo || !pinInfo.hasPin) && (
+                                <p className="text-sm text-gray-400 mt-1 italic">No PIN set</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleResetPin(selectedUser.id, m.id, m.company.name)}
+                              disabled={actionLoading}
+                              className="px-3 py-1 text-xs rounded bg-orange-100 text-orange-700 hover:bg-orange-200 ml-2"
+                            >
+                              {pinInfo?.hasPin ? "Reset PIN" : "Set PIN"}
+                            </button>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
+              {/* Feature Modules Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Feature Access</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {["recipes", "production", "make", "teams", "safety"].map((moduleName) => {
+                    const module = featureModules.find(m => m.moduleName === moduleName);
+                    const isActive = module && (module.status === "active" || module.status === "trialing");
+                    const isTrial = module?.isTrial || false;
+
+                    return (
+                      <div key={moduleName} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-medium text-gray-900 capitalize">{moduleName}</h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {isActive ? (
+                                <span className={`inline-flex px-2 py-0.5 rounded ${isTrial ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}`}>
+                                  {isTrial ? "Trial" : "Active"}
+                                </span>
+                              ) : (
+                                <span className="inline-flex px-2 py-0.5 rounded bg-red-100 text-red-800">Not Active</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          {!isActive ? (
+                            <button
+                              onClick={() => handleManageFeature(selectedUser.id, moduleName, "grant")}
+                              disabled={actionLoading}
+                              className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200"
+                            >
+                              Grant Access
+                            </button>
+                          ) : (
+                            <>
+                              {isTrial && (
+                                <button
+                                  onClick={() => handleManageFeature(selectedUser.id, moduleName, "upgrade-trial")}
+                                  disabled={actionLoading}
+                                  className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                >
+                                  Upgrade from Trial
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleManageFeature(selectedUser.id, moduleName, "revoke")}
+                                disabled={actionLoading}
+                                className="px-3 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+                              >
+                                Revoke Access
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-4 border-t border-gray-200">
+                {editingUser ? (
+                  <>
+                    <button
+                      onClick={handleUpdateUser}
+                      disabled={actionLoading}
+                      className="px-4 py-2 text-sm rounded bg-green-100 text-green-700 hover:bg-green-200"
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingUser(false);
+                        setEditName(selectedUser.name || "");
+                        setEditEmail(selectedUser.email || "");
+                      }}
+                      disabled={actionLoading}
+                      className="px-4 py-2 text-sm rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setEditingUser(true)}
+                      disabled={actionLoading}
+                      className="px-4 py-2 text-sm rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+                    >
+                      Edit User
+                    </button>
+                    <button
+                      onClick={() => handleResetPassword(selectedUser.id, selectedUser.email)}
+                      disabled={actionLoading}
+                      className="px-4 py-2 text-sm rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                    >
+                      Reset Password
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(selectedUser.id, selectedUser.email)}
+                      disabled={actionLoading}
+                      className="px-4 py-2 text-sm rounded bg-red-100 text-red-700 hover:bg-red-200"
+                    >
+                      Delete User
+                    </button>
+                  </>
+                )}
                 <button
-                  onClick={() => handleResetPassword(selectedUser.id, selectedUser.email)}
-                  disabled={actionLoading}
-                  className="px-4 py-2 text-sm rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                >
-                  Reset Password
-                </button>
-                <button
-                  onClick={() => handleDeleteUser(selectedUser.id, selectedUser.email)}
-                  disabled={actionLoading}
-                  className="px-4 py-2 text-sm rounded bg-red-100 text-red-700 hover:bg-red-200"
-                >
-                  Delete User
-                </button>
-                <button
-                  onClick={() => setSelectedUser(null)}
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setFeatureModules([]);
+                    setPins([]);
+                    setEditingUser(false);
+                  }}
                   className="ml-auto px-4 py-2 text-sm rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
                 >
                   Close
