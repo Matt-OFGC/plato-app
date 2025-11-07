@@ -76,9 +76,15 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
 
   // Fetch unlock status on mount and when pathname changes (user navigates)
   const fetchUnlockStatus = () => {
-    fetch("/api/features/unlock-status")
+    fetch("/api/features/unlock-status", {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
+        console.log('Unlock status fetched:', data.unlockStatus); // Debug log
         if (data.unlockStatus) {
           setUnlockStatus(data.unlockStatus);
         }
