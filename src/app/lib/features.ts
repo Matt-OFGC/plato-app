@@ -162,6 +162,14 @@ export async function getUnlockStatus(userId: number) {
     where: { userId },
   });
 
+  // Debug logging
+  console.log(`[getUnlockStatus] User ${userId} modules:`, modules.map(m => ({
+    moduleName: m.moduleName,
+    status: m.status,
+    isTrial: m.isTrial,
+    isActive: m.status === "active" || m.status === "trialing"
+  })));
+
   const moduleMap = new Map(
     modules.map((m) => [m.moduleName, { ...m, isActive: m.status === "active" || m.status === "trialing" }])
   );

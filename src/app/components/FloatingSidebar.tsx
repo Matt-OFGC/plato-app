@@ -89,8 +89,14 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
         return res.json();
       })
       .then((data) => {
-        console.log('Unlock status fetched:', data.unlockStatus); // Debug log
+        console.log('Unlock status fetched:', JSON.stringify(data, null, 2)); // Debug log
         if (data.unlockStatus) {
+          console.log('Setting unlock status:', {
+            production: data.unlockStatus.production?.unlocked,
+            make: data.unlockStatus.make?.unlocked,
+            teams: data.unlockStatus.teams?.unlocked,
+            safety: data.unlockStatus.safety?.unlocked,
+          });
           setUnlockStatus(data.unlockStatus);
         } else if (data.error) {
           console.error("API error:", data.error, data.details);
@@ -102,6 +108,8 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
             teams: { unlocked: false, isTrial: false },
             safety: { unlocked: false, isTrial: false },
           });
+        } else {
+          console.warn("API returned no unlockStatus and no error:", data);
         }
       })
       .catch((err) => {
@@ -125,6 +133,13 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
   useEffect(() => {
     fetchUnlockStatus();
   }, [pathname]);
+
+  // Also refresh when sidebar opens (user might have granted access in admin panel)
+  useEffect(() => {
+    if (isOpen) {
+      fetchUnlockStatus();
+    }
+  }, [isOpen]);
 
   // Get all navigation items for global search
   const allNavigationItems = ALL_NAVIGATION_ITEMS;
