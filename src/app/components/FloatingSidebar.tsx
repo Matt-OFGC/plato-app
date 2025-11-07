@@ -74,8 +74,8 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
   const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean }> | null>(null);
   const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
 
-  // Fetch unlock status on mount
-  useEffect(() => {
+  // Fetch unlock status on mount and when pathname changes (user navigates)
+  const fetchUnlockStatus = () => {
     fetch("/api/features/unlock-status")
       .then((res) => res.json())
       .then((data) => {
@@ -84,7 +84,16 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
         }
       })
       .catch((err) => console.error("Failed to fetch unlock status:", err));
+  };
+
+  useEffect(() => {
+    fetchUnlockStatus();
   }, []);
+
+  // Refresh unlock status when pathname changes (in case admin granted access)
+  useEffect(() => {
+    fetchUnlockStatus();
+  }, [pathname]);
 
   // Get all navigation items for global search
   const allNavigationItems = ALL_NAVIGATION_ITEMS;
