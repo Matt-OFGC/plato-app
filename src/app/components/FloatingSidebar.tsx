@@ -82,14 +82,39 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
         'Cache-Control': 'no-cache',
       }
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`API returned ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
         console.log('Unlock status fetched:', data.unlockStatus); // Debug log
         if (data.unlockStatus) {
           setUnlockStatus(data.unlockStatus);
+        } else if (data.error) {
+          console.error("API error:", data.error, data.details);
+          // Set default locked status if API returns error
+          setUnlockStatus({
+            recipes: { unlocked: true, isTrial: true },
+            production: { unlocked: false, isTrial: false },
+            make: { unlocked: false, isTrial: false },
+            teams: { unlocked: false, isTrial: false },
+            safety: { unlocked: false, isTrial: false },
+          });
         }
       })
-      .catch((err) => console.error("Failed to fetch unlock status:", err));
+      .catch((err) => {
+        console.error("Failed to fetch unlock status:", err);
+        // Set default locked status on network error
+        setUnlockStatus({
+          recipes: { unlocked: true, isTrial: true },
+          production: { unlocked: false, isTrial: false },
+          make: { unlocked: false, isTrial: false },
+          teams: { unlocked: false, isTrial: false },
+          safety: { unlocked: false, isTrial: false },
+        });
+      });
   };
 
   useEffect(() => {

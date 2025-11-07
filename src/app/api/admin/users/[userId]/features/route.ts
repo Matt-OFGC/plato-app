@@ -70,16 +70,7 @@ export async function POST(
         },
       });
 
-      // If it's recipes, remove trial limits
-      if (moduleName === "recipes") {
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            maxIngredients: null,
-            maxRecipes: null,
-          },
-        });
-      }
+      // Note: Trial limits are handled by FeatureModule system, not User model fields
 
       return NextResponse.json({ 
         success: true, 
@@ -111,16 +102,7 @@ export async function POST(
           },
         });
 
-        // Remove trial limits for recipes
-        if (moduleName === "recipes") {
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              maxIngredients: null,
-              maxRecipes: null,
-            },
-          });
-        }
+        // Note: Trial limits are handled by FeatureModule system, not User model fields
 
         return NextResponse.json({ 
           success: true, 
@@ -158,16 +140,7 @@ export async function POST(
         });
       }
 
-      // Restore trial limits for recipes if revoked
-      if (moduleName === "recipes") {
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            maxIngredients: 10,
-            maxRecipes: 5,
-          },
-        });
-      }
+      // Note: Trial limits are handled by FeatureModule system, not User model fields
 
       return NextResponse.json({ 
         success: true, 

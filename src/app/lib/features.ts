@@ -78,8 +78,6 @@ export async function checkRecipesLimits(userId: number) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      maxIngredients: true,
-      maxRecipes: true,
       ingredientCount: true,
       recipeCount: true,
     },
@@ -89,8 +87,9 @@ export async function checkRecipesLimits(userId: number) {
     throw new Error("User not found");
   }
 
-  const ingredientsLimit = user.maxIngredients ?? 10;
-  const recipesLimit = user.maxRecipes ?? 5;
+  // Default trial limits: 10 ingredients, 5 recipes
+  const ingredientsLimit = 10;
+  const recipesLimit = 5;
   const ingredientsUsed = user.ingredientCount ?? 0;
   const recipesUsed = user.recipeCount ?? 0;
 
@@ -138,15 +137,8 @@ export async function initializeRecipesTrial(userId: number): Promise<void> {
     },
   });
 
-  // Update user limits and trial start date if not set
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      maxIngredients: 10,
-      maxRecipes: 5,
-      recipesTrialStartedAt: new Date(),
-    },
-  });
+  // Note: User limits are handled by the FeatureModule system
+  // No need to update User model fields that don't exist
 }
 
 /**
