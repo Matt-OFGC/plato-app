@@ -18,12 +18,19 @@ export async function canAccessProduction(userId: number): Promise<boolean> {
 
 /**
  * Legacy: Check if user can access wholesale features (via tier)
- * NEW: Checks if user has Wholesale features (part of Business tier, but we'll check Production/Business for now)
+ * NEW: Checks if user has Wholesale features (part of Production module)
  */
 export async function canAccessWholesale(userId: number): Promise<boolean> {
-  // For now, wholesale is part of Production module
-  // In future, might be separate module
+  // Wholesale is part of Production module
   return checkSectionAccess(userId, "production");
+}
+
+/**
+ * Check if user can invite team members
+ * NEW: Checks if user has Teams module unlocked
+ */
+export async function canInviteTeamMembers(userId: number): Promise<boolean> {
+  return checkSectionAccess(userId, "teams");
 }
 
 /**
@@ -71,20 +78,19 @@ export async function updateRecipeCount(userId: number): Promise<void> {
 }
 
 /**
- * Legacy: Create feature gate error response
+ * Create feature gate error response
+ * Note: This now references feature modules, not subscription tiers
  */
 export function createFeatureGateError(
-  requiredTier: string,
-  currentTier: string,
+  requiredModule: string,
   featureName: string
 ) {
   return {
     error: "Feature not available",
     code: "FEATURE_GATED",
-    requiredTier,
-    currentTier,
+    requiredModule,
     featureName,
-    message: `${featureName} requires ${requiredTier} tier. You currently have ${currentTier} tier.`,
+    message: `${featureName} requires the ${requiredModule} module to be unlocked. Please subscribe to unlock this feature.`,
   };
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { FeatureModuleName } from "@/lib/features";
 
 export async function POST(request: NextRequest) {
   try {
@@ -126,6 +127,78 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // CRITICAL: Create FeatureModule records based on tier
+    // This is what the frontend actually checks for access!
+    const modulesToUnlock: FeatureModuleName[] = [];
+    
+    if (tier === "professional") {
+      // Professional: Recipes (already has trial, upgrade to paid)
+      modulesToUnlock.push("recipes");
+    } else if (tier === "team") {
+      // Team: Recipes, Production, Teams
+      modulesToUnlock.push("recipes", "production", "teams");
+    } else if (tier === "business") {
+      // Business: All modules
+      modulesToUnlock.push("recipes", "production", "make", "teams", "safety");
+    }
+    // Starter tier doesn't unlock any paid modules (only Recipes trial)
+
+    console.log(`[Admin Upgrade] Unlocking modules for user ${userEmail} (${user.id}):`, modulesToUnlock);
+
+    // Create or update FeatureModule records for each module
+    for (const moduleName of modulesToUnlock) {
+      const existing = await prisma.featureModule.findUnique({
+        where: {
+          userId_moduleName: {
+            userId: user.id,
+            moduleName: moduleName,
+          },
+        },
+      });
+
+      if (existing) {
+        // Update existing (e.g., upgrade from trial to paid)
+        await prisma.featureModule.update({
+          where: {
+            userId_moduleName: {
+              userId: user.id,
+              moduleName: moduleName,
+            },
+          },
+          data: {
+            status: "active",
+            isTrial: false,
+            unlockedAt: existing.unlockedAt || new Date(),
+            updatedAt: new Date(),
+          },
+        });
+        console.log(`[Admin Upgrade] Updated module ${moduleName} for user ${user.id}`);
+      } else {
+        // Create new module
+        await prisma.featureModule.create({
+          data: {
+            userId: user.id,
+            moduleName: moduleName,
+            status: "active",
+            isTrial: false,
+            unlockedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+        console.log(`[Admin Upgrade] Created module ${moduleName} for user ${user.id}`);
+      }
+    }
+
+    // Verify modules were created
+    const createdModules = await prisma.featureModule.findMany({
+      where: {
+        userId: user.id,
+        status: { in: ["active", "trialing"] },
+      },
+    });
+    console.log(`[Admin Upgrade] Verified ${createdModules.length} active modules for user ${user.id}:`, 
+      createdModules.map(m => m.moduleName));
+
     return NextResponse.json({
       success: true,
       message: `Successfully upgraded ${userEmail} to ${tier} tier${isLifetime ? " (lifetime)" : ""}`,
@@ -137,6 +210,8 @@ export async function POST(request: NextRequest) {
         subscriptionStatus: "active",
         subscriptionEndsAt: subscriptionEndsAt,
       },
+      unlockedModules: modulesToUnlock,
+      activeModules: createdModules.map(m => m.moduleName),
     });
   } catch (error) {
     console.error("Upgrade subscription error:", error);

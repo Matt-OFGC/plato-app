@@ -49,7 +49,7 @@ export function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "demo" | "real">("all");
-  const [filterTier, setFilterTier] = useState<"all" | "starter" | "professional" | "team" | "business">("all");
+  // Removed filterTier - using Feature Modules only
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [featureModules, setFeatureModules] = useState<FeatureModule[]>([]);
@@ -123,29 +123,8 @@ export function UserManagement() {
     }
   };
 
-  const handleUpgradeSubscription = async (userEmail: string, tier: string, isLifetime: boolean = false) => {
-    setActionLoading(true);
-    try {
-      const res = await fetch("/api/admin/users/upgrade-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userEmail, tier, isLifetime }),
-      });
-      
-      if (res.ok) {
-        await fetchUsers(); // Refresh the list
-        alert(`Successfully upgraded ${userEmail} to ${tier}${isLifetime ? " (lifetime)" : ""}`);
-      } else {
-        const error = await res.json();
-        alert(`Failed to upgrade: ${error.error}`);
-      }
-    } catch (error) {
-      console.error("Failed to upgrade subscription:", error);
-      alert("Failed to upgrade subscription");
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  // Removed handleUpgradeSubscription - use Feature Modules directly instead
+  // To grant access, use the "Grant All" or individual "Grant Access" buttons in Feature Access section
 
   const handleDeleteUser = async (userId: number, userEmail: string) => {
     if (!confirm(`Are you sure you want to delete user ${userEmail}? This action cannot be undone.`)) {
@@ -281,12 +260,20 @@ export function UserManagement() {
 
       if (res.ok) {
         const data = await res.json();
+        console.log(`[UserManagement] Feature ${action} result:`, data);
         alert(data.message || `Successfully ${action}ed ${moduleName}`);
-        // Refresh features
+        
+        // Refresh features immediately
         const featuresRes = await fetch(`/api/admin/users/${userId}/features`);
         if (featuresRes.ok) {
           const featuresData = await featuresRes.json();
+          console.log(`[UserManagement] Refreshed feature modules:`, featuresData.modules);
           setFeatureModules(featuresData.modules || []);
+        }
+        
+        // Trigger refresh event for frontend sidebar (if user is viewing the app)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('refresh-unlock-status'));
         }
       } else {
         const error = await res.json();
@@ -347,9 +334,7 @@ export function UserManagement() {
                        (filterType === "demo" && user.accountType === "demo") ||
                        (filterType === "real" && user.accountType === "real");
     
-    const matchesTier = filterTier === "all" || user.subscriptionTier === filterTier;
-    
-    return matchesSearch && matchesType && matchesTier;
+    return matchesSearch && matchesType;
   });
 
   if (loading) {
@@ -381,7 +366,7 @@ export function UserManagement() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
             <input
@@ -404,20 +389,7 @@ export function UserManagement() {
               <option value="real">Real Accounts</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Subscription Tier</label>
-            <select
-              value={filterTier}
-              onChange={(e) => setFilterTier(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              <option value="all">All Tiers</option>
-              <option value="starter">Starter</option>
-              <option value="professional">Professional</option>
-              <option value="team">Team</option>
-              <option value="business">Business</option>
-            </select>
-          </div>
+          {/* Removed Subscription Tier filter - using Feature Modules only */}
         </div>
       </div>
 
@@ -451,7 +423,7 @@ export function UserManagement() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscription</th>
+                  {/* Removed Subscription column - using Feature Modules only */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Companies</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
@@ -476,12 +448,7 @@ export function UserManagement() {
                       {user.accountType === "demo" ? "Demo" : "Real"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 capitalize">{user.subscriptionTier}</div>
-                      <div className="text-sm text-gray-500">{user.subscriptionStatus}</div>
-                    </div>
-                  </td>
+                  {/* Removed Subscription column - using Feature Modules only */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex space-x-2">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -576,25 +543,7 @@ export function UserManagement() {
                       >
                         Delete
                       </button>
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            const [tier, isLifetime] = e.target.value.split(":");
-                            handleUpgradeSubscription(user.email, tier, isLifetime === "true");
-                            e.target.value = ""; // Reset selection
-                          }
-                        }}
-                        disabled={actionLoading}
-                        className="px-2 py-1 text-xs border border-gray-300 rounded"
-                      >
-                        <option value="">Upgrade...</option>
-                        <option value="professional:false">Professional (1 year)</option>
-                        <option value="team:false">Team (1 year)</option>
-                        <option value="business:false">Business (1 year)</option>
-                        <option value="professional:true">Professional (Lifetime)</option>
-                        <option value="team:true">Team (Lifetime)</option>
-                        <option value="business:true">Business (Lifetime)</option>
-                      </select>
+                      {/* Removed subscription tier upgrade dropdown - use Feature Access in user details instead */}
                     </div>
                   </td>
                 </tr>
@@ -679,10 +628,7 @@ export function UserManagement() {
                     )}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subscription</label>
-                  <p className="text-sm text-gray-900 capitalize">{selectedUser.subscriptionTier} - {selectedUser.subscriptionStatus}</p>
-                </div>
+                {/* Removed Subscription display - using Feature Modules only */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
                   <p className="text-sm text-gray-900">{new Date(selectedUser.createdAt).toLocaleString()}</p>
@@ -731,7 +677,79 @@ export function UserManagement() {
 
               {/* Feature Modules Section */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Feature Access</label>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-700">Feature Access</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!selectedUser) return;
+                        if (!confirm(`Grant access to ALL modules for ${selectedUser.email}?`)) return;
+                        setActionLoading(true);
+                        try {
+                          const res = await fetch(`/api/admin/users/${selectedUser.id}/features`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: "grant-all" }),
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            alert(data.message);
+                            await handleViewDetails(selectedUser.id);
+                            if (typeof window !== 'undefined') {
+                              window.dispatchEvent(new CustomEvent('refresh-unlock-status'));
+                            }
+                          } else {
+                            const error = await res.json();
+                            alert(`Failed: ${error.error}`);
+                          }
+                        } catch (error) {
+                          console.error("Failed to grant all modules:", error);
+                          alert("Failed to grant all modules");
+                        } finally {
+                          setActionLoading(false);
+                        }
+                      }}
+                      disabled={actionLoading}
+                      className="px-3 py-1 text-xs rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                    >
+                      Grant All
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!selectedUser) return;
+                        if (!confirm(`Revoke access to ALL modules for ${selectedUser.email}?`)) return;
+                        setActionLoading(true);
+                        try {
+                          const res = await fetch(`/api/admin/users/${selectedUser.id}/features`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: "revoke-all" }),
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            alert(data.message);
+                            await handleViewDetails(selectedUser.id);
+                            if (typeof window !== 'undefined') {
+                              window.dispatchEvent(new CustomEvent('refresh-unlock-status'));
+                            }
+                          } else {
+                            const error = await res.json();
+                            alert(`Failed: ${error.error}`);
+                          }
+                        } catch (error) {
+                          console.error("Failed to revoke all modules:", error);
+                          alert("Failed to revoke all modules");
+                        } finally {
+                          setActionLoading(false);
+                        }
+                      }}
+                      disabled={actionLoading}
+                      className="px-3 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+                    >
+                      Revoke All
+                    </button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {["recipes", "production", "make", "teams", "safety"].map((moduleName) => {
                     const module = featureModules.find(m => m.moduleName === moduleName);

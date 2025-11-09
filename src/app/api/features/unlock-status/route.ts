@@ -1,32 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getUnlockStatus, checkRecipesLimits } from "@/lib/features";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
+      console.error('[Unlock Status] No session found');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Debug: Log user ID and check if FeatureModule table exists
-    console.log('Unlock status check for user:', session.id);
+    // Enhanced logging: Log user ID, email, and verify user exists
+    console.log('[Unlock Status] Checking for user:', {
+      id: session.id,
+      email: session.email,
+      isAdmin: session.isAdmin
+    });
+    
+    // Verify user exists in database
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+      select: {
+        id: true,
+        email: true,
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      console.error('[Unlock Status] User not found in database:', session.id);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (!user.isActive) {
+      console.error('[Unlock Status] User is inactive:', session.id);
+      return NextResponse.json({ error: "User account is inactive" }, { status: 403 });
+    }
+
+    // Log FeatureModule records directly from database for debugging
+    const featureModules = await prisma.featureModule.findMany({
+      where: { userId: session.id },
+    });
+    console.log('[Unlock Status] FeatureModule records from DB:', featureModules.map(m => ({
+      moduleName: m.moduleName,
+      status: m.status,
+      isTrial: m.isTrial,
+      unlockedAt: m.unlockedAt,
+    })));
     
     try {
       const unlockStatus = await getUnlockStatus(session.id);
       const recipesLimits = await checkRecipesLimits(session.id);
       
-      console.log('Unlock status result:', JSON.stringify(unlockStatus, null, 2));
+      console.log('[Unlock Status] Final unlock status result:', JSON.stringify(unlockStatus, null, 2));
+      console.log('[Unlock Status] Recipes limits:', recipesLimits);
 
     const response = NextResponse.json({
       unlockStatus,
       recipesLimits,
+      debug: {
+        userId: session.id,
+        userEmail: session.email,
+        featureModulesCount: featureModules.length,
+      },
     });
     
     // Prevent caching to ensure fresh data
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
+    response.headers.set('X-Timestamp', Date.now().toString());
     
       return response;
     } catch (dbError: any) {

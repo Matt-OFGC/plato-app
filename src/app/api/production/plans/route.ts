@@ -13,13 +13,8 @@ export async function POST(request: NextRequest) {
     // Check if user has access to production features
     const hasAccess = await canAccessProduction(session.id);
     if (!hasAccess) {
-      const user = await prisma.user.findUnique({
-        where: { id: session.id },
-        select: { subscriptionTier: true },
-      });
-      const currentTier = user?.subscriptionTier || "starter";
       return NextResponse.json(
-        createFeatureGateError("team", currentTier as any, "Production Planning"),
+        createFeatureGateError("production", "Production Planning"),
         { status: 403 }
       );
     }

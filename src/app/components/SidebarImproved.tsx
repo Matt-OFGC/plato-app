@@ -21,17 +21,55 @@ export function Sidebar() {
   const { activeApp, switchToApp } = useAppContext();
   const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean }> | null>(null);
   const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Fetch unlock status function
+  const fetchUnlockStatus = async (showLoading = false) => {
+    if (showLoading) setIsRefreshing(true);
+    try {
+      const res = await fetch(`/api/features/unlock-status?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+      const data = await res.json();
+      if (data.unlockStatus) {
+        console.log('[Sidebar] Unlock status updated:', data.unlockStatus);
+        setUnlockStatus(data.unlockStatus);
+      } else if (data.error) {
+        console.error('[Sidebar] Error fetching unlock status:', data.error);
+      }
+    } catch (err) {
+      console.error("[Sidebar] Failed to fetch unlock status:", err);
+    } finally {
+      if (showLoading) setIsRefreshing(false);
+    }
+  };
 
   // Fetch unlock status on mount
   useEffect(() => {
-    fetch("/api/features/unlock-status")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.unlockStatus) {
-          setUnlockStatus(data.unlockStatus);
-        }
-      })
-      .catch((err) => console.error("Failed to fetch unlock status:", err));
+    fetchUnlockStatus();
+  }, []);
+
+  // Refresh unlock status when window gains focus (user switches back to tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('[Sidebar] Window focused, refreshing unlock status');
+      fetchUnlockStatus();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
+  // Listen for custom event to refresh unlock status (can be triggered from admin panel)
+  useEffect(() => {
+    const handleRefreshUnlockStatus = () => {
+      console.log('[Sidebar] Refresh unlock status event received');
+      fetchUnlockStatus(true);
+    };
+    window.addEventListener('refresh-unlock-status', handleRefreshUnlockStatus);
+    return () => window.removeEventListener('refresh-unlock-status', handleRefreshUnlockStatus);
   }, []);
   
   // Debug: Log active app and filtered items
@@ -377,6 +415,39 @@ export function Sidebar() {
                 <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/nav-item:opacity-100 pointer-events-none transition-all duration-200 z-50 animate-spring">
                   <div className="px-3 py-1.5 rounded-xl liquid-glass liquid-glass-reflection text-gray-800 shadow-xl whitespace-nowrap text-sm font-medium">
                     Settings
+                  </div>
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white/60"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Refresh Unlock Status Button */}
+            <div className="relative group/refresh">
+              <button
+                onClick={() => fetchUnlockStatus(true)}
+                disabled={isRefreshing}
+                className="w-10 h-10 rounded-xl liquid-glass liquid-glass-hover liquid-glass-ripple flex items-center justify-center transition-all duration-200 touch-manipulation text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh Feature Access"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <div className="w-5 h-5 flex items-center justify-center relative z-10">
+                  {isRefreshing ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  )}
+                </div>
+              </button>
+              
+              {/* Desktop hover tooltip */}
+              {!isTouchDevice && (
+                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/refresh:opacity-100 pointer-events-none transition-all duration-200 z-50 animate-spring">
+                  <div className="px-3 py-1.5 rounded-xl liquid-glass liquid-glass-reflection text-gray-800 shadow-xl whitespace-nowrap text-sm font-medium">
+                    Refresh Access
                   </div>
                   <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white/60"></div>
                 </div>

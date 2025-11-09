@@ -14,13 +14,8 @@ export async function GET(request: NextRequest) {
     // Check if user has access to wholesale features
     const hasAccess = await canAccessWholesale(session.id);
     if (!hasAccess) {
-      const user = await prisma.user.findUnique({
-        where: { id: session.id },
-        select: { subscriptionTier: true },
-      });
-      const currentTier = user?.subscriptionTier || "starter";
       return NextResponse.json(
-        createFeatureGateError("business", currentTier as any, "Wholesale Products"),
+        createFeatureGateError("production", "Wholesale Products"),
         { status: 403 }
       );
     }

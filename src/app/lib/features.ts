@@ -10,26 +10,34 @@ export async function checkSectionAccess(
   userId: number,
   sectionName: FeatureModuleName
 ): Promise<boolean> {
-  const module = await prisma.featureModule.findUnique({
-    where: {
-      userId_moduleName: {
-        userId,
-        moduleName: sectionName,
+  try {
+    const module = await prisma.featureModule.findUnique({
+      where: {
+        userId_moduleName: {
+          userId,
+          moduleName: sectionName,
+        },
       },
-    },
-  });
+    });
 
-  if (!module) {
-    // Recipes has free trial by default - auto-initialize if not exists
-    if (sectionName === "recipes") {
-      await initializeRecipesTrial(userId);
-      return true; // Trial is active
+    if (!module) {
+      // Recipes has free trial by default - auto-initialize if not exists
+      if (sectionName === "recipes") {
+        await initializeRecipesTrial(userId);
+        return true; // Trial is active
+      }
+      console.log(`[checkSectionAccess] Module ${sectionName} not found for user ${userId}`);
+      return false; // Other sections require purchase
     }
-    return false; // Other sections require purchase
-  }
 
-  // Check if module is active (not canceled)
-  return module.status === "active" || module.status === "trialing";
+    // Check if module is active (not canceled)
+    const hasAccess = module.status === "active" || module.status === "trialing";
+    console.log(`[checkSectionAccess] User ${userId}, module ${sectionName}: status=${module.status}, hasAccess=${hasAccess}`);
+    return hasAccess;
+  } catch (error) {
+    console.error(`[checkSectionAccess] Error checking access for user ${userId}, module ${sectionName}:`, error);
+    return false;
+  }
 }
 
 /**
@@ -158,66 +166,110 @@ export async function requireSectionAccess(
  * Get detailed unlock status for all sections
  */
 export async function getUnlockStatus(userId: number) {
-  const modules = await prisma.featureModule.findMany({
-    where: { userId },
-  });
-
-  // Debug logging
-  console.log(`[getUnlockStatus] User ${userId} modules:`, modules.map(m => ({
-    moduleName: m.moduleName,
-    status: m.status,
-    isTrial: m.isTrial,
-    isActive: m.status === "active" || m.status === "trialing"
-  })));
-
-  const moduleMap = new Map(
-    modules.map((m) => [m.moduleName, { ...m, isActive: m.status === "active" || m.status === "trialing" }])
-  );
-
-  // Check if Recipes trial exists, if not initialize it
-  if (!moduleMap.has("recipes")) {
-    await initializeRecipesTrial(userId);
-    const recipesModule = await prisma.featureModule.findUnique({
-      where: {
-        userId_moduleName: {
-          userId,
-          moduleName: "recipes",
-        },
-      },
+  try {
+    const modules = await prisma.featureModule.findMany({
+      where: { userId },
     });
-    if (recipesModule) {
-      moduleMap.set("recipes", { ...recipesModule, isActive: true });
+
+    // Debug logging - enhanced
+    console.log(`[getUnlockStatus] User ${userId} - Found ${modules.length} modules:`, modules.map(m => ({
+      moduleName: m.moduleName,
+      status: m.status,
+      isTrial: m.isTrial,
+      unlockedAt: m.unlockedAt,
+      isActive: m.status === "active" || m.status === "trialing"
+    })));
+
+    const moduleMap = new Map(
+      modules.map((m) => {
+        const isActive = m.status === "active" || m.status === "trialing";
+        console.log(`[getUnlockStatus] Mapping module ${m.moduleName}: status=${m.status}, isActive=${isActive}`);
+        return [m.moduleName, { ...m, isActive }];
+      })
+    );
+
+    // Check if Recipes trial exists, if not initialize it
+    if (!moduleMap.has("recipes")) {
+      console.log(`[getUnlockStatus] Recipes module not found, initializing trial for user ${userId}`);
+      await initializeRecipesTrial(userId);
+      const recipesModule = await prisma.featureModule.findUnique({
+        where: {
+          userId_moduleName: {
+            userId,
+            moduleName: "recipes",
+          },
+        },
+      });
+      if (recipesModule) {
+        moduleMap.set("recipes", { ...recipesModule, isActive: true });
+        console.log(`[getUnlockStatus] Recipes trial initialized for user ${userId}`);
+      }
     }
+
+    const allModules: FeatureModuleName[] = ["recipes", "production", "make", "teams", "safety"];
+
+    const result = {
+      recipes: {
+        unlocked: moduleMap.get("recipes")?.isActive ?? true, // Default to true (trial)
+        isTrial: moduleMap.get("recipes")?.isTrial ?? true,
+        status: moduleMap.get("recipes")?.status ?? "trialing",
+      },
+      production: {
+        unlocked: moduleMap.get("production")?.isActive ?? false,
+        isTrial: false,
+        status: moduleMap.get("production")?.status ?? null,
+      },
+      make: {
+        unlocked: moduleMap.get("make")?.isActive ?? false,
+        isTrial: false,
+        status: moduleMap.get("make")?.status ?? null,
+      },
+      teams: {
+        unlocked: moduleMap.get("teams")?.isActive ?? false,
+        isTrial: false,
+        status: moduleMap.get("teams")?.status ?? null,
+      },
+      safety: {
+        unlocked: moduleMap.get("safety")?.isActive ?? false,
+        isTrial: false,
+        status: moduleMap.get("safety")?.status ?? null,
+      },
+    };
+
+    // Log final result for debugging
+    console.log(`[getUnlockStatus] Final result for user ${userId}:`, JSON.stringify(result, null, 2));
+
+    return result;
+  } catch (error) {
+    console.error(`[getUnlockStatus] Error getting unlock status for user ${userId}:`, error);
+    // Return default locked status on error
+    return {
+      recipes: {
+        unlocked: true,
+        isTrial: true,
+        status: "trialing",
+      },
+      production: {
+        unlocked: false,
+        isTrial: false,
+        status: null,
+      },
+      make: {
+        unlocked: false,
+        isTrial: false,
+        status: null,
+      },
+      teams: {
+        unlocked: false,
+        isTrial: false,
+        status: null,
+      },
+      safety: {
+        unlocked: false,
+        isTrial: false,
+        status: null,
+      },
+    };
   }
-
-  const allModules: FeatureModuleName[] = ["recipes", "production", "make", "teams", "safety"];
-
-  return {
-    recipes: {
-      unlocked: moduleMap.get("recipes")?.isActive ?? true, // Default to true (trial)
-      isTrial: moduleMap.get("recipes")?.isTrial ?? true,
-      status: moduleMap.get("recipes")?.status ?? "trialing",
-    },
-    production: {
-      unlocked: moduleMap.get("production")?.isActive ?? false,
-      isTrial: false,
-      status: moduleMap.get("production")?.status ?? null,
-    },
-    make: {
-      unlocked: moduleMap.get("make")?.isActive ?? false,
-      isTrial: false,
-      status: moduleMap.get("make")?.status ?? null,
-    },
-    teams: {
-      unlocked: moduleMap.get("teams")?.isActive ?? false,
-      isTrial: false,
-      status: moduleMap.get("teams")?.status ?? null,
-    },
-    safety: {
-      unlocked: moduleMap.get("safety")?.isActive ?? false,
-      isTrial: false,
-      status: moduleMap.get("safety")?.status ?? null,
-    },
-  };
 }
 

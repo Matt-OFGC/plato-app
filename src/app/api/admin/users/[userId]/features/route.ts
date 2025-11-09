@@ -47,7 +47,7 @@ export async function POST(
 
     if (action === "grant") {
       // Grant access to module (create or activate) - use upsert for atomic operation
-      await prisma.featureModule.upsert({
+      const result = await prisma.featureModule.upsert({
         where: {
           userId_moduleName: {
             userId,
@@ -70,11 +70,58 @@ export async function POST(
         },
       });
 
+      console.log(`[Admin] Feature access granted:`, {
+        userId,
+        userEmail: user.email,
+        moduleName,
+        action,
+        result: {
+          id: result.id,
+          status: result.status,
+          isTrial: result.isTrial,
+          unlockedAt: result.unlockedAt,
+        },
+      });
+
+      // Verify the record was created/updated correctly
+      const verify = await prisma.featureModule.findUnique({
+        where: {
+          userId_moduleName: {
+            userId,
+            moduleName: moduleName as FeatureModuleName,
+          },
+        },
+      });
+
+      if (!verify || (verify.status !== "active" && verify.status !== "trialing")) {
+        console.error(`[Admin] WARNING: FeatureModule record verification failed:`, verify);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "FeatureModule record was not created/updated correctly",
+            details: verify,
+          },
+          { status: 500 }
+        );
+      }
+
+      console.log(`[Admin] FeatureModule record verified successfully:`, {
+        moduleName: verify.moduleName,
+        status: verify.status,
+        isActive: verify.status === "active" || verify.status === "trialing",
+      });
+
       // Note: Trial limits are handled by FeatureModule system, not User model fields
 
       return NextResponse.json({ 
         success: true, 
-        message: `Access granted to ${moduleName} module` 
+        message: `Access granted to ${moduleName} module`,
+        module: {
+          moduleName: verify.moduleName,
+          status: verify.status,
+          isTrial: verify.isTrial,
+          unlockedAt: verify.unlockedAt,
+        },
       });
     } else if (action === "upgrade-trial") {
       // Upgrade from trial to paid (for recipes)
@@ -159,6 +206,127 @@ export async function POST(
     });
     return NextResponse.json(
       { 
+        error: "Failed to manage feature access",
+        details: error?.message || "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Grant all modules at once (useful for testing/admin)
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const session = await getAdminSession();
+    
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = parseInt(params.userId);
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { action } = body; // "grant-all" | "revoke-all"
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const allModules: FeatureModuleName[] = ["recipes", "production", "make", "teams", "safety"];
+    const results = [];
+
+    if (action === "grant-all") {
+      for (const moduleName of allModules) {
+        const result = await prisma.featureModule.upsert({
+          where: {
+            userId_moduleName: {
+              userId,
+              moduleName: moduleName,
+            },
+          },
+          update: {
+            status: "active",
+            isTrial: moduleName === "recipes" ? false : false,
+            unlockedAt: new Date(),
+            updatedAt: new Date(),
+          },
+          create: {
+            userId,
+            moduleName: moduleName,
+            status: "active",
+            isTrial: false,
+            unlockedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+        results.push({ moduleName, status: "granted", module: result });
+      }
+
+      console.log(`[Admin] Granted all modules to user ${userId} (${user.email})`);
+
+      return NextResponse.json({
+        success: true,
+        message: `Granted access to all modules for ${user.email}`,
+        modules: results.map(r => r.moduleName),
+      });
+    } else if (action === "revoke-all") {
+      for (const moduleName of allModules) {
+        const existing = await prisma.featureModule.findUnique({
+          where: {
+            userId_moduleName: {
+              userId,
+              moduleName: moduleName,
+            },
+          },
+        });
+
+        if (existing) {
+          await prisma.featureModule.update({
+            where: {
+              userId_moduleName: {
+                userId,
+                moduleName: moduleName,
+              },
+            },
+            data: {
+              status: "canceled",
+              updatedAt: new Date(),
+            },
+          });
+          results.push({ moduleName, status: "revoked" });
+        } else {
+          results.push({ moduleName, status: "not_found" });
+        }
+      }
+
+      console.log(`[Admin] Revoked all modules from user ${userId} (${user.email})`);
+
+      return NextResponse.json({
+        success: true,
+        message: `Revoked access to all modules for ${user.email}`,
+        modules: results.filter(r => r.status === "revoked").map(r => r.moduleName),
+      });
+    } else {
+      return NextResponse.json(
+        { error: "Invalid action. Must be 'grant-all' or 'revoke-all'" },
+        { status: 400 }
+      );
+    }
+  } catch (error: any) {
+    console.error("Admin bulk feature management error:", error);
+    return NextResponse.json(
+      {
         error: "Failed to manage feature access",
         details: error?.message || "Unknown error",
       },

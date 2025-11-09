@@ -28,16 +28,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No permission to manage team" }, { status: 403 });
     }
 
-    // Check if user has access to team features (Team tier+)
+    // Check if user has access to team features
     const hasTeamAccess = await canInviteTeamMembers(session.id);
     if (!hasTeamAccess) {
-      const user = await prisma.user.findUnique({
-        where: { id: session.id },
-        select: { subscriptionTier: true },
-      });
-      const currentTier = user?.subscriptionTier || "starter";
       return NextResponse.json(
-        createFeatureGateError("team", currentTier as any, "Team Collaboration"),
+        createFeatureGateError("teams", "Team Collaboration"),
         { status: 403 }
       );
     }
