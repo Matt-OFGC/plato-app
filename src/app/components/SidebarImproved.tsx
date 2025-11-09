@@ -32,7 +32,15 @@ export function Sidebar() {
         headers: {
           'Cache-Control': 'no-cache',
         },
+        credentials: 'include', // Ensure cookies are sent
       });
+      
+      if (!res.ok) {
+        console.error(`[Sidebar] API returned ${res.status}:`, await res.text());
+        // Don't set unlockStatus to null on error - keep previous state
+        return;
+      }
+      
       const data = await res.json();
       console.log('[Sidebar] Full unlock-status response:', data);
       if (data.unlockStatus) {
@@ -48,11 +56,23 @@ export function Sidebar() {
       } else if (data.error) {
         console.error('[Sidebar] Error fetching unlock status:', data.error);
         console.error('[Sidebar] Full error response:', data);
+        // If we get an error but have debug info, still try to set a default state
+        if (data.debug) {
+          console.warn('[Sidebar] Setting default locked state due to error');
+          setUnlockStatus({
+            recipes: { unlocked: false, isTrial: false, status: null },
+            production: { unlocked: false, isTrial: false, status: null },
+            make: { unlocked: false, isTrial: false, status: null },
+            teams: { unlocked: false, isTrial: false, status: null },
+            safety: { unlocked: false, isTrial: false, status: null },
+          });
+        }
       } else {
         console.warn('[Sidebar] No unlockStatus in response:', data);
       }
     } catch (err) {
       console.error("[Sidebar] Failed to fetch unlock status:", err);
+      // On network error, don't change unlockStatus - keep previous state
     } finally {
       if (showLoading) setIsRefreshing(false);
     }
