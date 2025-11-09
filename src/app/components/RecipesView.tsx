@@ -142,7 +142,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
             <thead className="bg-gray-50">
               <tr>
                 {isSelecting && (
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <input
                       type="checkbox"
                       checked={selectedIds.size === sortedRecipes.length && sortedRecipes.length > 0}
@@ -152,7 +152,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </th>
                 )}
                 <th 
-                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('name')}
                 >
                   <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden lg:table-cell px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('category')}
                 >
                   <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden xl:table-cell px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('yield')}
                 >
                   <div className="flex items-center gap-2">
@@ -179,7 +179,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden lg:table-cell px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('sellPrice')}
                 >
                   <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden lg:table-cell px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('cogs')}
                 >
                   <div className="flex items-center gap-2">
@@ -197,7 +197,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden xl:table-cell px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('totalSteps')}
                 >
                   <div className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden xl:table-cell px-2 md:px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('totalTime')}
                 >
                   <div className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                     <SortIcon field="totalTime" />
                   </div>
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-2 md:px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -223,7 +223,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
               {sortedRecipes.map((r) => (
                 <tr key={r.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(r.id) ? 'bg-emerald-50' : ''}`}>
                   {isSelecting && (
-                    <td className="px-3 sm:px-6 py-4">
+                    <td className="px-2 md:px-4 lg:px-6 py-4">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(r.id)}
@@ -232,7 +232,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                       />
                     </td>
                   )}
-                  <td className="px-3 sm:px-6 py-4">
+                  <td className="px-2 md:px-4 lg:px-6 py-4">
                     <Link href={`/dashboard/recipes/${r.id}`} className="flex items-center gap-3 group">
                       <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         {r.imageUrl ? (
@@ -256,7 +256,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                       </div>
                     </Link>
                   </td>
-                  <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
+                  <td className="hidden lg:table-cell px-2 md:px-4 lg:px-6 py-4 whitespace-nowrap">
                     {(r.categoryRef || r.category) && (
                       <span 
                         className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium" 
@@ -270,13 +270,13 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                       </span>
                     )}
                   </td>
-                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="hidden xl:table-cell px-2 md:px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {String(r.yieldQuantity)} {r.yieldUnit}
                   </td>
-                  <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="hidden lg:table-cell px-2 md:px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {r.sellingPrice ? `£${r.sellingPrice.toFixed(2)}` : '-'}
                   </td>
-                  <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="hidden lg:table-cell px-2 md:px-4 lg:px-6 py-4 whitespace-nowrap text-sm">
                     {r.cogsPercentage !== null ? (
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
                         r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
@@ -290,13 +290,13 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                       '-'
                     )}
                   </td>
-                  <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                  <td className="hidden xl:table-cell px-2 md:px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
                     {r.totalSteps}
                   </td>
-                  <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="hidden xl:table-cell px-2 md:px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {r.totalTime ? `${r.totalTime}min` : '-'}
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-2 md:px-4 lg:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link 
                       href={`/dashboard/recipes/${r.id}`}
                       className="btn-responsive-secondary text-xs"

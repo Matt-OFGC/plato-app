@@ -34,11 +34,22 @@ export function Sidebar() {
         },
       });
       const data = await res.json();
+      console.log('[Sidebar] Full unlock-status response:', data);
       if (data.unlockStatus) {
         console.log('[Sidebar] Unlock status updated:', data.unlockStatus);
+        console.log('[Sidebar] Module statuses:', {
+          recipes: data.unlockStatus.recipes?.unlocked,
+          production: data.unlockStatus.production?.unlocked,
+          make: data.unlockStatus.make?.unlocked,
+          teams: data.unlockStatus.teams?.unlocked,
+          safety: data.unlockStatus.safety?.unlocked,
+        });
         setUnlockStatus(data.unlockStatus);
       } else if (data.error) {
         console.error('[Sidebar] Error fetching unlock status:', data.error);
+        console.error('[Sidebar] Full error response:', data);
+      } else {
+        console.warn('[Sidebar] No unlockStatus in response:', data);
       }
     } catch (err) {
       console.error("[Sidebar] Failed to fetch unlock status:", err);
@@ -306,8 +317,18 @@ export function Sidebar() {
                 if (items.length === 0) return null;
 
                 const moduleName = moduleMap[sectionKey];
-                const isLocked = moduleName && !unlockStatus?.[moduleName]?.unlocked;
-                const isTrial = moduleName && unlockStatus?.[moduleName]?.isTrial;
+                const moduleStatus = moduleName ? unlockStatus?.[moduleName] : null;
+                const isLocked = moduleName ? !moduleStatus?.unlocked : false;
+                const isTrial = moduleName && moduleStatus?.isTrial;
+                
+                // Debug logging for locked modules
+                if (moduleName && isLocked && typeof window !== 'undefined') {
+                  console.log(`[Sidebar] 🔒 Section ${sectionKey} (${moduleName}) is LOCKED:`, {
+                    moduleStatus,
+                    unlockStatusExists: !!unlockStatus,
+                    unlockStatusKeys: unlockStatus ? Object.keys(unlockStatus) : [],
+                  });
+                }
 
                 return (
                   <div key={sectionKey} className="space-y-1">
