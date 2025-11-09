@@ -1390,8 +1390,6 @@ exports.Prisma.UserScalarFieldEnum = {
   subscriptionInterval: 'subscriptionInterval',
   subscriptionStatus: 'subscriptionStatus',
   subscriptionTier: 'subscriptionTier',
-  maxIngredients: 'maxIngredients',
-  maxRecipes: 'maxRecipes',
   recipesTrialStartedAt: 'recipesTrialStartedAt',
   emailVerified: 'emailVerified',
   verificationToken: 'verificationToken',

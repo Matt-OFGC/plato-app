@@ -1828,8 +1828,6 @@ model User {
   subscriptionInterval                           String                  @default("month")
   subscriptionStatus                             String                  @default("free")
   subscriptionTier                               String                  @default("starter")
-  maxIngredients                                 Int?                    @default(10) // Recipes trial limit
-  maxRecipes                                     Int?                    @default(5) // Recipes trial limit
   recipesTrialStartedAt                          DateTime?
   emailVerified                                  Boolean                 @default(false)
   verificationToken                              String?                 @unique
