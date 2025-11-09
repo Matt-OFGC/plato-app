@@ -5,6 +5,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
 import { OperationalDashboard } from "@/components/OperationalDashboard";
 import { checkPriceStatus } from "@/lib/priceTracking";
+import { FeatureAccessDiagnostic } from "@/components/FeatureAccessDiagnostic";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';

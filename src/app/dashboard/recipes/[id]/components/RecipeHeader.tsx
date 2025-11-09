@@ -38,12 +38,12 @@ export default function RecipeHeader({
 
   return (
     <>
-      <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg py-4 px-6">
+      <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg py-4 px-4 md:px-6">
         <div className="flex items-center gap-3">
           {/* Recipe Image - Small thumbnail */}
           <button
             onClick={() => setIsImageModalOpen(true)}
-            className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-orange-400 to-pink-400 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group relative flex items-center justify-center"
+            className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-orange-400 to-pink-400 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group relative flex items-center justify-center"
             title={imageUrl ? "Click to view larger" : "Add recipe image"}
           >
             {imageUrl ? (
@@ -79,10 +79,10 @@ export default function RecipeHeader({
                 {title}
               </h1>
             )}
-            <div className="flex items-center gap-2 text-sm mt-1">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-1 lg:gap-2 text-sm mt-1">
               {viewMode === "edit" && onCategoryChange ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-64 min-w-[256px]">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-2">
+                  <div className="w-full lg:w-64 lg:min-w-[256px]">
                     <CategorySelector
                       categories={categories}
                       value={categoryId || null}
@@ -103,10 +103,12 @@ export default function RecipeHeader({
                   </Link>
                 </div>
               ) : (
-                <span className="text-gray-500">{category || "Uncategorized"}</span>
+                <>
+                  <span className="text-gray-500">{category || "Uncategorized"}</span>
+                  <span className="hidden lg:inline text-gray-400">•</span>
+                  <span className="text-gray-500">{servings} slices</span>
+                </>
               )}
-              <span className="text-gray-400">•</span>
-              <span className="text-gray-500">{servings} slices</span>
             </div>
           </div>
 

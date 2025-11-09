@@ -650,7 +650,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
       {/* Bottom Info Bar - Separate Container Cards - FIXED TO BOTTOM */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl flex-shrink-0 z-30 px-2 sm:px-4 md:px-6 lg:px-8">
         <div className="max-w-[1600px] mx-auto py-3 sm:py-4">
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2 md:gap-3 lg:gap-4 flex-nowrap overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-center gap-1 md:gap-2 lg:gap-3 flex-wrap lg:flex-nowrap overflow-x-auto scrollbar-hide">
             
             {/* Servings Container */}
             <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
@@ -737,17 +737,17 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
               <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3">
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Cost</span>
-                  <span className="text-lg font-bold text-gray-900">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
+                  <span className="text-base md:text-lg font-bold text-gray-900">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
                 </div>
                 <div className="h-3 md:h-4 w-px bg-gray-300" />
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Per Slice</span>
-                  <span className="text-lg font-bold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
+                  <span className="text-base md:text-lg font-bold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
                 </div>
                 <div className="h-3 md:h-4 w-px bg-gray-300" />
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">COGS</span>
-                  <span className={`text-lg font-bold ${
+                  <span className={`text-base md:text-lg font-bold ${
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-green-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 33 ? 'text-green-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 40 ? 'text-yellow-600' : 'text-red-600'
