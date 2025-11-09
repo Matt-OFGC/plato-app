@@ -297,6 +297,8 @@ export default async function DashboardPage() {
       userName={user.name || undefined}
       companyName={company?.name || "Your Company"}
     >
+      {/* Temporary diagnostic component - remove after debugging */}
+      <FeatureAccessDiagnostic />
       {/* Operational Dashboard */}
       <OperationalDashboard
         todayProduction={todayProduction}
