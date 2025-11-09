@@ -18,23 +18,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid ingredients data" }, { status: 400 });
     }
 
-    // Temporarily disabled to fix build error
-    // Check Recipes trial limits
+    // Check subscription limits using the tier-based system
     if (user?.id) {
-      // const isTrial = await isRecipesTrial(user.id);
-      const isTrial = false; // Temporarily allow all
-      if (isTrial) {
-        // Check if adding these ingredients would exceed limit
-        const currentCount = user.ingredientCount || 0;
-        if (currentCount + ingredients.length > (user.maxIngredients || 10)) {
-          return NextResponse.json(
-            {
-              error: "Ingredient limit reached",
-              message: `You can only add ${(user.maxIngredients || 10) - currentCount} more ingredients on trial. Upgrade to Recipes Pro (£10/month) for unlimited ingredients.`,
-            },
-            { status: 403 }
-          );
-        }
+      const { canAddIngredient } = await import("@/lib/subscription");
+      if (!(await canAddIngredient(user.id))) {
+        return NextResponse.json(
+          {
+            error: "Ingredient limit reached",
+            message: `You've reached the ingredient limit for your subscription tier. Upgrade to paid tier for unlimited ingredients.`,
+          },
+          { status: 403 }
+        );
       }
     }
 

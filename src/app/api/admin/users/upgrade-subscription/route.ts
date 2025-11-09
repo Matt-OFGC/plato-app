@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
-import { FeatureModuleName } from "@/lib/features";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,11 +20,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate tier
-    const validTiers = ["starter", "professional", "team", "business"];
+    // Validate tier - simplified to free/paid
+    const validTiers = ["free", "paid"];
     if (!validTiers.includes(tier)) {
       return NextResponse.json(
-        { error: "Invalid tier. Must be one of: starter, professional, team, business" },
+        { error: "Invalid tier. Must be 'free' or 'paid'" },
         { status: 400 }
       );
     }
@@ -43,40 +42,69 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
+      console.error(`[Admin Upgrade] User not found: ${userEmail}`);
       return NextResponse.json(
         { error: `User with email ${userEmail} not found` },
         { status: 404 }
       );
     }
 
-    // Calculate subscription end date
-    let subscriptionEndsAt: Date;
-    if (isLifetime) {
-      // Set to year 2099 for lifetime access
-      subscriptionEndsAt = new Date("2099-12-31T23:59:59Z");
-    } else {
-      // Default to 1 year from now
-      subscriptionEndsAt = new Date();
-      subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
-    }
+    console.log(`[Admin Upgrade] Found user:`, {
+      id: user.id,
+      email: user.email,
+      currentTier: user.subscriptionTier,
+      currentStatus: user.subscriptionStatus,
+      requestedTier: tier,
+      isLifetime,
+    });
 
-    // Determine max seats based on tier
-    let maxSeats = 1;
-    if (tier === "team") {
-      maxSeats = 5;
-    } else if (tier === "business") {
-      maxSeats = 999999; // Effectively unlimited
+    // Calculate subscription end date
+    let subscriptionEndsAt: Date | null = null;
+    let subscriptionTier = "starter"; // Default free tier
+    let subscriptionStatus = "free";
+
+    if (tier === "paid") {
+      if (isLifetime) {
+        subscriptionEndsAt = new Date("2099-12-31T23:59:59Z");
+      } else {
+        subscriptionEndsAt = new Date();
+        subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
+      }
+      subscriptionTier = "paid"; // Simple paid tier
+      subscriptionStatus = "active";
+    } else {
+      // Free tier
+      subscriptionTier = "starter";
+      subscriptionStatus = "free";
+      subscriptionEndsAt = null;
     }
 
     // Update user subscription
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
-        subscriptionTier: tier,
-        subscriptionStatus: "active",
-        subscriptionInterval: isLifetime ? "lifetime" : "year",
+        subscriptionTier: subscriptionTier,
+        subscriptionStatus: subscriptionStatus,
+        subscriptionInterval: isLifetime ? "lifetime" : "month",
         subscriptionEndsAt: subscriptionEndsAt,
       },
+      select: {
+        id: true,
+        email: true,
+        subscriptionTier: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+        subscriptionInterval: true,
+      },
+    });
+
+    console.log(`[Admin Upgrade] User updated in database:`, {
+      userId: updatedUser.id,
+      email: updatedUser.email,
+      subscriptionTier: updatedUser.subscriptionTier,
+      subscriptionStatus: updatedUser.subscriptionStatus,
+      subscriptionEndsAt: updatedUser.subscriptionEndsAt,
+      subscriptionInterval: updatedUser.subscriptionInterval,
     });
 
     // Create or update subscription record
@@ -84,37 +112,38 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
       create: {
         userId: user.id,
-        stripeSubscriptionId: isLifetime ? `lifetime_${user.id}` : `admin_upgrade_${user.id}`,
-        stripePriceId: isLifetime ? "lifetime" : "admin_upgrade",
-        stripeProductId: isLifetime ? "lifetime" : "admin_upgrade",
-        status: "active",
-        tier: tier,
-        price: 0, // Free admin upgrade
-        currency: "usd",
-        interval: isLifetime ? "lifetime" : "year",
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: subscriptionEndsAt,
-        maxIngredients: null, // All paid tiers have unlimited
-        maxRecipes: null, // All paid tiers have unlimited
-      },
-      update: {
-        stripeSubscriptionId: isLifetime ? `lifetime_${user.id}` : `admin_upgrade_${user.id}`,
-        stripePriceId: isLifetime ? "lifetime" : "admin_upgrade",
-        stripeProductId: isLifetime ? "lifetime" : "admin_upgrade",
-        status: "active",
-        tier: tier,
+        stripeSubscriptionId: tier === "paid" 
+          ? (isLifetime ? `lifetime_${user.id}` : `admin_upgrade_${user.id}`)
+          : `free_${user.id}`,
+        stripePriceId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        stripeProductId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        status: subscriptionStatus,
+        tier: subscriptionTier,
         price: 0,
         currency: "usd",
-        interval: isLifetime ? "lifetime" : "year",
+        interval: isLifetime ? "lifetime" : "month",
         currentPeriodStart: new Date(),
-        currentPeriodEnd: subscriptionEndsAt,
-        maxIngredients: null,
-        maxRecipes: null,
+        currentPeriodEnd: subscriptionEndsAt || new Date(),
+      },
+      update: {
+        stripeSubscriptionId: tier === "paid" 
+          ? (isLifetime ? `lifetime_${user.id}` : `admin_upgrade_${user.id}`)
+          : `free_${user.id}`,
+        stripePriceId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        stripeProductId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        status: subscriptionStatus,
+        tier: subscriptionTier,
+        price: 0,
+        currency: "usd",
+        interval: isLifetime ? "lifetime" : "month",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: subscriptionEndsAt || new Date(),
       },
     });
 
-    // Update company seat limits if user is company owner
+    // Update company seat limits (unlimited for paid)
     if (user.memberships.length > 0) {
+      const maxSeats = tier === "paid" ? 999999 : 1;
       for (const membership of user.memberships) {
         if (membership.company) {
           await prisma.company.update({
@@ -127,96 +156,62 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // CRITICAL: Create FeatureModule records based on tier
-    // This is what the frontend actually checks for access!
-    const modulesToUnlock: FeatureModuleName[] = [];
-    
-    if (tier === "professional") {
-      // Professional: Recipes (already has trial, upgrade to paid)
-      modulesToUnlock.push("recipes");
-    } else if (tier === "team") {
-      // Team: Recipes, Production, Teams
-      modulesToUnlock.push("recipes", "production", "teams");
-    } else if (tier === "business") {
-      // Business: All modules
-      modulesToUnlock.push("recipes", "production", "make", "teams", "safety");
-    }
-    // Starter tier doesn't unlock any paid modules (only Recipes trial)
-
-    console.log(`[Admin Upgrade] Unlocking modules for user ${userEmail} (${user.id}):`, modulesToUnlock);
-
-    // Create or update FeatureModule records for each module
-    for (const moduleName of modulesToUnlock) {
-      const existing = await prisma.featureModule.findUnique({
-        where: {
-          userId_moduleName: {
-            userId: user.id,
-            moduleName: moduleName,
-          },
-        },
-      });
-
-      if (existing) {
-        // Update existing (e.g., upgrade from trial to paid)
-        await prisma.featureModule.update({
-          where: {
-            userId_moduleName: {
-              userId: user.id,
-              moduleName: moduleName,
-            },
-          },
-          data: {
-            status: "active",
-            isTrial: false,
-            unlockedAt: existing.unlockedAt || new Date(),
-            updatedAt: new Date(),
-          },
-        });
-        console.log(`[Admin Upgrade] Updated module ${moduleName} for user ${user.id}`);
-      } else {
-        // Create new module
-        await prisma.featureModule.create({
-          data: {
-            userId: user.id,
-            moduleName: moduleName,
-            status: "active",
-            isTrial: false,
-            unlockedAt: new Date(),
-            updatedAt: new Date(),
-          },
-        });
-        console.log(`[Admin Upgrade] Created module ${moduleName} for user ${user.id}`);
-      }
-    }
-
-    // Verify modules were created
-    const createdModules = await prisma.featureModule.findMany({
-      where: {
-        userId: user.id,
-        status: { in: ["active", "trialing"] },
+    // Verify the update actually happened by reading back from database
+    const verifyUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        subscriptionTier: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+        subscriptionInterval: true,
       },
     });
-    console.log(`[Admin Upgrade] Verified ${createdModules.length} active modules for user ${user.id}:`, 
-      createdModules.map(m => m.moduleName));
+
+    console.log(`[Admin Upgrade] Verification read from database:`, verifyUser);
+
+    if (!verifyUser) {
+      throw new Error("Failed to verify user update");
+    }
+
+    if (verifyUser.subscriptionTier !== subscriptionTier) {
+      console.error(`[Admin Upgrade] MISMATCH! Expected tier ${subscriptionTier}, got ${verifyUser.subscriptionTier}`);
+      throw new Error(`Database update failed: tier mismatch (expected ${subscriptionTier}, got ${verifyUser.subscriptionTier})`);
+    }
+
+    console.log(`[Admin Upgrade] Successfully updated user ${userEmail} (${user.id}) to ${tier} tier`);
 
     return NextResponse.json({
       success: true,
-      message: `Successfully upgraded ${userEmail} to ${tier} tier${isLifetime ? " (lifetime)" : ""}`,
+      message: `Successfully set ${userEmail} to ${tier} tier${isLifetime ? " (lifetime)" : ""}`,
       user: {
-        id: user.id,
-        email: user.email,
+        id: verifyUser.id,
+        email: verifyUser.email,
         name: user.name,
-        subscriptionTier: tier,
-        subscriptionStatus: "active",
-        subscriptionEndsAt: subscriptionEndsAt,
+        subscriptionTier: verifyUser.subscriptionTier,
+        subscriptionStatus: verifyUser.subscriptionStatus,
+        subscriptionEndsAt: verifyUser.subscriptionEndsAt,
+        subscriptionInterval: verifyUser.subscriptionInterval,
       },
-      unlockedModules: modulesToUnlock,
-      activeModules: createdModules.map(m => m.moduleName),
+      debug: {
+        requestedTier: tier,
+        requestedStatus: subscriptionStatus,
+        actualTier: verifyUser.subscriptionTier,
+        actualStatus: verifyUser.subscriptionStatus,
+      },
     });
   } catch (error) {
     console.error("Upgrade subscription error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("Error details:", { errorMessage, errorStack, error });
     return NextResponse.json(
-      { error: "Failed to upgrade subscription" },
+      { 
+        error: "Failed to upgrade subscription",
+        details: errorMessage,
+        ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
+      },
       { status: 500 }
     );
   }

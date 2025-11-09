@@ -15,28 +15,8 @@ export function SectionUnlockModal({ isOpen, onClose, moduleName }: SectionUnloc
   const content = getUnlockContent(moduleName);
 
   const handleUnlock = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/features/unlock/${moduleName}`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        alert(error.error || "Failed to start checkout");
-        return;
-      }
-
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error("Unlock error:", error);
-      alert("Failed to start checkout. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    // Redirect to pricing page - users need to upgrade to paid tier
+    window.location.href = "/pricing?highlight=professional";
   };
 
   if (!isOpen) return null;

@@ -3,84 +3,122 @@
 import { useState, useEffect } from "react";
 
 export function FeatureAccessDiagnostic() {
-  const [diagnostic, setDiagnostic] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDiagnostic = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/features/unlock-status?t=" + Date.now(), {
+        cache: "no-store",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setError(`API Error ${res.status}: ${text}`);
+        return;
+      }
+      const result = await res.json();
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchDiagnostic() {
-      try {
-        const res = await fetch("/api/features/unlock-status");
-        const data = await res.json();
-        console.log("🔍 DIAGNOSTIC - Full unlock-status response:", data);
-        setDiagnostic(data);
-      } catch (error) {
-        console.error("Diagnostic error:", error);
-        setDiagnostic({ error: String(error) });
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchDiagnostic();
   }, []);
 
-  if (loading) {
-    return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Loading diagnostic...</div>;
-  }
-
   return (
-    <div className="p-6 bg-white border-2 border-blue-500 rounded-lg shadow-lg max-w-4xl mx-auto my-8">
-      <h2 className="text-2xl font-bold mb-4">Feature Access Diagnostic</h2>
-      
-      {diagnostic?.error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded">
-          <strong>Error:</strong> {diagnostic.error}
-        </div>
-      )}
-
-      {diagnostic?.debug && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
-          <h3 className="font-bold mb-2">Debug Info:</h3>
-          <pre className="text-xs overflow-auto">{JSON.stringify(diagnostic.debug, null, 2)}</pre>
-        </div>
-      )}
-
-      {diagnostic?.unlockStatus && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold">Module Status:</h3>
-          {Object.entries(diagnostic.unlockStatus).map(([module, status]: [string, any]) => (
-            <div 
-              key={module} 
-              className={`p-4 rounded border-2 ${
-                status.unlocked 
-                  ? 'bg-green-50 border-green-500' 
-                  : 'bg-red-50 border-red-500'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <strong className="text-lg capitalize">{module}</strong>
-                  <div className="text-sm mt-1">
-                    Status: {status.status || 'null'} | 
-                    Unlocked: {status.unlocked ? '✅ YES' : '❌ NO'} | 
-                    Trial: {status.isTrial ? 'Yes' : 'No'}
-                  </div>
-                </div>
-                <div className={`px-3 py-1 rounded font-bold ${
-                  status.unlocked ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}>
-                  {status.unlocked ? 'UNLOCKED' : 'LOCKED'}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-        <h3 className="font-bold mb-2">Raw Response:</h3>
-        <pre className="text-xs overflow-auto max-h-96">{JSON.stringify(diagnostic, null, 2)}</pre>
+    <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Feature Access Diagnostic</h2>
+        <button
+          onClick={fetchDiagnostic}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-red-800 font-semibold">Error:</p>
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
+
+      {data && (
+        <div className="space-y-4">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Debug Info</h3>
+            <pre className="text-xs overflow-auto bg-white p-3 rounded border">
+              {JSON.stringify(data.debug, null, 2)}
+            </pre>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Unlock Status</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {Object.entries(data.unlockStatus || {}).map(([key, value]: [string, any]) => (
+                <div
+                  key={key}
+                  className={`p-3 rounded border ${
+                    value?.unlocked
+                      ? "bg-green-50 border-green-200"
+                      : "bg-red-50 border-red-200"
+                  }`}
+                >
+                  <div className="font-semibold capitalize">{key}</div>
+                  <div className="text-sm">
+                    {value?.unlocked ? "✅ Unlocked" : "🔒 Locked"}
+                  </div>
+                  {value?.isTrial && (
+                    <div className="text-xs text-yellow-600 mt-1">Trial</div>
+                  )}
+                  {value?.status && (
+                    <div className="text-xs text-gray-600 mt-1">{value.status}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Recipes Limits</h3>
+            <pre className="text-xs overflow-auto bg-white p-3 rounded border">
+              {JSON.stringify(data.recipesLimits, null, 2)}
+            </pre>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold mb-2 text-blue-900">What to Check:</h3>
+            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+              <li>
+                <strong>subscriptionTier</strong> should be "professional" for paid tier
+              </li>
+              <li>
+                <strong>subscriptionStatus</strong> should be "active" for paid tier
+              </li>
+              <li>
+                <strong>subscriptionEndsAt</strong> should be a future date (or 2099 for lifetime)
+              </li>
+              <li>
+                All modules should show <strong>unlocked: true</strong> for paid tier
+              </li>
+              <li>
+                Check browser console for detailed logs from <code>[isPaidTier]</code> and{" "}
+                <code>[Unlock Status]</code>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

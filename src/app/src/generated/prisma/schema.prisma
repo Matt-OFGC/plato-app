@@ -1,0 +1,2032 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ActivityLog {
+  id                Int      @id @default(autoincrement())
+  createdAt         DateTime @default(now())
+  userId            Int
+  companyId         Int
+  action            String
+  entity            String
+  entityId          Int?
+  entityName        String?
+  details           Json?
+  ipAddress         String?
+  userAgent         String?
+  relatedEntityId   Int?
+  relatedEntityType String?
+  Company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([companyId])
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([relatedEntityType, relatedEntityId], map: "idx_activity_log_related")
+}
+
+model AllergenSheetTemplate {
+  id                     Int      @id @default(autoincrement())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime
+  companyId              Int?
+  templateName           String
+  templateType           String   @default("custom")
+  sheetStyle             String   @default("full_detail")
+  backgroundColor        String   @default("#FFFFFF")
+  textColor              String   @default("#000000")
+  headingColor           String   @default("#2D3142")
+  warningColor           String   @default("#FF6B6B")
+  headingFont            String   @default("Poppins")
+  headingSize            Int      @default(24)
+  bodyFont               String   @default("Poppins")
+  bodySize               Int      @default(11)
+  pageMarginsMm          Decimal  @default(15.0)
+  showFullIngredients    Boolean  @default(true)
+  showAllergenList       Boolean  @default(true)
+  showDietarySuitability Boolean  @default(true)
+  showStorageInfo        Boolean  @default(true)
+  showWeight             Boolean  @default(true)
+  showBestBefore         Boolean  @default(true)
+  showCompanyDetails     Boolean  @default(true)
+  showContactInfo        Boolean  @default(true)
+  showLastUpdated        Boolean  @default(true)
+  isDefault              Boolean  @default(false)
+  isSystemTemplate       Boolean  @default(false)
+  createdBy              Int?
+  Company                Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, isSystemTemplate])
+}
+
+model AnalyticsSnapshot {
+  id                Int      @id @default(autoincrement())
+  createdAt         DateTime @default(now())
+  companyId         Int
+  period            String
+  periodStart       DateTime
+  periodEnd         DateTime
+  totalRevenue      Decimal  @default(0)
+  totalCosts        Decimal  @default(0)
+  grossProfit       Decimal  @default(0)
+  grossMargin       Decimal  @default(0)
+  recipesProduced   Int      @default(0)
+  totalBatches      Decimal  @default(0)
+  ingredientsUsed   Int      @default(0)
+  avgIngredientCost Decimal  @default(0)
+  avgFoodCost       Decimal  @default(0)
+  topRecipe         String?
+  topCategory       String?
+  metadata          Json?
+  Company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, period, periodStart])
+  @@index([companyId])
+  @@index([companyId, periodStart])
+  @@index([periodStart])
+  @@index([period])
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  name        String
+  description String?
+  color       String?
+  order       Int      @default(0)
+  companyId   Int?
+  Company     Company? @relation(fields: [companyId], references: [id])
+  Recipe      Recipe[]
+
+  @@unique([name, companyId])
+  @@index([companyId])
+  @@index([companyId, order])
+}
+
+model ChecklistItemCompletion {
+  id                    Int                    @id @default(autoincrement())
+  taskCompletionId      Int
+  itemText              String
+  itemOrder             Int
+  checked               Boolean                @default(true)
+  temperatureValue      Decimal?               @db.Decimal(5, 2)
+  temperatureUnit       String?                @db.VarChar(10)
+  notes                 String?
+  checkedAt             DateTime?
+  createdAt             DateTime               @default(now())
+  checklistItemId       Int?
+  isCompleted           Boolean?               @default(false)
+  TemplateChecklistItem TemplateChecklistItem? @relation(fields: [checklistItemId], references: [id])
+  TaskCompletion        TaskCompletion         @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
+  TaskPhoto             TaskPhoto[]
+}
+
+model CleaningJob {
+  id               Int             @id @default(autoincrement())
+  companyId        Int
+  name             String
+  description      String?
+  category         String?
+  frequency        String          @default("daily")
+  membershipId     Int?
+  productionPlanId Int?
+  dueDate          DateTime?
+  completedAt      DateTime?
+  completedBy      Int?
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now())
+  Company          Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User             User?           @relation(fields: [completedBy], references: [id])
+  Membership       Membership?     @relation(fields: [membershipId], references: [id])
+  ProductionPlan   ProductionPlan? @relation(fields: [productionPlanId], references: [id])
+
+  @@index([companyId], map: "idx_cleaning_job_company")
+  @@index([dueDate], map: "idx_cleaning_job_due_date")
+  @@index([membershipId], map: "idx_cleaning_job_membership")
+  @@index([productionPlanId], map: "idx_cleaning_job_production")
+  @@index([completedAt], map: "idx_cleaning_job_status")
+}
+
+model Collection {
+  id               Int                @id @default(autoincrement())
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  name             String
+  description      String?
+  color            String?
+  icon             String?
+  companyId        Int
+  createdBy        Int
+  isPublic         Boolean            @default(false)
+  Company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  RecipeCollection RecipeCollection[]
+
+  @@unique([name, companyId])
+  @@index([companyId])
+}
+
+model Company {
+  id                    Int                     @id @default(autoincrement())
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  name                  String
+  address               String?
+  businessType          String?
+  city                  String?
+  country               String                  @default("United Kingdom")
+  email                 String?
+  isProfilePublic       Boolean                 @default(false)
+  logoUrl               String?
+  maxSeats              Int                     @default(5)
+  ownerId               Int?
+  phone                 String?
+  postcode              String?
+  pricePerSeat          Decimal                 @default(5.00)
+  profileBio            String?
+  seatsUsed             Int                     @default(1)
+  shopifyAccessToken    String?
+  shopifyApiKey         String?
+  shopifyIsConnected    Boolean                 @default(false)
+  shopifyLastSync       DateTime?
+  shopifyStoreUrl       String?
+  shopifyWebhookSecret  String?
+  showContact           Boolean                 @default(true)
+  showTeam              Boolean                 @default(false)
+  slug                  String?                 @unique
+  website               String?
+  safety_enabled        Boolean?                @default(true)
+  data_retention_days   Int?                    @default(730)
+  ActivityLog           ActivityLog[]
+  AllergenSheetTemplate AllergenSheetTemplate[]
+  AnalyticsSnapshot     AnalyticsSnapshot[]
+  Category              Category[]
+  CleaningJob           CleaningJob[]
+  Collection            Collection[]
+  CustomReport          CustomReport[]
+  DailyTemperatureCheck DailyTemperatureCheck[]
+  EquipmentIssue        EquipmentIssue[]
+  EquipmentRegister     EquipmentRegister[]
+  ExternalMapping       ExternalMapping[]
+  GeneratedDocument     GeneratedDocument[]
+  Ingredient            Ingredient[]
+  IntegrationConfig     IntegrationConfig[]
+  IntegrationSync       IntegrationSync[]
+  Inventory             Inventory[]
+  LabelTemplate         LabelTemplate[]
+  LeaveBalance          LeaveBalance[]
+  LeaveRequest          LeaveRequest[]
+  Membership            Membership[]
+  PayrollIntegration    PayrollIntegration[]
+  PayrollRun            PayrollRun[]
+  ProductionHistory     ProductionHistory[]
+  ProductionPlan        ProductionPlan[]
+  Recipe                Recipe[]
+  RecipeUpdateLog       RecipeUpdateLog[]
+  Role                  Role[]
+  SalesRecord           SalesRecord[]
+  ScheduledTask         ScheduledTask[]
+  SeasonalTrend         SeasonalTrend[]
+  ShelfLifeOption       ShelfLifeOption[]
+  Shift                 Shift[]
+  ShiftTemplate         ShiftTemplate[]
+  ShopifyOrder          ShopifyOrder[]
+  ShopifyProductMapping ShopifyProductMapping[]
+  SmartAlert            SmartAlert[]
+  StorageOption         StorageOption[]
+  Supplier              Supplier[]
+  TaskComment           TaskComment[]
+  TaskCompletion        TaskCompletion[]
+  TaskInstance          TaskInstance[]
+  TaskPhoto             TaskPhoto[]
+  TaskTemplate          TaskTemplate[]
+  TeamInvitation        TeamInvitation[]
+  TemperatureReading    TemperatureReading[]
+  TemperatureRecord     TemperatureRecord[]
+  TemperatureSensor     TemperatureSensor[]
+  TemplateAppliance     TemplateAppliance[]
+  Timesheet             Timesheet[]
+  TrainingModule        TrainingModule[]
+  WebhookLog            WebhookLog[]
+  WholesaleCustomer     WholesaleCustomer[]
+  WholesaleOrder        WholesaleOrder[]
+  WholesaleProduct      WholesaleProduct[]
+}
+
+model CustomReport {
+  id                Int       @id @default(autoincrement())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  companyId         Int
+  createdBy         Int
+  name              String
+  description       String?
+  reportType        String
+  metrics           Json
+  filters           Json?
+  grouping          Json?
+  dateRange         Json?
+  isScheduled       Boolean   @default(false)
+  scheduleFrequency String?
+  scheduleTime      String?
+  exportFormats     String[]  @default([])
+  emailRecipients   String[]  @default([])
+  isActive          Boolean   @default(true)
+  lastRunAt         DateTime?
+  Company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@index([createdBy])
+  @@index([isScheduled])
+}
+
+model CustomerPricing {
+  id                Int               @id @default(autoincrement())
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  customerId        Int
+  recipeId          Int
+  price             Decimal
+  unit              String            @default("each")
+  notes             String?
+  WholesaleCustomer WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  Recipe            Recipe            @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, recipeId])
+  @@index([customerId])
+  @@index([recipeId])
+}
+
+model DailyTemperatureCheck {
+  id          Int       @id @default(autoincrement())
+  companyId   Int
+  checkDate   DateTime  @db.Date
+  checkPeriod String    @db.VarChar(10)
+  checkType   String    @db.VarChar(100)
+  temperature Decimal?  @db.Decimal(5, 2)
+  unit        String    @default("celsius") @db.VarChar(10)
+  notes       String?
+  completed   Boolean   @default(false)
+  completedBy Int?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+  Company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User        User?     @relation(fields: [completedBy], references: [id])
+
+  @@unique([companyId, checkDate, checkPeriod, checkType])
+  @@index([companyId, checkDate(sort: Desc), checkPeriod])
+}
+
+model EquipmentIssue {
+  id                                   Int               @id @default(autoincrement())
+  equipmentId                          Int
+  companyId                            Int
+  issueDescription                     String
+  severity                             String?           @db.VarChar(50)
+  status                               String            @default("open") @db.VarChar(50)
+  reportedBy                           Int
+  reportedAt                           DateTime          @default(now())
+  resolvedAt                           DateTime?
+  resolvedBy                           Int?
+  resolutionNotes                      String?
+  Company                              Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  EquipmentRegister                    EquipmentRegister @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  User_EquipmentIssue_reportedByToUser User              @relation("EquipmentIssue_reportedByToUser", fields: [reportedBy], references: [id])
+  User_EquipmentIssue_resolvedByToUser User?             @relation("EquipmentIssue_resolvedByToUser", fields: [resolvedBy], references: [id])
+}
+
+model EquipmentRegister {
+  id                Int              @id @default(autoincrement())
+  companyId         Int
+  siteId            Int?
+  equipmentName     String           @db.VarChar(255)
+  equipmentCategory String?          @db.VarChar(100)
+  location          String?          @db.VarChar(255)
+  qrCode            String?          @unique @db.VarChar(100)
+  lastServiceDate   DateTime?        @db.Date
+  nextServiceDate   DateTime?        @db.Date
+  warrantyExpiry    DateTime?        @db.Date
+  status            String           @default("good") @db.VarChar(50)
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now())
+  EquipmentIssue    EquipmentIssue[]
+  Company           Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model ExternalMapping {
+  id                Int               @id @default(autoincrement())
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  companyId         Int
+  integrationId     Int
+  entityType        String
+  internalId        Int
+  externalId        String
+  externalData      Json?
+  lastSyncAt        DateTime?
+  isActive          Boolean           @default(true)
+  Company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  IntegrationConfig IntegrationConfig @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, entityType, internalId])
+  @@index([companyId])
+  @@index([entityType])
+  @@index([externalId])
+  @@index([integrationId])
+}
+
+model GeneratedDocument {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  companyId     Int
+  documentType  String
+  templateId    Int?
+  products      Json
+  totalItems    Int
+  sheetsPrinted Int?
+  pdfFilePath   String?
+  fileSizeBytes Int?
+  generatedBy   Int
+  generatedAt   DateTime @default(now())
+  notes         String?
+  Company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, documentType, generatedAt])
+  @@index([companyId])
+}
+
+model Ingredient {
+  id                     Int                      @id @default(autoincrement())
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  name                   String
+  supplier               String?
+  packQuantity           Decimal
+  packUnit               BaseUnit
+  packPrice              Decimal
+  currency               String                   @default("GBP")
+  densityGPerMl          Decimal?
+  notes                  String?
+  companyId              Int?
+  allergens              String[]                 @default([])
+  lastPriceUpdate        DateTime                 @default(now())
+  originalUnit           Unit?
+  priceHistory           String?
+  supplierId             Int?
+  customConversions      String?
+  batchPricing           Json?
+  Company                Company?                 @relation(fields: [companyId], references: [id])
+  Supplier               Supplier?                @relation(fields: [supplierId], references: [id])
+  IngredientPriceHistory IngredientPriceHistory[]
+  RecipeItem             RecipeItem[]
+
+  @@unique([name, companyId])
+  @@index([companyId])
+  @@index([companyId, lastPriceUpdate])
+  @@index([companyId, name])
+  @@index([supplierId])
+}
+
+model IngredientPriceHistory {
+  id            Int        @id @default(autoincrement())
+  createdAt     DateTime   @default(now())
+  ingredientId  Int
+  price         Decimal
+  currency      String     @default("GBP")
+  packQuantity  Decimal
+  packUnit      String
+  changeType    String
+  previousPrice Decimal?
+  supplierId    Int?
+  supplierName  String?
+  notes         String?
+  source        String?
+  Ingredient    Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([ingredientId, createdAt])
+  @@index([ingredientId])
+  @@index([supplierId])
+}
+
+model IntegrationConfig {
+  id              Int               @id @default(autoincrement())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  companyId       Int
+  provider        String
+  name            String
+  credentials     Json
+  authType        String
+  settings        Json?
+  mappings        Json?
+  isActive        Boolean           @default(true)
+  isConnected     Boolean           @default(false)
+  lastSyncAt      DateTime?
+  lastErrorAt     DateTime?
+  lastError       String?
+  accessToken     String?
+  refreshToken    String?
+  tokenExpiresAt  DateTime?
+  autoSync        Boolean           @default(false)
+  syncFrequency   String?
+  ExternalMapping ExternalMapping[]
+  Company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  IntegrationSync IntegrationSync[]
+  WebhookLog      WebhookLog[]
+
+  @@unique([companyId, provider])
+  @@index([companyId])
+  @@index([isActive])
+  @@index([provider])
+}
+
+model IntegrationSync {
+  id                Int               @id @default(autoincrement())
+  createdAt         DateTime          @default(now())
+  companyId         Int
+  integrationId     Int
+  syncType          String
+  direction         String
+  status            String
+  recordsProcessed  Int               @default(0)
+  recordsCreated    Int               @default(0)
+  recordsUpdated    Int               @default(0)
+  recordsFailed     Int               @default(0)
+  startedAt         DateTime
+  completedAt       DateTime?
+  duration          Int?
+  errors            Json?
+  warnings          Json?
+  trigger           String?
+  metadata          Json?
+  Company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  IntegrationConfig IntegrationConfig @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, startedAt])
+  @@index([integrationId])
+  @@index([startedAt])
+  @@index([status])
+}
+
+model Inventory {
+  id                Int                 @id @default(autoincrement())
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  companyId         Int
+  recipeId          Int
+  quantity          Decimal             @default(0)
+  unit              String
+  lowStockThreshold Decimal?
+  lastRestocked     DateTime?
+  Company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Recipe            Recipe              @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  InventoryMovement InventoryMovement[]
+
+  @@unique([companyId, recipeId])
+  @@index([companyId])
+  @@index([recipeId])
+}
+
+model InventoryMovement {
+  id               Int       @id @default(autoincrement())
+  createdAt        DateTime  @default(now())
+  inventoryId      Int
+  type             String
+  quantity         Decimal
+  productionItemId Int?
+  orderId          Int?
+  reason           String?
+  notes            String?
+  createdBy        Int
+  Inventory        Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([inventoryId])
+  @@index([type])
+}
+
+model LabelTemplate {
+  id                 Int      @id @default(autoincrement())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  companyId          Int?
+  templateName       String
+  templateType       String   @default("custom")
+  backgroundColor    String   @default("#E8E4DC")
+  textColor          String   @default("#6D7C6F")
+  accentColor        String?
+  productFont        String   @default("Poppins")
+  productFontWeight  String   @default("Bold")
+  productFontSize    Int      @default(48)
+  subtitleFont       String   @default("Poppins")
+  subtitleFontWeight String   @default("SemiBold")
+  subtitleFontSize   Int      @default(18)
+  bodyFont           String   @default("Poppins")
+  bodyFontWeight     String   @default("Regular")
+  bodyFontSize       Int      @default(10)
+  alignment          String   @default("center")
+  textTransform      String   @default("uppercase")
+  spacingStyle       String   @default("normal")
+  marginMm           Decimal  @default(2.0)
+  widthMm            Decimal  @default(65.0)
+  heightMm           Decimal  @default(38.0)
+  showPrice          Boolean  @default(true)
+  showAllergens      Boolean  @default(true)
+  showDietaryTags    Boolean  @default(true)
+  showDate           Boolean  @default(true)
+  showWeight         Boolean  @default(false)
+  showCompanyName    Boolean  @default(false)
+  showStorageInfo    Boolean  @default(false)
+  showBarcode        Boolean  @default(false)
+  isDefault          Boolean  @default(false)
+  isSystemTemplate   Boolean  @default(false)
+  createdBy          Int?
+  Company            Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, isSystemTemplate])
+}
+
+model LeaveBalance {
+  id            Int        @id @default(autoincrement())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime
+  membershipId  Int
+  companyId     Int
+  leaveType     String
+  balance       Decimal    @default(0)
+  accrualRate   Decimal?
+  accrualPeriod String     @default("month")
+  year          Int
+  totalAccrued  Decimal    @default(0)
+  totalTaken    Decimal    @default(0)
+  Company       Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Membership    Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, leaveType, year])
+  @@index([companyId])
+  @@index([membershipId])
+  @@index([year])
+}
+
+model LeaveRequest {
+  id           Int        @id @default(autoincrement())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime
+  membershipId Int
+  companyId    Int
+  leaveType    String
+  startDate    DateTime
+  endDate      DateTime
+  isFullDay    Boolean    @default(true)
+  startTime    String?
+  endTime      String?
+  reason       String?
+  notes        String?
+  status       String     @default("pending")
+  reviewedBy   Int?
+  reviewedAt   DateTime?
+  reviewNotes  String?
+  Company      Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, startDate])
+  @@index([membershipId])
+  @@index([startDate])
+  @@index([status])
+}
+
+model Membership {
+  id                      Int                       @id @default(autoincrement())
+  userId                  Int
+  companyId               Int
+  acceptedAt              DateTime?
+  createdAt               DateTime                  @default(now())
+  invitedAt               DateTime                  @default(now())
+  invitedBy               Int?
+  isActive                Boolean                   @default(true)
+  pin                     String?
+  pinHash                 String?
+  updatedAt               DateTime                  @default(now())
+  role                    MemberRole                @default(VIEWER)
+  currency                String                    @default("GBP")
+  employmentType          String?
+  endDate                 DateTime?
+  hourlyRate              Decimal?
+  niCategory              String?
+  payFrequency            String?
+  pensionOptIn            Boolean                   @default(false)
+  pensionRate             Decimal?
+  salary                  Decimal?
+  startDate               DateTime?
+  taxCode                 String?
+  roleId                  Int?
+  lastActivityAt          DateTime?
+  CleaningJob             CleaningJob[]
+  LeaveBalance            LeaveBalance[]
+  LeaveRequest            LeaveRequest[]
+  Company                 Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Role                    Role?                     @relation(fields: [roleId], references: [id])
+  User                    User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PayrollLine             PayrollLine[]
+  ProductionJobAssignment ProductionJobAssignment[]
+  Shift                   Shift[]
+  StaffProfile            StaffProfile?
+  Timesheet               Timesheet[]
+  TrainingRecord          TrainingRecord[]
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@index([companyId, pin])
+  @@index([userId])
+  @@index([roleId], map: "idx_membership_role")
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  userId    Int
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  metadata  Json?
+  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([userId, read])
+}
+
+model PayrollIntegration {
+  id             Int              @id @default(autoincrement())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  companyId      Int
+  provider       String
+  name           String
+  apiKey         String?
+  apiSecret      String?
+  accessToken    String?
+  refreshToken   String?
+  config         Json?
+  isActive       Boolean          @default(true)
+  autoSync       Boolean          @default(false)
+  lastSyncAt     DateTime?
+  nextSyncAt     DateTime?
+  lastError      String?
+  errorCount     Int              @default(0)
+  oauthState     String?
+  redirectUri    String?
+  Company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  PayrollSyncLog PayrollSyncLog[]
+
+  @@unique([companyId, provider])
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model PayrollLine {
+  id              Int        @id @default(autoincrement())
+  createdAt       DateTime   @default(now())
+  payrollRunId    Int
+  membershipId    Int
+  hoursWorked     Decimal
+  overtimeHours   Decimal    @default(0)
+  hourlyRate      Decimal
+  grossPay        Decimal
+  taxDeduction    Decimal    @default(0)
+  niDeduction     Decimal    @default(0)
+  pensionAmount   Decimal    @default(0)
+  otherDeductions Decimal    @default(0)
+  netPay          Decimal
+  breakdown       Json?
+  Membership      Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  PayrollRun      PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+
+  @@unique([payrollRunId, membershipId])
+  @@index([membershipId])
+  @@index([payrollRunId])
+}
+
+model PayrollRun {
+  id               Int              @id @default(autoincrement())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime
+  companyId        Int
+  periodStart      DateTime
+  periodEnd        DateTime
+  payDate          DateTime
+  status           String           @default("draft")
+  approvedBy       Int?
+  approvedAt       DateTime?
+  totalGross       Decimal          @default(0)
+  totalTax         Decimal          @default(0)
+  totalNI          Decimal          @default(0)
+  totalPension     Decimal          @default(0)
+  totalNet         Decimal          @default(0)
+  notes            String?
+  paymentMethod    String?
+  externalId       String?
+  syncedToExternal Boolean          @default(false)
+  PayrollLine      PayrollLine[]
+  Company          Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  PayrollSyncLog   PayrollSyncLog[]
+
+  @@index([companyId])
+  @@index([companyId, periodStart])
+  @@index([periodStart])
+  @@index([status])
+}
+
+model PayrollSyncLog {
+  id                 Int                @id @default(autoincrement())
+  createdAt          DateTime           @default(now())
+  integrationId      Int
+  payrollRunId       Int
+  status             String
+  direction          String
+  recordsExported    Int                @default(0)
+  recordsImported    Int                @default(0)
+  recordsFailed      Int                @default(0)
+  errorMessage       String?
+  errorDetails       Json?
+  syncMetadata       Json?
+  PayrollIntegration PayrollIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  PayrollRun         PayrollRun         @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([integrationId])
+  @@index([payrollRunId])
+}
+
+model ProductionHistory {
+  id               Int      @id @default(autoincrement())
+  createdAt        DateTime @default(now())
+  companyId        Int
+  recipeId         Int
+  productionDate   DateTime
+  quantityProduced Decimal
+  actualCost       Decimal?
+  productionPlanId Int?
+  batchNumber      String?
+  wasteAmount      Decimal? @default(0)
+  productionTime   Int?
+  efficiency       Decimal?
+  producedBy       Int?
+  notes            String?
+  metadata         Json?
+  Company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Recipe           Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, productionDate])
+  @@index([productionDate])
+  @@index([productionPlanId])
+  @@index([recipeId])
+}
+
+model ProductionItem {
+  id                       Int                        @id @default(autoincrement())
+  createdAt                DateTime                   @default(now())
+  planId                   Int
+  recipeId                 Int
+  customerId               Int?
+  quantity                 Decimal
+  priority                 Int                        @default(0)
+  completed                Boolean                    @default(false)
+  notes                    String?
+  WholesaleCustomer        WholesaleCustomer?         @relation(fields: [customerId], references: [id])
+  ProductionPlan           ProductionPlan             @relation(fields: [planId], references: [id], onDelete: Cascade)
+  Recipe                   Recipe                     @relation(fields: [recipeId], references: [id])
+  ProductionItemAllocation ProductionItemAllocation[]
+  ProductionJobAssignment  ProductionJobAssignment[]
+
+  @@index([customerId])
+  @@index([planId])
+  @@index([recipeId])
+}
+
+model ProductionItemAllocation {
+  id                Int                @id @default(autoincrement())
+  createdAt         DateTime           @default(now())
+  productionItemId  Int
+  customerId        Int?
+  destination       String
+  quantity          Decimal
+  notes             String?
+  WholesaleCustomer WholesaleCustomer? @relation(fields: [customerId], references: [id])
+  ProductionItem    ProductionItem     @relation(fields: [productionItemId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([productionItemId])
+}
+
+model ProductionJobAssignment {
+  id               Int            @id @default(autoincrement())
+  productionItemId Int
+  membershipId     Int
+  assignedDate     DateTime
+  status           String         @default("assigned")
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now())
+  Membership       Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  ProductionItem   ProductionItem @relation(fields: [productionItemId], references: [id], onDelete: Cascade)
+
+  @@unique([productionItemId, membershipId, assignedDate], map: "ProductionJobAssignment_item_membership_date_key")
+  @@index([assignedDate], map: "idx_production_assignment_date")
+  @@index([productionItemId], map: "idx_production_assignment_item")
+  @@index([membershipId], map: "idx_production_assignment_membership")
+  @@index([status], map: "idx_production_assignment_status")
+}
+
+model ProductionPlan {
+  id             Int              @id @default(autoincrement())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  notes          String?
+  companyId      Int
+  createdBy      Int
+  CleaningJob    CleaningJob[]
+  ProductionItem ProductionItem[]
+  Company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ProductionTask ProductionTask[]
+
+  @@index([companyId])
+  @@index([startDate])
+}
+
+model ProductionTask {
+  id             Int            @id @default(autoincrement())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  planId         Int
+  title          String
+  description    String?
+  assignedTo     Int?
+  dueDate        DateTime?
+  completed      Boolean        @default(false)
+  priority       Int            @default(0)
+  ProductionPlan ProductionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([assignedTo])
+  @@index([planId])
+}
+
+model Recipe {
+  id                                                     Int                     @id @default(autoincrement())
+  createdAt                                              DateTime                @default(now())
+  updatedAt                                              DateTime
+  name                                                   String
+  yieldQuantity                                          Decimal
+  yieldUnit                                              BaseUnit
+  imageUrl                                               String?
+  companyId                                              Int?
+  description                                            String?
+  method                                                 String?
+  actualFoodCost                                         Decimal?
+  bakeTemp                                               Int?
+  bakeTime                                               Int?
+  category                                               String?
+  categoryId                                             Int?
+  isSubRecipe                                            Boolean                 @default(false)
+  lastPriceUpdate                                        DateTime?
+  portionSize                                            Decimal?
+  portionUnit                                            BaseUnit?
+  portionsPerBatch                                       Int?
+  sellingPrice                                           Decimal?
+  shelfLife                                              String?
+  shelfLifeId                                            Int?
+  storage                                                String?
+  storageId                                              Int?
+  suggestedPrice                                         Decimal?
+  trainingModuleId                                       Int?
+  CustomerPricing                                        CustomerPricing[]
+  Inventory                                              Inventory[]
+  ProductionHistory                                      ProductionHistory[]
+  ProductionItem                                         ProductionItem[]
+  Category                                               Category?               @relation(fields: [categoryId], references: [id])
+  Company                                                Company?                @relation(fields: [companyId], references: [id])
+  ShelfLifeOption                                        ShelfLifeOption?        @relation(fields: [shelfLifeId], references: [id])
+  StorageOption                                          StorageOption?          @relation(fields: [storageId], references: [id])
+  TrainingModule                                         TrainingModule?         @relation(fields: [trainingModuleId], references: [id])
+  RecipeCollection                                       RecipeCollection[]
+  RecipeItem                                             RecipeItem[]
+  RecipeSection                                          RecipeSection[]
+  RecipeSubRecipe_RecipeSubRecipe_parentRecipeIdToRecipe RecipeSubRecipe[]       @relation("RecipeSubRecipe_parentRecipeIdToRecipe")
+  RecipeSubRecipe_RecipeSubRecipe_subRecipeIdToRecipe    RecipeSubRecipe[]       @relation("RecipeSubRecipe_subRecipeIdToRecipe")
+  RecipeUpdateLog                                        RecipeUpdateLog[]
+  RecipeVersion                                          RecipeVersion[]
+  SalesRecord                                            SalesRecord[]
+  SeasonalTrend                                          SeasonalTrend[]
+  ShopifyOrderItem                                       ShopifyOrderItem[]
+  ShopifyProductMapping                                  ShopifyProductMapping[]
+  TrainingModuleRecipe                                   TrainingModuleRecipe[]
+  WholesaleOrderItem                                     WholesaleOrderItem[]
+  WholesaleProduct                                       WholesaleProduct[]
+
+  @@unique([name, companyId])
+  @@index([category])
+  @@index([companyId, categoryId])
+  @@index([companyId])
+  @@index([companyId, name])
+  @@index([companyId, updatedAt])
+  @@index([trainingModuleId], map: "idx_recipe_training_module")
+}
+
+model RecipeCollection {
+  id           Int        @id @default(autoincrement())
+  createdAt    DateTime   @default(now())
+  recipeId     Int
+  collectionId Int
+  order        Int        @default(0)
+  Collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  Recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, collectionId])
+  @@index([collectionId])
+  @@index([recipeId])
+}
+
+model RecipeItem {
+  id            Int            @id @default(autoincrement())
+  recipeId      Int
+  ingredientId  Int
+  quantity      Decimal
+  unit          Unit
+  note          String?
+  sectionId     Int?
+  price         Decimal?
+  Ingredient    Ingredient     @relation(fields: [ingredientId], references: [id])
+  Recipe        Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  RecipeSection RecipeSection? @relation(fields: [sectionId], references: [id])
+
+  @@index([ingredientId])
+  @@index([recipeId])
+  @@index([sectionId])
+}
+
+model RecipeSection {
+  id          Int          @id @default(autoincrement())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  recipeId    Int
+  title       String
+  description String?
+  method      String?
+  order       Int          @default(0)
+  bakeTemp    Int?
+  bakeTime    Int?
+  hasTimer    Boolean      @default(false)
+  RecipeItem  RecipeItem[]
+  Recipe      Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@index([recipeId, order])
+}
+
+model RecipeSubRecipe {
+  id                                            Int      @id @default(autoincrement())
+  createdAt                                     DateTime @default(now())
+  updatedAt                                     DateTime
+  parentRecipeId                                Int
+  subRecipeId                                   Int
+  quantity                                      Decimal
+  unit                                          Unit
+  note                                          String?
+  Recipe_RecipeSubRecipe_parentRecipeIdToRecipe Recipe   @relation("RecipeSubRecipe_parentRecipeIdToRecipe", fields: [parentRecipeId], references: [id], onDelete: Cascade)
+  Recipe_RecipeSubRecipe_subRecipeIdToRecipe    Recipe   @relation("RecipeSubRecipe_subRecipeIdToRecipe", fields: [subRecipeId], references: [id], onDelete: Cascade)
+
+  @@unique([parentRecipeId, subRecipeId])
+  @@index([parentRecipeId])
+  @@index([subRecipeId])
+}
+
+model RecipeUpdateLog {
+  id             Int      @id @default(autoincrement())
+  createdAt      DateTime @default(now())
+  recipeId       Int
+  companyId      Int
+  updateType     String
+  changedField   String?
+  oldValue       String?
+  newValue       String?
+  allergenImpact Boolean  @default(false)
+  updatedBy      Int?
+  updatedAt      DateTime @default(now())
+  Company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Recipe         Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, allergenImpact, updatedAt])
+  @@index([companyId])
+  @@index([recipeId])
+}
+
+model RecipeVersion {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  recipeId     Int
+  version      Int
+  snapshot     Json
+  changedBy    Int
+  changeNote   String?
+  totalCost    Decimal?
+  sellingPrice Decimal?
+  foodCostPct  Decimal?
+  Recipe       Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, version])
+  @@index([recipeId])
+  @@index([recipeId, version])
+}
+
+model Role {
+  id             Int              @id @default(autoincrement())
+  name           String
+  description    String?
+  companyId      Int
+  isSystemRole   Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now())
+  Membership     Membership[]
+  Company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  RolePermission RolePermission[]
+
+  @@index([companyId], map: "idx_role_company")
+}
+
+model RolePermission {
+  id         Int      @id @default(autoincrement())
+  roleId     Int
+  permission String
+  createdAt  DateTime @default(now())
+  Role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permission])
+  @@index([roleId], map: "idx_role_permission_role")
+}
+
+model SalesRecord {
+  id              Int      @id @default(autoincrement())
+  createdAt       DateTime @default(now())
+  companyId       Int
+  transactionDate DateTime
+  channel         String
+  recipeId        Int?
+  productName     String?
+  quantity        Decimal
+  unitPrice       Decimal
+  totalRevenue    Decimal
+  customerId      Int?
+  customerName    String?
+  orderId         Int?
+  notes           String?
+  externalId      String?
+  externalSource  String?
+  Company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Recipe          Recipe?  @relation(fields: [recipeId], references: [id])
+
+  @@index([channel])
+  @@index([companyId])
+  @@index([companyId, transactionDate])
+  @@index([externalId])
+  @@index([recipeId])
+  @@index([transactionDate])
+}
+
+model ScheduledTask {
+  id                Int            @id @default(autoincrement())
+  companyId         Int
+  siteId            Int?
+  templateId        Int
+  assignedTo        Int?
+  scheduleType      String         @db.VarChar(50)
+  scheduleTime      DateTime?      @db.Time(6)
+  scheduleDays      Json?
+  timeWindow        String?        @db.VarChar(50)
+  isActive          Boolean        @default(true)
+  startDate         DateTime       @db.Date
+  endDate           DateTime?      @db.Date
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @default(now())
+  timeWindowStart   DateTime?      @db.Time(6)
+  timeWindowEnd     DateTime?      @db.Time(6)
+  enforceTimeWindow Boolean        @default(false)
+  User              User?          @relation(fields: [assignedTo], references: [id])
+  Company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  TaskTemplate      TaskTemplate   @relation(fields: [templateId], references: [id])
+  TaskInstance      TaskInstance[]
+
+  @@index([companyId, isActive])
+}
+
+model SeasonalTrend {
+  id               Int      @id @default(autoincrement())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  companyId        Int
+  recipeId         Int?
+  category         String?
+  season           String
+  month            Int?
+  demandMultiplier Decimal
+  confidence       Decimal
+  dataPoints       Int
+  description      String?
+  notes            String?
+  isActive         Boolean  @default(true)
+  Company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Recipe           Recipe?  @relation(fields: [recipeId], references: [id])
+
+  @@unique([companyId, recipeId, season])
+  @@index([category])
+  @@index([companyId])
+  @@index([recipeId])
+  @@index([season])
+}
+
+model ShelfLifeOption {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  name        String
+  description String?
+  order       Int      @default(0)
+  companyId   Int?
+  Recipe      Recipe[]
+  Company     Company? @relation(fields: [companyId], references: [id])
+
+  @@unique([name, companyId])
+  @@index([companyId])
+  @@index([companyId, order])
+}
+
+model Shift {
+  id               Int         @id @default(autoincrement())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime
+  membershipId     Int
+  companyId        Int
+  date             DateTime
+  startTime        DateTime
+  endTime          DateTime
+  breakDuration    Int         @default(0)
+  shiftType        String      @default("general")
+  location         String?
+  status           String      @default("scheduled")
+  productionPlanId Int?
+  notes            String?
+  confirmedBy      Int?
+  Company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Membership       Membership  @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  Timesheet        Timesheet[]
+
+  @@index([companyId, date])
+  @@index([companyId])
+  @@index([date])
+  @@index([membershipId])
+  @@index([status])
+}
+
+model ShiftTemplate {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  companyId     Int
+  name          String
+  description   String?
+  dayOfWeek     Int?
+  startTime     String
+  endTime       String
+  breakDuration Int      @default(0)
+  shiftType     String   @default("general")
+  location      String?
+  defaultRole   String?
+  isActive      Boolean  @default(true)
+  Company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model ShopifyOrder {
+  id                 Int                @id @default(autoincrement())
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime
+  companyId          Int
+  shopifyOrderId     String             @unique
+  shopifyOrderNumber String
+  customerName       String
+  customerEmail      String?
+  customerPhone      String?
+  totalPrice         Decimal
+  currency           String             @default("GBP")
+  orderDate          DateTime
+  fulfillmentStatus  String?
+  financialStatus    String?
+  shippingAddress    Json?
+  deliveryDate       DateTime?
+  status             String             @default("pending")
+  processedAt        DateTime?
+  notes              String?
+  shopifyData        Json
+  Company            Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ShopifyOrderItem   ShopifyOrderItem[]
+
+  @@index([companyId])
+  @@index([orderDate])
+  @@index([shopifyOrderId])
+  @@index([status])
+}
+
+model ShopifyOrderItem {
+  id                Int          @id @default(autoincrement())
+  orderId           Int
+  recipeId          Int?
+  shopifyProductId  String
+  shopifyVariantId  String?
+  productTitle      String
+  variantTitle      String?
+  sku               String?
+  quantity          Int
+  price             Decimal
+  addedToProduction Boolean      @default(false)
+  productionItemId  Int?
+  ShopifyOrder      ShopifyOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  Recipe            Recipe?      @relation(fields: [recipeId], references: [id])
+
+  @@index([orderId])
+  @@index([recipeId])
+  @@index([shopifyProductId])
+}
+
+model ShopifyProductMapping {
+  id                 Int      @id @default(autoincrement())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  companyId          Int
+  recipeId           Int
+  shopifyProductId   String
+  shopifyVariantId   String?
+  productTitle       String
+  variantTitle       String?
+  sku                String?
+  quantityMultiplier Decimal  @default(1.0)
+  isActive           Boolean  @default(true)
+  Company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Recipe             Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, shopifyProductId, shopifyVariantId])
+  @@index([companyId])
+  @@index([recipeId])
+  @@index([shopifyProductId])
+}
+
+model SmartAlert {
+  id                Int      @id @default(autoincrement())
+  companyId         Int
+  alertType         String   @db.VarChar(50)
+  severity          String   @db.VarChar(50)
+  title             String   @db.VarChar(255)
+  message           String
+  actionRequired    String?  @db.VarChar(255)
+  relatedEntityType String?  @db.VarChar(50)
+  relatedEntityId   Int?
+  isRead            Boolean  @default(false)
+  isDismissed       Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  Company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, isDismissed, createdAt(sort: Desc)])
+}
+
+model StaffProfile {
+  id                    Int        @id @default(autoincrement())
+  membershipId          Int        @unique
+  employmentStartDate   DateTime?
+  position              String?
+  status                String     @default("active")
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  notes                 String?
+  performanceNotes      String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @default(now())
+  Membership            Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([membershipId], map: "idx_staff_profile_membership")
+}
+
+model StorageOption {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  name        String
+  description String?
+  icon        String?
+  order       Int      @default(0)
+  companyId   Int?
+  Recipe      Recipe[]
+  Company     Company? @relation(fields: [companyId], references: [id])
+
+  @@unique([name, companyId])
+  @@index([companyId])
+  @@index([companyId, order])
+}
+
+model Subscription {
+  id                   Int       @id @default(autoincrement())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime
+  userId               Int       @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  stripeProductId      String?
+  status               String    @default("active")
+  tier                 String    @default("professional")
+  price                Decimal   @default(19.00)
+  currency             String    @default("GBP")
+  interval             String    @default("month")
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  canceledAt           DateTime?
+  maxIngredients       Int?
+  maxRecipes           Int?
+  metadata             Json?
+  User                 User      @relation(fields: [userId], references: [id])
+}
+
+model FeatureModule {
+  id                       Int       @id @default(autoincrement())
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  userId                   Int
+  moduleName               String // recipes|production|make|teams|safety
+  stripeSubscriptionItemId String?
+  stripePriceId            String?
+  status                   String    @default("active") // active|canceled|trialing|past_due
+  isTrial                  Boolean   @default(false) // true for Recipes free trial
+  unlockedAt               DateTime  @default(now())
+  currentPeriodEnd         DateTime?
+  cancelAtPeriodEnd        Boolean   @default(false)
+  canceledAt               DateTime?
+  User                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleName])
+  @@index([userId])
+  @@index([moduleName])
+  @@index([status])
+}
+
+model Supplier {
+  id              Int          @id @default(autoincrement())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime
+  name            String
+  description     String?
+  contactName     String?
+  email           String?
+  phone           String?
+  website         String?
+  deliveryDays    String[]     @default([])
+  deliveryNotes   String?
+  accountLogin    String?
+  accountPassword String?
+  accountNumber   String?
+  address         String?
+  city            String?
+  postcode        String?
+  country         String?
+  currency        String?      @default("GBP")
+  paymentTerms    String?
+  minimumOrder    Decimal?
+  companyId       Int?
+  Ingredient      Ingredient[]
+  Company         Company?     @relation(fields: [companyId], references: [id])
+
+  @@unique([name, companyId])
+  @@index([companyId])
+}
+
+model TaskComment {
+  id               Int             @id @default(autoincrement())
+  taskInstanceId   Int?
+  taskCompletionId Int?
+  companyId        Int
+  commentText      String
+  mentionedUsers   Json?
+  createdBy        Int
+  createdByName    String          @db.VarChar(255)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now())
+  Company          Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User             User            @relation(fields: [createdBy], references: [id])
+  TaskCompletion   TaskCompletion? @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
+  TaskInstance     TaskInstance?   @relation(fields: [taskInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([taskInstanceId, createdAt(sort: Desc)])
+}
+
+model TaskCompletion {
+  id                      Int                       @id @default(autoincrement())
+  taskInstanceId          Int?                      @unique
+  companyId               Int
+  siteId                  Int?
+  templateId              Int
+  completedBy             Int
+  completedByName         String                    @db.VarChar(255)
+  completedByRole         String                    @db.VarChar(50)
+  completedAt             DateTime                  @default(now())
+  completionDate          DateTime                  @db.Date
+  pinVerified             Boolean                   @default(true)
+  deviceId                String?                   @db.VarChar(255)
+  ipAddress               String?                   @db.Inet
+  taskName                String                    @db.VarChar(255)
+  taskCategory            String                    @db.VarChar(100)
+  durationMinutes         Int?
+  notes                   String?
+  status                  String                    @db.VarChar(50)
+  flagReason              String?
+  priorityLevel           String?                   @db.VarChar(50)
+  checklistItemsTotal     Int
+  checklistItemsCompleted Int
+  photosCount             Int                       @default(0)
+  createdAt               DateTime                  @default(now())
+  ChecklistItemCompletion ChecklistItemCompletion[]
+  TaskComment             TaskComment[]
+  Company                 Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User                    User                      @relation(fields: [completedBy], references: [id])
+  TaskInstance            TaskInstance?             @relation(fields: [taskInstanceId], references: [id])
+  TaskTemplate            TaskTemplate              @relation(fields: [templateId], references: [id])
+  TaskPhoto               TaskPhoto[]
+
+  @@index([companyId, completionDate(sort: Desc)])
+  @@index([companyId, status, completionDate(sort: Desc)])
+  @@index([completedBy, completionDate(sort: Desc)])
+}
+
+model TaskInstance {
+  id                Int                 @id @default(autoincrement())
+  scheduledTaskId   Int?
+  companyId         Int
+  siteId            Int?
+  templateId        Int
+  assignedTo        Int?
+  dueDate           DateTime            @db.Date
+  dueTime           DateTime?           @db.Time(6)
+  status            String              @default("pending") @db.VarChar(50)
+  priority          String              @default("normal") @db.VarChar(50)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now())
+  TaskComment       TaskComment[]
+  TaskCompletion    TaskCompletion?
+  User              User?               @relation(fields: [assignedTo], references: [id])
+  Company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ScheduledTask     ScheduledTask?      @relation(fields: [scheduledTaskId], references: [id], onDelete: Cascade)
+  TaskTemplate      TaskTemplate        @relation(fields: [templateId], references: [id])
+  TemperatureRecord TemperatureRecord[]
+
+  @@index([companyId, dueDate(sort: Desc)])
+}
+
+model TaskPhoto {
+  id                      Int                      @id @default(autoincrement())
+  taskCompletionId        Int
+  checklistItemId         Int?
+  companyId               Int
+  filePath                String                   @db.VarChar(500)
+  fileName                String                   @db.VarChar(255)
+  fileSize                Int?
+  mimeType                String?                  @db.VarChar(100)
+  isBeforePhoto           Boolean                  @default(false)
+  uploadedBy              Int
+  uploadedAt              DateTime                 @default(now())
+  thumbnailPath           String?                  @db.VarChar(500)
+  ChecklistItemCompletion ChecklistItemCompletion? @relation(fields: [checklistItemId], references: [id])
+  Company                 Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  TaskCompletion          TaskCompletion           @relation(fields: [taskCompletionId], references: [id], onDelete: Cascade)
+  User                    User                     @relation(fields: [uploadedBy], references: [id])
+
+  @@index([taskCompletionId])
+}
+
+model TaskTemplate {
+  id                    Int                     @id @default(autoincrement())
+  companyId             Int
+  category              String                  @db.VarChar(100)
+  name                  String                  @db.VarChar(255)
+  description           String?
+  emoji                 String?                 @db.VarChar(10)
+  isSystemTemplate      Boolean                 @default(false)
+  isActive              Boolean                 @default(true)
+  createdBy             Int?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @default(now())
+  ScheduledTask         ScheduledTask[]
+  TaskCompletion        TaskCompletion[]
+  TaskInstance          TaskInstance[]
+  Company               Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  TemperatureRecord     TemperatureRecord[]
+  TemplateAppliance     TemplateAppliance[]
+  TemplateChecklistItem TemplateChecklistItem[]
+
+  @@index([companyId, category, isActive])
+}
+
+model TeamInvitation {
+  id         Int        @id @default(autoincrement())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime
+  companyId  Int
+  email      String
+  role       MemberRole @default(VIEWER)
+  invitedBy  Int
+  token      String     @unique
+  acceptedAt DateTime?
+  expiresAt  DateTime
+  Company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@index([email])
+}
+
+model TemperatureReading {
+  id                Int               @id @default(autoincrement())
+  sensorId          Int
+  companyId         Int
+  temperatureValue  Decimal           @db.Decimal(5, 2)
+  temperatureUnit   String            @default("celsius") @db.VarChar(10)
+  recordedAt        DateTime          @default(now())
+  isOutOfRange      Boolean           @default(false)
+  Company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  TemperatureSensor TemperatureSensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, recordedAt(sort: Desc)])
+  @@index([sensorId, recordedAt(sort: Desc)])
+}
+
+model TemperatureRecord {
+  id             Int           @id @default(autoincrement())
+  companyId      Int
+  templateId     Int?
+  taskInstanceId Int?
+  applianceName  String        @db.VarChar(255)
+  applianceType  String        @db.VarChar(50)
+  recordType     String        @default("fridge_freezer") @db.VarChar(50)
+  temperature    Decimal       @db.Decimal(5, 2)
+  unit           String        @default("celsius") @db.VarChar(10)
+  checkPeriod    String?       @db.VarChar(10)
+  location       String?       @db.VarChar(255)
+  notes          String?
+  recordedBy     Int?
+  recordedAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  Company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User           User?         @relation(fields: [recordedBy], references: [id])
+  TaskInstance   TaskInstance? @relation(fields: [taskInstanceId], references: [id])
+  TaskTemplate   TaskTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([applianceName, recordedAt(sort: Desc)])
+  @@index([companyId, recordedAt(sort: Desc)])
+  @@index([templateId, recordedAt(sort: Desc)])
+}
+
+model TemperatureSensor {
+  id                 Int                  @id @default(autoincrement())
+  companyId          Int
+  siteId             Int?
+  sensorName         String               @db.VarChar(255)
+  sensorType         String?              @db.VarChar(100)
+  location           String?              @db.VarChar(255)
+  targetTemperature  Decimal?             @db.Decimal(5, 2)
+  minThreshold       Decimal?             @db.Decimal(5, 2)
+  maxThreshold       Decimal?             @db.Decimal(5, 2)
+  isActive           Boolean              @default(true)
+  lastReadingAt      DateTime?
+  createdAt          DateTime             @default(now())
+  TemperatureReading TemperatureReading[]
+  Company            Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model TemplateAppliance {
+  id            Int          @id @default(autoincrement())
+  templateId    Int
+  companyId     Int
+  applianceName String       @db.VarChar(255)
+  applianceType String       @default("fridge") @db.VarChar(50)
+  location      String?      @db.VarChar(255)
+  orderIndex    Int          @default(0)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now())
+  Company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  TaskTemplate  TaskTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, applianceName, companyId])
+  @@index([templateId, companyId, isActive])
+}
+
+model TemplateChecklistItem {
+  id                      Int                       @id @default(autoincrement())
+  templateId              Int
+  itemText                String
+  itemOrder               Int
+  requiresPhoto           Boolean                   @default(false)
+  requiresTemperature     Boolean                   @default(false)
+  requiresNotes           Boolean                   @default(false)
+  createdAt               DateTime                  @default(now())
+  ChecklistItemCompletion ChecklistItemCompletion[]
+  TaskTemplate            TaskTemplate              @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model Timesheet {
+  id               Int        @id @default(autoincrement())
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime
+  membershipId     Int
+  companyId        Int
+  clockInAt        DateTime
+  clockOutAt       DateTime?
+  breakStart       DateTime?
+  breakEnd         DateTime?
+  totalHours       Decimal?
+  breakHours       Decimal?   @default(0)
+  status           String     @default("pending")
+  approvedBy       Int?
+  approvedAt       DateTime?
+  rejectionReason  String?
+  shiftId          Int?
+  clockInLocation  String?
+  clockOutLocation String?
+  clockInIp        String?
+  clockOutIp       String?
+  adjustmentHours  Decimal?   @default(0)
+  adjustmentReason String?
+  notes            String?
+  Company          Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Membership       Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  Shift            Shift?     @relation(fields: [shiftId], references: [id])
+
+  @@index([clockInAt])
+  @@index([companyId, clockInAt])
+  @@index([companyId])
+  @@index([membershipId])
+  @@index([shiftId])
+  @@index([status])
+}
+
+model TrainingContent {
+  id             Int            @id @default(autoincrement())
+  moduleId       Int
+  type           String
+  content        String?
+  order          Int            @default(0)
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  TrainingModule TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([moduleId, order], map: "idx_training_content_module")
+}
+
+model TrainingModule {
+  id                   Int                    @id @default(autoincrement())
+  companyId            Int
+  title                String
+  description          String?
+  category             String?
+  isTemplate           Boolean                @default(false)
+  estimatedDuration    Int?
+  refreshFrequencyDays Int?
+  createdBy            Int
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @default(now())
+  Recipe               Recipe[]
+  TrainingContent      TrainingContent[]
+  Company              Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User                 User                   @relation(fields: [createdBy], references: [id])
+  TrainingModuleRecipe TrainingModuleRecipe[]
+  TrainingRecord       TrainingRecord[]
+
+  @@index([companyId], map: "idx_training_module_company")
+}
+
+model TrainingModuleRecipe {
+  id             Int            @id @default(autoincrement())
+  moduleId       Int
+  recipeId       Int
+  createdAt      DateTime       @default(now())
+  TrainingModule TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  Recipe         Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, recipeId], map: "TrainingModuleRecipe_module_recipe_key")
+  @@index([moduleId], map: "idx_training_module_recipe_module")
+  @@index([recipeId], map: "idx_training_module_recipe_recipe")
+}
+
+model TrainingRecord {
+  id              Int            @id @default(autoincrement())
+  membershipId    Int
+  moduleId        Int
+  status          String         @default("not_started")
+  startedAt       DateTime?
+  completedAt     DateTime?
+  signedOffBy     Int?
+  signedOffAt     DateTime?
+  nextRefreshDate DateTime?
+  completionNotes String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now())
+  Membership      Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  TrainingModule  TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  User            User?          @relation(fields: [signedOffBy], references: [id])
+
+  @@unique([membershipId, moduleId], map: "TrainingRecord_membership_module_key")
+  @@index([membershipId], map: "idx_training_record_membership")
+  @@index([moduleId], map: "idx_training_record_module")
+  @@index([status], map: "idx_training_record_status")
+}
+
+model User {
+  id                                             Int                     @id @default(autoincrement())
+  createdAt                                      DateTime                @default(now())
+  updatedAt                                      DateTime
+  email                                          String                  @unique
+  name                                           String?
+  passwordHash                                   String?
+  hasCompletedOnboarding                         Boolean                 @default(false)
+  ingredientCount                                Int                     @default(0)
+  isActive                                       Boolean                 @default(true)
+  isAdmin                                        Boolean                 @default(false)
+  lastLoginAt                                    DateTime?
+  recipeCount                                    Int                     @default(0)
+  stripeCustomerId                               String?                 @unique
+  subscriptionEndsAt                             DateTime?
+  subscriptionInterval                           String                  @default("month")
+  subscriptionStatus                             String                  @default("free")
+  subscriptionTier                               String                  @default("starter")
+  emailVerified                                  Boolean                 @default(false)
+  verificationToken                              String?                 @unique
+  verificationTokenExpiresAt                     DateTime?
+  ActivityLog                                    ActivityLog[]
+  CleaningJob                                    CleaningJob[]
+  DailyTemperatureCheck                          DailyTemperatureCheck[]
+  EquipmentIssue_EquipmentIssue_reportedByToUser EquipmentIssue[]        @relation("EquipmentIssue_reportedByToUser")
+  EquipmentIssue_EquipmentIssue_resolvedByToUser EquipmentIssue[]        @relation("EquipmentIssue_resolvedByToUser")
+  Membership                                     Membership[]
+  Notification                                   Notification[]
+  ScheduledTask                                  ScheduledTask[]
+  Subscription                                   Subscription?
+  TaskComment                                    TaskComment[]
+  TaskCompletion                                 TaskCompletion[]
+  TaskInstance                                   TaskInstance[]
+  TaskPhoto                                      TaskPhoto[]
+  TemperatureRecord                              TemperatureRecord[]
+  TrainingModule                                 TrainingModule[]
+  TrainingRecord                                 TrainingRecord[]
+  UserPreference                                 UserPreference?
+  FeatureModule                                  FeatureModule[]
+}
+
+model UserPreference {
+  id              Int     @id @default(autoincrement())
+  userId          Int     @unique
+  currency        String  @default("GBP")
+  maxFoodCost     Decimal @default(35.0)
+  navigationItems Json?
+  targetFoodCost  Decimal @default(25.0)
+  timerSettings   Json?
+  User            User    @relation(fields: [userId], references: [id])
+}
+
+model WebhookLog {
+  id                Int                @id @default(autoincrement())
+  createdAt         DateTime           @default(now())
+  companyId         Int
+  integrationId     Int?
+  provider          String
+  eventType         String
+  webhookId         String?
+  method            String
+  headers           Json?
+  body              Json?
+  status            String             @default("pending")
+  processedAt       DateTime?
+  error             String?
+  responseStatus    Int?
+  responseBody      Json?
+  ipAddress         String?
+  userAgent         String?
+  Company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  IntegrationConfig IntegrationConfig? @relation(fields: [integrationId], references: [id])
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([eventType])
+  @@index([integrationId])
+  @@index([provider])
+  @@index([status])
+}
+
+model WholesaleCustomer {
+  id                       Int                        @id @default(autoincrement())
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime
+  companyId                Int
+  name                     String
+  contactName              String?
+  email                    String?
+  phone                    String?
+  address                  String?
+  city                     String?
+  postcode                 String?
+  country                  String?
+  notes                    String?
+  isActive                 Boolean                    @default(true)
+  portalToken              String?                    @unique
+  portalShortCode          String?                    @unique
+  portalEnabled            Boolean                    @default(false)
+  CustomerPricing          CustomerPricing[]
+  ProductionItem           ProductionItem[]
+  ProductionItemAllocation ProductionItemAllocation[]
+  Company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  WholesaleOrder           WholesaleOrder[]
+
+  @@index([companyId])
+  @@index([isActive])
+  @@index([portalToken])
+}
+
+model WholesaleOrder {
+  id                    Int                  @id @default(autoincrement())
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime
+  customerId            Int
+  companyId             Int
+  orderNumber           String?
+  deliveryDate          DateTime?
+  status                String               @default("pending")
+  notes                 String?
+  isRecurring           Boolean              @default(false)
+  recurringInterval     String?
+  recurringIntervalDays Int?
+  recurringEndDate      DateTime?
+  nextRecurrenceDate    DateTime?
+  recurringStatus       String?
+  parentOrderId         Int?
+  Company               Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  WholesaleCustomer     WholesaleCustomer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  WholesaleOrder        WholesaleOrder?      @relation("WholesaleOrderToWholesaleOrder", fields: [parentOrderId], references: [id])
+  other_WholesaleOrder  WholesaleOrder[]     @relation("WholesaleOrderToWholesaleOrder")
+  WholesaleOrderItem    WholesaleOrderItem[]
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([deliveryDate])
+  @@index([isRecurring])
+  @@index([nextRecurrenceDate])
+  @@index([parentOrderId])
+  @@index([recurringStatus])
+  @@index([status])
+}
+
+model WholesaleOrderItem {
+  id             Int            @id @default(autoincrement())
+  orderId        Int
+  recipeId       Int
+  quantity       Int
+  price          Decimal?
+  notes          String?
+  WholesaleOrder WholesaleOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  Recipe         Recipe         @relation(fields: [recipeId], references: [id])
+
+  @@index([orderId])
+  @@index([recipeId])
+}
+
+model WholesaleProduct {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  companyId   Int
+  recipeId    Int?
+  name        String?
+  description String?
+  unit        String?
+  price       Decimal
+  currency    String   @default("GBP")
+  category    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  imageUrl    String?
+  notes       String?
+  Company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  Recipe      Recipe?  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@index([isActive])
+  @@index([recipeId])
+}
+
+enum BaseUnit {
+  g
+  ml
+  each
+  slices
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum Unit {
+  g
+  kg
+  mg
+  lb
+  oz
+  ml
+  l
+  pint
+  quart
+  gallon
+  tsp
+  tbsp
+  cup
+  floz
+  each
+  slices
+  pinch
+  dash
+  large
+  medium
+  small
+}

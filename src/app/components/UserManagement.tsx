@@ -25,14 +25,6 @@ interface User {
   }>;
 }
 
-interface FeatureModule {
-  id: number;
-  userId: number;
-  moduleName: string;
-  status: string;
-  isTrial: boolean;
-  unlockedAt: Date | null;
-}
 
 interface PinInfo {
   membershipId: number;
@@ -52,9 +44,7 @@ export function UserManagement() {
   // Removed filterTier - using Feature Modules only
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [featureModules, setFeatureModules] = useState<FeatureModule[]>([]);
   const [pins, setPins] = useState<PinInfo[]>([]);
-  const [loadingFeatures, setLoadingFeatures] = useState(false);
   const [editingUser, setEditingUser] = useState(false);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -65,7 +55,12 @@ export function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/admin/users?includeMemberships=true");
+      const res = await fetch(`/api/admin/users?includeMemberships=true&t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       const data = await res.json();
       
       if (res.ok) {
@@ -123,8 +118,61 @@ export function UserManagement() {
     }
   };
 
-  // Removed handleUpgradeSubscription - use Feature Modules directly instead
-  // To grant access, use the "Grant All" or individual "Grant Access" buttons in Feature Access section
+  const handleUpgradeSubscription = async (userEmail: string, tier: "free" | "paid", isLifetime = false) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/admin/users/upgrade-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userEmail, tier, isLifetime }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`[Admin] Upgrade successful:`, data);
+        
+        // Verify the response shows the correct tier
+        if (data.user && data.user.subscriptionTier !== (tier === "paid" ? "paid" : "starter")) {
+          console.error(`[Admin] Response tier mismatch!`, {
+            requested: tier,
+            expected: tier === "paid" ? "paid" : "starter",
+            actual: data.user.subscriptionTier,
+            fullResponse: data,
+          });
+          alert(`⚠️ WARNING: Tier mismatch detected!\n\nExpected: ${tier === "paid" ? "paid" : "starter"}\nGot: ${data.user.subscriptionTier}\n\nPlease check server logs and database.`);
+        } else {
+          alert(`${data.message || `Successfully set ${userEmail} to ${tier} tier`}\n\nTier: ${data.user?.subscriptionTier}\nStatus: ${data.user?.subscriptionStatus}\n\nPlease refresh the page to see changes.`);
+        }
+        
+        await fetchUsers(); // Refresh the list
+        if (selectedUser?.email === userEmail) {
+          // Small delay to ensure database is updated
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await handleViewDetails(selectedUser.id); // Refresh details
+        }
+        // Trigger refresh event for frontend sidebar
+        if (typeof window !== 'undefined') {
+          console.log(`[Admin] Dispatching refresh-unlock-status event`);
+          window.dispatchEvent(new CustomEvent('refresh-unlock-status'));
+        }
+      } else {
+        const errorText = await res.text();
+        let error;
+        try {
+          error = JSON.parse(errorText);
+        } catch {
+          error = { error: errorText };
+        }
+        console.error(`[Admin] Upgrade failed:`, error);
+        alert(`❌ Failed: ${error.error || errorText}\n\nDetails: ${error.details || 'No details available'}\n\nCheck browser console for more info.`);
+      }
+    } catch (error) {
+      console.error("Failed to upgrade subscription:", error);
+      alert("Failed to upgrade subscription");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleDeleteUser = async (userId: number, userEmail: string) => {
     if (!confirm(`Are you sure you want to delete user ${userEmail}? This action cannot be undone.`)) {
@@ -186,10 +234,16 @@ export function UserManagement() {
 
   const handleViewDetails = async (userId: number) => {
     try {
-      const [userRes, featuresRes, pinsRes] = await Promise.all([
-        fetch(`/api/admin/users/${userId}`),
-        fetch(`/api/admin/users/${userId}/features`),
-        fetch(`/api/admin/users/${userId}/reset-pin`),
+      const [userRes, pinsRes] = await Promise.all([
+        fetch(`/api/admin/users/${userId}?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        }),
+        fetch(`/api/admin/users/${userId}/reset-pin?t=${Date.now()}`, {
+          cache: 'no-store',
+        }),
       ]);
 
       if (userRes.ok) {
@@ -201,11 +255,6 @@ export function UserManagement() {
       } else {
         alert("Failed to load user details");
         return;
-      }
-
-      if (featuresRes.ok) {
-        const featuresData = await featuresRes.json();
-        setFeatureModules(featuresData.modules || []);
       }
 
       if (pinsRes.ok) {
@@ -249,43 +298,6 @@ export function UserManagement() {
     }
   };
 
-  const handleManageFeature = async (userId: number, moduleName: string, action: "grant" | "revoke" | "upgrade-trial") => {
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/admin/users/${userId}/features`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moduleName, action }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        console.log(`[UserManagement] Feature ${action} result:`, data);
-        alert(data.message || `Successfully ${action}ed ${moduleName}`);
-        
-        // Refresh features immediately
-        const featuresRes = await fetch(`/api/admin/users/${userId}/features`);
-        if (featuresRes.ok) {
-          const featuresData = await featuresRes.json();
-          console.log(`[UserManagement] Refreshed feature modules:`, featuresData.modules);
-          setFeatureModules(featuresData.modules || []);
-        }
-        
-        // Trigger refresh event for frontend sidebar (if user is viewing the app)
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('refresh-unlock-status'));
-        }
-      } else {
-        const error = await res.json();
-        alert(`Failed: ${error.error}${error.details ? `\n\nDetails: ${error.details}` : ''}`);
-      }
-    } catch (error) {
-      console.error("Failed to manage feature:", error);
-      alert("Failed to manage feature");
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const handleResetPin = async (userId: number, membershipId: number, companyName: string) => {
     const customPin = prompt(`Enter new PIN for ${companyName} (4-6 digits, or leave empty for random):`);
@@ -628,7 +640,19 @@ export function UserManagement() {
                     )}
                   </div>
                 </div>
-                {/* Removed Subscription display - using Feature Modules only */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Subscription Tier</label>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      selectedUser.subscriptionTier === "paid"
+                        ? "bg-emerald-100 text-emerald-800" 
+                        : "bg-gray-100 text-gray-800"
+                    }`}>
+                      {selectedUser.subscriptionTier === "paid" ? "Paid" : "Free"}
+                    </span>
+                    <span className="text-xs text-gray-500">({selectedUser.subscriptionStatus})</span>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
                   <p className="text-sm text-gray-900">{new Date(selectedUser.createdAt).toLocaleString()}</p>
@@ -675,138 +699,66 @@ export function UserManagement() {
                 </div>
               )}
 
-              {/* Feature Modules Section */}
+              {/* Subscription Tier Management */}
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-700">Feature Access</label>
+                  <label className="block text-sm font-medium text-gray-700">Subscription Management</label>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      <strong>Free Tier:</strong> 10 ingredients, 2 recipes, only Recipes section unlocked
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong>Paid Tier:</strong> Unlimited everything, all sections unlocked
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         if (!selectedUser) return;
-                        if (!confirm(`Grant access to ALL modules for ${selectedUser.email}?`)) return;
-                        setActionLoading(true);
-                        try {
-                          const res = await fetch(`/api/admin/users/${selectedUser.id}/features`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ action: "grant-all" }),
-                          });
-                          if (res.ok) {
-                            const data = await res.json();
-                            alert(data.message);
-                            await handleViewDetails(selectedUser.id);
-                            if (typeof window !== 'undefined') {
-                              window.dispatchEvent(new CustomEvent('refresh-unlock-status'));
-                            }
-                          } else {
-                            const error = await res.json();
-                            alert(`Failed: ${error.error}`);
-                          }
-                        } catch (error) {
-                          console.error("Failed to grant all modules:", error);
-                          alert("Failed to grant all modules");
-                        } finally {
-                          setActionLoading(false);
-                        }
+                        if (!confirm(`Set ${selectedUser.email} to FREE tier? This will limit them to 10 ingredients and 2 recipes.`)) return;
+                        handleUpgradeSubscription(selectedUser.email, "free");
                       }}
-                      disabled={actionLoading}
-                      className="px-3 py-1 text-xs rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                      disabled={actionLoading || (selectedUser.subscriptionTier === "starter" && selectedUser.subscriptionStatus === "free")}
+                      className={`px-4 py-2 text-sm rounded ${
+                        selectedUser.subscriptionTier === "starter" && selectedUser.subscriptionStatus === "free"
+                          ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
                     >
-                      Grant All
+                      Set to Free
                     </button>
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         if (!selectedUser) return;
-                        if (!confirm(`Revoke access to ALL modules for ${selectedUser.email}?`)) return;
-                        setActionLoading(true);
-                        try {
-                          const res = await fetch(`/api/admin/users/${selectedUser.id}/features`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ action: "revoke-all" }),
-                          });
-                          if (res.ok) {
-                            const data = await res.json();
-                            alert(data.message);
-                            await handleViewDetails(selectedUser.id);
-                            if (typeof window !== 'undefined') {
-                              window.dispatchEvent(new CustomEvent('refresh-unlock-status'));
-                            }
-                          } else {
-                            const error = await res.json();
-                            alert(`Failed: ${error.error}`);
-                          }
-                        } catch (error) {
-                          console.error("Failed to revoke all modules:", error);
-                          alert("Failed to revoke all modules");
-                        } finally {
-                          setActionLoading(false);
-                        }
+                        if (!confirm(`Set ${selectedUser.email} to PAID tier? This will unlock all features.`)) return;
+                        handleUpgradeSubscription(selectedUser.email, "paid");
+                      }}
+                      disabled={actionLoading || (selectedUser.subscriptionTier === "paid" && selectedUser.subscriptionStatus === "active")}
+                      className={`px-4 py-2 text-sm rounded ${
+                        selectedUser.subscriptionTier === "paid" && selectedUser.subscriptionStatus === "active"
+                          ? "bg-emerald-200 text-emerald-700 cursor-not-allowed"
+                          : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                      }`}
+                    >
+                      Set to Paid
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!selectedUser) return;
+                        if (!confirm(`Set ${selectedUser.email} to PAID tier (LIFETIME)? This will unlock all features permanently.`)) return;
+                        handleUpgradeSubscription(selectedUser.email, "paid", true);
                       }}
                       disabled={actionLoading}
-                      className="px-3 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+                      className="px-4 py-2 text-sm rounded bg-purple-100 text-purple-700 hover:bg-purple-200"
                     >
-                      Revoke All
+                      Set to Paid (Lifetime)
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {["recipes", "production", "make", "teams", "safety"].map((moduleName) => {
-                    const module = featureModules.find(m => m.moduleName === moduleName);
-                    const isActive = module && (module.status === "active" || module.status === "trialing");
-                    const isTrial = module?.isTrial || false;
-
-                    return (
-                      <div key={moduleName} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-medium text-gray-900 capitalize">{moduleName}</h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {isActive ? (
-                                <span className={`inline-flex px-2 py-0.5 rounded ${isTrial ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}`}>
-                                  {isTrial ? "Trial" : "Active"}
-                                </span>
-                              ) : (
-                                <span className="inline-flex px-2 py-0.5 rounded bg-red-100 text-red-800">Not Active</span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 mt-3">
-                          {!isActive ? (
-                            <button
-                              onClick={() => handleManageFeature(selectedUser.id, moduleName, "grant")}
-                              disabled={actionLoading}
-                              className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200"
-                            >
-                              Grant Access
-                            </button>
-                          ) : (
-                            <>
-                              {isTrial && (
-                                <button
-                                  onClick={() => handleManageFeature(selectedUser.id, moduleName, "upgrade-trial")}
-                                  disabled={actionLoading}
-                                  className="px-3 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                >
-                                  Upgrade from Trial
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleManageFeature(selectedUser.id, moduleName, "revoke")}
-                                disabled={actionLoading}
-                                className="px-3 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
-                              >
-                                Revoke Access
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
+
 
               <div className="flex gap-2 pt-4 border-t border-gray-200">
                 {editingUser ? (
@@ -858,7 +810,6 @@ export function UserManagement() {
                 <button
                   onClick={() => {
                     setSelectedUser(null);
-                    setFeatureModules([]);
                     setPins([]);
                     setEditingUser(false);
                   }}

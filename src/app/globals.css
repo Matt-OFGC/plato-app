@@ -2327,6 +2327,30 @@ body.recipe-page-active .recipe-safe-frame {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
   }
+  
+  /* Portrait-specific spacing utilities */
+  .portrait-space-y-4 {
+    gap: 0.75rem;
+  }
+  
+  .portrait-space-y-6 {
+    gap: 1rem;
+  }
+  
+  /* Portrait-specific padding utilities */
+  .portrait-p-6 {
+    padding: 1rem;
+  }
+  
+  .portrait-px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .portrait-py-6 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
 }
 
 /* General portrait optimizations for tablets */
@@ -2346,5 +2370,56 @@ body.recipe-page-active .recipe-safe-frame {
   .portrait-nav-stack {
     flex-direction: column;
     gap: 0.75rem;
+  }
+  
+  /* Portrait-specific gap utilities */
+  .portrait-gap-4 {
+    gap: 0.75rem;
+  }
+  
+  .portrait-gap-6 {
+    gap: 1rem;
+  }
+  
+  /* Portrait-specific text sizing utilities */
+  .portrait-text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  
+  .portrait-text-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+  
+  .portrait-text-4xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+  
+  .portrait-text-5xl {
+    font-size: 3rem;
+    line-height: 3.5rem;
+  }
+  
+  /* Portrait-specific max-width utilities */
+  .portrait-max-w-full {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Better table responsiveness in portrait */
+  .portrait-table-sm table {
+    font-size: 0.875rem;
+  }
+  
+  /* Portrait-specific rounded corners */
+  .portrait-rounded-lg {
+    border-radius: 0.75rem;
+  }
+  
+  .portrait-rounded-xl {
+    border-radius: 1rem;
   }
 }

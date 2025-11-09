@@ -167,9 +167,9 @@ export default async function RecipesPage({ searchParams }: Props) {
     <RecipesPageClient>
       <div>
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Recipes</h1>
-          <p className="text-gray-500 text-lg mb-6">Create and manage your recipes with automatic cost calculation</p>
+        <div className="mb-4 md:mb-6 lg:mb-8">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight mb-2">Recipes</h1>
+          <p className="text-gray-500 text-sm md:text-base lg:text-lg mb-4 md:mb-6">Create and manage your recipes with automatic cost calculation</p>
         </div>
 
         {/* Category Filter */}

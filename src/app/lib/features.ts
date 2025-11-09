@@ -3,103 +3,190 @@ import { prisma } from "@/lib/prisma";
 export type FeatureModuleName = "recipes" | "production" | "make" | "teams" | "safety";
 
 /**
+ * Unlock status for a single module
+ */
+export type ModuleUnlockStatus = {
+  unlocked: boolean;
+  isTrial: boolean;
+  status: string | null;
+};
+
+/**
+ * Unlock status for all modules
+ */
+export type UnlockStatus = {
+  recipes: ModuleUnlockStatus;
+  production: ModuleUnlockStatus;
+  make: ModuleUnlockStatus;
+  teams: ModuleUnlockStatus;
+  safety: ModuleUnlockStatus;
+};
+
+/**
+ * Check if user has paid subscription tier
+ */
+export async function isPaidTier(userId: number): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      subscriptionTier: true,
+      subscriptionStatus: true,
+      subscriptionEndsAt: true,
+    },
+  });
+
+  if (!user) {
+    console.log(`[isPaidTier] User ${userId} not found`);
+    return false;
+  }
+
+  // Paid tier: "paid" (simple free/paid system)
+  const tierLower = user.subscriptionTier?.toLowerCase() || "";
+  const isPaid = tierLower === "paid";
+
+  console.log(`[isPaidTier] User ${userId} check:`, {
+    subscriptionTier: user.subscriptionTier,
+    tierLower,
+    isPaid,
+    subscriptionStatus: user.subscriptionStatus,
+    subscriptionEndsAt: user.subscriptionEndsAt,
+  });
+
+  // If not a paid tier, return false
+  if (!isPaid) {
+    console.log(`[isPaidTier] User ${userId} is not on a paid tier`);
+    return false;
+  }
+
+  // Check if subscription is still active
+  if (user.subscriptionEndsAt) {
+    const now = new Date();
+    const endsAt = new Date(user.subscriptionEndsAt);
+    const isActive = endsAt > now;
+    console.log(`[isPaidTier] User ${userId} date check:`, {
+      now: now.toISOString(),
+      endsAt: endsAt.toISOString(),
+      isActive,
+    });
+    return isActive;
+  }
+
+  // If no end date, check status
+  const isActive = user.subscriptionStatus === "active";
+  console.log(`[isPaidTier] User ${userId} status check:`, {
+    subscriptionStatus: user.subscriptionStatus,
+    isActive,
+  });
+  return isActive;
+}
+
+/**
  * Check if a user has access to a specific section/module
- * Returns true if unlocked (paid) or on trial (Recipes only)
+ * Free tier: Only recipes (with limits)
+ * Paid tier: Everything unlocked
  */
 export async function checkSectionAccess(
   userId: number,
   sectionName: FeatureModuleName
 ): Promise<boolean> {
   try {
-    const module = await prisma.featureModule.findUnique({
-      where: {
-        userId_moduleName: {
-          userId,
-          moduleName: sectionName,
-        },
-      },
-    });
+    const paid = await isPaidTier(userId);
 
-    if (!module) {
-      // Recipes has free trial by default - auto-initialize if not exists
-      if (sectionName === "recipes") {
-        await initializeRecipesTrial(userId);
-        return true; // Trial is active
-      }
-      console.log(`[checkSectionAccess] Module ${sectionName} not found for user ${userId}`);
-      return false; // Other sections require purchase
+    // Paid tier: Everything unlocked
+    if (paid) {
+      return true;
     }
 
-    // Check if module is active (not canceled)
-    const hasAccess = module.status === "active" || module.status === "trialing";
-    console.log(`[checkSectionAccess] User ${userId}, module ${sectionName}: status=${module.status}, hasAccess=${hasAccess}`);
-    return hasAccess;
+    // Free tier: Only recipes unlocked (with limits)
+    if (sectionName === "recipes") {
+      return true;
+    }
+
+    // Free tier: All other sections locked
+    return false;
   } catch (error) {
-    console.error(`[checkSectionAccess] Error checking access for user ${userId}, module ${sectionName}:`, error);
+    console.error(`[checkSectionAccess] Error checking access for user ${userId}, section ${sectionName}:`, error);
     return false;
   }
 }
 
 /**
- * Get all unlocked sections for a user (paid + trial)
+ * Get all unlocked sections for a user
  */
 export async function getUnlockedSections(userId: number): Promise<FeatureModuleName[]> {
-  const modules = await prisma.featureModule.findMany({
-    where: {
-      userId,
-      status: {
-        in: ["active", "trialing"],
-      },
-    },
-  });
+  const paid = await isPaidTier(userId);
 
-  return modules.map((m) => m.moduleName as FeatureModuleName);
+  if (paid) {
+    // Paid tier: Everything unlocked
+    return ["recipes", "production", "make", "teams", "safety"];
+  }
+
+  // Free tier: Only recipes
+  return ["recipes"];
 }
 
 /**
- * Check if Recipes module is in trial mode
+ * Check if Recipes is in free trial mode (free tier)
  */
 export async function isRecipesTrial(userId: number): Promise<boolean> {
-  const module = await prisma.featureModule.findUnique({
-    where: {
-      userId_moduleName: {
-        userId,
-        moduleName: "recipes",
-      },
-    },
-  });
-
-  if (!module) {
-    // Auto-initialize trial
-    await initializeRecipesTrial(userId);
-    return true;
-  }
-
-  return module.isTrial === true && (module.status === "active" || module.status === "trialing");
+  const paid = await isPaidTier(userId);
+  return !paid; // Free tier = trial mode
 }
 
 /**
- * Check Recipes trial limits against actual usage
- * Returns { withinLimit: boolean, ingredientsUsed: number, ingredientsLimit: number, recipesUsed: number, recipesLimit: number }
+ * Check Recipes limits against actual usage
+ * Free tier: 10 ingredients, 2 recipes
+ * Paid tier: Unlimited
  */
 export async function checkRecipesLimits(userId: number) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      ingredientCount: true,
-      recipeCount: true,
-    },
-  });
+  const paid = await isPaidTier(userId);
 
-  if (!user) {
-    throw new Error("User not found");
+  // Paid tier: Unlimited
+  if (paid) {
+    return {
+      withinLimit: true,
+      withinIngredientsLimit: true,
+      withinRecipesLimit: true,
+      ingredientsUsed: 0,
+      ingredientsLimit: Infinity,
+      recipesUsed: 0,
+      recipesLimit: Infinity,
+    };
   }
 
-  // Default trial limits: 10 ingredients, 5 recipes
+  // Free tier: Get actual counts and check limits
+  const [ingredientCount, recipeCount] = await Promise.all([
+    prisma.ingredient.count({
+      where: {
+        company: {
+          memberships: {
+            some: {
+              userId,
+              isActive: true,
+            },
+          },
+        },
+      },
+    }),
+    prisma.recipe.count({
+      where: {
+        company: {
+          memberships: {
+            some: {
+              userId,
+              isActive: true,
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  // Free tier limits: 10 ingredients, 2 recipes
   const ingredientsLimit = 10;
-  const recipesLimit = 5;
-  const ingredientsUsed = user.ingredientCount ?? 0;
-  const recipesUsed = user.recipeCount ?? 0;
+  const recipesLimit = 2;
+  const ingredientsUsed = ingredientCount;
+  const recipesUsed = recipeCount;
 
   const withinIngredientsLimit = ingredientsUsed < ingredientsLimit;
   const withinRecipesLimit = recipesUsed < recipesLimit;
@@ -117,39 +204,6 @@ export async function checkRecipesLimits(userId: number) {
 }
 
 /**
- * Initialize Recipes trial for a user (call on signup or first access)
- */
-export async function initializeRecipesTrial(userId: number): Promise<void> {
-  // Check if already exists
-  const existing = await prisma.featureModule.findUnique({
-    where: {
-      userId_moduleName: {
-        userId,
-        moduleName: "recipes",
-      },
-    },
-  });
-
-  if (existing) {
-    return; // Already initialized
-  }
-
-  // Create trial module
-  await prisma.featureModule.create({
-    data: {
-      userId,
-      moduleName: "recipes",
-      status: "trialing",
-      isTrial: true,
-      unlockedAt: new Date(),
-    },
-  });
-
-  // Note: User limits are handled by the FeatureModule system
-  // No need to update User model fields that don't exist
-}
-
-/**
  * Route protection helper - throws error if section not accessible
  */
 export async function requireSectionAccess(
@@ -158,91 +212,99 @@ export async function requireSectionAccess(
 ): Promise<void> {
   const hasAccess = await checkSectionAccess(userId, sectionName);
   if (!hasAccess) {
-    throw new Error(`Access denied: ${sectionName} module not unlocked`);
+    throw new Error(`Access denied: ${sectionName} requires a paid subscription`);
   }
 }
 
 /**
- * Get detailed unlock status for all sections
+ * Get detailed unlock status for all sections based on subscription tier
  */
-export async function getUnlockStatus(userId: number) {
+export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
   try {
-    const modules = await prisma.featureModule.findMany({
-      where: { userId },
+    // Get user subscription info directly - ONLY select fields that exist
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        subscriptionTier: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+      },
     });
 
-    // Debug logging - enhanced
-    console.log(`[getUnlockStatus] User ${userId} - Found ${modules.length} modules:`, modules.map(m => ({
-      moduleName: m.moduleName,
-      status: m.status,
-      isTrial: m.isTrial,
-      unlockedAt: m.unlockedAt,
-      isActive: m.status === "active" || m.status === "trialing"
-    })));
-
-    const moduleMap = new Map(
-      modules.map((m) => {
-        const isActive = m.status === "active" || m.status === "trialing";
-        console.log(`[getUnlockStatus] Mapping module ${m.moduleName}: status=${m.status}, isActive=${isActive}`);
-        return [m.moduleName, { ...m, isActive }];
-      })
-    );
-
-    // Check if Recipes trial exists, if not initialize it
-    if (!moduleMap.has("recipes")) {
-      console.log(`[getUnlockStatus] Recipes module not found, initializing trial for user ${userId}`);
-      await initializeRecipesTrial(userId);
-      const recipesModule = await prisma.featureModule.findUnique({
-        where: {
-          userId_moduleName: {
-            userId,
-            moduleName: "recipes",
-          },
-        },
-      });
-      if (recipesModule) {
-        moduleMap.set("recipes", { ...recipesModule, isActive: true });
-        console.log(`[getUnlockStatus] Recipes trial initialized for user ${userId}`);
-      }
+    if (!user) {
+      console.error(`[getUnlockStatus] User ${userId} not found`);
+      // Return locked by default if user not found
+      return {
+        recipes: { unlocked: false, isTrial: false, status: null },
+        production: { unlocked: false, isTrial: false, status: null },
+        make: { unlocked: false, isTrial: false, status: null },
+        teams: { unlocked: false, isTrial: false, status: null },
+        safety: { unlocked: false, isTrial: false, status: null },
+      };
     }
 
-    const allModules: FeatureModuleName[] = ["recipes", "production", "make", "teams", "safety"];
+    // Check if paid tier
+    const tierLower = user.subscriptionTier?.toLowerCase() || "";
+    const isPaid = tierLower === "paid";
+    
+    // Also check if subscription is still active (if there's an end date)
+    let isActive = true;
+    if (user.subscriptionEndsAt) {
+      const now = new Date();
+      const endsAt = new Date(user.subscriptionEndsAt);
+      isActive = endsAt > now;
+    } else if (isPaid) {
+      // Paid tier without end date should be active if status is active
+      isActive = user.subscriptionStatus === "active";
+    }
 
-    const result = {
-      recipes: {
-        unlocked: moduleMap.get("recipes")?.isActive ?? true, // Default to true (trial)
-        isTrial: moduleMap.get("recipes")?.isTrial ?? true,
-        status: moduleMap.get("recipes")?.status ?? "trialing",
-      },
-      production: {
-        unlocked: moduleMap.get("production")?.isActive ?? false,
-        isTrial: false,
-        status: moduleMap.get("production")?.status ?? null,
-      },
-      make: {
-        unlocked: moduleMap.get("make")?.isActive ?? false,
-        isTrial: false,
-        status: moduleMap.get("make")?.status ?? null,
-      },
-      teams: {
-        unlocked: moduleMap.get("teams")?.isActive ?? false,
-        isTrial: false,
-        status: moduleMap.get("teams")?.status ?? null,
-      },
-      safety: {
-        unlocked: moduleMap.get("safety")?.isActive ?? false,
-        isTrial: false,
-        status: moduleMap.get("safety")?.status ?? null,
-      },
-    };
+    const paid = isPaid && isActive;
 
-    // Log final result for debugging
-    console.log(`[getUnlockStatus] Final result for user ${userId}:`, JSON.stringify(result, null, 2));
+    console.log(`[getUnlockStatus] User ${userId} check:`, {
+      subscriptionTier: user.subscriptionTier,
+      subscriptionStatus: user.subscriptionStatus,
+      subscriptionEndsAt: user.subscriptionEndsAt,
+      isPaid,
+      isActive,
+      finalPaid: paid,
+    });
 
-    return result;
-  } catch (error) {
-    console.error(`[getUnlockStatus] Error getting unlock status for user ${userId}:`, error);
-    // Return default locked status on error
+    // Paid tier: Everything unlocked
+    if (paid) {
+      console.log(`[getUnlockStatus] User ${userId} is PAID - unlocking everything`);
+      return {
+        recipes: {
+          unlocked: true,
+          isTrial: false,
+          status: "active",
+        },
+        production: {
+          unlocked: true,
+          isTrial: false,
+          status: "active",
+        },
+        make: {
+          unlocked: true,
+          isTrial: false,
+          status: "active",
+        },
+        teams: {
+          unlocked: true,
+          isTrial: false,
+          status: "active",
+        },
+        safety: {
+          unlocked: true,
+          isTrial: false,
+          status: "active",
+        },
+      };
+    }
+
+    console.log(`[getUnlockStatus] User ${userId} is FREE - only recipes unlocked`);
+    // Free tier: Only recipes unlocked (with limits)
     return {
       recipes: {
         unlocked: true,
@@ -270,6 +332,36 @@ export async function getUnlockStatus(userId: number) {
         status: null,
       },
     };
+  } catch (error) {
+    console.error(`[getUnlockStatus] Error getting unlock status for user ${userId}:`, error);
+    // On error, return everything unlocked as fallback (safer for user experience)
+    console.warn(`[getUnlockStatus] Returning unlocked status due to error`);
+    return {
+      recipes: {
+        unlocked: true,
+        isTrial: false,
+        status: "active",
+      },
+      production: {
+        unlocked: true,
+        isTrial: false,
+        status: "active",
+      },
+      make: {
+        unlocked: true,
+        isTrial: false,
+        status: "active",
+      },
+      teams: {
+        unlocked: true,
+        isTrial: false,
+        status: "active",
+      },
+      safety: {
+        unlocked: true,
+        isTrial: false,
+        status: "active",
+      },
+    };
   }
 }
-

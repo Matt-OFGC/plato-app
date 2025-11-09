@@ -16,19 +16,22 @@ export interface UnlockContent {
 export function getUnlockContent(moduleName: FeatureModuleName): UnlockContent {
   const baseContent = {
     recipes: {
-      title: "Unlock Recipes Pro",
+      title: "Unlock All Features",
       description:
-        "Upgrade from your free trial to unlock unlimited recipes and ingredients. Perfect for growing food businesses.",
-      price: "£10/month",
+        "Upgrade to unlock unlimited recipes and ingredients, plus all other features. Perfect for growing food businesses.",
+      price: "£30/month",
       benefits: [
-        "Unlimited recipes (beyond 5)",
+        "Unlimited recipes (beyond 2)",
         "Unlimited ingredients (beyond 10)",
+        "All sections unlocked (Production, Make, Teams, Safety)",
         "Advanced cost calculations",
         "Recipe scaling & batch planning",
         "PDF export functionality",
-        "Recipe collections & organization",
+        "Production planning & scheduling",
+        "Team management & collaboration",
+        "Safety & compliance tools",
       ],
-      ctaText: "Upgrade to Recipes Pro",
+      ctaText: "Upgrade to Paid Plan",
       icon: (
         <svg className="w-16 h-16 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -41,10 +44,10 @@ export function getUnlockContent(moduleName: FeatureModuleName): UnlockContent {
       ),
     },
     production: {
-      title: "Unlock Production Detail",
+      title: "Unlock All Features",
       description:
-        "Take control of your production workflow with advanced planning, scheduling, and team management tools.",
-      price: "£15/month",
+        "Upgrade to unlock Production Detail plus all other features. Take control of your production workflow with advanced planning, scheduling, and team management tools.",
+      price: "£30/month",
       benefits: [
         "Create production plans",
         "Schedule production days",
@@ -66,10 +69,10 @@ export function getUnlockContent(moduleName: FeatureModuleName): UnlockContent {
       ),
     },
     make: {
-      title: "Unlock Make",
+      title: "Unlock All Features",
       description:
-        "Create professional labels, sales sheets, and allergen information for your products. Essential for retail and wholesale.",
-      price: "£5/month",
+        "Upgrade to unlock Make plus all other features. Create professional labels, sales sheets, and allergen information for your products.",
+      price: "£30/month",
       benefits: [
         "Generate product labels",
         "Create sales sheets",
@@ -91,10 +94,10 @@ export function getUnlockContent(moduleName: FeatureModuleName): UnlockContent {
       ),
     },
     teams: {
-      title: "Unlock Teams",
+      title: "Unlock All Features",
       description:
-        "Manage your team efficiently with scheduling, training, staff profiles, and communication tools.",
-      price: "£15/month",
+        "Upgrade to unlock Teams plus all other features. Manage your team efficiently with scheduling, training, staff profiles, and communication tools.",
+      price: "£30/month",
       benefits: [
         "Team member management",
         "Shift scheduling & rosters",
@@ -116,10 +119,10 @@ export function getUnlockContent(moduleName: FeatureModuleName): UnlockContent {
       ),
     },
     safety: {
-      title: "Unlock Hygiene & Safety",
+      title: "Unlock All Features",
       description:
-        "Stay compliant with automated safety tasks, temperature monitoring, equipment tracking, and compliance reporting.",
-      price: "£15/month",
+        "Upgrade to unlock Hygiene & Safety plus all other features. Stay compliant with automated safety tasks, temperature monitoring, equipment tracking, and compliance reporting.",
+      price: "£30/month",
       benefits: [
         "Safety task templates",
         "Temperature monitoring & logging",

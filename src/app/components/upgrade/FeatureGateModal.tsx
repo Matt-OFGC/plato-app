@@ -14,8 +14,8 @@ interface FeatureGateModalProps {
 const tierInfo = {
   professional: {
     name: "Professional",
-    price: "£19",
-    priceAnnual: "£15",
+    price: "£30",
+    priceAnnual: "£25",
     color: "emerald",
   },
   team: {

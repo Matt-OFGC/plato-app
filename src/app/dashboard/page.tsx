@@ -5,7 +5,6 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
 import { OperationalDashboard } from "@/components/OperationalDashboard";
 import { checkPriceStatus } from "@/lib/priceTracking";
-import { FeatureAccessDiagnostic } from "@/components/FeatureAccessDiagnostic";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';
@@ -297,9 +296,6 @@ export default async function DashboardPage() {
       userName={user.name || undefined}
       companyName={company?.name || "Your Company"}
     >
-      {/* Temporary diagnostic component - remove after debugging */}
-      <FeatureAccessDiagnostic />
-      {/* Operational Dashboard */}
       <OperationalDashboard
         todayProduction={todayProduction}
         weekProduction={weekProduction}

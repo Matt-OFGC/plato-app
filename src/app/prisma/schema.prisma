@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -1828,7 +1828,6 @@ model User {
   subscriptionInterval                           String                  @default("month")
   subscriptionStatus                             String                  @default("free")
   subscriptionTier                               String                  @default("starter")
-  recipesTrialStartedAt                          DateTime?
   emailVerified                                  Boolean                 @default(false)
   verificationToken                              String?                 @unique
   verificationTokenExpiresAt                     DateTime?

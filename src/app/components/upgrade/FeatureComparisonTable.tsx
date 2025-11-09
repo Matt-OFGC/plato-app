@@ -17,8 +17,8 @@ const tiers = [
   {
     id: "professional",
     name: "Professional",
-    price: "£19",
-    priceAnnual: "£15",
+    price: "£30",
+    priceAnnual: "£25",
   },
   {
     id: "team",
@@ -38,8 +38,8 @@ const features = [
   {
     category: "Core Features",
     items: [
-      { name: "Ingredients", values: ["15", "Unlimited", "Unlimited", "Unlimited"] },
-      { name: "Recipes", values: ["5", "Unlimited", "Unlimited", "Unlimited"] },
+      { name: "Ingredients", values: ["10", "Unlimited", "Unlimited", "Unlimited"] },
+      { name: "Recipes", values: ["2", "Unlimited", "Unlimited", "Unlimited"] },
       { name: "Cost calculations", values: [true, true, true, true] },
       { name: "Recipe scaling", values: [false, true, true, true] },
     ],

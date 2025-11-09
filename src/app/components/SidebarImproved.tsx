@@ -19,13 +19,15 @@ export function Sidebar() {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   
   const { activeApp, switchToApp } = useAppContext();
-  const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean }> | null>(null);
+  const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean; status: string | null }> | null>(null);
+  const [isLoadingUnlockStatus, setIsLoadingUnlockStatus] = useState(true);
   const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch unlock status function
   const fetchUnlockStatus = async (showLoading = false) => {
     if (showLoading) setIsRefreshing(true);
+    setIsLoadingUnlockStatus(true);
     try {
       const res = await fetch(`/api/features/unlock-status?t=${Date.now()}`, {
         cache: 'no-store',
@@ -36,13 +38,15 @@ export function Sidebar() {
       });
       
       if (!res.ok) {
-        console.error(`[Sidebar] API returned ${res.status}:`, await res.text());
+        const errorText = await res.text();
+        console.error(`[Sidebar] API returned ${res.status}:`, errorText);
         // Don't set unlockStatus to null on error - keep previous state
+        setIsLoadingUnlockStatus(false);
         return;
       }
       
       const data = await res.json();
-      console.log('[Sidebar] Full unlock-status response:', data);
+      console.log('[Sidebar] Full unlock-status response:', JSON.stringify(data, null, 2));
       if (data.unlockStatus) {
         console.log('[Sidebar] Unlock status updated:', data.unlockStatus);
         console.log('[Sidebar] Module statuses:', {
@@ -52,11 +56,13 @@ export function Sidebar() {
           teams: data.unlockStatus.teams?.unlocked,
           safety: data.unlockStatus.safety?.unlocked,
         });
+        console.log('[Sidebar] Setting unlockStatus state with:', data.unlockStatus);
         setUnlockStatus(data.unlockStatus);
+        setIsLoadingUnlockStatus(false);
       } else if (data.error) {
         console.error('[Sidebar] Error fetching unlock status:', data.error);
         console.error('[Sidebar] Full error response:', data);
-        // If we get an error but have debug info, still try to set a default state
+        // If we get an error but have debug info, set a default locked state
         if (data.debug) {
           console.warn('[Sidebar] Setting default locked state due to error');
           setUnlockStatus({
@@ -67,12 +73,15 @@ export function Sidebar() {
             safety: { unlocked: false, isTrial: false, status: null },
           });
         }
+        setIsLoadingUnlockStatus(false);
       } else {
         console.warn('[Sidebar] No unlockStatus in response:', data);
+        setIsLoadingUnlockStatus(false);
       }
     } catch (err) {
       console.error("[Sidebar] Failed to fetch unlock status:", err);
       // On network error, don't change unlockStatus - keep previous state
+      setIsLoadingUnlockStatus(false);
     } finally {
       if (showLoading) setIsRefreshing(false);
     }
@@ -338,15 +347,23 @@ export function Sidebar() {
 
                 const moduleName = moduleMap[sectionKey];
                 const moduleStatus = moduleName ? unlockStatus?.[moduleName] : null;
-                const isLocked = moduleName ? !moduleStatus?.unlocked : false;
+                // Don't show as locked until we have data (isLoadingUnlockStatus === false)
+                // This prevents false locks while data is loading
+                const isLocked = isLoadingUnlockStatus 
+                  ? false  // Don't lock until we know the status
+                  : (moduleName ? !moduleStatus?.unlocked : false);
                 const isTrial = moduleName && moduleStatus?.isTrial;
                 
-                // Debug logging for locked modules
-                if (moduleName && isLocked && typeof window !== 'undefined') {
-                  console.log(`[Sidebar] 🔒 Section ${sectionKey} (${moduleName}) is LOCKED:`, {
+                // Enhanced debug logging for ALL modules (not just locked ones)
+                if (moduleName && typeof window !== 'undefined') {
+                  console.log(`[Sidebar] 📊 Section ${sectionKey} (${moduleName}):`, {
+                    isLoadingUnlockStatus,
                     moduleStatus,
+                    unlocked: moduleStatus?.unlocked,
+                    isLocked,
                     unlockStatusExists: !!unlockStatus,
                     unlockStatusKeys: unlockStatus ? Object.keys(unlockStatus) : [],
+                    fullUnlockStatus: unlockStatus,
                   });
                 }
 
@@ -383,8 +400,37 @@ export function Sidebar() {
                       </div>
                     )}
                     
-                    {/* Section Items */}
-                    {!isLocked && items.map((item) => {
+                    {/* Section Items - Show locked placeholder if section is locked */}
+                    {isLocked ? (
+                      <div className="relative group/locked">
+                        <button
+                          onClick={() => {
+                            if (moduleName) {
+                              setUnlockModal(moduleName);
+                            }
+                          }}
+                          className="w-10 h-10 rounded-xl liquid-glass liquid-glass-hover liquid-glass-ripple flex items-center justify-center transition-all duration-200 touch-manipulation opacity-50 cursor-pointer"
+                          title={`${sectionLabels[sectionKey] || sectionKey} - Click to upgrade`}
+                          style={{ WebkitTapHighlightColor: 'transparent' }}
+                        >
+                          <div className="w-5 h-5 flex items-center justify-center relative z-10">
+                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                          </div>
+                        </button>
+                        {/* Desktop hover tooltip */}
+                        {!isTouchDevice && (
+                          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/locked:opacity-100 pointer-events-none transition-all duration-200 z-50 animate-spring">
+                            <div className="px-3 py-1.5 rounded-xl liquid-glass liquid-glass-reflection text-gray-800 shadow-xl whitespace-nowrap text-sm font-medium">
+                              {sectionLabels[sectionKey] || sectionKey} - Upgrade to unlock
+                            </div>
+                            <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white/60"></div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      items.map((item) => {
                       const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
                       return (
                         <div key={item.value} className="relative group/nav-item">
@@ -419,7 +465,7 @@ export function Sidebar() {
                           )}
                         </div>
                       );
-                    })}
+                    }))}
                   </div>
                 );
               }).filter(Boolean);

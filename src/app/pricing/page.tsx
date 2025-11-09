@@ -46,8 +46,8 @@ export default function PricingPage() {
       period: "forever",
       description: "Perfect for home cooks and small kitchens",
       features: [
-        "Up to 15 ingredients",
-        "Up to 5 recipes",
+        "Up to 10 ingredients",
+        "Up to 2 recipes",
         "Basic unit conversions",
         "Cost calculations",
         "Community support",
@@ -61,7 +61,7 @@ export default function PricingPage() {
     {
       id: "professional",
       name: "Professional",
-      price: { month: 19, year: 15 },
+      price: { month: 30, year: 25 },
       description: "Ideal for professional chefs and restaurants",
       features: [
         "Unlimited ingredients",

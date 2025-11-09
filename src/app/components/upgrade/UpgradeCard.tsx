@@ -14,7 +14,7 @@ interface UpgradeCardProps {
 const tierInfo = {
   professional: {
     name: "Professional",
-    price: "£19",
+    price: "£30",
     badge: "Pro",
     color: "emerald",
   },

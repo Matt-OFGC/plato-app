@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PriceConfirmationModal } from "./PriceConfirmationModal";
-import { RecentItemsPanel } from "./RecentItemsPanel";
 
 interface ProductionItem {
   id: number;
@@ -94,10 +93,7 @@ export function OperationalDashboard({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* Recent Items Panel */}
-      <RecentItemsPanel />
-      
+    <div className="space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6">
       {/* Modern Header Card with User Info - Compact */}
       <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-xl shadow-xl overflow-hidden relative">
         {/* Decorative background elements */}
@@ -138,7 +134,7 @@ export function OperationalDashboard({
       </div>
 
       {/* Quick Stats Bar - Modern Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200">
           <div className="flex items-start justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
@@ -199,7 +195,7 @@ export function OperationalDashboard({
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
         {/* Today's Production */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
