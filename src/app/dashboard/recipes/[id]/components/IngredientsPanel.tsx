@@ -669,10 +669,10 @@ export default function IngredientsPanel({
   };
 
   return (
-    <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg flex flex-col overflow-hidden">
+    <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-gray-200/60 shadow-lg flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200/50 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900">INGREDIENTS</h2>
+      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200/50 flex-shrink-0">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900">INGREDIENTS</h2>
         {viewMode === "steps" && steps.length > 0 && (
           <p className="text-xs text-gray-500 mt-1">Step {activeStepIndex + 1}</p>
         )}
@@ -692,15 +692,15 @@ export default function IngredientsPanel({
       </div>
 
       {/* Ingredients List */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-3 md:py-4">
         {viewMode === "whole" && ingredientsBySection ? (
           // Whole view: Group by sections
           ingredientsBySection.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">
-              <p>No ingredients in this recipe</p>
+            <div className="p-6 md:p-8 text-center text-gray-400">
+              <p className="text-sm md:text-base">No ingredients in this recipe</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {ingredientsBySection.map((sectionGroup, sectionIndex) => (
                 <div key={sectionIndex} className="space-y-2">
                   {/* Section Header */}
@@ -720,8 +720,8 @@ export default function IngredientsPanel({
             </div>
           )
         ) : displayedIngredients.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
-            <p>
+          <div className="p-6 md:p-8 text-center text-gray-400">
+            <p className="text-sm md:text-base">
               {viewMode === "steps" 
                 ? "No ingredients for this step"
                 : viewMode === "edit"
@@ -730,7 +730,7 @@ export default function IngredientsPanel({
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5 md:space-y-2">
             {displayedIngredients.map((ingredient) => {
               return renderIngredientItem(ingredient);
             })}

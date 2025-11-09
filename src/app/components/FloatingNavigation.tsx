@@ -8,6 +8,7 @@ import { usePageActions } from "./PageActionContext";
 import { FloatingFilter } from "./FloatingFilter";
 import { SmartImportButton } from "./SmartImportButton";
 import { useRecipeView } from "./RecipeViewContext";
+import { ScrollHideNav } from "./ScrollHideNav";
 
 interface FloatingNavigationProps {
   onMenuClick: () => void;
@@ -358,62 +359,65 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
       {/* Mobile (iPhone): Scrollable tabs with smaller padding, positioned below menu button */}
       {/* iPad & Desktop: Centered tabs with standard padding */}
       {isRecipePage && recipeView ? (
-        // Recipe View Switchers
-        <div className={`fixed z-50 transition-all duration-300
-                        max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
-                        md:top-6 md:left-1/2 md:-translate-x-1/2
-                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
-          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2 overflow-x-auto max-md:scrollbar-hide">
-            <button
-              onClick={() => recipeView.setViewMode("whole")}
-              className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
-                         max-md:px-3 max-md:py-1.5 max-md:text-xs
-                         md:px-5 md:py-1.5 md:text-sm
-                         ${
-                recipeView.viewMode === "whole"
-                  ? 'bg-white shadow-md text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Whole Recipe
-            </button>
+        // Recipe View Switchers - with scroll hiding
+        <ScrollHideNav hideOnScroll={true} threshold={50} className="fixed z-50 w-full pointer-events-none top-0 left-0 right-0">
+          <div className={`pointer-events-auto
+                          max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
+                          md:top-6 md:left-1/2 md:-translate-x-1/2
+                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
+              <button
+                onClick={() => recipeView.setViewMode("whole")}
+                className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
+                           max-md:px-3 max-md:py-1.5 max-md:text-xs
+                           md:px-4 lg:px-5 md:py-1.5 md:text-sm
+                           ${
+                  recipeView.viewMode === "whole"
+                    ? 'bg-white shadow-md text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Whole Recipe
+              </button>
 
-            <button
-              onClick={() => recipeView.setViewMode("steps")}
-              className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
-                         max-md:px-3 max-md:py-1.5 max-md:text-xs
-                         md:px-5 md:py-1.5 md:text-sm
-                         ${
-                recipeView.viewMode === "steps"
-                  ? 'bg-white shadow-md text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Steps
-            </button>
+              <button
+                onClick={() => recipeView.setViewMode("steps")}
+                className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
+                           max-md:px-3 max-md:py-1.5 max-md:text-xs
+                           md:px-4 lg:px-5 md:py-1.5 md:text-sm
+                           ${
+                  recipeView.viewMode === "steps"
+                    ? 'bg-white shadow-md text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Steps
+              </button>
 
-            <button
-              onClick={() => recipeView.setViewMode("photos")}
-              className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
-                         max-md:px-3 max-md:py-1.5 max-md:text-xs
-                         md:px-5 md:py-1.5 md:text-sm
-                         ${
-                recipeView.viewMode === "photos"
-                  ? 'bg-white shadow-md text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Photo View
-            </button>
+              <button
+                onClick={() => recipeView.setViewMode("photos")}
+                className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
+                           max-md:px-3 max-md:py-1.5 max-md:text-xs
+                           md:px-4 lg:px-5 md:py-1.5 md:text-sm
+                           ${
+                  recipeView.viewMode === "photos"
+                    ? 'bg-white shadow-md text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Photo View
+              </button>
+            </div>
           </div>
-        </div>
+        </ScrollHideNav>
       ) : tabs.length > 0 ? (
-        // Regular Navigation Tabs
-        <div className={`fixed z-50 transition-all duration-300
-                        max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
-                        md:top-6 md:left-1/2 md:-translate-x-1/2
-                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
-          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 py-2 overflow-x-auto max-md:scrollbar-hide">
+        // Regular Navigation Tabs - with scroll hiding
+        <ScrollHideNav hideOnScroll={true} threshold={50} className="fixed z-50 w-full pointer-events-none top-0 left-0 right-0">
+          <div className={`pointer-events-auto
+                          max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
+                          md:top-6 md:left-1/2 md:-translate-x-1/2
+                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
             {tabs.map((tab, index) => (
               <button
                 key={index}
@@ -430,8 +434,9 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                 {tab}
               </button>
             ))}
+            </div>
           </div>
-        </div>
+        </ScrollHideNav>
       ) : null}
 
       {/* Recipe Page Action Buttons - Edit & Print - Top Right when on recipe page */}

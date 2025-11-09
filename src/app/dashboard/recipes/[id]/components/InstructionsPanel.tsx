@@ -88,10 +88,10 @@ export default function InstructionsPanel({
   };
 
   return (
-    <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg flex flex-col overflow-hidden">
+    <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-gray-200/60 shadow-lg flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200/50 flex-shrink-0">
-        <h2 className="text-xl font-bold text-gray-900">INSTRUCTIONS</h2>
+      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200/50 flex-shrink-0">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900">INSTRUCTIONS</h2>
         
         {/* Add Step Button - Show in Edit mode */}
         {viewMode === "edit" && (
@@ -108,20 +108,20 @@ export default function InstructionsPanel({
       </div>
 
       {/* Instructions List */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
         {displayedSteps.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
-            <p>No instructions available</p>
+          <div className="p-6 md:p-8 text-center text-gray-400">
+            <p className="text-sm md:text-base">No instructions available</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {displayedSteps.map((step, stepIndex) => {
               const actualIndex = steps.findIndex(s => s.id === step.id);
               return (
-              <div key={step.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+              <div key={step.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl md:rounded-2xl p-4 md:p-6 border border-blue-100">
                 {/* Step Number Badge */}
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
+                <div className="flex items-start gap-3 md:gap-4">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-lg flex-shrink-0">
                     {actualIndex + 1}
                   </div>
                   

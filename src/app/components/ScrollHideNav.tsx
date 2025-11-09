@@ -52,7 +52,7 @@ export function ScrollHideNav({
   return (
     <div
       className={`transition-transform duration-300 ease-in-out ${
-        isVisible ? 'translate-y-0' : '-translate-y-full'
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
       } ${className}`}
     >
       {children}
