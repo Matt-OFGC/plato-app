@@ -101,6 +101,13 @@ export function IngredientForm({
   // Calculate price per unit
   const pricePerUnit = packSize > 1 && packPrice > 0 ? packPrice / packSize : null;
   
+  // Sync packSize with initialData when it changes (for edit mode)
+  useEffect(() => {
+    if (initialData?.packQuantity !== undefined) {
+      setPackSize(initialData.packQuantity);
+    }
+  }, [initialData?.packQuantity]);
+  
   // Sync with external state if provided
   useEffect(() => {
     if (externalAllergens !== undefined) {
@@ -255,11 +262,12 @@ export function IngredientForm({
     // Get purchase size, purchase unit, and pack size from form
     const purchaseSize = parseFloat((ev.currentTarget.querySelector('#purchaseSize') as HTMLInputElement)?.value || '1');
     const purchaseUnit = (ev.currentTarget.querySelector('#purchaseUnit') as HTMLSelectElement)?.value || '';
-    const packSize = parseFloat((ev.currentTarget.querySelector('#packSize') as HTMLInputElement)?.value || '1');
+    // Use packSize state directly instead of reading from DOM to ensure we get the correct value
+    const packSizeValue = packSize || 1;
     
     // Store packQuantity as packSize (individual units per purchase)
     // This is what the app uses for cost calculations - it needs to know how many units are in the pack
-    formData.set("packQuantity", packSize.toString());
+    formData.set("packQuantity", packSizeValue.toString());
     
     // Store packUnit as purchaseUnit (e.g., "case", "box", "bottles")
     // This is what the user purchases
@@ -267,8 +275,8 @@ export function IngredientForm({
     
     // Store purchase info in batchPricing for reference if pack size differs from purchase size
     // This helps the system understand the relationship between purchase and pack
-    if (packSize !== purchaseSize) {
-      formData.set("batchPricing", JSON.stringify([{ packQuantity: packSize, packPrice: 0 }]));
+    if (packSizeValue !== purchaseSize) {
+      formData.set("batchPricing", JSON.stringify([{ packQuantity: packSizeValue, packPrice: 0 }]));
     } else {
       formData.set("batchPricing", "");
     }
@@ -455,7 +463,29 @@ export function IngredientForm({
                 step="1"
                 min="1"
                 value={packSize}
-                onChange={(e) => setPackSize(parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow empty string while typing
+                  if (value === '') {
+                    setPackSize(1);
+                    return;
+                  }
+                  // Parse the value
+                  const numValue = parseFloat(value);
+                  // Only update if it's a valid positive number
+                  if (!isNaN(numValue) && numValue >= 1) {
+                    setPackSize(Math.floor(numValue)); // Use floor to ensure integer
+                  }
+                }}
+                onBlur={(e) => {
+                  // Ensure minimum value of 1 on blur
+                  const value = parseFloat(e.target.value);
+                  if (isNaN(value) || value < 1) {
+                    setPackSize(1);
+                  } else {
+                    setPackSize(Math.floor(value));
+                  }
+                }}
                 required
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
                 placeholder="1"
