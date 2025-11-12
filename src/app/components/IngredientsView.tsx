@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/currency";
-import { Unit } from "@/lib/units";
+import { Unit, BaseUnit, fromBase } from "@/lib/units";
 import { formatLastUpdate, checkPriceStatus, getPriceStatusColorClass } from "@/lib/priceTracking";
 
 interface Ingredient {
@@ -92,7 +92,10 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                 {ingredients.map((ing) => {
                   // Use originalUnit if available, otherwise use packUnit
                   const displayUnit = ing.originalUnit || ing.packUnit || 'each';
-                  const displayQuantity = Number(ing.packQuantity);
+                  // Convert from base unit back to original unit for display
+                  const displayQuantity = ing.originalUnit 
+                    ? fromBase(Number(ing.packQuantity), ing.packUnit as BaseUnit, ing.originalUnit as Unit)
+                    : Number(ing.packQuantity);
                   const priceStatus = checkPriceStatus(ing.lastPriceUpdate || new Date());
                   const colorClass = getPriceStatusColorClass(priceStatus.status);
                   

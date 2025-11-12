@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { updateIngredient } from "../actions";
-import { fromBase, Unit } from "@/lib/units";
+import { fromBase, Unit, BaseUnit } from "@/lib/units";
 import { IngredientForm } from "@/components/IngredientForm";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { RecentItemsTracker } from "@/components/RecentItemsTracker";
@@ -46,9 +46,10 @@ export default async function EditIngredientPage({ params }: Props) {
   }));
 
   // Calculate the original quantity to display
+  // Convert from base unit (stored in packUnit) back to original unit
   const originalUnit = ing.originalUnit || ing.packUnit;
   const originalQuantity = ing.originalUnit 
-    ? fromBase(Number(ing.packQuantity), originalUnit as Unit, ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined)
+    ? fromBase(Number(ing.packQuantity), ing.packUnit as BaseUnit, originalUnit as Unit)
     : Number(ing.packQuantity);
 
   // Create a bound function for the IngredientForm
