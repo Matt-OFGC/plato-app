@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 interface ScrollHideNavProps {
   children: React.ReactNode;
@@ -12,6 +12,7 @@ interface ScrollHideNavProps {
 /**
  * Navigation component that hides on scroll down and shows on scroll up
  * Useful for floating navigation bars that take up screen space
+ * This component applies the transform directly to its children
  */
 export function ScrollHideNav({ 
   children, 
@@ -48,6 +49,15 @@ export function ScrollHideNav({
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY, hideOnScroll, threshold]);
+
+  // Clone the child and add transform classes directly to it
+  if (React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      className: `${(children as React.ReactElement<any>).props.className || ''} transition-transform duration-300 ease-in-out ${
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
+      } ${className}`.trim()
+    });
+  }
 
   return (
     <div
