@@ -294,17 +294,34 @@ export default function IngredientsPanel({
                   }
                   className="w-20 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
                 >
-                  <option value="g">g</option>
-                  <option value="kg">kg</option>
-                  <option value="oz">oz</option>
-                  <option value="lb">lb</option>
-                  <option value="ml">ml</option>
-                  <option value="l">l</option>
-                  <option value="floz">fl oz</option>
-                  <option value="tbsp">tbsp</option>
-                  <option value="tsp">tsp</option>
-                  <option value="cup">cup</option>
-                  <option value="each">each</option>
+                  <optgroup label="Weight">
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="mg">mg</option>
+                    <option value="oz">oz</option>
+                    <option value="lb">lb</option>
+                  </optgroup>
+                  <optgroup label="Volume">
+                    <option value="ml">ml</option>
+                    <option value="l">l</option>
+                    <option value="floz">fl oz</option>
+                    <option value="tbsp">tbsp</option>
+                    <option value="tsp">tsp</option>
+                    <option value="cup">cup</option>
+                  </optgroup>
+                  <optgroup label="Count">
+                    <option value="each">each</option>
+                    <option value="slices">slices</option>
+                  </optgroup>
+                  <optgroup label="Size">
+                    <option value="large">large</option>
+                    <option value="medium">medium</option>
+                    <option value="small">small</option>
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option value="pinch">pinch</option>
+                    <option value="dash">dash</option>
+                  </optgroup>
                 </select>
                 
                 <div className="flex-1 relative">
