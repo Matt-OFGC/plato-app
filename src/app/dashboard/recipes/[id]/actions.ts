@@ -48,6 +48,7 @@ export async function saveRecipe(data: {
   shelfLife?: string;
   sellPrice?: number;
   description?: string;
+  imageUrl?: string;
   ingredients: Array<{
     id: string;
     name: string;
@@ -109,6 +110,7 @@ export async function saveRecipe(data: {
             sellingPrice: data.sellPrice || null,
             lastPriceUpdate: data.sellPrice ? new Date() : undefined,
             method: data.description || null,
+            imageUrl: data.imageUrl || null,
             companyId,
           },
         });
@@ -139,6 +141,7 @@ export async function saveRecipe(data: {
             sellingPrice: data.sellPrice || null,
             lastPriceUpdate: data.sellPrice ? new Date() : undefined,
             ...(data.description !== undefined && { method: data.description }),
+            ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           },
         });
         recipeId = data.recipeId;
@@ -221,6 +224,7 @@ export async function saveRecipeChanges(data: {
   shelfLife?: string;
   sellPrice?: number;
   description?: string;
+  imageUrl?: string;
   ingredients: Array<{
     id: string;
     name: string;
@@ -274,6 +278,7 @@ export async function saveRecipeChanges(data: {
         sellingPrice: data.sellPrice || null,
         lastPriceUpdate: data.sellPrice ? new Date() : undefined,
         ...(data.description !== undefined && { method: data.description }),
+        ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
       },
     });
 

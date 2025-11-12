@@ -15,6 +15,8 @@ interface RecipeHeaderProps {
   onCategoryChange?: (categoryId: number | null) => void;
   categories?: { id: number; name: string; description?: string | null; color?: string | null }[];
   imageUrl?: string;
+  onImageUpload?: (file: File) => void;
+  isUploadingImage?: boolean;
   onTitleChange?: (title: string) => void;
   onDelete?: () => void;
   recipeId?: number | null;
@@ -30,11 +32,14 @@ export default function RecipeHeader({
   onCategoryChange,
   categories = [],
   imageUrl,
+  onImageUpload,
+  isUploadingImage = false,
   onTitleChange,
   onDelete,
   recipeId,
 }: RecipeHeaderProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   return (
     <>
@@ -42,9 +47,18 @@ export default function RecipeHeader({
         <div className="flex items-center gap-3">
           {/* Recipe Image - Small thumbnail */}
           <button
-            onClick={() => setIsImageModalOpen(true)}
-            className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-orange-400 to-pink-400 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group relative flex items-center justify-center"
-            title={imageUrl ? "Click to view larger" : "Add recipe image"}
+            onClick={() => {
+              if (viewMode === "edit" && onImageUpload) {
+                // In edit mode, trigger file upload
+                fileInputRef.current?.click();
+              } else {
+                // In view mode, show modal
+                setIsImageModalOpen(true);
+              }
+            }}
+            disabled={isUploadingImage}
+            className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-orange-400 to-pink-400 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group relative flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            title={viewMode === "edit" ? (imageUrl ? "Click to change image" : "Click to add image") : (imageUrl ? "Click to view larger" : "Add recipe image")}
           >
             {imageUrl ? (
               <Image
@@ -56,12 +70,48 @@ export default function RecipeHeader({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-4xl">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                {isUploadingImage ? (
+                  <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                ) : (
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </div>
+            )}
+            {/* Upload overlay in edit mode */}
+            {viewMode === "edit" && !isUploadingImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity flex items-center justify-center">
+                <div className="text-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg className="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-[10px] font-medium">{imageUrl ? "Change" : "Add"}</p>
+                </div>
               </div>
             )}
           </button>
+          {/* Hidden file input for image upload */}
+          {viewMode === "edit" && onImageUpload && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  onImageUpload(file);
+                }
+                // Reset input so same file can be selected again
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
+              }}
+              className="hidden"
+            />
+          )}
 
           {/* Title and Info */}
           <div className="flex-1 min-w-0">

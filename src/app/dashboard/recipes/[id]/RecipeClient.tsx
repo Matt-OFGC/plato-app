@@ -75,6 +75,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
   const [isAllergenModalOpen, setIsAllergenModalOpen] = useState(false);
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   const [description, setDescription] = useState(recipe.notes || "");
+  const [imageUrl, setImageUrl] = useState(recipe.imageUrl);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   
   // Calculate cost properly with unit conversion
   const calculateIngredientCost = useMemo(() => {
@@ -244,6 +246,34 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
     }
   };
 
+  const handleImageUpload = async (file: File) => {
+    setIsUploadingImage(true);
+    try {
+      // Client-side file size check (10MB)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert("File is too large. Maximum size is 10MB.");
+        setIsUploadingImage(false);
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setImageUrl(data.url);
+      } else {
+        alert(data.error || "Upload failed");
+      }
+    } catch (error) {
+      alert("Network error. Please try again.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   const handleServingsChange = (newServings: number) => {
     setServings(newServings);
     // When in batch mode, sync slicesPerBatch with servings
@@ -279,6 +309,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
           shelfLife: shelfLifeName,
           sellPrice,
           description,
+          imageUrl,
           ingredients: localIngredients,
           steps: localSteps,
         });
@@ -303,6 +334,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
           shelfLife: shelfLifeName,
           sellPrice,
           description,
+          imageUrl,
           ingredients: localIngredients,
           steps: localSteps,
         });
@@ -476,7 +508,9 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
               onViewModeChange={setViewMode}
               onCategoryChange={(catId) => setCategoryId(catId)}
               categories={categories}
-              imageUrl={recipe.imageUrl}
+              imageUrl={imageUrl}
+              onImageUpload={viewMode === "edit" ? handleImageUpload : undefined}
+              isUploadingImage={isUploadingImage}
               onTitleChange={isNew ? setRecipeTitle : undefined}
               onDelete={!isNew ? handleDelete : undefined}
               recipeId={recipeId}
