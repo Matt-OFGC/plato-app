@@ -17,10 +17,21 @@ const CONVERSION_FACTORS: Record<string, number> = {
   'cups': 236.588,
   'tbsp': 14.7868,
   'tsp': 4.92892,
+  'pint': 473.176,
+  'quart': 946.353,
+  'gallon': 3785.41,
   
-  // Count
+  // Weight (additional)
+  'mg': 0.001,
+  
+  // Count (all have 1:1 conversion)
   'each': 1,
   'slices': 1,
+  'large': 1,
+  'medium': 1,
+  'small': 1,
+  'pinch': 1,
+  'dash': 1,
 };
 
 // Normalize unit string (handle 'floz' -> 'fl oz', lowercase, etc.)
@@ -45,18 +56,18 @@ export function toBase(amount: number, unit: Unit, density?: number): { amount: 
   }
   
   // Weight units -> grams
-  if (['g', 'kg', 'oz', 'lb'].includes(normalizedUnit)) {
+  if (['g', 'kg', 'mg', 'oz', 'lb'].includes(normalizedUnit)) {
     const factor = CONVERSION_FACTORS[normalizedUnit] || 1;
     return { amount: amount * factor, base: 'g' as BaseUnit };
   }
   
   // Volume units -> ml
-  if (['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedUnit)) {
+  if (['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp', 'pint', 'quart', 'gallon'].includes(normalizedUnit)) {
     const factor = CONVERSION_FACTORS[normalizedUnit] || 1;
     return { amount: amount * factor, base: 'ml' as BaseUnit };
   }
   
-  // Count units -> each
+  // Count units -> each (includes slices, large, medium, small, pinch, dash)
   return { amount, base: 'each' };
 }
 
@@ -64,18 +75,23 @@ export function toBase(amount: number, unit: Unit, density?: number): { amount: 
 export function fromBase(amount: number, baseUnit: BaseUnit, targetUnit: Unit): number {
   const normalizedTarget = normalizeUnit(targetUnit);
   
-  if (baseUnit === 'g' && ['g', 'kg', 'oz', 'lb'].includes(normalizedTarget)) {
+  // Weight units: g, kg, oz, lb, mg
+  if (baseUnit === 'g' && ['g', 'kg', 'oz', 'lb', 'mg'].includes(normalizedTarget)) {
     return amount / CONVERSION_FACTORS[normalizedTarget];
   }
   
-  if (baseUnit === 'ml' && ['ml', 'l', 'fl oz', 'cups', 'tbsp', 'tsp'].includes(normalizedTarget)) {
+  // Volume units: ml, l, fl oz, cups, tbsp, tsp, pint, quart, gallon
+  if (baseUnit === 'ml' && ['ml', 'l', 'fl oz', 'floz', 'cups', 'tbsp', 'tsp', 'pint', 'quart', 'gallon'].includes(normalizedTarget)) {
     return amount / CONVERSION_FACTORS[normalizedTarget];
   }
   
-  if (baseUnit === 'each' && ['each', 'slices'].includes(normalizedTarget)) {
+  // Count units: each, slices, large, medium, small, pinch, dash
+  // All count units have 1:1 conversion with 'each' base unit
+  if (baseUnit === 'each' && ['each', 'slices', 'large', 'medium', 'small', 'pinch', 'dash'].includes(normalizedTarget)) {
     return amount;
   }
   
+  // Fallback: return amount as-is if conversion not found
   return amount;
 }
 
