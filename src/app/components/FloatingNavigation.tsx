@@ -360,8 +360,8 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
       {/* iPad & Desktop: Centered tabs with standard padding */}
       {isRecipePage && recipeView ? (
         // Recipe View Switchers - with scroll hiding
-        <ScrollHideNav hideOnScroll={true} threshold={50} className="fixed z-50 w-full pointer-events-none top-0 left-0 right-0">
-          <div className={`pointer-events-auto
+        <ScrollHideNav hideOnScroll={true} threshold={50} className="pointer-events-none">
+          <div className={`fixed z-50 pointer-events-auto
                           max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
                           md:top-6 md:left-1/2 md:-translate-x-1/2
                           ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
@@ -412,8 +412,8 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
         </ScrollHideNav>
       ) : tabs.length > 0 ? (
         // Regular Navigation Tabs - with scroll hiding
-        <ScrollHideNav hideOnScroll={true} threshold={50} className="fixed z-50 w-full pointer-events-none top-0 left-0 right-0">
-          <div className={`pointer-events-auto
+        <ScrollHideNav hideOnScroll={true} threshold={50} className="pointer-events-none">
+          <div className={`fixed z-50 pointer-events-auto
                           max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
                           md:top-6 md:left-1/2 md:-translate-x-1/2
                           ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
