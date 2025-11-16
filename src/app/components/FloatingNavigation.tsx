@@ -325,7 +325,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                       e.stopPropagation();
                       onMenuClick();
                     }}
-                    className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer
+                    className="bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 cursor-pointer will-change-transform
                                max-md:p-4 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
                                md:p-3
                                active:scale-95 max-md:active:scale-90"
@@ -342,7 +342,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                 {isRecipePage && !sidebarOpen && (
                   <a
                     href="/dashboard/recipes"
-                    className="flex items-center gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all
+                    className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 will-change-transform
                              max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
                              md:px-4 md:py-2
                              active:scale-95 max-md:active:scale-90"
@@ -365,7 +365,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                           max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
                           md:top-6 md:left-1/2 md:-translate-x-1/2
                           ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
+            <div className="flex items-center gap-1.5 md:gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide will-change-transform">
               <button
                 onClick={() => recipeView.setViewMode("whole")}
                 className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
@@ -418,7 +418,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                           md:top-6 md:left-1/2 md:-translate-x-1/2
                           lg:left-1/2 lg:-translate-x-1/2
                           ${sidebarOpen ? 'md:left-[340px] md:translate-x-0 lg:left-[340px] lg:translate-x-0' : ''}`}>
-            <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-1.5 md:px-2 lg:px-3 py-1.5 md:py-2 overflow-x-auto max-md:scrollbar-hide">
+            <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full px-1.5 md:px-2 lg:px-3 py-1.5 md:py-2 overflow-x-auto max-md:scrollbar-hide will-change-transform">
             {tabs.map((tab, index) => (
               <button
                 key={index}
@@ -457,7 +457,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
               }
             }}
             disabled={recipeView.isSaving}
-            className={`bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2
+            className={`bg-white/90 backdrop-blur-sm shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-150 flex items-center gap-2 will-change-transform
                        max-md:px-3 max-md:py-1.5 max-md:gap-1.5
                        md:px-4 md:py-2
                        ${recipeView.isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -489,7 +489,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           {recipeView.onPrint && (
             <button
               onClick={recipeView.onPrint}
-              className="bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2
+              className="bg-white/90 backdrop-blur-sm shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-150 flex items-center gap-2 will-change-transform
                        max-md:px-3 max-md:py-1.5 max-md:gap-1.5
                        md:px-4 md:py-2"
               title="Print"
@@ -514,7 +514,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           <div className="relative">
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
+              className={`bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 flex-shrink-0 will-change-transform
                          max-md:p-2.5
                          md:p-2.5 lg:p-3
                          ${isSearchOpen ? 'bg-emerald-100 border-emerald-300' : ''}`}
@@ -529,7 +529,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
             {isSearchOpen && (
               <div 
                 ref={searchContainerRef}
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex items-center bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-4 py-2.5 w-64 animate-slide-down z-50"
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex items-center bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full px-4 py-2.5 w-64 animate-slide-down z-50 will-change-transform"
               >
                 <svg className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -598,7 +598,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           {/* Other Action Buttons */}
           <button 
             onClick={() => setIsFilterOpen(true)}
-            className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
+            className="bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 flex-shrink-0 will-change-transform
                        max-md:p-2.5
                        md:p-2.5 lg:p-3"
             aria-label="Filter"

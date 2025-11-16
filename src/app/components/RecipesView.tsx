@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 type SortField = 'name' | 'category' | 'yield' | 'sellPrice' | 'cogs' | 'totalSteps' | 'totalTime';
 type SortDirection = 'asc' | 'desc';
@@ -91,6 +91,15 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
       return 0;
     });
   }, [recipes, sortField, sortDirection]);
+
+  // Debug logging to verify recipe rendering
+  useEffect(() => {
+    console.log('[RecipesView] Recipe counts:', {
+      recipesLength: recipes.length,
+      sortedRecipesLength: sortedRecipes.length,
+      viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 'N/A',
+    });
+  }, [recipes.length, sortedRecipes.length]);
   
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
@@ -173,12 +182,13 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
       </div>
 
       {/* Card Grid Layout - All Screen Sizes */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5 pb-4 md:pb-6">
+      {/* iPad optimization: Ensure proper scrolling and content fitting */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5 pb-8 md:pb-10 min-w-0">
         {sortedRecipes.map((r) => (
           <Link 
             key={r.id}
             href={`/dashboard/recipes/${r.id}`}
-            className={`group bg-white rounded-xl border border-gray-200 p-4 md:p-5 hover:shadow-lg hover:border-emerald-300 transition-all mobile-touch-target ${
+            className={`group bg-white rounded-xl border border-gray-200 p-4 md:p-5 hover:shadow-lg hover:border-emerald-300 transition-all mobile-touch-target min-w-0 ${
               selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50 border-emerald-300' : ''
             }`}
           >
@@ -211,54 +221,55 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
             </div>
 
             {/* Recipe Name */}
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors line-clamp-2">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors line-clamp-2 min-w-0 break-words">
               {r.name}
             </h3>
 
             {/* Description */}
             {r.description && (
-              <p className="text-xs md:text-sm text-gray-500 mb-3 line-clamp-2">
+              <p className="text-xs md:text-sm text-gray-500 mb-3 line-clamp-2 min-w-0 break-words">
                 {r.description}
               </p>
             )}
 
             {/* Category Badge */}
             {(r.categoryRef || r.category) && (
-              <div className="mb-3">
+              <div className="mb-3 min-w-0">
                 <span 
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" 
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium max-w-full truncate" 
                   style={{ 
                     backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
                     color: (r.categoryRef?.color || '#3B82F6') as any 
                   }}
+                  title={r.categoryRef?.name || r.category || undefined}
                 >
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
-                  {r.categoryRef?.name || r.category}
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
+                  <span className="truncate">{r.categoryRef?.name || r.category}</span>
                 </span>
               </div>
             )}
 
             {/* Recipe Details Grid */}
-            <div className="space-y-2 pt-3 border-t border-gray-100">
+            <div className="space-y-2 pt-3 border-t border-gray-100 min-w-0">
               {/* Yield */}
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Yield:</span>
-                <span className="font-medium text-gray-900">{String(r.yieldQuantity)} {r.yieldUnit}</span>
+              <div className="flex items-center justify-between text-sm min-w-0 gap-2">
+                <span className="text-gray-500 flex-shrink-0">Yield:</span>
+                <span className="font-medium text-gray-900 truncate text-right">{String(r.yieldQuantity)} {r.yieldUnit}</span>
               </div>
 
               {/* Selling Price */}
               {r.sellingPrice && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Price:</span>
-                  <span className="font-semibold text-emerald-600">£{r.sellingPrice.toFixed(2)}</span>
+                <div className="flex items-center justify-between text-sm min-w-0 gap-2">
+                  <span className="text-gray-500 flex-shrink-0">Price:</span>
+                  <span className="font-semibold text-emerald-600 truncate text-right">£{r.sellingPrice.toFixed(2)}</span>
                 </div>
               )}
 
               {/* COGS Percentage */}
               {r.cogsPercentage !== null && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">COGS:</span>
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                <div className="flex items-center justify-between text-sm min-w-0 gap-2">
+                  <span className="text-gray-500 flex-shrink-0">COGS:</span>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
                     r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
                     r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
                     r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
@@ -270,18 +281,18 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
               )}
 
               {/* Steps and Time */}
-              <div className="flex items-center gap-4 text-xs text-gray-500 pt-1">
+              <div className="flex items-center gap-2 md:gap-4 text-xs text-gray-500 pt-1 flex-wrap">
                 {r.totalSteps > 0 && (
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                     {r.totalSteps} steps
                   </span>
                 )}
                 {r.totalTime && (
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {r.totalTime}min

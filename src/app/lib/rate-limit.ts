@@ -27,6 +27,10 @@ export const RATE_LIMITS = {
   PASSWORD_RESET: {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 3
+  },
+  UPLOAD: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 20
   }
 } as const;
 

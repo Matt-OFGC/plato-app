@@ -42,9 +42,10 @@ function FloatingLayoutContent({
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <div className="flex-1 overflow-auto 
                          max-md:pt-32 max-md:px-4 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]
-                         md:pt-24 md:px-6 md:pb-6">
+                         md:pt-24 md:px-6 md:pb-6
+                         min-h-0">
             <div 
-              className="w-full max-w-full mx-auto md:max-w-[95%] lg:max-w-[95%] xl:max-w-[90%] 2xl:max-w-[85%]"
+              className="w-full max-w-full mx-auto md:max-w-[95%] lg:max-w-[95%] xl:max-w-[90%] 2xl:max-w-[85%] min-h-full"
               suppressHydrationWarning
             >
               {children}
