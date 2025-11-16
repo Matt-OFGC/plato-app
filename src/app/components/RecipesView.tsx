@@ -142,7 +142,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
             <thead className="bg-gray-50">
               <tr>
                 {isSelecting && (
-                  <th className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <input
                       type="checkbox"
                       checked={selectedIds.size === sortedRecipes.length && sortedRecipes.length > 0}
@@ -152,7 +152,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </th>
                 )}
                 <th 
-                  className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('name')}
                 >
                   <div className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                     <SortIcon field="totalTime" />
                   </div>
                 </th>
-                <th className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -223,7 +223,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
               {sortedRecipes.map((r) => (
                 <tr key={r.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(r.id) ? 'bg-emerald-50' : ''}`}>
                   {isSelecting && (
-                    <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4">
+                    <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(r.id)}
@@ -232,26 +232,51 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                       />
                     </td>
                   )}
-                  <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4">
-                    <Link href={`/dashboard/recipes/${r.id}`} className="flex items-center gap-3 group">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4">
+                    <Link href={`/dashboard/recipes/${r.id}`} className="flex items-center gap-2 md:gap-3 group">
+                      <div className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         {r.imageUrl ? (
                           <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover rounded-lg" />
                         ) : (
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 group-hover:text-emerald-600 truncate">
+                        <div className="text-sm md:text-base font-medium text-gray-900 group-hover:text-emerald-600 truncate">
                           {r.name}
                         </div>
                         {r.description && (
-                          <div className="text-xs text-gray-500 truncate">{r.description}</div>
+                          <div className="hidden md:block text-xs text-gray-500 truncate">{r.description}</div>
                         )}
-                        <div className="sm:hidden text-xs text-gray-500 mt-1">
-                          {String(r.yieldQuantity)} {r.yieldUnit} • {r.items.length} ingredients
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1 text-xs text-gray-500">
+                          <span className="md:hidden">
+                            {String(r.yieldQuantity)} {r.yieldUnit} • {r.items.length} ingredients
+                          </span>
+                          <span className="hidden md:inline lg:hidden">
+                            {String(r.yieldQuantity)} {r.yieldUnit}
+                          </span>
+                          {(r.categoryRef || r.category) && (
+                            <span className="hidden md:inline lg:hidden">
+                              <span className="mx-1">•</span>
+                              <span 
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium" 
+                                style={{ 
+                                  backgroundColor: `${r.categoryRef?.color || '#3B82F6'}15` as any, 
+                                  color: (r.categoryRef?.color || '#3B82F6') as any 
+                                }}
+                              >
+                                {r.categoryRef?.name || r.category}
+                              </span>
+                            </span>
+                          )}
+                          {r.sellingPrice && (
+                            <span className="hidden md:inline lg:hidden font-semibold text-emerald-600">
+                              <span className="mx-1">•</span>
+                              £{r.sellingPrice.toFixed(2)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </Link>
@@ -296,10 +321,10 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-600">
                     {r.totalTime ? `${r.totalTime}min` : '-'}
                   </td>
-                  <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link 
                       href={`/dashboard/recipes/${r.id}`}
-                      className="btn-responsive-secondary text-xs"
+                      className="btn-responsive-secondary text-xs px-2 md:px-3 py-1 md:py-1.5"
                     >
                       Open
                     </Link>
