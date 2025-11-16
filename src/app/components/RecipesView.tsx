@@ -136,8 +136,8 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
         </p>
       </div>
 
-      {/* Card Layout for Portrait Mode (< 1024px) */}
-      <div className="lg:hidden w-full space-y-3 pb-4">
+      {/* Card Layout for Mobile & Tablet (< 1280px) */}
+      <div className="xl:hidden w-full space-y-3 pb-4">
         {sortedRecipes.map((r) => (
           <Link
             key={r.id}
@@ -212,8 +212,8 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
         ))}
       </div>
 
-      {/* Table Layout for Landscape Mode (>= 1024px) */}
-      <div className="hidden lg:block bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      {/* Table Layout for Desktop (>= 1280px) */}
+      <div className="hidden xl:block bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
