@@ -134,3 +134,5 @@ The main issue was that the sidebar was showing features as locked while the unl
 
 The feature unlocking system should now work reliably!
 
+
+
