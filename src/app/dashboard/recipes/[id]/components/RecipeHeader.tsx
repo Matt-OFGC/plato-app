@@ -39,7 +39,13 @@ export default function RecipeHeader({
   recipeId,
 }: RecipeHeaderProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Reset error state when imageUrl changes
+  React.useEffect(() => {
+    setImageError(false);
+  }, [imageUrl]);
 
   return (
     <>
@@ -60,13 +66,18 @@ export default function RecipeHeader({
             className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-orange-400 to-pink-400 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group relative flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed mobile-touch-target"
             title={viewMode === "edit" ? (imageUrl ? "Click to change image" : "Click to add image") : (imageUrl ? "Click to view larger" : "Add recipe image")}
           >
-            {imageUrl ? (
+            {imageUrl && !imageError ? (
               <Image
                 src={imageUrl}
                 alt={title}
                 width={80}
                 height={80}
                 className="w-full h-full object-cover"
+                unoptimized={imageUrl.startsWith('/uploads/')}
+                onError={() => {
+                  console.error('Image failed to load:', imageUrl);
+                  setImageError(true);
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-4xl">
@@ -188,6 +199,12 @@ export default function RecipeHeader({
                 fill
                 className="object-contain"
                 sizes="(max-width: 896px) 100vw, 896px"
+                unoptimized={imageUrl?.startsWith('/uploads/')}
+                onError={(e) => {
+                  console.error('Modal image failed to load:', imageUrl);
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/images/placeholder-cake.png';
+                }}
               />
             </div>
           </div>

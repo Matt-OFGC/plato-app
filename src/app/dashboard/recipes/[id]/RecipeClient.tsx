@@ -543,11 +543,17 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                   <div className="flex-shrink-0">
                     <div className="aspect-[3/4] bg-gradient-to-br from-emerald-100 to-blue-100 relative overflow-hidden rounded-xl">
                       <Image
-                        src={recipe.imageUrl || "/images/placeholder-cake.png"}
+                        src={imageUrl || recipe.imageUrl || "/images/placeholder-cake.png"}
                         alt={isNew ? recipeTitle || "New Recipe" : recipe.title}
                         fill
                         className="object-cover"
                         priority
+                        unoptimized={(imageUrl || recipe.imageUrl)?.startsWith('/uploads/')}
+                        onError={(e) => {
+                          console.error('Photo view image failed to load:', imageUrl || recipe.imageUrl);
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/images/placeholder-cake.png';
+                        }}
                       />
                     </div>
                   </div>

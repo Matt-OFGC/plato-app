@@ -5,6 +5,9 @@ import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit-log";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { logger } from "@/lib/logger";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
 
 // Max file size: 5MB (to stay under Vercel's 6MB serverless function limit)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -27,7 +30,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Apply rate limiting
-    const rateLimitResult = rateLimit(req, RATE_LIMITS.UPLOAD);
+    const uploadRateLimit = RATE_LIMITS.UPLOAD || {
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      maxRequests: 20
+    };
+    const rateLimitResult = rateLimit(req, uploadRateLimit);
     logger.debug("Rate limit check:", rateLimitResult);
     if (!rateLimitResult.allowed) {
       logger.warn("Rate limited, retry after:", rateLimitResult.retryAfter);
@@ -71,23 +78,57 @@ export async function POST(req: NextRequest) {
 
     logger.debug("Processing image upload...");
     
-    // For now, return a placeholder URL since blob storage isn't configured
-    // In production, you would upload to Vercel Blob, AWS S3, or another service
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      logger.debug("Blob storage not configured, using placeholder URL");
-      const placeholderUrl = `/api/placeholder-image?name=${encodeURIComponent(fileObj.name)}&size=${fileObj.size}`;
-      return NextResponse.json({ url: placeholderUrl });
+    // Try Vercel Blob storage first if configured
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(fileObj.name, fileObj, {
+        access: 'public',
+        addRandomSuffix: true,
+      });
+      
+      logger.info("File uploaded successfully to Vercel Blob:", blob.url);
+      
+      // Audit file upload
+      try {
+        const { companyId } = await getCurrentUserAndCompany();
+        if (companyId) {
+          await auditLog.fileUploaded(session.id, companyId, fileObj.name, fileObj.size);
+        }
+      } catch (auditError) {
+        logger.error("Audit log error (non-blocking):", auditError);
+      }
+      
+      return NextResponse.json({ url: blob.url });
     }
     
-    // Upload to Vercel Blob storage (if configured)
-    const blob = await put(fileObj.name, fileObj, {
-      access: 'public',
-      addRandomSuffix: true,
-    });
+    // Fallback: Save to local public/uploads directory
+    logger.debug("Blob storage not configured, saving to local storage");
     
-    logger.info("File uploaded successfully to:", blob.url);
-
-    // Audit file upload (simplified to avoid performance issues)
+    // Create uploads directory if it doesn't exist
+    // Try root public first, then src/app/public as fallback
+    const rootPublic = join(process.cwd(), 'public', 'uploads');
+    const appPublic = join(process.cwd(), 'src', 'app', 'public', 'uploads');
+    const uploadsDir = existsSync(join(process.cwd(), 'public')) ? rootPublic : appPublic;
+    if (!existsSync(uploadsDir)) {
+      await mkdir(uploadsDir, { recursive: true });
+    }
+    
+    // Generate unique filename
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 15);
+    const fileExtension = fileObj.name.split('.').pop() || 'jpg';
+    const fileName = `${timestamp}-${randomStr}.${fileExtension}`;
+    const filePath = join(uploadsDir, fileName);
+    
+    // Convert File to Buffer and save
+    const arrayBuffer = await fileObj.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    await writeFile(filePath, buffer);
+    
+    // Return public URL
+    const publicUrl = `/uploads/${fileName}`;
+    logger.info("File uploaded successfully to local storage:", publicUrl);
+    
+    // Audit file upload
     try {
       const { companyId } = await getCurrentUserAndCompany();
       if (companyId) {
@@ -95,10 +136,9 @@ export async function POST(req: NextRequest) {
       }
     } catch (auditError) {
       logger.error("Audit log error (non-blocking):", auditError);
-      // Don't fail the upload if audit logging fails
     }
-    
-    return NextResponse.json({ url: blob.url });
+
+    return NextResponse.json({ url: publicUrl });
   } catch (error) {
     logger.error("Upload error:", error);
     return NextResponse.json({ 
