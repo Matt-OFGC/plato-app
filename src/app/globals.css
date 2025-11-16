@@ -1836,12 +1836,12 @@ html.dark select {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Responsive Container */
+/* Responsive Container - Mobile-First */
 .container-responsive {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 0.75rem; /* Reduced from 1rem for better mobile space usage */
 }
 
 /* Safe visual frame for recipe pages across devices */
@@ -1861,27 +1861,27 @@ html.dark select {
 
 @media (min-width: 640px) {
   .container-responsive {
-    padding: 0 1.5rem;
+    padding: 0 1rem; /* Reduced from 1.5rem */
   }
 }
 
 @media (min-width: 768px) {
   .container-responsive {
-    padding: 0 2rem;
+    padding: 0 1.5rem; /* Reduced from 2rem for better iPad portrait space */
   }
 }
 
 @media (min-width: 1024px) {
   .container-responsive {
     max-width: 1280px;
-    padding: 0 2.5rem;
+    padding: 0 2rem; /* Reduced from 2.5rem */
   }
 }
 
 @media (min-width: 1280px) {
   .container-responsive {
     max-width: 1400px;
-    padding: 0 3rem;
+    padding: 0 2.5rem; /* Reduced from 3rem */
   }
 }
 
@@ -2350,6 +2350,54 @@ body.recipe-page-active .recipe-safe-frame {
   .portrait-py-6 {
     padding-top: 1rem;
     padding-bottom: 1rem;
+  }
+}
+
+/* Mobile-First Utilities for iPhone (< 640px) */
+@media (max-width: 639px) {
+  /* Mobile container with optimized padding */
+  .mobile-container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  /* Mobile card layout - ensures no horizontal overflow */
+  .mobile-card {
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Mobile table wrapper - enables horizontal scroll with indicator */
+  .mobile-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  .mobile-table-wrapper::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .mobile-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  
+  .mobile-table-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+  }
+  
+  /* Mobile text sizes - ensure minimum 16px to prevent iOS zoom */
+  .mobile-text-base {
+    font-size: 1rem; /* 16px minimum */
+  }
+  
+  /* Mobile touch targets - minimum 44px */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 

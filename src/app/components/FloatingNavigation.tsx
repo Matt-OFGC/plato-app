@@ -416,15 +416,17 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           <div className={`fixed z-50
                           max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
                           md:top-6 md:left-1/2 md:-translate-x-1/2
-                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
+                          lg:left-1/2 lg:-translate-x-1/2
+                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0 lg:left-[340px] lg:translate-x-0' : ''}`}>
+            <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-1.5 md:px-2 lg:px-3 py-1.5 md:py-2 overflow-x-auto max-md:scrollbar-hide">
             {tabs.map((tab, index) => (
               <button
                 key={index}
                 onClick={() => handleTabClick(index)}
                 className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
                            max-md:px-3 max-md:py-1.5 max-md:text-xs
-                           md:px-5 md:py-1.5 md:text-sm
+                           md:px-3 md:py-1 md:text-xs
+                           lg:px-5 lg:py-1.5 lg:text-sm
                            ${
                   activeTab === index && activeTab >= 0
                     ? 'bg-white shadow-md text-gray-900'
@@ -505,20 +507,20 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
       {/* Mobile (iPhone): Positioned with safe area, smaller buttons, stacked vertically if needed */}
       {/* iPad & Desktop: Standard positioning */}
       {showActionButtons && (
-        <div className="fixed z-30 flex items-center gap-2 flex-wrap
+        <div className="fixed z-30 flex items-center gap-1.5 md:gap-2 flex-wrap
                        max-md:top-[calc(env(safe-area-inset-top,1rem)+1rem)] max-md:right-4 max-md:gap-1.5
-                       md:top-6 md:right-6">
+                       md:top-6 md:right-4 lg:right-6">
           {/* Search Button with Dropdown */}
           <div className="relative">
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className={`bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
                          max-md:p-2.5
-                         md:p-3
+                         md:p-2.5 lg:p-3
                          ${isSearchOpen ? 'bg-emerald-100 border-emerald-300' : ''}`}
               aria-label="Search"
             >
-              <svg className={`max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5 ${isSearchOpen ? 'text-emerald-600' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`max-md:w-4 max-md:h-4 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5 ${isSearchOpen ? 'text-emerald-600' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
@@ -598,10 +600,10 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
             onClick={() => setIsFilterOpen(true)}
             className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
                        max-md:p-2.5
-                       md:p-3"
+                       md:p-2.5 lg:p-3"
             aria-label="Filter"
           >
-            <svg className="text-gray-700 max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="text-gray-700 max-md:w-4 max-md:h-4 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
           </button>
@@ -610,14 +612,14 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           )}
           <button 
             onClick={triggerNewAction}
-            className="bg-blue-500 shadow-lg rounded-full hover:bg-blue-600 hover:shadow-xl transition-all duration-200 flex items-center gap-2 flex-shrink-0
+            className="bg-blue-500 shadow-lg rounded-full hover:bg-blue-600 hover:shadow-xl transition-all duration-200 flex items-center gap-1.5 md:gap-2 flex-shrink-0
                        max-md:px-3 max-md:py-2 max-md:gap-1.5
-                       md:px-5 md:py-3"
+                       md:px-4 md:py-2 lg:px-5 lg:py-3"
           >
-            <svg className="text-white max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="text-white max-md:w-4 max-md:h-4 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-white font-medium max-md:text-xs md:text-sm">New</span>
+            <span className="text-white font-medium max-md:text-xs md:text-xs lg:text-sm">New</span>
           </button>
         </div>
       )}

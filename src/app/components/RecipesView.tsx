@@ -130,22 +130,61 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
 
   return (
     <>
-      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-        <p className="text-responsive-body text-gray-600">
+      {/* Sort Controls */}
+      <div className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
+        <p className="text-xs md:text-sm text-gray-600">
           Showing {recipes.length} recipe{recipes.length !== 1 ? 's' : ''}
         </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500">Sort by:</span>
+          <button
+            onClick={() => handleSort('name')}
+            className={`text-xs px-2 py-1 rounded-md transition-colors ${
+              sortField === 'name' ? 'bg-emerald-100 text-emerald-700 font-medium' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Name <SortIcon field="name" />
+          </button>
+          <button
+            onClick={() => handleSort('category')}
+            className={`text-xs px-2 py-1 rounded-md transition-colors ${
+              sortField === 'category' ? 'bg-emerald-100 text-emerald-700 font-medium' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Category <SortIcon field="category" />
+          </button>
+          <button
+            onClick={() => handleSort('sellPrice')}
+            className={`text-xs px-2 py-1 rounded-md transition-colors ${
+              sortField === 'sellPrice' ? 'bg-emerald-100 text-emerald-700 font-medium' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Price <SortIcon field="sellPrice" />
+          </button>
+          <button
+            onClick={() => handleSort('cogs')}
+            className={`text-xs px-2 py-1 rounded-md transition-colors ${
+              sortField === 'cogs' ? 'bg-emerald-100 text-emerald-700 font-medium' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            COGS <SortIcon field="cogs" />
+          </button>
+        </div>
       </div>
 
-      {/* Card Layout for Portrait Mode (< 1024px) */}
-      <div className="lg:hidden space-y-3">
+      {/* Card Grid Layout - All Screen Sizes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5 pb-4 md:pb-6">
         {sortedRecipes.map((r) => (
           <Link 
             key={r.id}
             href={`/dashboard/recipes/${r.id}`}
-            className={`block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all ${selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50' : ''}`}
+            className={`group bg-white rounded-xl border border-gray-200 p-4 md:p-5 hover:shadow-lg hover:border-emerald-300 transition-all mobile-touch-target ${
+              selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50 border-emerald-300' : ''
+            }`}
           >
-            <div className="flex items-start gap-3">
-              {isSelecting && (
+            {/* Checkbox for selection */}
+            {isSelecting && (
+              <div className="mb-3">
                 <input
                   type="checkbox"
                   checked={selectedIds.has(r.id)}
@@ -155,271 +194,103 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                     onSelect?.(r.id);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mt-1"
+                  className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                 />
-              )}
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                {r.imageUrl ? (
-                  <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover rounded-lg" />
-                ) : (
-                  <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-gray-900 truncate">{r.name}</h3>
-                    {r.description && (
-                      <p className="text-sm text-gray-500 truncate mt-0.5">{r.description}</p>
-                    )}
-                  </div>
-                  <div className="btn-responsive-secondary text-xs px-3 py-1.5 flex-shrink-0 pointer-events-none opacity-75">
-                    Open
-                  </div>
+            )}
+
+            {/* Recipe Image/Icon */}
+            <div className="w-full aspect-square mb-4 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center overflow-hidden">
+              {r.imageUrl ? (
+                <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
+              ) : (
+                <svg className="w-12 h-12 md:w-16 md:h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+            </div>
+
+            {/* Recipe Name */}
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors line-clamp-2">
+              {r.name}
+            </h3>
+
+            {/* Description */}
+            {r.description && (
+              <p className="text-xs md:text-sm text-gray-500 mb-3 line-clamp-2">
+                {r.description}
+              </p>
+            )}
+
+            {/* Category Badge */}
+            {(r.categoryRef || r.category) && (
+              <div className="mb-3">
+                <span 
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium" 
+                  style={{ 
+                    backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
+                    color: (r.categoryRef?.color || '#3B82F6') as any 
+                  }}
+                >
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
+                  {r.categoryRef?.name || r.category}
+                </span>
+              </div>
+            )}
+
+            {/* Recipe Details Grid */}
+            <div className="space-y-2 pt-3 border-t border-gray-100">
+              {/* Yield */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">Yield:</span>
+                <span className="font-medium text-gray-900">{String(r.yieldQuantity)} {r.yieldUnit}</span>
+              </div>
+
+              {/* Selling Price */}
+              {r.sellingPrice && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Price:</span>
+                  <span className="font-semibold text-emerald-600">£{r.sellingPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
-                  {(r.categoryRef || r.category) && (
-                    <span 
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" 
-                      style={{ 
-                        backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
-                        color: (r.categoryRef?.color || '#3B82F6') as any 
-                      }}
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
-                      {r.categoryRef?.name || r.category}
-                    </span>
-                  )}
-                  <span className="text-xs text-gray-600">
-                    {String(r.yieldQuantity)} {r.yieldUnit}
+              )}
+
+              {/* COGS Percentage */}
+              {r.cogsPercentage !== null && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">COGS:</span>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                    r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
+                    r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
+                    r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {r.cogsPercentage.toFixed(1)}%
                   </span>
-                  {r.sellingPrice && (
-                    <span className="text-xs font-semibold text-emerald-600">
-                      £{r.sellingPrice.toFixed(2)}
-                    </span>
-                  )}
-                  {r.cogsPercentage !== null && (
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                      r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
-                      r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
-                      r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {r.cogsPercentage.toFixed(1)}%
-                    </span>
-                  )}
                 </div>
+              )}
+
+              {/* Steps and Time */}
+              <div className="flex items-center gap-4 text-xs text-gray-500 pt-1">
+                {r.totalSteps > 0 && (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    {r.totalSteps} steps
+                  </span>
+                )}
+                {r.totalTime && (
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {r.totalTime}min
+                  </span>
+                )}
               </div>
             </div>
           </Link>
         ))}
-      </div>
-
-      {/* Table Layout for Landscape Mode (>= 1024px) */}
-      <div className="hidden lg:block bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {isSelecting && (
-                  <th className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.size === sortedRecipes.length && sortedRecipes.length > 0}
-                      onChange={onSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                    />
-                  </th>
-                )}
-                <th 
-                  className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                  onClick={() => handleSort('name')}
-                >
-                  <div className="flex items-center gap-2">
-                    Name
-                    <SortIcon field="name" />
-                  </div>
-                </th>
-                <th 
-                  className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                  onClick={() => handleSort('category')}
-                >
-                  <div className="flex items-center gap-2">
-                    Category
-                    <SortIcon field="category" />
-                  </div>
-                </th>
-                <th 
-                  className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                  onClick={() => handleSort('yield')}
-                >
-                  <div className="flex items-center gap-2">
-                    Yield
-                    <SortIcon field="yield" />
-                  </div>
-                </th>
-                <th 
-                  className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                  onClick={() => handleSort('sellPrice')}
-                >
-                  <div className="flex items-center gap-2">
-                    Sell Price
-                    <SortIcon field="sellPrice" />
-                  </div>
-                </th>
-                <th 
-                  className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                  onClick={() => handleSort('cogs')}
-                >
-                  <div className="flex items-center gap-2">
-                    COGS %
-                    <SortIcon field="cogs" />
-                  </div>
-                </th>
-                <th 
-                  className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                  onClick={() => handleSort('totalSteps')}
-                >
-                  <div className="flex items-center gap-2">
-                    Steps
-                    <SortIcon field="totalSteps" />
-                  </div>
-                </th>
-                <th 
-                  className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
-                  onClick={() => handleSort('totalTime')}
-                >
-                  <div className="flex items-center gap-2">
-                    Time
-                    <SortIcon field="totalTime" />
-                  </div>
-                </th>
-                <th className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedRecipes.map((r) => (
-                <tr key={r.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(r.id) ? 'bg-emerald-50' : ''}`}>
-                  {isSelecting && (
-                    <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(r.id)}
-                        onChange={() => onSelect?.(r.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                    </td>
-                  )}
-                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4">
-                    <Link href={`/dashboard/recipes/${r.id}`} className="flex items-center gap-2 md:gap-3 group">
-                      <div className="w-6 h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        {r.imageUrl ? (
-                          <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover rounded-lg" />
-                        ) : (
-                          <svg className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm md:text-base font-medium text-gray-900 group-hover:text-emerald-600 truncate">
-                          {r.name}
-                        </div>
-                        {r.description && (
-                          <div className="hidden md:block text-xs text-gray-500 truncate mt-0.5">{r.description}</div>
-                        )}
-                        <div className="flex flex-wrap items-center gap-2 mt-1 lg:hidden">
-                          {(r.categoryRef || r.category) && (
-                            <span 
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium" 
-                              style={{ 
-                                backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
-                                color: (r.categoryRef?.color || '#3B82F6') as any 
-                              }}
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
-                              {r.categoryRef?.name || r.category}
-                            </span>
-                          )}
-                          <span className="text-xs text-gray-500">
-                            {String(r.yieldQuantity)} {r.yieldUnit}
-                          </span>
-                          {r.sellingPrice && (
-                            <span className="text-xs font-semibold text-emerald-600">
-                              £{r.sellingPrice.toFixed(2)}
-                            </span>
-                          )}
-                          {r.cogsPercentage !== null && (
-                            <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                              r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
-                              r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
-                              r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
-                              {r.cogsPercentage.toFixed(1)}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap">
-                    {(r.categoryRef || r.category) && (
-                      <span 
-                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium" 
-                        style={{ 
-                          backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
-                          color: (r.categoryRef?.color || '#3B82F6') as any 
-                        }}
-                      >
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
-                        {r.categoryRef?.name || r.category}
-                      </span>
-                    )}
-                  </td>
-                  <td className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-900">
-                    {String(r.yieldQuantity)} {r.yieldUnit}
-                  </td>
-                  <td className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-900">
-                    {r.sellingPrice ? `£${r.sellingPrice.toFixed(2)}` : '-'}
-                  </td>
-                  <td className="hidden lg:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm">
-                    {r.cogsPercentage !== null ? (
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                        r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
-                        r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
-                        r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {r.cogsPercentage.toFixed(1)}%
-                      </span>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-600 text-center">
-                    {r.totalSteps}
-                  </td>
-                  <td className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-600">
-                    {r.totalTime ? `${r.totalTime}min` : '-'}
-                  </td>
-                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link 
-                      href={`/dashboard/recipes/${r.id}`}
-                      className="btn-responsive-secondary text-xs px-2 md:px-3 py-1 md:py-1.5"
-                    >
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </>
   );

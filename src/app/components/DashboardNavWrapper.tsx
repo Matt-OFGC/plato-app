@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FloatingNavBar } from "./FloatingNavBar";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 // Fixed navigation items - no customization
 const FIXED_NAVIGATION_ITEMS = ["dashboard", "ingredients", "recipes", "production"];
@@ -83,6 +84,7 @@ const MORE_MENU_ITEMS = [
 
 export function DashboardNavWrapper() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const { sidebarOpen } = useSidebar();
 
   const handleMoreClick = () => {
     setShowMoreMenu(!showMoreMenu);
@@ -95,6 +97,7 @@ export function DashboardNavWrapper() {
         navigationItems={FIXED_NAVIGATION_ITEMS}
         enableScrollAnimation={true}
         onMoreClick={handleMoreClick}
+        sidebarOpen={sidebarOpen}
       />
       
       {/* More Menu Overlay - Glassy Design with Green Tint */}

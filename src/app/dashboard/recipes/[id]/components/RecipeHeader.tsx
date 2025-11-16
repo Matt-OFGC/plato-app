@@ -43,8 +43,8 @@ export default function RecipeHeader({
 
   return (
     <>
-      <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg py-4 px-4 md:px-6">
-        <div className="flex items-center gap-3">
+      <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-gray-200/60 shadow-lg py-3 md:py-4 px-3 md:px-4 lg:px-6">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Recipe Image - Small thumbnail */}
           <button
             onClick={() => {
@@ -57,7 +57,7 @@ export default function RecipeHeader({
               }
             }}
             disabled={isUploadingImage}
-            className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-orange-400 to-pink-400 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group relative flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-orange-400 to-pink-400 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer group relative flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed mobile-touch-target"
             title={viewMode === "edit" ? (imageUrl ? "Click to change image" : "Click to add image") : (imageUrl ? "Click to view larger" : "Add recipe image")}
           >
             {imageUrl ? (
@@ -121,15 +121,15 @@ export default function RecipeHeader({
                 value={title}
                 onChange={(e) => onTitleChange(e.target.value)}
                 placeholder="Recipe name"
-                className="text-3xl font-bold text-gray-900 mb-1 w-full bg-transparent border-none outline-none focus:ring-2 focus:ring-emerald-500 rounded px-2 py-1 -mx-2 -my-1"
+                className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 w-full bg-transparent border-none outline-none focus:ring-2 focus:ring-emerald-500 rounded px-2 py-1 -mx-2 -my-1 mobile-text-base"
                 autoFocus
               />
             ) : (
-              <h1 className="text-3xl font-bold text-gray-900 mb-1 truncate">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 truncate">
                 {title}
               </h1>
             )}
-            <div className="flex flex-col lg:flex-row lg:items-center gap-1 lg:gap-2 text-sm mt-1">
+            <div className="flex flex-col xl:flex-row xl:items-center gap-1 xl:gap-2 text-sm mt-1">
               {viewMode === "edit" && onCategoryChange ? (
                 <div className="flex flex-col lg:flex-row lg:items-center gap-2">
                   <div className="w-full lg:w-64 lg:min-w-[256px]">
@@ -155,7 +155,7 @@ export default function RecipeHeader({
               ) : (
                 <>
                   <span className="text-gray-500">{category || "Uncategorized"}</span>
-                  <span className="hidden lg:inline text-gray-400">•</span>
+                  <span className="hidden xl:inline text-gray-400">•</span>
                   <span className="text-gray-500">{servings} slices</span>
                 </>
               )}

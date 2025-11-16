@@ -1,29 +1,30 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { FloatingNavigation } from "@/components/FloatingNavigation";
 import { FloatingSidebar } from "@/components/FloatingSidebar";
 import { PageActionProvider } from "@/components/PageActionContext";
 import { RecipeViewProvider } from "@/components/RecipeViewContext";
 import { ToastProvider } from "@/components/ToastProvider";
+import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { usePathname } from "next/navigation";
 
-export function FloatingLayoutClient({
+function FloatingLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
   const pathname = usePathname();
   const isRecipePage = pathname.match(/^\/dashboard\/recipes\/[^/]+$/);
 
   const handleMenuClick = useCallback(() => {
-    setSidebarOpen(prev => !prev);
-  }, []);
+    setSidebarOpen(!sidebarOpen);
+  }, [sidebarOpen, setSidebarOpen]);
 
   const handleClose = useCallback(() => {
     setSidebarOpen(false);
-  }, []);
+  }, [setSidebarOpen]);
 
   const content = (
     <ToastProvider>
@@ -42,9 +43,10 @@ export function FloatingLayoutClient({
           <div className="flex-1 overflow-auto 
                          max-md:pt-32 max-md:px-4 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]
                          md:pt-24 md:px-6 md:pb-6">
-            <div className="max-w-full mx-auto
-                           max-md:max-w-none
-                           md:max-w-[95%]">
+            <div 
+              className="w-full max-w-full mx-auto md:max-w-[95%] lg:max-w-[95%] xl:max-w-[90%] 2xl:max-w-[85%]"
+              suppressHydrationWarning
+            >
               {children}
             </div>
           </div>
@@ -64,5 +66,19 @@ export function FloatingLayoutClient({
   }
 
   return content;
+}
+
+export function FloatingLayoutClient({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SidebarProvider>
+      <FloatingLayoutContent>
+        {children}
+      </FloatingLayoutContent>
+    </SidebarProvider>
+  );
 }
 

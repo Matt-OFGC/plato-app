@@ -108,10 +108,14 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
 
   const handleModalClose = () => {
     setIsModalOpen(false);
+    // Clear editing ingredient to ensure fresh data on next edit
     setEditingIngredient(null);
   };
 
   const handleModalSuccess = () => {
+    // Clear editing ingredient state before refresh
+    setEditingIngredient(null);
+    setIsModalOpen(false);
     // Refresh the page to get updated ingredients using Next.js router
     router.refresh();
   };

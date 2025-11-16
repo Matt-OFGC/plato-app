@@ -686,12 +686,12 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
       </div>
 
       {/* Bottom Info Bar - Separate Container Cards - FIXED TO BOTTOM */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl flex-shrink-0 z-30 px-2 sm:px-3 md:px-4 lg:px-8">
-        <div className="max-w-[1600px] mx-auto py-2 sm:py-2.5 md:py-3 lg:py-4">
-          <div className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-3 flex-wrap lg:flex-nowrap overflow-x-auto scrollbar-hide">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl flex-shrink-0 z-30 px-2 sm:px-3 md:px-4 lg:px-6 xl:px-8">
+        <div className="max-w-[1600px] mx-auto py-2 sm:py-2 md:py-2.5 lg:py-3 xl:py-4">
+          <div className="flex items-center justify-center gap-1 sm:gap-1 md:gap-1.5 lg:gap-2 xl:gap-3 flex-wrap lg:flex-nowrap overflow-x-auto scrollbar-hide">
             
             {/* Servings Container */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1 md:px-2 md:py-1.5 lg:px-2.5 lg:py-2 xl:px-3 xl:py-2 flex-shrink-0">
               {viewMode === "edit" ? (
                 <div className="flex items-center gap-1.5 md:gap-2">
                   <span className="text-xs font-semibold text-gray-500">Type:</span>
@@ -749,19 +749,19 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3">
+                <div className="flex items-center gap-1.5 md:gap-2 lg:gap-2.5 xl:gap-3">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Servings</span>
-                  <div className="flex items-center gap-1.5 md:gap-2">
+                  <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2">
                     <button
                       onClick={() => handleServingsChange(Math.max(1, servings - 1))}
-                      className="w-8 h-8 bg-white shadow-md rounded-lg flex items-center justify-center hover:shadow-lg transition-all border border-gray-200 text-gray-700 font-semibold text-sm"
+                      className="w-7 h-7 md:w-8 md:h-8 bg-white shadow-md rounded-lg flex items-center justify-center hover:shadow-lg transition-all border border-gray-200 text-gray-700 font-semibold text-sm mobile-touch-target"
                     >
                       −
                     </button>
-                    <span className="text-xl font-bold text-gray-900 min-w-[2.5rem] text-center">{servings}</span>
+                    <span className="text-lg md:text-xl font-bold text-gray-900 min-w-[2rem] md:min-w-[2.5rem] text-center">{servings}</span>
                     <button
                       onClick={() => handleServingsChange(servings + 1)}
-                      className="w-8 h-8 bg-white shadow-md rounded-lg flex items-center justify-center hover:shadow-lg transition-all border border-gray-200 text-gray-700 font-semibold text-sm"
+                      className="w-7 h-7 md:w-8 md:h-8 bg-white shadow-md rounded-lg flex items-center justify-center hover:shadow-lg transition-all border border-gray-200 text-gray-700 font-semibold text-sm mobile-touch-target"
                     >
                       +
                     </button>
@@ -771,21 +771,21 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
             </div>
 
             {/* Cost & COGS Container with Info Button */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0">
-              <div className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1 md:px-2 md:py-1.5 lg:px-2.5 lg:py-2 xl:px-3 xl:py-2 flex-shrink-0">
+              <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-2.5 xl:gap-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Cost</span>
-                  <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
+                  <span className="text-sm md:text-base lg:text-lg font-bold text-gray-900">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
                 </div>
-                <div className="h-3 md:h-4 w-px bg-gray-300" />
+                <div className="h-3 md:h-3 lg:h-4 w-px bg-gray-300" />
                 <div className="flex flex-col">
                   <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Per Slice</span>
-                  <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
+                  <span className="text-sm md:text-base lg:text-lg font-bold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
                 </div>
-                <div className="h-3 md:h-4 w-px bg-gray-300" />
+                <div className="h-3 md:h-3 lg:h-4 w-px bg-gray-300" />
                 <div className="flex flex-col">
                   <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">COGS</span>
-                  <span className={`text-sm sm:text-base md:text-lg font-bold ${
+                  <span className={`text-sm md:text-base lg:text-lg font-bold ${
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-green-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 33 ? 'text-green-600' :
                     ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 40 ? 'text-yellow-600' : 'text-red-600'
@@ -795,10 +795,10 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                 </div>
                 <button
                   onClick={() => setIsPricingModalOpen(true)}
-                  className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex items-center justify-center text-blue-600 flex-shrink-0"
+                  className="w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors flex items-center justify-center text-blue-600 flex-shrink-0 mobile-touch-target"
                   title="View pricing details"
                 >
-                  <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 md:w-3 md:h-3 lg:w-3.5 lg:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </button>
@@ -806,7 +806,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
             </div>
 
             {/* Recipe Metadata Container */}
-            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1.5 md:px-2.5 md:py-1.5 lg:px-3 lg:py-2 flex-shrink-0 min-w-0">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-md px-2 py-1 md:px-2 md:py-1.5 lg:px-2.5 lg:py-2 xl:px-3 xl:py-2 flex-shrink-0 min-w-0">
               {viewMode === "edit" ? (
                 <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 flex-wrap">
                   <div className="flex items-center gap-1">

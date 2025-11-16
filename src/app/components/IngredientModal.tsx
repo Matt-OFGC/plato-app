@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { IngredientForm } from "./IngredientForm";
 import { createIngredient, updateIngredient, getSuppliers } from "@/app/dashboard/ingredients/actions";
-import { fromBase, Unit } from "@/lib/units";
+import { fromBase, Unit, BaseUnit } from "@/lib/units";
 import { RecentItemsTracker } from "./RecentItemsTracker";
 
 const ALLERGEN_OPTIONS = [
@@ -142,6 +142,11 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
         const other = editIngredient.allergens.find(a => !ALLERGEN_OPTIONS.includes(a) && a !== "Other");
         setOtherAllergen(other || "");
       }
+    } else {
+      // Reset allergens state when not editing
+      setAllergens([]);
+      setShowOtherInput(false);
+      setOtherAllergen("");
     }
   }, [editIngredient]);
 
@@ -153,6 +158,10 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
       document.body.style.overflow = 'hidden';
     } else if (mounted) {
       document.body.style.overflow = '';
+      // Reset form state when modal closes
+      setAllergens([]);
+      setShowOtherInput(false);
+      setOtherAllergen("");
     }
     return () => {
       document.body.style.overflow = '';
@@ -191,6 +200,50 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
       onClose();
     }
   };
+
+  // Convert base quantity back to original unit quantity for display
+  const convertedInitialData = useMemo(() => {
+    if (!editIngredient) return undefined;
+    
+    const originalUnit = editIngredient.originalUnit || editIngredient.packUnit;
+    let originalQuantity: number;
+    
+    // Debug logging
+    console.log('IngredientModal conversion:', {
+      packQuantity: editIngredient.packQuantity,
+      packUnit: editIngredient.packUnit,
+      originalUnit: editIngredient.originalUnit,
+      targetUnit: originalUnit
+    });
+    
+    if (editIngredient.originalUnit && editIngredient.packUnit) {
+      // Convert from base unit back to original unit
+      const converted = fromBase(
+        Number(editIngredient.packQuantity), 
+        editIngredient.packUnit as BaseUnit, 
+        originalUnit as Unit
+      );
+      console.log('Converted value:', converted);
+      // Ensure we have a valid positive number
+      originalQuantity = isNaN(converted) || converted <= 0 ? Number(editIngredient.packQuantity) : converted;
+    } else {
+      originalQuantity = Number(editIngredient.packQuantity) || 1;
+    }
+    
+    console.log('Final originalQuantity:', originalQuantity);
+    
+    return {
+      name: editIngredient.name,
+      supplierId: editIngredient.supplierId || undefined,
+      packQuantity: originalQuantity,
+      packUnit: originalUnit as Unit,
+      packPrice: editIngredient.packPrice,
+      densityGPerMl: editIngredient.densityGPerMl || undefined,
+      allergens: editIngredient.allergens || [],
+      customConversions: editIngredient.customConversions || undefined,
+      notes: editIngredient.notes || "",
+    };
+  }, [editIngredient]);
 
   if (!isOpen) return null;
 
@@ -232,20 +285,11 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
           <div className="flex-1 overflow-hidden flex">
             <div className="flex-1 p-4 overflow-y-auto">
               <IngredientForm
+                key={editIngredient?.id || 'new'}
                 companyId={companyId}
                 suppliers={suppliers}
                 onSubmit={handleSubmit}
-                initialData={editIngredient ? {
-                  name: editIngredient.name,
-                  supplierId: editIngredient.supplierId || undefined,
-                  packQuantity: editIngredient.packQuantity,
-                  packUnit: editIngredient.originalUnit || (editIngredient.packUnit as Unit),
-                  packPrice: editIngredient.packPrice,
-                  densityGPerMl: editIngredient.densityGPerMl || undefined,
-                  allergens: editIngredient.allergens || [],
-                  customConversions: editIngredient.customConversions || undefined,
-                  notes: editIngredient.notes || "",
-                } : undefined}
+                initialData={convertedInitialData}
                 allergens={allergens}
                 onAllergenChange={setAllergens}
                 otherAllergen={otherAllergen}

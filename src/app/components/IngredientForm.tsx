@@ -97,16 +97,60 @@ export function IngredientForm({
   const [packSize, setPackSize] = useState<number>(initialData?.packQuantity || 1);
   const [packPrice, setPackPrice] = useState<number>(initialData?.packPrice || 0);
   const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
+  const [hasUserModifiedPackSize, setHasUserModifiedPackSize] = useState<boolean>(false);
+  const [purchaseUnit, setPurchaseUnit] = useState<string>(initialData?.packUnit || '');
+  const [purchaseSize, setPurchaseSize] = useState<number>(() => {
+    // For count units, initialize from packQuantity
+    if (initialData?.packUnit) {
+      const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
+      if (countUnits.includes(initialData.packUnit)) {
+        return initialData.packQuantity || 1;
+      }
+    }
+    return 1;
+  });
   
   // Calculate price per unit
-  const pricePerUnit = packSize > 1 && packPrice > 0 ? packPrice / packSize : null;
+  // For count units, use purchaseSize, otherwise use packSize
+  const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
+  const isCountUnit = countUnits.includes(purchaseUnit || initialData?.packUnit || '');
+  const unitsForPriceCalc = isCountUnit ? purchaseSize : packSize;
+  const pricePerUnit = unitsForPriceCalc > 1 && packPrice > 0 ? packPrice / unitsForPriceCalc : null;
   
-  // Sync packSize with initialData when it changes (for edit mode)
+  // Sync packSize and purchaseSize with initialData when it changes (for edit mode)
+  // BUT only if user hasn't manually modified packSize
+  // Also sync packPrice to ensure both update correctly
   useEffect(() => {
-    if (initialData?.packQuantity !== undefined) {
+    // Sync purchaseSize for count units
+    if (initialData?.packUnit) {
+      const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
+      if (countUnits.includes(initialData.packUnit) && initialData.packQuantity !== undefined && initialData.packQuantity > 0) {
+        setPurchaseSize(initialData.packQuantity);
+      }
+    }
+    
+    // Only sync packSize if user hasn't manually changed it
+    if (!hasUserModifiedPackSize && initialData?.packQuantity !== undefined && initialData.packQuantity > 0) {
+      console.log('IngredientForm: Setting packSize from initialData:', initialData.packQuantity);
       setPackSize(initialData.packQuantity);
     }
-  }, [initialData?.packQuantity]);
+    if (initialData?.packPrice !== undefined) {
+      setPackPrice(initialData.packPrice);
+    }
+    if (initialData?.packUnit !== undefined) {
+      setPurchaseUnit(initialData.packUnit);
+    }
+  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, hasUserModifiedPackSize]);
+  
+  // Reset the "user modified" flag when initialData changes significantly (new ingredient or different ingredient)
+  useEffect(() => {
+    setHasUserModifiedPackSize(false);
+  }, [initialData?.name]); // Reset when ingredient name changes (new/different ingredient)
+  
+  // Debug: Log initialData when it changes
+  useEffect(() => {
+    console.log('IngredientForm initialData changed:', initialData);
+  }, [initialData]);
   
   // Sync with external state if provided
   useEffect(() => {
@@ -262,20 +306,42 @@ export function IngredientForm({
     // Get purchase size, purchase unit, and pack size from form
     const purchaseSize = parseFloat((ev.currentTarget.querySelector('#purchaseSize') as HTMLInputElement)?.value || '1');
     const purchaseUnit = (ev.currentTarget.querySelector('#purchaseUnit') as HTMLSelectElement)?.value || '';
-    // Use packSize state directly instead of reading from DOM to ensure we get the correct value
-    const packSizeValue = packSize || 1;
+    // Read packSize from both state and DOM to ensure we get the correct value
+    // Prefer DOM value as it's the source of truth at submission time
+    const packSizeInput = ev.currentTarget.querySelector('#packSize') as HTMLInputElement;
+    const packSizeFromDOM = packSizeInput ? parseFloat(packSizeInput.value) : NaN;
+    const packSizeValue = (!isNaN(packSizeFromDOM) && packSizeFromDOM > 0) ? packSizeFromDOM : (packSize || 1);
     
-    // Store packQuantity as packSize (individual units per purchase)
-    // This is what the app uses for cost calculations - it needs to know how many units are in the pack
-    formData.set("packQuantity", packSizeValue.toString());
+    // Count units (slices, each, etc.) - for these, Purchase Size IS the pack quantity
+    // For example: "100 slices" means packQuantity=100, packUnit=slices
+    const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
+    const isCountUnit = countUnits.includes(purchaseUnit);
     
-    // Store packUnit as purchaseUnit (e.g., "case", "box", "bottles")
-    // This is what the user purchases
+    // If it's a count unit, use purchaseSize as packQuantity (user is buying X slices/each)
+    // Otherwise, use packSize (user is buying 1 case containing X bottles)
+    const finalPackQuantity = isCountUnit ? purchaseSize : packSizeValue;
+    
+    // Debug logging
+    console.log('Form submission packSize values:', {
+      packSizeState: packSize,
+      packSizeFromDOM: packSizeFromDOM,
+      packSizeInputValue: packSizeInput?.value,
+      purchaseSize,
+      purchaseUnit,
+      isCountUnit,
+      finalPackQuantity
+    });
+    
+    // Store packQuantity - for count units this is purchaseSize, otherwise it's packSize
+    formData.set("packQuantity", finalPackQuantity.toString());
+    
+    // Store packUnit as purchaseUnit (e.g., "slices", "each", "case", "box")
     formData.set("packUnit", purchaseUnit);
     
     // Store purchase info in batchPricing for reference if pack size differs from purchase size
     // This helps the system understand the relationship between purchase and pack
-    if (packSizeValue !== purchaseSize) {
+    // For count units, purchaseSize IS packQuantity, so no batch pricing needed
+    if (!isCountUnit && packSizeValue !== purchaseSize) {
       formData.set("batchPricing", JSON.stringify([{ packQuantity: packSizeValue, packPrice: 0 }]));
     } else {
       formData.set("batchPricing", "");
@@ -361,7 +427,11 @@ export function IngredientForm({
                   name="purchaseSize"
                   step="0.01"
                   min="0"
-                  defaultValue="1"
+                  value={purchaseSize}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    setPurchaseSize(value);
+                  }}
                   required
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
                   placeholder="1"
@@ -392,6 +462,7 @@ export function IngredientForm({
                   id="purchaseUnit"
                   name="purchaseUnit"
                   defaultValue={initialData?.packUnit || ""}
+                  onChange={(e) => setPurchaseUnit(e.target.value)}
                   required
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
                 >
@@ -435,62 +506,76 @@ export function IngredientForm({
             </div>
 
             {/* Pack Size (how many individual units in the purchase) */}
-            <div>
-              <label htmlFor="packSize" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                Pack Size <span className="text-red-500">*</span>
-                <div className="relative">
-                  <button
-                    type="button"
-                    className="focus:outline-none"
-                    onMouseEnter={() => setShowTooltip({ ...showTooltip, packSize: true })}
-                    onMouseLeave={() => setShowTooltip({ ...showTooltip, packSize: false })}
-                  >
-                    <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                  {showTooltip.packSize && (
-                    <div className="absolute left-0 top-6 z-50 w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
-                      How many individual units are in this purchase? (e.g., 6 if a case contains 6 bottles)
+            {/* Hide Pack Size for count units (slices, each, etc.) since Purchase Size IS the pack size */}
+            {(() => {
+              const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
+              const isCountUnit = countUnits.includes(purchaseUnit || initialData?.packUnit || '');
+              
+              if (isCountUnit) {
+                return null; // Don't show Pack Size for count units
+              }
+              
+              return (
+                <div>
+                  <label htmlFor="packSize" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                    Pack Size <span className="text-red-500">*</span>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        className="focus:outline-none"
+                        onMouseEnter={() => setShowTooltip({ ...showTooltip, packSize: true })}
+                        onMouseLeave={() => setShowTooltip({ ...showTooltip, packSize: false })}
+                      >
+                        <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                      {showTooltip.packSize && (
+                        <div className="absolute left-0 top-6 z-50 w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                          How many individual units are in this purchase? (e.g., 6 if a case contains 6 bottles)
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </label>
+                  <input
+                    type="number"
+                    id="packSize"
+                    name="packSize"
+                    step="1"
+                    min="1"
+                    value={packSize}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Mark that user has manually modified this field
+                      setHasUserModifiedPackSize(true);
+                      // Allow empty string while typing
+                      if (value === '') {
+                        setPackSize(1);
+                        return;
+                      }
+                      // Parse the value
+                      const numValue = parseFloat(value);
+                      // Only update if it's a valid positive number
+                      if (!isNaN(numValue) && numValue >= 1) {
+                        setPackSize(Math.floor(numValue)); // Use floor to ensure integer
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Ensure minimum value of 1 on blur
+                      const value = parseFloat(e.target.value);
+                      if (isNaN(value) || value < 1) {
+                        setPackSize(1);
+                      } else {
+                        setPackSize(Math.floor(value));
+                      }
+                    }}
+                    required
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                    placeholder="1"
+                  />
                 </div>
-              </label>
-              <input
-                type="number"
-                id="packSize"
-                name="packSize"
-                step="1"
-                min="1"
-                value={packSize}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Allow empty string while typing
-                  if (value === '') {
-                    setPackSize(1);
-                    return;
-                  }
-                  // Parse the value
-                  const numValue = parseFloat(value);
-                  // Only update if it's a valid positive number
-                  if (!isNaN(numValue) && numValue >= 1) {
-                    setPackSize(Math.floor(numValue)); // Use floor to ensure integer
-                  }
-                }}
-                onBlur={(e) => {
-                  // Ensure minimum value of 1 on blur
-                  const value = parseFloat(e.target.value);
-                  if (isNaN(value) || value < 1) {
-                    setPackSize(1);
-                  } else {
-                    setPackSize(Math.floor(value));
-                  }
-                }}
-                required
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                placeholder="1"
-              />
-            </div>
+              );
+            })()}
 
             {/* Price */}
             <div>

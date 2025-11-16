@@ -10,12 +10,14 @@ interface FloatingNavBarProps {
   navigationItems?: string[]; // Array of hrefs for selected nav items
   onMoreClick?: () => void;
   enableScrollAnimation?: boolean; // Enable Apple-style scroll animations
+  sidebarOpen?: boolean; // Hide when sidebar is open
 }
 
 export function FloatingNavBar({ 
   navigationItems = ["dashboard", "ingredients", "recipes", "recipe-mixer"],
   onMoreClick,
-  enableScrollAnimation = false
+  enableScrollAnimation = false,
+  sidebarOpen = false
 }: FloatingNavBarProps) {
   const pathname = usePathname();
   const { timers } = useTimers();
@@ -47,14 +49,14 @@ export function FloatingNavBar({
 
   const timerCount = Object.keys(timers).length;
 
-
   return (
     <>
       {/* Fixed slim left rail for md+ */}
+      {/* Hide when sidebar is open to prevent overlap */}
       <nav className={`hidden md:block fixed left-1 top-1/2 -translate-y-1/2 z-50 md:left-2 lg:left-3 xl:left-4 safe-area-left transition-all duration-300 ease-out ${
-        isVisible 
-          ? 'translate-x-0 opacity-100' 
-          : '-translate-x-full opacity-0'
+        sidebarOpen || !isVisible
+          ? '-translate-x-full opacity-0 pointer-events-none' 
+          : 'translate-x-0 opacity-100'
       }`}>
         <div className={`floating-nav floating-nav-enhanced rounded-3xl px-2 py-2.5 mx-auto max-h-md transition-all duration-300 ease-out ${
           timerCount > 0 ? 'animate-pulse-subtle' : ''

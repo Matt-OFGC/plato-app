@@ -65,12 +65,12 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
 
       {/* List view only */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto mobile-table-wrapper">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   {isSelecting && (
-                    <th className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <input
                         type="checkbox"
                         checked={selectedIds.size === ingredients.length && ingredients.length > 0}
@@ -79,13 +79,13 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                       />
                     </th>
                   )}
-                  <th className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="hidden lg:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                  <th className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Allergens</th>
-                  <th className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack Size</th>
-                  <th className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="hidden md:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                  <th className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Allergens</th>
+                  <th className="px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack Size</th>
+                  <th className="px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="hidden lg:table-cell px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                  <th className="px-2 lg:px-3 xl:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -102,7 +102,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                   return (
                     <tr key={ing.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(ing.id) ? 'bg-emerald-50' : ''}`}>
                       {isSelecting && (
-                        <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap">
+                        <td className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap">
                           <input
                             type="checkbox"
                             checked={selectedIds.has(ing.id)}
@@ -111,18 +111,18 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                           />
                         </td>
                       )}
-                      <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap">
+                      <td className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap">
                         <button 
                           onClick={() => onEdit?.(ing)}
-                          className="text-sm font-medium text-gray-900 hover:text-emerald-600 text-left"
+                          className="text-sm font-medium text-gray-900 hover:text-emerald-600 text-left mobile-touch-target"
                         >
                           {ing.name}
                         </button>
                       </td>
-                      <td className="hidden lg:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                         {ing.supplierRef?.name || ing.supplier || '-'}
                       </td>
-                      <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 text-sm">
+                      <td className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-3 text-sm">
                         {ing.allergens && ing.allergens.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {ing.allergens.slice(0, 3).map((allergen, idx) => (
@@ -143,21 +143,21 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                         {displayQuantity} {displayUnit}
                       </td>
-                      <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm font-semibold text-emerald-600">
+                      <td className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm font-semibold text-emerald-600">
                         {formatCurrency(Number(ing.packPrice), ing.currency)}
                       </td>
-                      <td className="hidden md:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap">
+                      <td className="hidden lg:table-cell px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap">
                         <span className={`text-xs px-2 py-1 rounded-full ${colorClass.replace('border', 'border-0')}`}>
                           {formatLastUpdate(ing.lastPriceUpdate || new Date())}
                         </span>
                       </td>
-                      <td className="px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => onEdit?.(ing)}
-                          className="text-emerald-600 hover:text-emerald-900 mr-4"
+                          className="text-emerald-600 hover:text-emerald-900 mr-2 lg:mr-4 mobile-touch-target"
                         >
                           Edit
                         </button>
@@ -175,7 +175,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                               }
                             });
                           }}
-                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50 mobile-touch-target"
                         >
                           {isPending ? 'Deleting…' : 'Delete'}
                         </button>

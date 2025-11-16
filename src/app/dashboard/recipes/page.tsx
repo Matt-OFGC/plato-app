@@ -165,21 +165,21 @@ export default async function RecipesPage({ searchParams }: Props) {
 
   return (
     <RecipesPageClient>
-      <div>
+      <div className="w-full">
         {/* Page Header */}
-        <div className="mb-4 md:mb-6 lg:mb-8">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight mb-2">Recipes</h1>
-          <p className="text-gray-500 text-sm md:text-base lg:text-lg mb-4 md:mb-6">Create and manage your recipes with automatic cost calculation</p>
+        <div className="mb-3 md:mb-4 lg:mb-6 xl:mb-8">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 tracking-tight mb-1 md:mb-2">Recipes</h1>
+          <p className="text-gray-500 text-xs md:text-sm lg:text-base xl:text-lg mb-3 md:mb-4 lg:mb-6">Create and manage your recipes with automatic cost calculation</p>
         </div>
 
-        {/* Category Filter */}
-        {categories.length > 0 && (
-          <div className="mb-6">
-            <RecipeCategoryFilter categories={categories} selectedCategory={category} />
-          </div>
-        )}
+        {/* Category Filter with Search */}
+        <div className="mb-4 md:mb-5 lg:mb-6 w-full">
+          <RecipeCategoryFilter categories={categories} selectedCategory={category} />
+        </div>
 
-        <RecipesViewWithBulkActions recipes={filteredRecipes} categories={categoriesWithIds} />
+        <div className="w-full">
+          <RecipesViewWithBulkActions recipes={filteredRecipes} categories={categoriesWithIds} />
+        </div>
       </div>
     </RecipesPageClient>
   );

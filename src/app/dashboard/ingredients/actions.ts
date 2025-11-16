@@ -193,6 +193,15 @@ export async function updateIngredient(id: number, formData: FormData) {
       data.densityGPerMl ?? undefined
     );
     
+    // Debug logging
+    console.log('updateIngredient - Saving:', {
+      packQuantity: data.packQuantity,
+      packUnit: data.packUnit,
+      baseQuantity,
+      baseUnit,
+      originalUnit: data.packUnit
+    });
+    
     // Convert batch pricing quantities to base units if provided
     let batchPricingInBase = null;
     if (data.batchPricing && Array.isArray(data.batchPricing)) {
@@ -212,6 +221,9 @@ export async function updateIngredient(id: number, formData: FormData) {
     // Check if price changed
     const priceChanged = existingIngredient && Number(existingIngredient.packPrice) !== data.packPrice;
     
+    // Check if pack quantity changed (for updating timestamp)
+    const packQuantityChanged = existingIngredient && Number(existingIngredient.packQuantity) !== baseQuantity;
+    
     await prisma.ingredient.update({
       where: { id },
       data: {
@@ -228,8 +240,8 @@ export async function updateIngredient(id: number, formData: FormData) {
         batchPricing: batchPricingInBase,
         customConversions: data.customConversions ?? null,
         notes: data.notes ?? null,
-        // Update lastPriceUpdate timestamp if price changed
-        ...(priceChanged && { lastPriceUpdate: new Date() }),
+        // Update lastPriceUpdate timestamp if price or pack quantity changed
+        ...((priceChanged || packQuantityChanged) && { lastPriceUpdate: new Date() }),
       },
     });
     revalidatePath("/dashboard/ingredients");
