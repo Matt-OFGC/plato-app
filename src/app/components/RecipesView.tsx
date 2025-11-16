@@ -175,13 +175,9 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                       <p className="text-sm text-gray-500 truncate mt-0.5">{r.description}</p>
                     )}
                   </div>
-                  <Link 
-                    href={`/dashboard/recipes/${r.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="btn-responsive-secondary text-xs px-3 py-1.5 flex-shrink-0"
-                  >
+                  <div className="btn-responsive-secondary text-xs px-3 py-1.5 flex-shrink-0 pointer-events-none opacity-75">
                     Open
-                  </Link>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {(r.categoryRef || r.category) && (
