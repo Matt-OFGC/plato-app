@@ -248,9 +248,6 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                           {r.name}
                         </div>
                         {r.description && (
-                          <div className="hidden md:block text-xs text-gray-500 truncate">{r.description}</div>
-                        )}
-                        {r.description && (
                           <div className="hidden md:block text-xs text-gray-500 truncate mt-0.5">{r.description}</div>
                         )}
                       </div>
