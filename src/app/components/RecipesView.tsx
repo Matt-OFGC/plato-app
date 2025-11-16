@@ -137,14 +137,14 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
       </div>
 
       {/* Card Layout for Portrait Mode (< 1024px) */}
-      <div className="lg:hidden space-y-3">
+      <div className="lg:hidden w-full space-y-3 pb-4">
         {sortedRecipes.map((r) => (
-          <Link 
+          <Link
             key={r.id}
             href={`/dashboard/recipes/${r.id}`}
-            className={`block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all ${selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50' : ''}`}
+            className={`block w-full bg-white rounded-xl border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-all ${selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50' : ''}`}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2 sm:gap-3">
               {isSelecting && (
                 <input
                   type="checkbox"
@@ -155,53 +155,48 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                     onSelect?.(r.id);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mt-1"
+                  className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mt-1 flex-shrink-0"
                 />
               )}
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 {r.imageUrl ? (
                   <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover rounded-lg" />
                 ) : (
-                  <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-gray-900 truncate">{r.name}</h3>
-                    {r.description && (
-                      <p className="text-sm text-gray-500 truncate mt-0.5">{r.description}</p>
-                    )}
-                  </div>
-                  <div className="btn-responsive-secondary text-xs px-3 py-1.5 flex-shrink-0 pointer-events-none opacity-75">
-                    Open
-                  </div>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="mb-1.5">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-1">{r.name}</h3>
+                  {r.description && (
+                    <p className="text-xs sm:text-sm text-gray-500 line-clamp-1 mt-0.5">{r.description}</p>
+                  )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   {(r.categoryRef || r.category) && (
-                    <span 
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" 
-                      style={{ 
-                        backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
-                        color: (r.categoryRef?.color || '#3B82F6') as any 
+                    <span
+                      className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
+                      style={{
+                        backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any,
+                        color: (r.categoryRef?.color || '#3B82F6') as any
                       }}
                     >
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
-                      {r.categoryRef?.name || r.category}
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
+                      <span className="truncate max-w-[120px]">{r.categoryRef?.name || r.category}</span>
                     </span>
                   )}
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-gray-600 whitespace-nowrap">
                     {String(r.yieldQuantity)} {r.yieldUnit}
                   </span>
                   {r.sellingPrice && (
-                    <span className="text-xs font-semibold text-emerald-600">
+                    <span className="text-xs font-semibold text-emerald-600 whitespace-nowrap">
                       £{r.sellingPrice.toFixed(2)}
                     </span>
                   )}
                   {r.cogsPercentage !== null && (
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`inline-flex px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                       r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
                       r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
                       r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
