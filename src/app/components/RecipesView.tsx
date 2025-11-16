@@ -161,7 +161,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('category')}
                 >
                   <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('yield')}
                 >
                   <div className="flex items-center gap-2">
@@ -179,7 +179,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('sellPrice')}
                 >
                   <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('cogs')}
                 >
                   <div className="flex items-center gap-2">
@@ -197,7 +197,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('totalSteps')}
                 >
                   <div className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                   </div>
                 </th>
                 <th 
-                  className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                  className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
                   onClick={() => handleSort('totalTime')}
                 >
                   <div className="flex items-center gap-2">
@@ -250,60 +250,35 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                         {r.description && (
                           <div className="hidden md:block text-xs text-gray-500 truncate">{r.description}</div>
                         )}
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1 text-xs text-gray-500">
-                          <span className="md:hidden">
-                            {String(r.yieldQuantity)} {r.yieldUnit} • {r.items.length} ingredients
-                          </span>
-                          <span className="hidden md:inline lg:hidden">
-                            {String(r.yieldQuantity)} {r.yieldUnit}
-                          </span>
-                          {(r.categoryRef || r.category) && (
-                            <span className="hidden md:inline lg:hidden">
-                              <span className="mx-1">•</span>
-                              <span 
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium" 
-                                style={{ 
-                                  backgroundColor: `${r.categoryRef?.color || '#3B82F6'}15` as any, 
-                                  color: (r.categoryRef?.color || '#3B82F6') as any 
-                                }}
-                              >
-                                {r.categoryRef?.name || r.category}
-                              </span>
-                            </span>
-                          )}
-                          {r.sellingPrice && (
-                            <span className="hidden md:inline lg:hidden font-semibold text-emerald-600">
-                              <span className="mx-1">•</span>
-                              £{r.sellingPrice.toFixed(2)}
-                            </span>
-                          )}
-                        </div>
+                        {r.description && (
+                          <div className="hidden md:block text-xs text-gray-500 truncate mt-0.5">{r.description}</div>
+                        )}
                       </div>
                     </Link>
                   </td>
-                  <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap">
+                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap">
                     {(r.categoryRef || r.category) && (
                       <span 
-                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium" 
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 md:gap-1.5 md:px-2 md:py-0.5 lg:px-2.5 lg:py-0.5 rounded-full text-xs font-medium" 
                         style={{ 
                           backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
                           color: (r.categoryRef?.color || '#3B82F6') as any 
                         }}
                       >
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
                         {r.categoryRef?.name || r.category}
                       </span>
                     )}
                   </td>
-                  <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-900">
                     {String(r.yieldQuantity)} {r.yieldUnit}
                   </td>
-                  <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-900">
                     {r.sellingPrice ? `£${r.sellingPrice.toFixed(2)}` : '-'}
                   </td>
-                  <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm">
+                  <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm">
                     {r.cogsPercentage !== null ? (
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex px-1.5 py-0.5 md:px-2 md:py-1 rounded-full text-xs font-medium ${
                         r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
                         r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
                         r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
@@ -315,10 +290,10 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                       '-'
                     )}
                   </td>
-                  <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                  <td className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-600 text-center">
                     {r.totalSteps}
                   </td>
-                  <td className="hidden xl:table-cell px-2 md:px-3 lg:px-4 xl:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="hidden xl:table-cell px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-sm text-gray-600">
                     {r.totalTime ? `${r.totalTime}min` : '-'}
                   </td>
                   <td className="px-2 md:px-2 lg:px-3 xl:px-6 py-2 md:py-3 lg:py-4 whitespace-nowrap text-right text-sm font-medium">
