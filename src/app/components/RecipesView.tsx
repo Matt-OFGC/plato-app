@@ -136,7 +136,93 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      {/* Card Layout for Portrait Mode (< 1024px) */}
+      <div className="lg:hidden space-y-3">
+        {sortedRecipes.map((r) => (
+          <Link 
+            key={r.id}
+            href={`/dashboard/recipes/${r.id}`}
+            className={`block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all ${selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50' : ''}`}
+          >
+            <div className="flex items-start gap-3">
+              {isSelecting && (
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(r.id)}
+                  onChange={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect?.(r.id);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mt-1"
+                />
+              )}
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                {r.imageUrl ? (
+                  <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover rounded-lg" />
+                ) : (
+                  <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-semibold text-gray-900 truncate">{r.name}</h3>
+                    {r.description && (
+                      <p className="text-sm text-gray-500 truncate mt-0.5">{r.description}</p>
+                    )}
+                  </div>
+                  <Link 
+                    href={`/dashboard/recipes/${r.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="btn-responsive-secondary text-xs px-3 py-1.5 flex-shrink-0"
+                  >
+                    Open
+                  </Link>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {(r.categoryRef || r.category) && (
+                    <span 
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" 
+                      style={{ 
+                        backgroundColor: `${r.categoryRef?.color || '#3B82F6'}20` as any, 
+                        color: (r.categoryRef?.color || '#3B82F6') as any 
+                      }}
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (r.categoryRef?.color || '#3B82F6') as any }} />
+                      {r.categoryRef?.name || r.category}
+                    </span>
+                  )}
+                  <span className="text-xs text-gray-600">
+                    {String(r.yieldQuantity)} {r.yieldUnit}
+                  </span>
+                  {r.sellingPrice && (
+                    <span className="text-xs font-semibold text-emerald-600">
+                      £{r.sellingPrice.toFixed(2)}
+                    </span>
+                  )}
+                  {r.cogsPercentage !== null && (
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                      r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
+                      r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
+                      r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {r.cogsPercentage.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Table Layout for Landscape Mode (>= 1024px) */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
