@@ -653,9 +653,9 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
           {/* Ingredients & Instructions - Main Content */}
           {viewMode !== "photos" && (
-            <div className="flex-1 pb-6 min-h-0 flex flex-col lg:flex-row gap-4 md:gap-5 lg:gap-6">
+            <div className="flex-1 pb-6 min-h-0 flex flex-col md:flex-row gap-4 md:gap-4 lg:gap-5 xl:gap-6">
             {/* Ingredients */}
-            <div className="flex-1 min-w-0 lg:min-w-[400px]">
+            <div className="flex-1 min-w-0 md:min-w-[300px] lg:min-w-[350px] xl:min-w-[400px]">
               <IngredientsPanel
                 ingredients={localIngredients}
                 steps={localSteps}
@@ -670,7 +670,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
             </div>
 
             {/* Instructions */}
-            <div className="flex-1 min-w-0 lg:min-w-[400px]">
+            <div className="flex-1 min-w-0 md:min-w-[300px] lg:min-w-[350px] xl:min-w-[400px]">
               <InstructionsPanel
                 steps={localSteps}
                 viewMode={viewMode}
