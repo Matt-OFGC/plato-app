@@ -8,11 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Brand {
-  plato
-  plato_bake
-}
-
 enum App {
   plato
   plato_bake
@@ -185,7 +180,6 @@ model Company {
   showTeam              Boolean                 @default(false)
   slug                  String?                 @unique
   website               String?
-  brand                 Brand                   @default(plato)
   safety_enabled        Boolean?                @default(true)
   data_retention_days   Int?                    @default(730)
   app                   App                     @default(plato)
@@ -242,7 +236,6 @@ model Company {
   WholesaleProduct      WholesaleProduct[]
 
   @@index([app])
-  @@index([brand])
 }
 
 model CustomReport {
@@ -1894,20 +1887,19 @@ enum BaseUnit {
   slices
 }
 
-
 model UserAppSubscription {
-  id                    Int       @id @default(autoincrement())
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  userId                Int
-  app                   App
-  stripeSubscriptionId  String?   @unique
-  stripePriceId         String?
-  status                String    @default("active") // active, canceled, expired
-  currentPeriodStart    DateTime?
-  currentPeriodEnd      DateTime?
-  cancelAtPeriodEnd     Boolean   @default(false)
-  User                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   Int       @id @default(autoincrement())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  userId               Int
+  app                  App
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  status               String    @default("active") // active, canceled, expired
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  User                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, app])
   @@index([userId])

@@ -190,9 +190,9 @@ html.app-plato-bake {
   --brand-background: #ffffff !important;
 }
 
-/* Legacy brand classes for backward compatibility */
-html.brand-plato-bake,
-.brand-plato-bake {
+/* App-based brand classes (using app field instead of brand) */
+html.app-plato-bake,
+.app-plato-bake {
   --brand-primary: #FFB6C1 !important;
   --brand-accent: #FFC0CB !important;
   --brand-secondary: #FFF0F5 !important;

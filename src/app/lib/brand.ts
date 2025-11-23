@@ -3,9 +3,9 @@
  */
 
 import { prisma } from "./prisma";
-import type { Brand } from "./brands/types";
-import { getBrandConfig } from "./brands/registry";
-import type { BrandConfig } from "./brands/types";
+import type { Brand } from "@/lib/brands/types";
+import { getBrandConfig } from "@/lib/brands/registry";
+import type { BrandConfig } from "@/lib/brands/types";
 
 /**
  * Get brand for a company
