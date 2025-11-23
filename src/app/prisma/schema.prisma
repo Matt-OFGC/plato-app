@@ -175,6 +175,7 @@ model Company {
   showTeam              Boolean                 @default(false)
   slug                  String?                 @unique
   website               String?
+  brand                 Brand                   @default(plato)
   safety_enabled        Boolean?                @default(true)
   data_retention_days   Int?                    @default(730)
   app                   App                     @default(plato)
@@ -231,6 +232,7 @@ model Company {
   WholesaleProduct      WholesaleProduct[]
 
   @@index([app])
+  @@index([brand])
 }
 
 model CustomReport {
@@ -1883,6 +1885,11 @@ enum BaseUnit {
 }
 
 enum App {
+  plato
+  plato_bake
+}
+
+enum Brand {
   plato
   plato_bake
 }

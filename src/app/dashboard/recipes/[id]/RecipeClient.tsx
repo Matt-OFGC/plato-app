@@ -1273,8 +1273,9 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
 export default function RecipeClient(props: Props) {
   const handlePrint = useCallback(() => {
-    window.open(`/test-recipe-redesign/print/${props.recipe.title.toLowerCase().replace(/\s+/g, "-")}`, '_blank');
-  }, [props.recipe.title]);
+    // Use the recipe ID for the print route
+    window.open(`/dashboard/recipes/${props.recipe.id}/print`, '_blank');
+  }, [props.recipe.id]);
 
   // Check if we're inside a RecipeViewProvider (from layout)
   const existingContext = useRecipeView();

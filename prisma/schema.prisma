@@ -1873,6 +1873,11 @@ enum Unit {
   small
 }
 
+enum Brand {
+  plato
+  plato_bake
+}
+
 enum MemberRole {
   OWNER
   ADMIN
