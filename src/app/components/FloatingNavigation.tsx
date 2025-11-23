@@ -9,6 +9,7 @@ import { FloatingFilter } from "./FloatingFilter";
 import { SmartImportButton } from "./SmartImportButton";
 import { useRecipeView } from "./RecipeViewContext";
 import { ScrollHideNav } from "./ScrollHideNav";
+import { isNavigationItemVisible } from "@/lib/mvp-config";
 
 interface FloatingNavigationProps {
   onMenuClick: () => void;
@@ -17,49 +18,82 @@ interface FloatingNavigationProps {
 
 // Tab configurations based on page context
 const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: string[]; links?: string[]; isRecipePage?: boolean } => {
-  // Recipes section - Recipes, Ingredients, Recipe Mixer
-  if (pathname.startsWith('/dashboard/recipes') || pathname.startsWith('/dashboard/ingredients') || pathname.startsWith('/dashboard/recipe-mixer')) {
+  // Recipes section - Recipes, Ingredients, Recipe Mixer (support both /dashboard and /bake routes)
+  if (pathname.startsWith('/dashboard/recipes') || pathname.startsWith('/dashboard/ingredients') || pathname.startsWith('/dashboard/recipe-mixer') ||
+      pathname.startsWith('/bake/recipes') || pathname.startsWith('/bake/ingredients') || pathname.startsWith('/bake/recipe-mixer')) {
     // Individual recipe page (has ID in path) - return empty tabs, we'll show view switchers instead
-    if (pathname.match(/^\/dashboard\/recipes\/[^/]+$/)) {
+    if (pathname.match(/^\/(dashboard|bake)\/recipes\/[^/]+$/)) {
       return { tabs: [], isRecipePage: true };
     }
     // Recipes list pages - separate tabs for Recipes, Ingredients, and Recipe Mixer
+    // Determine base path from current route
+    const basePath = pathname.startsWith('/bake') ? '/bake' : '/dashboard';
     return { 
       tabs: ['Recipes', 'Ingredients', 'Recipe Mixer'],
-      links: ['/dashboard/recipes', '/dashboard/ingredients', '/dashboard/recipe-mixer']
+      links: [`${basePath}/recipes`, `${basePath}/ingredients`, `${basePath}/recipe-mixer`]
     };
   }
 
-  // Teams section - Team, Scheduling, Training
+  // Teams section - Team, Scheduling, Training (only for main Plato app, not Bake)
+  // Filter based on MVP mode
+  const basePath = pathname.startsWith('/bake') ? '/bake' : '/dashboard';
   if (pathname.startsWith('/dashboard/team') || pathname.startsWith('/dashboard/scheduling') || pathname.startsWith('/dashboard/training')) {
+    const allTabs = ['Team', 'Scheduling', 'Training'];
+    const allLinks = ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training'];
+    const visibleTabs = allTabs.filter((_, i) => 
+      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
+    );
+    const visibleLinks = allLinks.filter((_, i) => 
+      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
+    );
     return { 
-      tabs: ['Team', 'Scheduling', 'Training'],
-      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
+      tabs: visibleTabs,
+      links: visibleLinks
     };
   }
   
   // Legacy staff routes - redirect to team
   if (pathname.startsWith('/dashboard/staff')) {
+    const allTabs = ['Team', 'Scheduling', 'Training'];
+    const allLinks = ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training'];
+    const visibleTabs = allTabs.filter((_, i) => 
+      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
+    );
+    const visibleLinks = allLinks.filter((_, i) => 
+      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
+    );
     return { 
-      tabs: ['Team', 'Scheduling', 'Training'],
-      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
+      tabs: visibleTabs,
+      links: visibleLinks
     };
   }
 
   // Production section - show tabs for easy navigation between production pages
-  if (pathname.startsWith('/dashboard/production') || pathname.startsWith('/dashboard/wholesale') || pathname.startsWith('/dashboard/analytics')) {
+  // Filter Analytics based on MVP mode
+  if (pathname.startsWith('/dashboard/production') || pathname.startsWith('/dashboard/wholesale') || pathname.startsWith('/dashboard/analytics') ||
+      pathname.startsWith('/bake/production') || pathname.startsWith('/bake/wholesale') || pathname.startsWith('/bake/analytics')) {
+    const allTabs = ['Production', 'Wholesale', 'Analytics'];
+    const allLinks = [`${basePath}/production`, `${basePath}/wholesale`, `${basePath}/analytics`];
+    const visibleTabs = allTabs.filter((_, i) => {
+      const values = ['production', 'wholesale', 'analytics'];
+      return isNavigationItemVisible(values[i] || '');
+    });
+    const visibleLinks = allLinks.filter((_, i) => {
+      const values = ['production', 'wholesale', 'analytics'];
+      return isNavigationItemVisible(values[i] || '');
+    });
     return { 
-      tabs: ['Production', 'Wholesale', 'Analytics'],
-      links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/analytics']
+      tabs: visibleTabs,
+      links: visibleLinks
     };
   }
 
   // Settings section - Subscription, Pricing, Content, Suppliers, Timers, Preferences
   // Show tabs on all settings pages for consistent navigation
-  if (pathname.startsWith('/dashboard/account')) {
+  if (pathname.startsWith('/dashboard/account') || pathname.startsWith('/bake/account')) {
     return { 
       tabs: ['Subscription', 'Pricing', 'Content', 'Suppliers', 'Timers', 'Preferences'],
-      links: ['/dashboard/account/subscription', '/dashboard/account/pricing', '/dashboard/account/content', '/dashboard/account/suppliers', '/dashboard/account/timers', '/dashboard/account/preferences']
+      links: [`${basePath}/account/subscription`, `${basePath}/account/pricing`, `${basePath}/account/content`, `${basePath}/account/suppliers`, `${basePath}/account/timers`, `${basePath}/account/preferences`]
     };
   }
 
@@ -69,7 +103,12 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
   }
 
   // Safety section - Diary, Tasks, Compliance, Templates, Temperatures
+  // Filter based on MVP mode (Safety is hidden in MVP)
   if (pathname.startsWith('/dashboard/safety')) {
+    if (!isNavigationItemVisible('safety')) {
+      // If safety is hidden, return empty tabs
+      return { tabs: [], links: [] };
+    }
     return { 
       tabs: ['Diary', 'Tasks', 'Compliance', 'Templates', 'Temperatures'],
       links: ['/dashboard/safety?page=diary', '/dashboard/safety?page=tasks', '/dashboard/safety?page=compliance', '/dashboard/safety?page=templates', '/dashboard/safety?page=temperatures']
@@ -102,7 +141,7 @@ const shouldShowActionButtons = (pathname: string): boolean => {
     return true;
   }
   // Show on ingredients page
-  if (pathname === '/dashboard/ingredients' || pathname === '/dashboard/ingredients/') {
+  if (pathname === '/dashboard/ingredients' || pathname === '/dashboard/ingredients/' || pathname === '/bake/ingredients' || pathname === '/bake/ingredients/') {
     return true;
   }
   // Hide on individual recipe pages (e.g., /dashboard/recipes/[id]) and all other pages
@@ -341,7 +380,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                 {/* Back Button - Only show on recipe pages when sidebar is closed */}
                 {isRecipePage && !sidebarOpen && (
                   <a
-                    href="/dashboard/recipes"
+                    href={pathname.startsWith('/bake') ? '/bake/recipes' : '/dashboard/recipes'}
                     className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 will-change-transform
                              max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
                              md:px-4 md:py-2
@@ -541,7 +580,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                     const value = e.target.value;
                     setLocalSearchTerm(value);
                     // Dispatch custom event for instant filtering on ingredients page
-                    if (pathname.startsWith("/dashboard/ingredients")) {
+                    if (pathname.startsWith("/dashboard/ingredients") || pathname.startsWith("/bake/ingredients")) {
                       window.dispatchEvent(new CustomEvent('ingredient-search-change', { detail: value }));
                     }
                   }}
@@ -550,7 +589,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                       setIsSearchOpen(false);
                       setLocalSearchTerm("");
                       setSearchTerm("");
-                      if (pathname.startsWith("/dashboard/ingredients")) {
+                      if (pathname.startsWith("/dashboard/ingredients") || pathname.startsWith("/bake/ingredients")) {
                         window.dispatchEvent(new CustomEvent('ingredient-search-change', { detail: "" }));
                       }
                     }
@@ -570,9 +609,9 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                   }}
                   className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400"
                   placeholder={
-                    pathname.startsWith("/dashboard/recipes")
+                    pathname.startsWith("/dashboard/recipes") || pathname.startsWith("/bake/recipes")
                       ? "Search recipes..."
-                      : pathname.startsWith("/dashboard/ingredients")
+                      : pathname.startsWith("/dashboard/ingredients") || pathname.startsWith("/bake/ingredients")
                       ? "Search ingredients..."
                       : "Search..."
                   }
@@ -608,7 +647,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
             </svg>
           </button>
           {showSmartImport && (
-            <SmartImportButton type={pathname.startsWith('/dashboard/recipes') ? 'recipes' : 'ingredients'} />
+            <SmartImportButton type={(pathname.startsWith('/dashboard/recipes') || pathname.startsWith('/bake/recipes')) ? 'recipes' : 'ingredients'} />
           )}
           <button 
             onClick={triggerNewAction}

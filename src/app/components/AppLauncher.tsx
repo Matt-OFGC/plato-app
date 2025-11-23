@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { isNavigationItemVisible } from "@/lib/mvp-config";
 
 interface AppCardProps {
   icon: string;
@@ -29,7 +30,7 @@ export function AppLauncher({
 }: AppLauncherProps) {
   const router = useRouter();
 
-  const apps: AppCardProps[] = [
+  const allApps: AppCardProps[] = [
     {
       icon: "🍽️",
       name: "Recipe Management",
@@ -83,6 +84,23 @@ export function AppLauncher({
       badge: "New",
     },
   ];
+
+  // Filter apps based on MVP mode
+  const apps = allApps.filter(app => {
+    // Map hrefs to navigation item values
+    const hrefToValue: Record<string, string> = {
+      '/dashboard/recipes': 'recipes',
+      '/dashboard/team': 'team',
+      '/dashboard/wholesale': 'wholesale',
+      '/dashboard/messages': 'messages',
+    };
+    const value = hrefToValue[app.href];
+    if (value) {
+      return isNavigationItemVisible(value);
+    }
+    // If not in map, show it (e.g., dashboard)
+    return true;
+  });
 
   return (
     <div className="space-y-8 mb-12">
