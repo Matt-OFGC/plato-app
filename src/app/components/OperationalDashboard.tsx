@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PriceConfirmationModal } from "./PriceConfirmationModal";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
+import { isQuickActionVisible } from "@/lib/mvp-config";
 
 interface ProductionItem {
   id: number;
@@ -53,6 +55,8 @@ interface OperationalDashboardProps {
   userName?: string;
   userRole?: string;
   companyName?: string;
+  appName?: string;
+  appTagline?: string;
 }
 
 export function OperationalDashboard({
@@ -63,11 +67,14 @@ export function OperationalDashboard({
   userName,
   userRole,
   companyName,
+  appName,
+  appTagline,
 }: OperationalDashboardProps) {
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState<StaleIngredient | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
+  const { toAppRoute } = useAppAwareRoute();
 
   // Calculate stats
   const todayItems = todayProduction.flatMap(plan => plan.items);
@@ -95,10 +102,10 @@ export function OperationalDashboard({
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-5 lg:space-y-6">
       {/* Modern Header Card with User Info - Compact */}
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-xl shadow-xl overflow-hidden relative">
+      <div className="bg-gradient-to-br from-[var(--brand-primary)] via-[var(--brand-primary)]/90 to-[var(--brand-accent)] rounded-xl shadow-xl overflow-hidden relative">
         {/* Decorative background elements */}
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[var(--brand-accent)]/20 rounded-full blur-3xl"></div>
 
         <div className="relative z-10 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -108,18 +115,24 @@ export function OperationalDashboard({
               </div>
               <div className="text-white">
                 <h1 className="text-xl sm:text-2xl font-bold mb-0.5">
-                  Welcome back{userName ? `, ${userName}` : ''}!
+                  {appName ? `Welcome to ${appName}` : `Welcome back${userName ? `, ${userName}` : ''}!`}
                 </h1>
-                <div className="flex flex-wrap items-center gap-1.5 text-emerald-50 text-sm">
-                  <span>{formatRole(userRole)}</span>
+                <div className="flex flex-wrap items-center gap-1.5 text-white/90 text-sm">
+                  {appTagline && (
+                      <>
+                        <span>{appTagline}</span>
+                        {companyName && <span className="text-white/60">•</span>}
+                      </>
+                    )}
+                  {!appTagline && <span>{formatRole(userRole)}</span>}
                   {companyName && (
                     <>
-                      <span className="text-emerald-300">•</span>
+                      {!appTagline && <span className="text-white/60">•</span>}
                       <span>{companyName}</span>
                     </>
                   )}
                 </div>
-                <p className="text-emerald-100 text-xs mt-1">
+                <p className="text-white/70 text-xs mt-1">
                   {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
               </div>
@@ -137,7 +150,7 @@ export function OperationalDashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200">
           <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-accent)] flex items-center justify-center shadow-lg shadow-[var(--brand-primary)]/30">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
@@ -180,7 +193,7 @@ export function OperationalDashboard({
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200">
           <div className="flex items-start justify-between mb-4">
-            <div className={`w-12 h-12 rounded-xl ${staleIngredients.length > 0 ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30' : 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30'} flex items-center justify-center`}>
+            <div className={`w-12 h-12 rounded-xl ${staleIngredients.length > 0 ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30' : 'bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-accent)] shadow-lg shadow-[var(--brand-primary)]/30'} flex items-center justify-center`}>
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -206,8 +219,8 @@ export function OperationalDashboard({
                   <p className="text-sm text-gray-600 mt-1">What needs to be made today</p>
                 </div>
                 <Link
-                  href="/dashboard/production"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                  href={toAppRoute("/dashboard/production")}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-accent)] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   View All →
                 </Link>
@@ -223,8 +236,8 @@ export function OperationalDashboard({
                   </div>
                   <p className="text-gray-600 mb-6 text-base">No production scheduled for today</p>
                   <Link
-                    href="/dashboard/production"
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg shadow-emerald-600/30"
+                    href={toAppRoute("/dashboard/production")}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-accent)] text-white font-semibold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg shadow-[var(--brand-primary)]/30"
                   >
                     Create Production Plan
                   </Link>
@@ -240,14 +253,14 @@ export function OperationalDashboard({
                             key={item.id}
                             className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
                               item.completed
-                                ? 'bg-emerald-50 border-emerald-200 shadow-sm'
-                                : 'bg-white border-gray-200 hover:border-emerald-300 hover:shadow-md'
+                                ? 'bg-[var(--brand-secondary)] border-[var(--brand-primary)]/30 shadow-sm'
+                                : 'bg-white border-gray-200 hover:border-[var(--brand-primary)]/50 hover:shadow-md'
                             }`}
                           >
                             <div className="flex items-center gap-4">
                               <div className={`flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center ${
                                 item.completed
-                                  ? 'bg-emerald-500 border-emerald-500'
+                                  ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)]'
                                   : 'border-gray-300 bg-white'
                               }`}>
                                 {item.completed && (
@@ -267,8 +280,8 @@ export function OperationalDashboard({
                             </div>
                             {!item.completed && (
                               <Link
-                                href={`/dashboard/recipes/${item.recipe.id}`}
-                                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors duration-200 mt-3 sm:mt-0"
+                                href={toAppRoute(`/dashboard/recipes/${item.recipe.id}`)}
+                                className="inline-flex items-center px-4 py-2 bg-[var(--brand-primary)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors duration-200 mt-3 sm:mt-0"
                               >
                                 View Recipe →
                               </Link>
@@ -292,8 +305,8 @@ export function OperationalDashboard({
                   <p className="text-xs text-gray-600 mt-0.5">{weekProduction.length} plan{weekProduction.length !== 1 ? 's' : ''}</p>
                 </div>
                 <Link
-                  href="/dashboard/production"
-                  className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold"
+                  href={toAppRoute("/dashboard/production")}
+                  className="text-xs text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-semibold"
                 >
                   View All →
                 </Link>
@@ -307,7 +320,7 @@ export function OperationalDashboard({
               ) : (
                 <div className="space-y-2">
                   {weekProduction.slice(0, 3).map(plan => (
-                    <div key={plan.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200 hover:border-emerald-300 transition-all duration-200">
+                    <div key={plan.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200 hover:border-[var(--brand-primary)]/50 transition-all duration-200">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm text-gray-900 truncate">{plan.name}</h3>
                         <p className="text-xs text-gray-600 mt-0.5">
@@ -315,7 +328,7 @@ export function OperationalDashboard({
                           {' - '}
                           {new Date(plan.endDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}
                         </p>
-                        <p className="text-xs text-emerald-600 font-medium mt-0.5">
+                        <p className="text-xs text-[var(--brand-primary)] font-medium mt-0.5">
                           {plan.items.length} recipe{plan.items.length !== 1 ? 's' : ''}
                         </p>
                       </div>
@@ -339,7 +352,7 @@ export function OperationalDashboard({
                 </div>
                 <button
                   onClick={() => setShowCompletedTasks(!showCompletedTasks)}
-                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                  className="text-xs text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-medium"
                 >
                   {showCompletedTasks ? 'Hide' : 'Show'} completed
                 </button>
@@ -348,8 +361,8 @@ export function OperationalDashboard({
             <div className="p-3 max-h-64 overflow-y-auto">
               {displayTasks.length === 0 ? (
                 <div className="text-center py-6">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 mx-auto mb-2 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 rounded-full bg-[var(--brand-secondary)] mx-auto mb-2 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-[var(--brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -367,13 +380,13 @@ export function OperationalDashboard({
                             ? 'bg-gray-50 border-gray-200'
                             : isUrgent
                             ? 'bg-red-50 border-red-200'
-                            : 'bg-emerald-50 border-emerald-200'
+                            : 'bg-[var(--brand-secondary)] border-[var(--brand-primary)]/30'
                         }`}
                       >
                         <div className="flex items-start gap-2">
                           <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center mt-0.5 ${
                             task.completed
-                              ? 'bg-emerald-500 border-emerald-500'
+                              ? 'bg-[var(--brand-primary)] border-[var(--brand-primary)]'
                               : 'border-gray-300 bg-white'
                           }`}>
                             {task.completed && (
@@ -412,7 +425,7 @@ export function OperationalDashboard({
                 <div className="text-center pt-2 border-t border-gray-100 mt-2">
                   <button
                     onClick={() => setShowCompletedTasks(!showCompletedTasks)}
-                    className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                    className="text-xs text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-medium"
                   >
                     View all {displayTasks.length} tasks →
                   </button>
@@ -461,7 +474,7 @@ export function OperationalDashboard({
                 </div>
                 {staleIngredients.length > 5 && (
                   <Link
-                    href="/dashboard/ingredients"
+                    href={toAppRoute("/dashboard/ingredients")}
                     className="block text-center text-xs text-red-600 hover:text-red-700 font-semibold mt-2 pt-2 border-t border-red-100"
                   >
                     View all {staleIngredients.length} →
@@ -484,7 +497,7 @@ export function OperationalDashboard({
                   <h2 className="text-base font-bold text-gray-900">Timesheet</h2>
                 </div>
                 <Link
-                  href="/dashboard/timesheet"
+                  href={toAppRoute("/dashboard/timesheet")}
                   className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                 >
                   View →
@@ -493,7 +506,7 @@ export function OperationalDashboard({
             </div>
             <div className="p-3">
               <div className="space-y-2">
-                <button className="w-full px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200">
+                <button className="w-full px-3 py-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-accent)] text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-all duration-200">
                   Clock In
                 </button>
                 <div className="grid grid-cols-2 gap-2">
@@ -523,7 +536,7 @@ export function OperationalDashboard({
                   <h2 className="text-base font-bold text-gray-900">Team</h2>
                 </div>
                 <Link
-                  href="/dashboard/team"
+                  href={toAppRoute("/dashboard/team")}
                   className="text-xs text-purple-600 hover:text-purple-700 font-medium"
                 >
                   View →
@@ -531,16 +544,16 @@ export function OperationalDashboard({
               </div>
             </div>
             <div className="p-3">
-              <div className="p-2.5 bg-gradient-to-r from-emerald-50 to-white rounded-lg border border-emerald-200">
+              <div className="p-2.5 bg-gradient-to-r from-[var(--brand-secondary)] to-white rounded-lg border border-[var(--brand-primary)]/30">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-7 h-7 rounded-full bg-[var(--brand-primary)] flex items-center justify-center text-white text-xs font-bold">
                     {(userName?.[0] || 'U').toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-gray-900 truncate">{userName || 'You'}</p>
                     <p className="text-xs text-gray-600">{formatRole(userRole)}</p>
                   </div>
-                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded">
+                  <span className="px-1.5 py-0.5 bg-[var(--brand-secondary)] text-[var(--brand-primary)] text-xs font-semibold rounded">
                     Active
                   </span>
                 </div>
@@ -549,7 +562,7 @@ export function OperationalDashboard({
           </div>
 
           {/* Quick Actions - Compact */}
-          <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 rounded-xl shadow-xl overflow-hidden relative">
+          <div className="bg-gradient-to-br from-[var(--brand-primary)] via-[var(--brand-primary)]/90 to-[var(--brand-accent)] rounded-xl shadow-xl overflow-hidden relative">
             <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
             <div className="relative z-10 p-3">
               <div className="flex items-center gap-2 mb-3">
@@ -561,30 +574,30 @@ export function OperationalDashboard({
                 <h3 className="text-base font-bold text-white">Quick Actions</h3>
               </div>
               <div className="space-y-1.5">
-                <Link
-                  href="/dashboard/production"
-                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
-                >
-                  Plan Production
-                </Link>
-                <Link
-                  href="/dashboard/recipes/new"
-                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
-                >
-                  New Recipe
-                </Link>
-                <Link
-                  href="/dashboard/ingredients/new"
-                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
-                >
-                  Add Ingredient
-                </Link>
-                <Link
-                  href="/dashboard/analytics"
-                  className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
-                >
-                  Analytics
-                </Link>
+                {isQuickActionVisible("production") && (
+                  <Link
+                    href={toAppRoute("/dashboard/production")}
+                    className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
+                  >
+                    Plan Production
+                  </Link>
+                )}
+                {isQuickActionVisible("new-recipe") && (
+                  <Link
+                    href={toAppRoute("/dashboard/recipes/new")}
+                    className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
+                  >
+                    New Recipe
+                  </Link>
+                )}
+                {isQuickActionVisible("new-ingredient") && (
+                  <Link
+                    href={toAppRoute("/dashboard/ingredients/new")}
+                    className="block w-full py-2 px-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center text-sm font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
+                  >
+                    Add Ingredient
+                  </Link>
+                )}
               </div>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { isNavigationItemVisible } from '@/lib/mvp-config';
 
 export interface NavigationItem {
   value: string;
@@ -176,7 +177,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
 ];
 
-// Default navigation items for new users
+// Default navigation items for new users (MVP items only)
 export const DEFAULT_NAVIGATION_ITEMS = ["dashboard", "ingredients", "recipes", "recipe-mixer"];
 
 // Helper function to get navigation items by their values
@@ -191,23 +192,29 @@ export const getNavigationItemsByApp = (appContext: string): NavigationItem[] =>
 
 // Helper function to get filtered navigation items based on active app
 // Excludes settings which is rendered separately at the bottom
+// Now also respects MVP mode to hide non-MVP features
 export const getFilteredNavigationItems = (activeApp: string | null): NavigationItem[] => {
+  let filtered: NavigationItem[];
+  
   if (!activeApp) {
     // Show global items + recipes (default) + teams (always available) + safety (always available)
-    return ALL_NAVIGATION_ITEMS.filter(item => 
+    filtered = ALL_NAVIGATION_ITEMS.filter(item => 
       item.appContext === 'global' || 
       item.appContext === 'recipes' ||
       item.appContext === 'teams' ||
       item.appContext === 'safety'
     );
+  } else {
+    // Show global items + active app items + teams (always available) + safety (always available)
+    filtered = ALL_NAVIGATION_ITEMS.filter(item => 
+      item.appContext === 'global' || 
+      item.appContext === activeApp ||
+      item.appContext === 'teams' ||
+      item.appContext === 'safety'
+    );
   }
   
-  // Show global items + active app items + teams (always available) + safety (always available)
-  return ALL_NAVIGATION_ITEMS.filter(item => 
-    item.appContext === 'global' || 
-    item.appContext === activeApp ||
-    item.appContext === 'teams' ||
-    item.appContext === 'safety'
-  );
+  // Apply MVP filtering - hide non-MVP items when MVP mode is enabled
+  return filtered.filter(item => isNavigationItemVisible(item.value));
 };
 

@@ -48,8 +48,9 @@ const features = [
     category: "Advanced Features",
     items: [
       { name: "PDF export", values: [false, true, true, true] },
-      { name: "Analytics", values: [false, true, true, true] },
-      { name: "Inventory tracking", values: [false, true, true, true] },
+      // Analytics and Inventory tracking hidden for MVP
+      // { name: "Analytics", values: [false, true, true, true] },
+      // { name: "Inventory tracking", values: [false, true, true, true] },
       { name: "Advanced analytics", values: [false, false, false, true] },
     ],
   },

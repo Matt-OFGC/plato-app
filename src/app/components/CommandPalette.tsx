@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
+import { isCommandVisible } from "@/lib/mvp-config";
 
 interface Command {
   id: string;
@@ -20,106 +22,113 @@ export function CommandPalette() {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const { toAppRoute } = useAppAwareRoute();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const commands: Command[] = [
-    // Navigation
-    {
-      id: "dashboard",
-      label: "Go to Dashboard",
-      category: "Navigation",
-      action: () => router.push("/dashboard"),
-      shortcut: "⌘G",
-    },
-    {
-      id: "recipes",
-      label: "Go to Recipes",
-      category: "Navigation",
-      action: () => router.push("/dashboard/recipes"),
-    },
-    {
-      id: "ingredients",
-      label: "Go to Ingredients",
-      category: "Navigation",
-      action: () => router.push("/dashboard/ingredients"),
-    },
-    {
-      id: "production",
-      label: "Go to Production",
-      category: "Navigation",
-      action: () => router.push("/dashboard/production"),
-    },
-    {
-      id: "analytics",
-      label: "Go to Analytics",
-      category: "Navigation",
-      action: () => router.push("/dashboard/analytics"),
-    },
-    {
-      id: "team",
-      label: "Go to Team",
-      category: "Navigation",
-      action: () => router.push("/dashboard/team"),
-    },
-    {
-      id: "scheduling",
-      label: "Go to Scheduling",
-      category: "Navigation",
-      action: () => router.push("/dashboard/scheduling"),
-    },
-    {
-      id: "wholesale",
-      label: "Go to Wholesale",
-      category: "Navigation",
-      action: () => router.push("/dashboard/wholesale"),
-    },
-    {
-      id: "messages",
-      label: "Go to Messages",
-      category: "Navigation",
-      action: () => router.push("/dashboard/messages"),
-    },
-    {
-      id: "account",
-      label: "Go to Account Settings",
-      category: "Navigation",
-      action: () => router.push("/dashboard/account"),
-    },
-    // Actions
-    {
-      id: "new-recipe",
-      label: "New Recipe",
-      category: "Actions",
-      action: () => router.push("/dashboard/recipes/new"),
-      shortcut: "⌘N",
-    },
-    {
-      id: "new-ingredient",
-      label: "New Ingredient",
-      category: "Actions",
-      action: () => router.push("/dashboard/ingredients/new"),
-      shortcut: "⌘I",
-    },
-    // Settings
-    {
-      id: "toggle-theme",
-      label: `Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`,
-      category: "Settings",
-      action: () => setTheme(theme === "dark" ? "light" : "dark"),
-    },
-    {
-      id: "shortcuts-help",
-      label: "Show Keyboard Shortcuts",
-      category: "Settings",
-      action: () => {
-        setIsOpen(false);
-        const event = new CustomEvent("open-shortcuts-help");
-        window.dispatchEvent(event);
+  // Create and filter commands based on MVP mode
+  const commands = useMemo(() => {
+    const allCommands: Command[] = [
+      // Navigation
+      {
+        id: "dashboard",
+        label: "Go to Dashboard",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard")),
+        shortcut: "⌘G",
       },
-      shortcut: "⌘?",
-    },
-  ];
+      {
+        id: "recipes",
+        label: "Go to Recipes",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/recipes")),
+      },
+      {
+        id: "ingredients",
+        label: "Go to Ingredients",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/ingredients")),
+      },
+      {
+        id: "production",
+        label: "Go to Production",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/production")),
+      },
+      {
+        id: "analytics",
+        label: "Go to Analytics",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/analytics")),
+      },
+      {
+        id: "team",
+        label: "Go to Team",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/team")),
+      },
+      {
+        id: "scheduling",
+        label: "Go to Scheduling",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/scheduling")),
+      },
+      {
+        id: "wholesale",
+        label: "Go to Wholesale",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/wholesale")),
+      },
+      {
+        id: "messages",
+        label: "Go to Messages",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/messages")),
+      },
+      {
+        id: "account",
+        label: "Go to Account Settings",
+        category: "Navigation",
+        action: () => router.push(toAppRoute("/dashboard/account")),
+      },
+      // Actions
+      {
+        id: "new-recipe",
+        label: "New Recipe",
+        category: "Actions",
+        action: () => router.push(toAppRoute("/dashboard/recipes/new")),
+        shortcut: "⌘N",
+      },
+      {
+        id: "new-ingredient",
+        label: "New Ingredient",
+        category: "Actions",
+        action: () => router.push(toAppRoute("/dashboard/ingredients/new")),
+        shortcut: "⌘I",
+      },
+      // Settings
+      {
+        id: "toggle-theme",
+        label: `Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`,
+        category: "Settings",
+        action: () => setTheme(theme === "dark" ? "light" : "dark"),
+      },
+      {
+        id: "shortcuts-help",
+        label: "Show Keyboard Shortcuts",
+        category: "Settings",
+        action: () => {
+          setIsOpen(false);
+          const event = new CustomEvent("open-shortcuts-help");
+          window.dispatchEvent(event);
+        },
+        shortcut: "⌘?",
+      },
+    ];
+
+    // Filter commands based on MVP mode
+    return allCommands.filter(cmd => isCommandVisible(cmd.id));
+  }, [theme, router, toAppRoute, setTheme]);
 
   const filteredCommands = commands.filter((cmd) =>
     cmd.label.toLowerCase().includes(searchQuery.toLowerCase()) ||

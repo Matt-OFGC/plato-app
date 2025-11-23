@@ -1,4 +1,5 @@
 import React from 'react';
+import { isNavigationItemVisible } from './mvp-config';
 
 export interface NavigationItem {
   value: string;
@@ -191,23 +192,58 @@ export const getNavigationItemsByApp = (appContext: string): NavigationItem[] =>
 
 // Helper function to get filtered navigation items based on active app
 // Excludes settings which is rendered separately at the bottom
-export const getFilteredNavigationItems = (activeApp: string | null): NavigationItem[] => {
+export const getFilteredNavigationItems = (activeApp: string | null, appFeatures?: string[]): NavigationItem[] => {
   if (!activeApp) {
     // Show global items + recipes (default) + teams (always available) + safety (always available)
-    return ALL_NAVIGATION_ITEMS.filter(item => 
+    let filtered = ALL_NAVIGATION_ITEMS.filter(item => 
       item.appContext === 'global' || 
       item.appContext === 'recipes' ||
       item.appContext === 'teams' ||
       item.appContext === 'safety'
     );
+    // Apply MVP filtering - hide non-MVP items when MVP mode is enabled
+    return filtered.filter(item => isNavigationItemVisible(item.value));
   }
   
-  // Show global items + active app items + teams (always available) + safety (always available)
-  return ALL_NAVIGATION_ITEMS.filter(item => 
+  // Map appContext to feature names
+  const appContextToFeature: Record<string, string> = {
+    'recipes': 'recipes',
+    'production': 'production',
+    'make': 'make',
+    'teams': 'teams',
+    'safety': 'safety',
+  };
+  
+  // If appFeatures is provided, only show features that are in the app's feature list
+  if (appFeatures && appFeatures.length > 0) {
+    let filtered = ALL_NAVIGATION_ITEMS.filter(item => {
+      // Always show global items
+      if (item.appContext === 'global') return true;
+      
+      // Map appContext to feature name
+      const featureName = appContextToFeature[item.appContext];
+      
+      // If it's a feature, check if it's in the app's features list
+      if (featureName) {
+        return appFeatures.includes(featureName);
+      }
+      
+      // For other appContexts, show if they match the active app
+      return item.appContext === activeApp;
+    });
+    // Apply MVP filtering - hide non-MVP items when MVP mode is enabled
+    return filtered.filter(item => isNavigationItemVisible(item.value));
+  }
+  
+  // Fallback: Show global items + active app items + teams (always available) + safety (always available)
+  let filtered = ALL_NAVIGATION_ITEMS.filter(item => 
     item.appContext === 'global' || 
     item.appContext === activeApp ||
     item.appContext === 'teams' ||
     item.appContext === 'safety'
   );
+  
+  // Apply MVP filtering - hide non-MVP items when MVP mode is enabled
+  return filtered.filter(item => isNavigationItemVisible(item.value));
 };
 

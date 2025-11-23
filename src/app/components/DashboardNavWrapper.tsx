@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { FloatingNavBar } from "./FloatingNavBar";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { isNavigationItemVisible } from "@/lib/mvp-config";
 
-// Fixed navigation items - no customization
-const FIXED_NAVIGATION_ITEMS = ["dashboard", "ingredients", "recipes", "production"];
+// Fixed navigation items for MVP - only show essential items
+const MVP_FIXED_NAVIGATION_ITEMS = ["dashboard", "ingredients", "recipes", "recipe-mixer"];
 
-// Items that appear in the More menu with glassy design
-const MORE_MENU_ITEMS = [
+// All items that can appear in the More menu
+const ALL_MORE_MENU_ITEMS = [
   { 
     id: "inventory", 
+    value: "inventory",
     label: "Inventory", 
     href: "/dashboard/inventory", 
     icon: (
@@ -21,6 +23,7 @@ const MORE_MENU_ITEMS = [
   },
   { 
     id: "wholesale", 
+    value: "wholesale",
     label: "Wholesale", 
     href: "/dashboard/wholesale", 
     icon: (
@@ -31,6 +34,7 @@ const MORE_MENU_ITEMS = [
   },
   { 
     id: "analytics", 
+    value: "analytics",
     label: "Analytics", 
     href: "/dashboard/analytics", 
     icon: (
@@ -41,6 +45,7 @@ const MORE_MENU_ITEMS = [
   },
   { 
     id: "team", 
+    value: "team",
     label: "Team", 
     href: "/dashboard/team", 
     icon: (
@@ -51,6 +56,7 @@ const MORE_MENU_ITEMS = [
   },
   { 
     id: "settings", 
+    value: "account",
     label: "Settings", 
     href: "/dashboard/account", 
     icon: (
@@ -62,6 +68,7 @@ const MORE_MENU_ITEMS = [
   },
   { 
     id: "business", 
+    value: "business",
     label: "Business", 
     href: "/dashboard/business", 
     icon: (
@@ -72,6 +79,7 @@ const MORE_MENU_ITEMS = [
   },
   { 
     id: "safety", 
+    value: "safety",
     label: "Safety", 
     href: "/dashboard/safety", 
     icon: (
@@ -89,6 +97,16 @@ export function DashboardNavWrapper() {
   const handleMoreClick = () => {
     setShowMoreMenu(!showMoreMenu);
   };
+
+  // Filter MORE_MENU_ITEMS based on MVP mode
+  const MORE_MENU_ITEMS = useMemo(() => {
+    return ALL_MORE_MENU_ITEMS.filter(item => isNavigationItemVisible(item.value));
+  }, []);
+
+  // Filter FIXED_NAVIGATION_ITEMS based on MVP mode
+  const FIXED_NAVIGATION_ITEMS = useMemo(() => {
+    return MVP_FIXED_NAVIGATION_ITEMS.filter(item => isNavigationItemVisible(item));
+  }, []);
 
   return (
     <>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface OnboardingWizardProps {
@@ -15,6 +16,7 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
   const [step, setStep] = useState(0);
   const [skipped, setSkipped] = useState(false);
   const router = useRouter();
+  const { toAppRoute } = useAppAwareRoute();
 
   // Check if user has already dismissed onboarding in this session
   useEffect(() => {
@@ -65,8 +67,19 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
                 </svg>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Team Collaboration</h4>
-                <p className="text-sm text-gray-600">Work together with your team</p>
+                <h4 className="font-medium text-gray-900">Production Planning</h4>
+                <p className="text-sm text-gray-600">Plan and track your production runs</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Wholesale Management</h4>
+                <p className="text-sm text-gray-600">Manage orders and customers</p>
               </div>
             </div>
           </div>
@@ -89,7 +102,7 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
           </div>
           <button
             onClick={() => {
-              router.push("/dashboard/ingredients/new");
+              router.push(toAppRoute("/dashboard/ingredients/new"));
             }}
             className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
@@ -117,7 +130,7 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
           </div>
           <button
             onClick={() => {
-              router.push("/dashboard/recipes/new");
+              router.push(toAppRoute("/dashboard/recipes/new"));
             }}
             className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
@@ -127,38 +140,29 @@ export function OnboardingWizard({ userName, companyName }: OnboardingWizardProp
       ),
     },
     {
-      title: "Invite Your Team 👥",
-      description: "Collaborate with your kitchen staff",
+      title: "Plan Production 🏭",
+      description: "Schedule and track your production runs",
       content: (
         <div className="space-y-4">
           <p className="text-gray-600">
-            Add team members to collaborate on recipes and manage your kitchen together.
+            Create production plans to schedule batches, track progress, and manage your workflow efficiently.
           </p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-900">Owner</span>
-              <span className="text-xs text-gray-500">Full access + billing</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-900">Admin</span>
-              <span className="text-xs text-gray-500">Full access to content</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-900">Editor</span>
-              <span className="text-xs text-gray-500">Can create & edit</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-900">Viewer</span>
-              <span className="text-xs text-gray-500">Read-only access</span>
-            </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-900 mb-2">What you can do:</h4>
+            <ul className="space-y-1 text-sm text-gray-600">
+              <li>• Create production plans with multiple recipes</li>
+              <li>• Track completion status</li>
+              <li>• Manage wholesale orders</li>
+              <li>• View production history</li>
+            </ul>
           </div>
           <button
             onClick={() => {
-              router.push("/dashboard/team");
+              router.push(toAppRoute("/dashboard/production"));
             }}
             className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
-            Manage Team
+            Go to Production
           </button>
         </div>
       ),
