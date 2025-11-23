@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTimers } from "@/contexts/TimerContext";
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from "@/lib/navigation-config";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface FloatingNavBarProps {
   navigationItems?: string[]; // Array of hrefs for selected nav items
@@ -14,13 +15,14 @@ interface FloatingNavBarProps {
 }
 
 export function FloatingNavBar({ 
-  navigationItems = ["dashboard", "ingredients", "recipes", "recipe-mixer"],
+  navigationItems = ["dashboard", "ingredients", "recipes", "recipe-mixer"], // MVP default items
   onMoreClick,
   enableScrollAnimation = false,
   sidebarOpen = false
 }: FloatingNavBarProps) {
   const pathname = usePathname();
   const { timers } = useTimers();
+  const { toAppRoute } = useAppAwareRoute();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   
   // Apple-style scroll animation
@@ -35,15 +37,25 @@ export function FloatingNavBar({
   );
 
   // Ensure we have exactly 4 items for the floating nav
-  const displayNavItems = selectedNavItems.slice(0, 4);
+  const displayNavItems = selectedNavItems.slice(0, 4).map(item => ({
+    ...item,
+    href: toAppRoute(item.href) // Convert to app-aware route
+  }));
 
   const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      // Only active if exactly on dashboard page
-      return pathname === '/dashboard';
+    // Normalize paths for comparison (remove trailing slashes)
+    const normalizePath = (p: string) => p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p;
+    const normalizedPath = normalizePath(path);
+    const normalizedPathname = normalizePath(pathname);
+    
+    // Check against current pathname (which is already app-aware)
+    if (normalizedPath === '/dashboard' || normalizedPath === '/bake') {
+      // Only active if exactly on dashboard/bake page
+      return normalizedPathname === normalizedPath;
     } else {
       // For other pages, check if pathname starts with the path
-      return pathname.startsWith(path);
+      // Also handle exact matches
+      return normalizedPathname === normalizedPath || normalizedPathname.startsWith(normalizedPath + "/");
     }
   };
 
@@ -69,13 +81,14 @@ export function FloatingNavBar({
             {/* Navigation Items */}
             <div className="flex flex-col items-center space-y-1 flex-1">
               {displayNavItems.map((item, index) => {
-                const active = isActive(item.href);
-                const isHovered = hoveredItem === item.href;
+                const appAwareHref = item.href; // Already converted above
+                const active = isActive(appAwareHref);
+                const isHovered = hoveredItem === appAwareHref;
                 return (
                   <Link
-                    key={item.href}
-                    href={item.href}
-                    onMouseEnter={() => setHoveredItem(item.href)}
+                    key={appAwareHref}
+                    href={appAwareHref}
+                    onMouseEnter={() => setHoveredItem(appAwareHref)}
                     onMouseLeave={() => setHoveredItem(null)}
                     className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative touch-target w-11 h-11 ${
                       active 

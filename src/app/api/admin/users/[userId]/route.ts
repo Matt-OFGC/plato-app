@@ -38,6 +38,14 @@ export async function GET(
         },
         preferences: true,
         subscription: true,
+        UserAppSubscription: {
+          select: {
+            app: true,
+            status: true,
+            currentPeriodEnd: true,
+            currentPeriodStart: true,
+          },
+        },
         _count: {
           select: {
             memberships: true,

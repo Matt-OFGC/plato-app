@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { checkPriceStatus, getPriceStatusColorClass, formatLastUpdate } from "@/lib/priceTracking";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface Ingredient {
   id: number;
@@ -16,6 +17,7 @@ interface StalePriceAlertsProps {
 }
 
 export function StalePriceAlerts({ ingredients }: StalePriceAlertsProps) {
+  const { toAppRoute } = useAppAwareRoute();
   // Check all ingredients for stale prices
   const ingredientsWithStatus = ingredients.map(ing => ({
     ...ing,
@@ -50,7 +52,7 @@ export function StalePriceAlerts({ ingredients }: StalePriceAlertsProps) {
             {staleIngredients.slice(0, 5).map(ing => (
               <Link 
                 key={ing.id}
-                href={`/dashboard/ingredients/${ing.id}`}
+                href={toAppRoute(`/dashboard/ingredients/${ing.id}`)}
                 className="block bg-white rounded-lg border border-red-200 p-3 hover:border-red-300 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center justify-between">
@@ -95,7 +97,7 @@ export function StalePriceAlerts({ ingredients }: StalePriceAlertsProps) {
             {warningIngredients.slice(0, 5).map(ing => (
               <Link 
                 key={ing.id}
-                href={`/dashboard/ingredients/${ing.id}`}
+                href={toAppRoute(`/dashboard/ingredients/${ing.id}`)}
                 className="block bg-white rounded-lg border border-amber-200 p-3 hover:border-amber-300 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center justify-between">

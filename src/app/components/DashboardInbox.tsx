@@ -5,6 +5,7 @@ import { useState } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { analyzeRecipeFoodCost, formatFoodCost } from "@/lib/pricing";
 import { formatLastUpdate } from "@/lib/priceTracking";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface Recipe {
   id: number;
@@ -36,6 +37,7 @@ export function DashboardInbox({
   targetFoodCost,
   maxFoodCost 
 }: DashboardInboxProps) {
+  const { toAppRoute } = useAppAwareRoute();
   const [activeTab, setActiveTab] = useState<'all' | 'prices' | 'ingredients' | 'ideas'>('all');
 
   // Analyze recipes for food cost issues
@@ -148,7 +150,7 @@ export function DashboardInbox({
             {recipesNeedingAttention.slice(0, activeTab === 'all' ? 3 : 10).map(recipe => (
               <Link
                 key={recipe.id}
-                href={`/dashboard/recipes/${recipe.id}`}
+                href={toAppRoute(`/dashboard/recipes/${recipe.id}`)}
                 className="block px-6 py-3 hover:bg-gray-50 transition-colors group"
               >
                 <div className="flex items-center justify-between">
@@ -194,7 +196,7 @@ export function DashboardInbox({
             {staleIngredients.slice(0, activeTab === 'all' ? 3 : 10).map(ing => (
               <Link
                 key={ing.id}
-                href={`/dashboard/ingredients/${ing.id}`}
+                href={toAppRoute(`/dashboard/ingredients/${ing.id}`)}
                 className="block px-6 py-3 hover:bg-gray-50 transition-colors group"
               >
                 <div className="flex items-center justify-between">

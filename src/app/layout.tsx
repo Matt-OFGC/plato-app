@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { AppThemeProvider } from "@/components/AppThemeProvider";
 // import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
 const geistSans = Geist({
@@ -60,9 +61,11 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white transition-colors duration-200`}>
-        <Providers>
-          {children}
-        </Providers>
+        <AppThemeProvider>
+          <Providers>
+            {children}
+          </Providers>
+        </AppThemeProvider>
         {/* Temporarily disabled - uncomment after clearing build cache if needed */}
         {/* <PerformanceMonitor /> */}
       </body>

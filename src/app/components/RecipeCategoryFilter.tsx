@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface RecipeCategoryFilterProps {
   categories: string[];
@@ -11,6 +12,7 @@ interface RecipeCategoryFilterProps {
 export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCategoryFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toAppRoute } = useAppAwareRoute();
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
 
   // Sync search term with URL params
@@ -28,7 +30,7 @@ export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCat
       params.delete("category");
     }
     
-    router.push(`/dashboard/recipes?${params.toString()}`);
+    router.push(`${toAppRoute("/dashboard/recipes")}?${params.toString()}`);
   };
 
   const handleSearchChange = (value: string) => {
@@ -41,7 +43,7 @@ export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCat
       params.delete("search");
     }
     
-    router.push(`/dashboard/recipes?${params.toString()}`);
+    router.push(`${toAppRoute("/dashboard/recipes")}?${params.toString()}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {

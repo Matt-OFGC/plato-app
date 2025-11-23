@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 type SortField = 'name' | 'category' | 'yield' | 'sellPrice' | 'cogs' | 'totalSteps' | 'totalTime';
 type SortDirection = 'asc' | 'desc';
 
@@ -33,6 +34,7 @@ interface RecipesViewProps {
 }
 
 export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSelectAll, isSelecting = false }: RecipesViewProps) {
+  const { toAppRoute } = useAppAwareRoute();
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   
@@ -130,7 +132,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
         </div>
         <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">No recipes yet</h3>
         <p className="text-[var(--muted-foreground)] mb-6">Create your first recipe to get started</p>
-        <Link href="/dashboard/recipes/new" className="btn-primary">
+        <Link href={toAppRoute("/dashboard/recipes/new")} className="btn-primary">
           Create Recipe
         </Link>
       </div>
@@ -187,7 +189,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
         {sortedRecipes.map((r) => (
           <Link 
             key={r.id}
-            href={`/dashboard/recipes/${r.id}`}
+            href={toAppRoute(`/dashboard/recipes/${r.id}`)}
             className={`group bg-white rounded-xl border border-gray-200 p-4 md:p-5 hover:shadow-lg hover:border-emerald-300 transition-all mobile-touch-target min-w-0 ${
               selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50 border-emerald-300' : ''
             }`}

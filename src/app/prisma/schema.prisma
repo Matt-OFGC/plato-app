@@ -9,27 +9,24 @@ datasource db {
 }
 
 model ActivityLog {
-  id                Int      @id @default(autoincrement())
-  createdAt         DateTime @default(now())
-  userId            Int
-  companyId         Int
-  action            String
-  entity            String
-  entityId          Int?
-  entityName        String?
-  details           Json?
-  ipAddress         String?
-  userAgent         String?
-  relatedEntityId   Int?
-  relatedEntityType String?
-  Company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  User              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+  userId     Int
+  companyId  Int
+  action     String
+  entity     String
+  entityId   Int?
+  entityName String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  Company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([companyId, createdAt])
   @@index([companyId])
   @@index([entity, entityId])
   @@index([userId])
-  @@index([relatedEntityType, relatedEntityId], map: "idx_activity_log_related")
 }
 
 model AllergenSheetTemplate {
@@ -130,33 +127,6 @@ model ChecklistItemCompletion {
   TaskPhoto             TaskPhoto[]
 }
 
-model CleaningJob {
-  id               Int             @id @default(autoincrement())
-  companyId        Int
-  name             String
-  description      String?
-  category         String?
-  frequency        String          @default("daily")
-  membershipId     Int?
-  productionPlanId Int?
-  dueDate          DateTime?
-  completedAt      DateTime?
-  completedBy      Int?
-  notes            String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @default(now())
-  Company          Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  User             User?           @relation(fields: [completedBy], references: [id])
-  Membership       Membership?     @relation(fields: [membershipId], references: [id])
-  ProductionPlan   ProductionPlan? @relation(fields: [productionPlanId], references: [id])
-
-  @@index([companyId], map: "idx_cleaning_job_company")
-  @@index([dueDate], map: "idx_cleaning_job_due_date")
-  @@index([membershipId], map: "idx_cleaning_job_membership")
-  @@index([productionPlanId], map: "idx_cleaning_job_production")
-  @@index([completedAt], map: "idx_cleaning_job_status")
-}
-
 model Collection {
   id               Int                @id @default(autoincrement())
   createdAt        DateTime           @default(now())
@@ -175,6 +145,7 @@ model Collection {
   @@index([companyId])
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Company {
   id                    Int                     @id @default(autoincrement())
   createdAt             DateTime                @default(now())
@@ -206,11 +177,11 @@ model Company {
   website               String?
   safety_enabled        Boolean?                @default(true)
   data_retention_days   Int?                    @default(730)
+  app                   App                     @default(plato)
   ActivityLog           ActivityLog[]
   AllergenSheetTemplate AllergenSheetTemplate[]
   AnalyticsSnapshot     AnalyticsSnapshot[]
   Category              Category[]
-  CleaningJob           CleaningJob[]
   Collection            Collection[]
   CustomReport          CustomReport[]
   DailyTemperatureCheck DailyTemperatureCheck[]
@@ -232,7 +203,6 @@ model Company {
   ProductionPlan        ProductionPlan[]
   Recipe                Recipe[]
   RecipeUpdateLog       RecipeUpdateLog[]
-  Role                  Role[]
   SalesRecord           SalesRecord[]
   ScheduledTask         ScheduledTask[]
   SeasonalTrend         SeasonalTrend[]
@@ -255,11 +225,12 @@ model Company {
   TemperatureSensor     TemperatureSensor[]
   TemplateAppliance     TemplateAppliance[]
   Timesheet             Timesheet[]
-  TrainingModule        TrainingModule[]
   WebhookLog            WebhookLog[]
   WholesaleCustomer     WholesaleCustomer[]
   WholesaleOrder        WholesaleOrder[]
   WholesaleProduct      WholesaleProduct[]
+
+  @@index([app])
 }
 
 model CustomReport {
@@ -385,6 +356,28 @@ model ExternalMapping {
   @@index([entityType])
   @@index([externalId])
   @@index([integrationId])
+}
+
+model FeatureModule {
+  id                       Int       @id @default(autoincrement())
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  userId                   Int
+  moduleName               String
+  stripeSubscriptionItemId String?
+  stripePriceId            String?
+  status                   String    @default("active")
+  isTrial                  Boolean   @default(false)
+  unlockedAt               DateTime  @default(now())
+  currentPeriodEnd         DateTime?
+  cancelAtPeriodEnd        Boolean   @default(false)
+  canceledAt               DateTime?
+  User                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleName])
+  @@index([moduleName])
+  @@index([status])
+  @@index([userId])
 }
 
 model GeneratedDocument {
@@ -652,49 +645,59 @@ model LeaveRequest {
 }
 
 model Membership {
-  id                      Int                       @id @default(autoincrement())
-  userId                  Int
-  companyId               Int
-  acceptedAt              DateTime?
-  createdAt               DateTime                  @default(now())
-  invitedAt               DateTime                  @default(now())
-  invitedBy               Int?
-  isActive                Boolean                   @default(true)
-  pin                     String?
-  pinHash                 String?
-  updatedAt               DateTime                  @default(now())
-  role                    MemberRole                @default(VIEWER)
-  currency                String                    @default("GBP")
-  employmentType          String?
-  endDate                 DateTime?
-  hourlyRate              Decimal?
-  niCategory              String?
-  payFrequency            String?
-  pensionOptIn            Boolean                   @default(false)
-  pensionRate             Decimal?
-  salary                  Decimal?
-  startDate               DateTime?
-  taxCode                 String?
-  roleId                  Int?
-  lastActivityAt          DateTime?
-  CleaningJob             CleaningJob[]
-  LeaveBalance            LeaveBalance[]
-  LeaveRequest            LeaveRequest[]
-  Company                 Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  Role                    Role?                     @relation(fields: [roleId], references: [id])
-  User                    User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  PayrollLine             PayrollLine[]
-  ProductionJobAssignment ProductionJobAssignment[]
-  Shift                   Shift[]
-  StaffProfile            StaffProfile?
-  Timesheet               Timesheet[]
-  TrainingRecord          TrainingRecord[]
+  id             Int            @id @default(autoincrement())
+  userId         Int
+  companyId      Int
+  acceptedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  invitedAt      DateTime       @default(now())
+  invitedBy      Int?
+  isActive       Boolean        @default(true)
+  pin            String?
+  pinHash        String?
+  updatedAt      DateTime       @default(now())
+  role           MemberRole     @default(VIEWER)
+  currency       String         @default("GBP")
+  employmentType String?
+  endDate        DateTime?
+  hourlyRate     Decimal?
+  niCategory     String?
+  payFrequency   String?
+  pensionOptIn   Boolean        @default(false)
+  pensionRate    Decimal?
+  salary         Decimal?
+  startDate      DateTime?
+  taxCode        String?
+  LeaveBalance   LeaveBalance[]
+  LeaveRequest   LeaveRequest[]
+  Company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PayrollLine    PayrollLine[]
+  Shift          Shift[]
+  Timesheet      Timesheet[]
 
   @@unique([userId, companyId])
   @@index([companyId])
   @@index([companyId, pin])
   @@index([userId])
-  @@index([roleId], map: "idx_membership_role")
+}
+
+model MfaDevice {
+  id           String   @id
+  userId       Int
+  type         String
+  name         String
+  secret       String?
+  credentialId String?
+  publicKey    String?
+  phoneNumber  String?
+  isVerified   Boolean  @default(false)
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, type])
 }
 
 model Notification {
@@ -714,6 +717,22 @@ model Notification {
   @@index([createdAt])
   @@index([userId])
   @@index([userId, read])
+}
+
+model OAuthAccount {
+  id           String    @id
+  userId       Int
+  provider     String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([provider, providerId])
+  @@index([userId])
 }
 
 model PayrollIntegration {
@@ -858,7 +877,6 @@ model ProductionItem {
   ProductionPlan           ProductionPlan             @relation(fields: [planId], references: [id], onDelete: Cascade)
   Recipe                   Recipe                     @relation(fields: [recipeId], references: [id])
   ProductionItemAllocation ProductionItemAllocation[]
-  ProductionJobAssignment  ProductionJobAssignment[]
 
   @@index([customerId])
   @@index([planId])
@@ -880,25 +898,6 @@ model ProductionItemAllocation {
   @@index([productionItemId])
 }
 
-model ProductionJobAssignment {
-  id               Int            @id @default(autoincrement())
-  productionItemId Int
-  membershipId     Int
-  assignedDate     DateTime
-  status           String         @default("assigned")
-  notes            String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @default(now())
-  Membership       Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  ProductionItem   ProductionItem @relation(fields: [productionItemId], references: [id], onDelete: Cascade)
-
-  @@unique([productionItemId, membershipId, assignedDate], map: "ProductionJobAssignment_item_membership_date_key")
-  @@index([assignedDate], map: "idx_production_assignment_date")
-  @@index([productionItemId], map: "idx_production_assignment_item")
-  @@index([membershipId], map: "idx_production_assignment_membership")
-  @@index([status], map: "idx_production_assignment_status")
-}
-
 model ProductionPlan {
   id             Int              @id @default(autoincrement())
   createdAt      DateTime         @default(now())
@@ -909,7 +908,6 @@ model ProductionPlan {
   notes          String?
   companyId      Int
   createdBy      Int
-  CleaningJob    CleaningJob[]
   ProductionItem ProductionItem[]
   Company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   ProductionTask ProductionTask[]
@@ -962,7 +960,6 @@ model Recipe {
   storage                                                String?
   storageId                                              Int?
   suggestedPrice                                         Decimal?
-  trainingModuleId                                       Int?
   CustomerPricing                                        CustomerPricing[]
   Inventory                                              Inventory[]
   ProductionHistory                                      ProductionHistory[]
@@ -971,7 +968,6 @@ model Recipe {
   Company                                                Company?                @relation(fields: [companyId], references: [id])
   ShelfLifeOption                                        ShelfLifeOption?        @relation(fields: [shelfLifeId], references: [id])
   StorageOption                                          StorageOption?          @relation(fields: [storageId], references: [id])
-  TrainingModule                                         TrainingModule?         @relation(fields: [trainingModuleId], references: [id])
   RecipeCollection                                       RecipeCollection[]
   RecipeItem                                             RecipeItem[]
   RecipeSection                                          RecipeSection[]
@@ -983,7 +979,6 @@ model Recipe {
   SeasonalTrend                                          SeasonalTrend[]
   ShopifyOrderItem                                       ShopifyOrderItem[]
   ShopifyProductMapping                                  ShopifyProductMapping[]
-  TrainingModuleRecipe                                   TrainingModuleRecipe[]
   WholesaleOrderItem                                     WholesaleOrderItem[]
   WholesaleProduct                                       WholesaleProduct[]
 
@@ -993,7 +988,6 @@ model Recipe {
   @@index([companyId])
   @@index([companyId, name])
   @@index([companyId, updatedAt])
-  @@index([trainingModuleId], map: "idx_recipe_training_module")
 }
 
 model RecipeCollection {
@@ -1102,32 +1096,6 @@ model RecipeVersion {
   @@index([recipeId, version])
 }
 
-model Role {
-  id             Int              @id @default(autoincrement())
-  name           String
-  description    String?
-  companyId      Int
-  isSystemRole   Boolean          @default(false)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @default(now())
-  Membership     Membership[]
-  Company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  RolePermission RolePermission[]
-
-  @@index([companyId], map: "idx_role_company")
-}
-
-model RolePermission {
-  id         Int      @id @default(autoincrement())
-  roleId     Int
-  permission String
-  createdAt  DateTime @default(now())
-  Role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@unique([roleId, permission])
-  @@index([roleId], map: "idx_role_permission_role")
-}
-
 model SalesRecord {
   id              Int      @id @default(autoincrement())
   createdAt       DateTime @default(now())
@@ -1205,6 +1173,27 @@ model SeasonalTrend {
   @@index([companyId])
   @@index([recipeId])
   @@index([season])
+}
+
+model Session {
+  id           String    @id
+  userId       Int
+  token        String    @unique
+  refreshToken String?   @unique
+  deviceInfo   String?
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  lastUsedAt   DateTime  @default(now())
+  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([refreshToken])
+  @@index([token])
+  @@index([userId])
+  @@index([userId, revokedAt])
 }
 
 model ShelfLifeOption {
@@ -1362,23 +1351,6 @@ model SmartAlert {
   @@index([companyId, isDismissed, createdAt(sort: Desc)])
 }
 
-model StaffProfile {
-  id                    Int        @id @default(autoincrement())
-  membershipId          Int        @unique
-  employmentStartDate   DateTime?
-  position              String?
-  status                String     @default("active")
-  emergencyContactName  String?
-  emergencyContactPhone String?
-  notes                 String?
-  performanceNotes      String?
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @default(now())
-  Membership            Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-
-  @@index([membershipId], map: "idx_staff_profile_membership")
-}
-
 model StorageOption {
   id          Int      @id @default(autoincrement())
   createdAt   DateTime @default(now())
@@ -1417,28 +1389,6 @@ model Subscription {
   maxRecipes           Int?
   metadata             Json?
   User                 User      @relation(fields: [userId], references: [id])
-}
-
-model FeatureModule {
-  id                       Int       @id @default(autoincrement())
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime
-  userId                   Int
-  moduleName               String // recipes|production|make|teams|safety
-  stripeSubscriptionItemId String?
-  stripePriceId            String?
-  status                   String    @default("active") // active|canceled|trialing|past_due
-  isTrial                  Boolean   @default(false) // true for Recipes free trial
-  unlockedAt               DateTime  @default(now())
-  currentPeriodEnd         DateTime?
-  cancelAtPeriodEnd        Boolean   @default(false)
-  canceledAt               DateTime?
-  User                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, moduleName])
-  @@index([userId])
-  @@index([moduleName])
-  @@index([status])
 }
 
 model Supplier {
@@ -1739,77 +1689,6 @@ model Timesheet {
   @@index([status])
 }
 
-model TrainingContent {
-  id             Int            @id @default(autoincrement())
-  moduleId       Int
-  type           String
-  content        String?
-  order          Int            @default(0)
-  metadata       Json?
-  createdAt      DateTime       @default(now())
-  TrainingModule TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  @@index([moduleId, order], map: "idx_training_content_module")
-}
-
-model TrainingModule {
-  id                   Int                    @id @default(autoincrement())
-  companyId            Int
-  title                String
-  description          String?
-  category             String?
-  isTemplate           Boolean                @default(false)
-  estimatedDuration    Int?
-  refreshFrequencyDays Int?
-  createdBy            Int
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @default(now())
-  Recipe               Recipe[]
-  TrainingContent      TrainingContent[]
-  Company              Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  User                 User                   @relation(fields: [createdBy], references: [id])
-  TrainingModuleRecipe TrainingModuleRecipe[]
-  TrainingRecord       TrainingRecord[]
-
-  @@index([companyId], map: "idx_training_module_company")
-}
-
-model TrainingModuleRecipe {
-  id             Int            @id @default(autoincrement())
-  moduleId       Int
-  recipeId       Int
-  createdAt      DateTime       @default(now())
-  TrainingModule TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  Recipe         Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-
-  @@unique([moduleId, recipeId], map: "TrainingModuleRecipe_module_recipe_key")
-  @@index([moduleId], map: "idx_training_module_recipe_module")
-  @@index([recipeId], map: "idx_training_module_recipe_recipe")
-}
-
-model TrainingRecord {
-  id              Int            @id @default(autoincrement())
-  membershipId    Int
-  moduleId        Int
-  status          String         @default("not_started")
-  startedAt       DateTime?
-  completedAt     DateTime?
-  signedOffBy     Int?
-  signedOffAt     DateTime?
-  nextRefreshDate DateTime?
-  completionNotes String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @default(now())
-  Membership      Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  TrainingModule  TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  User            User?          @relation(fields: [signedOffBy], references: [id])
-
-  @@unique([membershipId, moduleId], map: "TrainingRecord_membership_module_key")
-  @@index([membershipId], map: "idx_training_record_membership")
-  @@index([moduleId], map: "idx_training_record_module")
-  @@index([status], map: "idx_training_record_status")
-}
-
 model User {
   id                                             Int                     @id @default(autoincrement())
   createdAt                                      DateTime                @default(now())
@@ -1831,24 +1710,27 @@ model User {
   emailVerified                                  Boolean                 @default(false)
   verificationToken                              String?                 @unique
   verificationTokenExpiresAt                     DateTime?
+  resetPasswordToken                             String?                 @unique
+  resetPasswordTokenExpiresAt                    DateTime?
   ActivityLog                                    ActivityLog[]
-  CleaningJob                                    CleaningJob[]
   DailyTemperatureCheck                          DailyTemperatureCheck[]
   EquipmentIssue_EquipmentIssue_reportedByToUser EquipmentIssue[]        @relation("EquipmentIssue_reportedByToUser")
   EquipmentIssue_EquipmentIssue_resolvedByToUser EquipmentIssue[]        @relation("EquipmentIssue_resolvedByToUser")
+  FeatureModule                                  FeatureModule[]
   Membership                                     Membership[]
+  MfaDevice                                      MfaDevice[]
   Notification                                   Notification[]
+  OAuthAccount                                   OAuthAccount[]
   ScheduledTask                                  ScheduledTask[]
+  Session                                        Session[]
   Subscription                                   Subscription?
   TaskComment                                    TaskComment[]
   TaskCompletion                                 TaskCompletion[]
   TaskInstance                                   TaskInstance[]
   TaskPhoto                                      TaskPhoto[]
   TemperatureRecord                              TemperatureRecord[]
-  TrainingModule                                 TrainingModule[]
-  TrainingRecord                                 TrainingRecord[]
   UserPreference                                 UserPreference?
-  FeatureModule                                  FeatureModule[]
+  UserAppSubscription                            UserAppSubscription[]
 }
 
 model UserPreference {
@@ -1998,6 +1880,31 @@ enum BaseUnit {
   ml
   each
   slices
+}
+
+enum App {
+  plato
+  plato_bake
+}
+
+model UserAppSubscription {
+  id                    Int       @id @default(autoincrement())
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  userId                Int
+  app                   App
+  stripeSubscriptionId  String?   @unique
+  stripePriceId         String?
+  status                String    @default("active") // active, canceled, expired
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean   @default(false)
+  User                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, app])
+  @@index([userId])
+  @@index([userId, status])
+  @@index([app])
 }
 
 enum MemberRole {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface RecipeExportButtonsProps {
   recipe: {
@@ -22,9 +23,10 @@ interface RecipeExportButtonsProps {
 }
 
 export function RecipeExportButtons({ recipe, costBreakdown, servings }: RecipeExportButtonsProps) {
+  const { toAppRoute } = useAppAwareRoute();
   return (
     <Link
-      href={`/dashboard/recipes/${recipe.id}/print`}
+      href={toAppRoute(`/dashboard/recipes/${recipe.id}/print`)}
       target="_blank"
       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 shadow-sm font-medium"
     >

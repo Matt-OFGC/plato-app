@@ -109,6 +109,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     maxSeats = SEAT_LIMITS.TEAM;
   } else if (tier === "business") {
     maxSeats = SEAT_LIMITS.BUSINESS;
+  } else if (tier === "plato-bake") {
+    maxSeats = SEAT_LIMITS.TEAM; // Same as team for now
   }
 
   // Update subscription, user, and company in a transaction
@@ -156,16 +158,52 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }),
   ];
 
+  // Create user app subscription if this is an app-specific tier (e.g., plato-bake)
+  if (tier === "plato-bake") {
+    const { upsertUserAppSubscription } = await import("@/lib/user-app-subscriptions");
+    operations.push(
+      prisma.userAppSubscription.upsert({
+        where: {
+          userId_app: {
+            userId: user.id,
+            app: "plato_bake",
+          },
+        },
+        update: {
+          stripeSubscriptionId: subscriptionId,
+          stripePriceId: price.id,
+          status: subscription.status,
+          currentPeriodStart: new Date(subscription.current_period_start * 1000),
+          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+          updatedAt: new Date(),
+        },
+        create: {
+          userId: user.id,
+          app: "plato_bake",
+          stripeSubscriptionId: subscriptionId,
+          stripePriceId: price.id,
+          status: subscription.status,
+          currentPeriodStart: new Date(subscription.current_period_start * 1000),
+          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+        },
+      })
+    );
+  }
+
   // Add company updates to transaction
   if (user.memberships.length > 0) {
     for (const membership of user.memberships) {
       if (membership.company) {
+        const updateData: any = {
+          maxSeats: maxSeats,
+        };
+        
         operations.push(
           prisma.company.update({
             where: { id: membership.company.id },
-            data: {
-              maxSeats: maxSeats,
-            },
+            data: updateData,
           })
         );
       }

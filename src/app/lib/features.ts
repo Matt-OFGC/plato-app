@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserAndCompany } from "./current";
 
 export type FeatureModuleName = "recipes" | "production" | "make" | "teams" | "safety";
 
@@ -83,7 +84,8 @@ export async function isPaidTier(userId: number): Promise<boolean> {
 /**
  * Check if a user has access to a specific section/module
  * Free tier: Only recipes (with limits)
- * Paid tier: Everything unlocked
+ * Paid tier: Check user's app subscriptions to determine which features are available
+ * Each app has its own feature set (e.g., Plato Bake: recipes, production, make)
  */
 export async function checkSectionAccess(
   userId: number,
@@ -92,18 +94,38 @@ export async function checkSectionAccess(
   try {
     const paid = await isPaidTier(userId);
 
-    // Paid tier: Everything unlocked
-    if (paid) {
-      return true;
-    }
-
     // Free tier: Only recipes unlocked (with limits)
-    if (sectionName === "recipes") {
-      return true;
+    if (!paid) {
+      return sectionName === "recipes";
     }
 
-    // Free tier: All other sections locked
-    return false;
+    // Paid tier: Check user's app subscriptions
+    try {
+      const { getUserApps } = await import("./user-app-subscriptions");
+      const { getAppConfig } = await import("@/lib/apps/registry");
+      
+      const userApps = await getUserApps(userId);
+      
+      // If user has no app subscriptions, allow access to everything (backward compatible)
+      if (userApps.length === 0) {
+        return true;
+      }
+      
+      // Check if any of the user's apps includes this feature
+      for (const app of userApps) {
+        const appConfig = getAppConfig(app);
+        if (appConfig.features.includes(sectionName)) {
+          return true;
+        }
+      }
+      
+      // User doesn't have access to this feature through any of their apps
+      return false;
+    } catch (appError) {
+      // If app check fails, fallback to allowing access (backward compatible)
+      console.warn(`[checkSectionAccess] App check failed for user ${userId}, allowing access:`, appError);
+      return true;
+    }
   } catch (error) {
     console.error(`[checkSectionAccess] Error checking access for user ${userId}, section ${sectionName}:`, error);
     return false;
@@ -116,13 +138,36 @@ export async function checkSectionAccess(
 export async function getUnlockedSections(userId: number): Promise<FeatureModuleName[]> {
   const paid = await isPaidTier(userId);
 
-  if (paid) {
-    // Paid tier: Everything unlocked
-    return ["recipes", "production", "make", "teams", "safety"];
+  if (!paid) {
+    // Free tier: Only recipes
+    return ["recipes"];
   }
 
-  // Free tier: Only recipes
-  return ["recipes"];
+  // Paid tier: Get all features from user's app subscriptions
+  try {
+    const { getUserApps } = await import("./user-app-subscriptions");
+    const { getAppConfig } = await import("./apps/registry");
+    
+    const userApps = await getUserApps(userId);
+    
+    // If user has no app subscriptions, return all features (backward compatible)
+    if (userApps.length === 0) {
+      return ["recipes", "production", "make", "teams", "safety"];
+    }
+    
+    // Collect all unique features from all user's apps
+    const allFeatures = new Set<FeatureModuleName>();
+    for (const app of userApps) {
+      const appConfig = getAppConfig(app);
+      appConfig.features.forEach((feature) => allFeatures.add(feature));
+    }
+    
+    return Array.from(allFeatures);
+  } catch (appError) {
+    // If app check fails, fallback to all features (backward compatible)
+    console.warn(`[getUnlockedSections] App check failed for user ${userId}, returning all features:`, appError);
+    return ["recipes", "production", "make", "teams", "safety"];
+  }
 }
 
 /**
@@ -271,36 +316,115 @@ export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
       finalPaid: paid,
     });
 
-    // Paid tier: Everything unlocked
+    // Paid tier: Check user's app subscriptions
     if (paid) {
-      console.log(`[getUnlockStatus] User ${userId} is PAID - unlocking everything`);
-      return {
-        recipes: {
-          unlocked: true,
-          isTrial: false,
-          status: "active",
-        },
-        production: {
-          unlocked: true,
-          isTrial: false,
-          status: "active",
-        },
-        make: {
-          unlocked: true,
-          isTrial: false,
-          status: "active",
-        },
-        teams: {
-          unlocked: true,
-          isTrial: false,
-          status: "active",
-        },
-        safety: {
-          unlocked: true,
-          isTrial: false,
-          status: "active",
-        },
-      };
+      try {
+        const { getUserApps } = await import("./user-app-subscriptions");
+        const { getAppConfig } = await import("./apps/registry");
+        
+        const userApps = await getUserApps(userId);
+        
+        // If user has app subscriptions, only unlock features from those apps
+        if (userApps.length > 0) {
+          // Collect all unique features from all user's apps
+          const allFeatures = new Set<FeatureModuleName>();
+          for (const app of userApps) {
+            const appConfig = getAppConfig(app);
+            appConfig.features.forEach((feature) => allFeatures.add(feature));
+          }
+          
+          const appFeatures = Array.from(allFeatures);
+          console.log(`[getUnlockStatus] User ${userId} is PAID with apps ${userApps.join(", ")} - unlocking:`, appFeatures);
+          
+          return {
+            recipes: {
+              unlocked: allFeatures.has("recipes"),
+              isTrial: false,
+              status: allFeatures.has("recipes") ? "active" : null,
+            },
+            production: {
+              unlocked: allFeatures.has("production"),
+              isTrial: false,
+              status: allFeatures.has("production") ? "active" : null,
+            },
+            make: {
+              unlocked: allFeatures.has("make"),
+              isTrial: false,
+              status: allFeatures.has("make") ? "active" : null,
+            },
+            teams: {
+              unlocked: allFeatures.has("teams"),
+              isTrial: false,
+              status: allFeatures.has("teams") ? "active" : null,
+            },
+            safety: {
+              unlocked: allFeatures.has("safety"),
+              isTrial: false,
+              status: allFeatures.has("safety") ? "active" : null,
+            },
+          };
+        }
+        
+        // No app subscriptions: Everything unlocked (backward compatible)
+        console.log(`[getUnlockStatus] User ${userId} is PAID - unlocking everything`);
+        return {
+          recipes: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          production: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          make: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          teams: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          safety: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+        };
+      } catch (appError) {
+        // If app check fails, fallback to unlocking everything (backward compatible)
+        console.warn(`[getUnlockStatus] App check failed for user ${userId}, unlocking everything:`, appError);
+        return {
+          recipes: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          production: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          make: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          teams: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+          safety: {
+            unlocked: true,
+            isTrial: false,
+            status: "active",
+          },
+        };
+      }
     }
 
     console.log(`[getUnlockStatus] User ${userId} is FREE - only recipes unlocked`);

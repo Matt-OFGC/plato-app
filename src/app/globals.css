@@ -27,6 +27,12 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   
+  /* Brand-aware CSS variables (default to plato/emerald) */
+  --brand-primary: #059669;
+  --brand-accent: #10b981;
+  --brand-secondary: #f0fdf4;
+  --brand-background: #ffffff;
+  
   /* Layout variables for sticky positioning */
   --header-h: 72px; /* Header height for sticky positioning */
   --bottomnav-h: 80px; /* Bottom navigation height for safe area */
@@ -163,6 +169,87 @@
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
   }
+
+/* App-specific theme overrides */
+html.app-plato-bake,
+.app-plato-bake {
+  --brand-primary: #FFB6C1 !important; /* light pink */
+  --brand-accent: #FFC0CB !important; /* pink */
+  --brand-secondary: #FFF0F5 !important; /* lavender blush */
+  --brand-background: #ffffff !important;
+  
+  /* Update ring color for focus states */
+  --ring: #FFB6C1 !important;
+}
+
+/* Ensure app colors are set on html element */
+html.app-plato-bake {
+  --brand-primary: #FFB6C1 !important;
+  --brand-accent: #FFC0CB !important;
+  --brand-secondary: #FFF0F5 !important;
+  --brand-background: #ffffff !important;
+}
+
+/* Legacy brand classes for backward compatibility */
+html.brand-plato-bake,
+.brand-plato-bake {
+  --brand-primary: #FFB6C1 !important;
+  --brand-accent: #FFC0CB !important;
+  --brand-secondary: #FFF0F5 !important;
+  --brand-background: #ffffff !important;
+  --ring: #FFB6C1 !important;
+}
+
+/* Brand-aware utility classes - These work with Tailwind's arbitrary values */
+.bg-brand-primary {
+  background-color: var(--brand-primary) !important;
+}
+
+.text-brand-primary {
+  color: var(--brand-primary) !important;
+}
+
+.bg-brand-accent {
+  background-color: var(--brand-accent) !important;
+}
+
+.text-brand-accent {
+  color: var(--brand-accent) !important;
+}
+
+.border-brand-primary {
+  border-color: var(--brand-primary) !important;
+}
+
+.border-brand-accent {
+  border-color: var(--brand-accent) !important;
+}
+
+/* Tailwind gradient support for brand colors */
+.from-brand-primary {
+  --tw-gradient-from: var(--brand-primary) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(255 182 193 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-brand-accent {
+  --tw-gradient-to: var(--brand-accent) var(--tw-gradient-to-position);
+}
+
+.via-brand-secondary {
+  --tw-gradient-to: rgb(255 240 245 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--brand-secondary) var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+
+.shadow-brand-primary\/30 {
+  --tw-shadow-color: rgb(255 182 193 / 0.3);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+
+.shadow-brand-primary\/40 {
+  --tw-shadow-color: rgb(255 182 193 / 0.4);
+  --tw-shadow: var(--tw-shadow-colored);
+}
 
   .liquid-glass-depth-elevated {
     background: rgba(255, 255, 255, 0.85);

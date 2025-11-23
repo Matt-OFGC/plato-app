@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
+import { getAppAwareRouteForServer } from "@/lib/server-app-context";
 // Temporarily disabled to fix build error
 // import { isRecipesTrial } from "@/lib/features";
 
@@ -144,7 +145,9 @@ export async function createIngredient(formData: FormData) {
           await updateIngredientCount(userId);
         }
         
+        // Revalidate both possible paths
         revalidatePath("/dashboard/ingredients");
+        revalidatePath("/bake/ingredients");
         return { success: true };
   } catch (error) {
     console.error("Error in createIngredient:", error);
@@ -183,7 +186,8 @@ export async function updateIngredient(id: number, formData: FormData) {
     }
     
     if (existingIngredient.companyId !== companyId) {
-      redirect("/dashboard/ingredients?error=unauthorized");
+      const redirectPath = await getAppAwareRouteForServer("/dashboard/ingredients");
+      redirect(`${redirectPath}?error=unauthorized`);
     }
     
     // Convert the user-selected unit to a base unit for storage

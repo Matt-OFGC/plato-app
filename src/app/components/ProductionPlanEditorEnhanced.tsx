@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, eachDayOfInterval, addDays, startOfWeek } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 import {
   DndContext,
   closestCenter,
@@ -319,7 +320,7 @@ export function ProductionPlanEditorEnhanced({
       });
 
       if (res.ok) {
-        router.push("/dashboard/production");
+        router.push(toAppRoute("/dashboard/production"));
         router.refresh();
       } else {
         const data = await res.json();
@@ -412,7 +413,7 @@ export function ProductionPlanEditorEnhanced({
             </p>
           </div>
           <button
-            onClick={() => router.push("/dashboard/production")}
+            onClick={() => router.push(toAppRoute("/dashboard/production"))}
             className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             Cancel
@@ -721,7 +722,7 @@ export function ProductionPlanEditorEnhanced({
         {step === 'select' ? (
           <>
             <button
-              onClick={() => router.push("/dashboard/production")}
+              onClick={() => router.push(toAppRoute("/dashboard/production"))}
               className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancel

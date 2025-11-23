@@ -118,10 +118,11 @@ const InteractiveButton = forwardRef<HTMLButtonElement, InteractiveButtonProps>(
     const transitionClasses = "transition-all duration-75 ease-out transform";
     
     const variants = {
-      primary: "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-sm hover:shadow-md focus:ring-emerald-500/50",
+      // Use brand-aware colors via CSS variables (will automatically adapt to brand)
+      primary: "bg-brand-primary text-white hover:opacity-90 active:scale-95 shadow-sm hover:shadow-md focus:ring-brand-primary/50",
       secondary: "bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-50 active:scale-95 shadow-sm hover:shadow-md focus:ring-gray-500/50",
-      outline: "border-2 border-neutral-300 bg-transparent text-neutral-700 hover:bg-neutral-50 hover:border-emerald-500/50 hover:text-emerald-700 active:scale-95 focus:ring-emerald-500/50",
-      ghost: "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-emerald-700 active:scale-95 focus:ring-emerald-500/50",
+      outline: "border-2 border-neutral-300 bg-transparent text-neutral-700 hover:bg-neutral-50 hover:border-brand-primary hover:text-brand-primary active:scale-95 focus:ring-brand-primary/50",
+      ghost: "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-brand-primary active:scale-95 focus:ring-brand-primary/50",
       destructive: "bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow-sm hover:shadow-md focus:ring-red-500/50"
     };
     

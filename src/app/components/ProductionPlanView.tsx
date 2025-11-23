@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format, eachDayOfInterval } from "date-fns";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface RecipeSection {
   id: number;
@@ -77,6 +78,7 @@ interface ProductionPlanViewProps {
 }
 
 export function ProductionPlanView({ plan, companyId }: ProductionPlanViewProps) {
+  const { toAppRoute } = useAppAwareRoute();
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [expandedRecipes, setExpandedRecipes] = useState<Set<number>>(new Set());
   const [showPrintView, setShowPrintView] = useState(false);
@@ -115,7 +117,7 @@ export function ProductionPlanView({ plan, companyId }: ProductionPlanViewProps)
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href="/dashboard/production"
+                href={toAppRoute("/dashboard/production")}
                 className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,7 +159,7 @@ export function ProductionPlanView({ plan, companyId }: ProductionPlanViewProps)
               </button>
 
               <Link
-                href={`/dashboard/production/edit/${plan.id}`}
+                href={toAppRoute(`/dashboard/production/edit/${plan.id}`)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -397,7 +399,7 @@ export function ProductionPlanView({ plan, companyId }: ProductionPlanViewProps)
                           </div>
 
                           <Link
-                            href={`/dashboard/recipes/${item.recipeId}`}
+                            href={toAppRoute(`/dashboard/recipes/${item.recipeId}`)}
                             target="_blank"
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
                           >

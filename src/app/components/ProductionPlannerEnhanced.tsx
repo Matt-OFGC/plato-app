@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { format, addDays, startOfWeek, eachDayOfInterval } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 import {
   DndContext,
   closestCenter,
@@ -154,6 +155,7 @@ export function ProductionPlannerEnhanced({
   wholesaleCustomers,
   companyId,
 }: ProductionPlannerEnhancedProps) {
+  const { toAppRoute } = useAppAwareRoute();
   const searchParams = useSearchParams();
   const [showCreatePlan, setShowCreatePlan] = useState(false);
   const [step, setStep] = useState<'select' | 'schedule'>(  'select');
@@ -1157,7 +1159,7 @@ export function ProductionPlannerEnhanced({
                 </div>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => window.location.href = `/dashboard/production/view/${plan.id}`}
+                    onClick={() => window.location.href = toAppRoute(`/dashboard/production/view/${plan.id}`)}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                     title="View production plan"
                   >
@@ -1204,7 +1206,7 @@ export function ProductionPlannerEnhanced({
                     Refresh
                   </button>
                   <button
-                    onClick={() => window.location.href = `/dashboard/production/edit/${plan.id}`}
+                    onClick={() => window.location.href = toAppRoute(`/dashboard/production/edit/${plan.id}`)}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

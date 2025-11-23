@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ViewToggle } from "./ViewToggle";
 import { VirtualizedRecipeList } from "./VirtualizedList";
 import { OptimizedImage } from "./OptimizedImage";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 type ViewMode = 'grid' | 'list' | 'virtual';
 type SortField = 'name' | 'category' | 'yield' | 'sellPrice' | 'cogs' | 'totalSteps' | 'totalTime';
@@ -43,6 +44,7 @@ export function VirtualizedRecipesView({ recipes }: RecipesViewProps) {
 export const RecipesView = VirtualizedRecipesView;
 
 function RecipesViewContent({ recipes }: RecipesViewProps) {
+  const { toAppRoute } = useAppAwareRoute();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -131,7 +133,7 @@ function RecipesViewContent({ recipes }: RecipesViewProps) {
         </div>
         <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">No recipes yet</h3>
         <p className="text-[var(--muted-foreground)] mb-6">Get started by creating your first recipe</p>
-        <Link href="/dashboard/recipes/new" className="btn-primary">
+        <Link href={toAppRoute("/dashboard/recipes/new")} className="btn-primary">
           Create First Recipe
         </Link>
       </div>
@@ -195,7 +197,7 @@ function RecipesViewContent({ recipes }: RecipesViewProps) {
           }))}
           height={600}
           onRecipeClick={(recipe) => {
-            window.location.href = `/dashboard/recipes/${recipe.id}`;
+            window.location.href = toAppRoute(`/dashboard/recipes/${recipe.id}`);
           }}
         />
       )}
@@ -204,7 +206,7 @@ function RecipesViewContent({ recipes }: RecipesViewProps) {
       {viewMode === 'grid' && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {sortedRecipes.map((recipe) => (
-            <Link key={recipe.id} href={`/dashboard/recipes/${recipe.id}`} className="group">
+            <Link key={recipe.id} href={toAppRoute(`/dashboard/recipes/${recipe.id}`)} className="group">
               <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 active:scale-95">
                 {/* Recipe Image */}
                 <div className="aspect-video rounded-xl overflow-hidden mb-4 bg-gray-100">
@@ -287,7 +289,7 @@ function RecipesViewContent({ recipes }: RecipesViewProps) {
       {viewMode === 'list' && (
         <div className="space-y-3">
           {sortedRecipes.map((recipe) => (
-            <Link key={recipe.id} href={`/dashboard/recipes/${recipe.id}`} className="group">
+            <Link key={recipe.id} href={toAppRoute(`/dashboard/recipes/${recipe.id}`)} className="group">
               <div className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 {/* Recipe Image */}
                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">

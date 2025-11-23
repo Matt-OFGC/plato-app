@@ -247,6 +247,7 @@ model Company {
   showTeam               Boolean                 @default(false)
   slug                   String?                 @unique
   website                String?
+  brand                  Brand                   @default(plato)
   safetyEnabled          Boolean?                @default(true) @map("safety_enabled")
   dataRetentionDays      Int?                    @default(730) @map("data_retention_days")
   activityLogs           ActivityLog[]
@@ -300,6 +301,7 @@ model Company {
   templateAppliances     TemplateAppliance[]     @relation("templateAppliances")
   temperatureRecords     TemperatureRecord[]     @relation("temperatureRecords")
   dailyTemperatureChecks DailyTemperatureCheck[] @relation("dailyTemperatureChecks")
+  @@index([brand])
 }
 
 model Membership {

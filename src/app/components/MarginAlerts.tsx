@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { formatCurrency } from "@/lib/currency";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 import {
   analyzeRecipeFoodCost,
   formatFoodCost,
@@ -199,7 +200,7 @@ function RecipeMarginCard({
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <Link
-            href={`/dashboard/recipes/${recipe.id}`}
+            href={toAppRoute(`/dashboard/recipes/${recipe.id}`)}
             className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors"
           >
             {recipe.name}

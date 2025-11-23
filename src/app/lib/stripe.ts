@@ -32,6 +32,10 @@ export const STRIPE_CONFIG = {
       monthlyPriceId: process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID || "",
       annualPriceId: process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID || "",
     },
+    "plato-bake": {
+      productId: process.env.STRIPE_PLATO_BAKE_PRODUCT_ID || "",
+      monthlyPriceId: process.env.STRIPE_PLATO_BAKE_MONTHLY_PRICE_ID || "",
+    },
     seat: {
       productId: process.env.STRIPE_SEAT_PRODUCT_ID || "",
       priceId: process.env.STRIPE_SEAT_PRICE_ID || "",
@@ -65,6 +69,11 @@ export function getTierFromPriceId(priceId: string): { tier: string; interval: "
     return { tier: "business", interval: "year" };
   }
 
+  // Check Plato Bake prices
+  if (priceId === STRIPE_CONFIG.products["plato-bake"].monthlyPriceId) {
+    return { tier: "plato-bake", interval: "month" };
+  }
+
   // Fallback to old pro price
   if (priceId === STRIPE_CONFIG.products.pro.priceId) {
     return { tier: "professional", interval: "month" };
@@ -84,7 +93,7 @@ export async function createStripeCustomer(user: { email: string; name: string |
 // Create checkout session (for tier-based - backwards compatibility)
 export async function createCheckoutSession(
   customerId: string,
-  tier: "professional" | "team" | "business",
+  tier: "professional" | "team" | "business" | "plato-bake",
   interval: "month" | "year" = "month",
   successUrl: string,
   cancelUrl: string,

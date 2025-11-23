@@ -5,17 +5,53 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
 import { OperationalDashboard } from "@/components/OperationalDashboard";
 import { checkPriceStatus } from "@/lib/priceTracking";
+import { hasAppAccess } from "@/lib/user-app-subscriptions";
+import { getAppConfig } from "@/lib/apps/registry";
+import { getAppFromRoute } from "@/lib/app-routes";
+import type { App } from "@/lib/apps/types";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';
 // Revalidate this page every 60 seconds for better performance
 export const revalidate = 60;
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams: Promise<{ app?: string }>;
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard");
 
-  const { companyId, company, user: userWithMemberships } = await getCurrentUserAndCompany();
+  const resolvedSearchParams = await searchParams;
+  const { companyId, company, user: userWithMemberships, app: companyApp, appConfig: companyAppConfig } = await getCurrentUserAndCompany();
+  
+  // App detection from route is handled by the route itself (/bake/* routes)
+  // For /dashboard routes, we check query params or use company default
+  const appFromRoute = null; // Will be set by route-specific pages
+  
+  // Check if an app is specified in route, query params, or use company default
+  let app: App | null = appFromRoute || companyApp;
+  let appConfig = appFromRoute ? getAppConfig(appFromRoute) : companyAppConfig;
+  
+  if (resolvedSearchParams.app && !appFromRoute) {
+    const requestedApp = resolvedSearchParams.app as App;
+    // Verify user has access to the requested app
+    const hasAccess = await hasAppAccess(user.id, requestedApp);
+    if (hasAccess) {
+      app = requestedApp;
+      appConfig = getAppConfig(requestedApp);
+    }
+  }
+  
+  // If app detected from route, verify user has access
+  if (appFromRoute) {
+    const hasAccess = await hasAppAccess(user.id, appFromRoute);
+    if (!hasAccess) {
+      // Redirect to main dashboard if user doesn't have access
+      redirect("/dashboard");
+    }
+  }
 
   // Get user's role in the current company
   const membership = userWithMemberships?.memberships.find(m => m.companyId === companyId);
@@ -304,6 +340,8 @@ export default async function DashboardPage() {
         userName={user.name || undefined}
         userRole={userRole}
         companyName={company?.name || undefined}
+            appName={appConfig?.name}
+            appTagline={appConfig?.tagline}
       />
     </DashboardWithOnboarding>
   );

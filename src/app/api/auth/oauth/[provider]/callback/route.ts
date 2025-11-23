@@ -3,6 +3,8 @@ import { getOAuthProvider, linkOAuthAccount, findUserByOAuthAccount } from "@/li
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth-simple";
 import { cookies } from "next/headers";
+import { getAppFromRoute, getAppAwareRoute } from "@/lib/app-routes";
+import type { App } from "@/lib/apps/types";
 
 // Handle OAuth callback
 export async function GET(
@@ -41,6 +43,24 @@ export async function GET(
 
     // Clear state cookie
     cookieStore.delete(`oauth_state_${provider}`);
+    
+    // Detect app from referer or state (if we stored it)
+    // TODO: Store app in OAuth state parameter for better detection
+    let app: App | null = null;
+    const referer = request.headers.get("referer");
+    if (referer) {
+      try {
+        const url = new URL(referer);
+        app = getAppFromRoute(url.pathname);
+      } catch {
+        // Invalid URL, ignore
+      }
+    }
+    
+    // Helper to get dashboard route
+    const getDashboardRoute = (): string => {
+      return getAppAwareRoute("/dashboard", app);
+    };
 
     // Get OAuth provider
     const oauthProvider = getOAuthProvider(provider);
@@ -96,7 +116,7 @@ export async function GET(
         isAdmin: user.isAdmin,
       }, true, { headers: request.headers });
 
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL(getDashboardRoute(), request.url));
     }
 
     // Check if user with this email exists
@@ -123,7 +143,7 @@ export async function GET(
         isAdmin: existingUser.isAdmin,
       }, true, { headers: request.headers });
 
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL(getDashboardRoute(), request.url));
     }
 
     // New user - create account and link OAuth
@@ -161,11 +181,12 @@ export async function GET(
 
     if (!membership) {
       // New OAuth user needs to create/join a company
-      return NextResponse.redirect(new URL('/dashboard?onboarding=true', request.url));
+      const dashboardRoute = getDashboardRoute();
+      return NextResponse.redirect(new URL(`${dashboardRoute}?onboarding=true`, request.url));
     }
 
     // User has a company, go to dashboard
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL(getDashboardRoute(), request.url));
   } catch (error) {
     console.error(`OAuth callback error for ${provider}:`, error);
     return NextResponse.redirect(

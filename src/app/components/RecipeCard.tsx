@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface RecipeCardProps {
   id: number;
@@ -17,12 +18,13 @@ export function RecipeCard({
   portionsPerBatch,
   currency = "GBP",
 }: RecipeCardProps) {
+  const { toAppRoute } = useAppAwareRoute();
   const isSingleServing = portionsPerBatch === 1;
   const costPerServing = totalCost / portionsPerBatch;
   const currencySymbol = currency === "GBP" ? "£" : currency === "USD" ? "$" : "€";
 
   return (
-    <Link href={`/dashboard/recipes/${id}`}>
+    <Link href={toAppRoute(`/dashboard/recipes/${id}`)}>
       <div className="card-responsive border-2 border-gray-200 hover:border-emerald-500 hover:shadow-lg transition-all duration-200 cursor-pointer group touch-target">
         <div className="flex items-start justify-between mb-4">
           <h3 className="text-responsive-body font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors flex-1">

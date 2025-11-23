@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { createFeatureModuleCheckout, createStripeCustomer } from "@/lib/stripe";
 import { FeatureModuleName } from "@/lib/stripe-features";
+import { getAppFromRoute, getAppAwareRoute } from "@/lib/app-routes";
+import type { App } from "@/lib/apps/types";
 
 export async function POST(
   request: NextRequest,
@@ -16,6 +18,18 @@ export async function POST(
 
     const { module } = await params;
     const moduleName = module as FeatureModuleName;
+    
+    // Detect app from request
+    let app: App | null = null;
+    const referer = request.headers.get("referer");
+    if (referer) {
+      try {
+        const url = new URL(referer);
+        app = getAppFromRoute(url.pathname);
+      } catch {
+        // Invalid URL, ignore
+      }
+    }
 
     // Validate module name
     const validModules: FeatureModuleName[] = ["recipes", "production", "make", "teams", "safety"];
@@ -57,12 +71,14 @@ export async function POST(
       });
     }
 
-    // Create checkout session
+    // Create checkout session with app-aware URLs
+    const accountRoute = getAppAwareRoute("/dashboard/account", app);
+    const dashboardRoute = getAppAwareRoute("/dashboard", app);
     const checkoutSession = await createFeatureModuleCheckout(
       customerId,
       moduleName,
-      `${request.nextUrl.origin}/dashboard/account?success=true&module=${moduleName}`,
-      `${request.nextUrl.origin}/dashboard?canceled=true`
+      `${request.nextUrl.origin}${accountRoute}?success=true&module=${moduleName}`,
+      `${request.nextUrl.origin}${dashboardRoute}?canceled=true`
     );
 
     return NextResponse.json({

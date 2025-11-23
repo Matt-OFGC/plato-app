@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 import { format } from "date-fns";
 import {
   DndContext,
@@ -594,7 +595,10 @@ export function WholesaleOrders({
           </button>
 
           <button
-            onClick={() => window.location.href = `/dashboard/production?fromOrders=true&orderIds=${filteredOrders.filter(o => o.status === 'pending' || o.status === 'confirmed').map(o => o.id).join(',')}`}
+            onClick={() => {
+              const route = toAppRoute(`/dashboard/production?fromOrders=true&orderIds=${filteredOrders.filter(o => o.status === 'pending' || o.status === 'confirmed').map(o => o.id).join(',')}`);
+              window.location.href = route;
+            }}
             disabled={filteredOrders.filter(o => o.status === 'pending' || o.status === 'confirmed').length === 0}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             title="Add pending/confirmed orders to production plan"

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { createCheckoutSession, createStripeCustomer } from "@/lib/stripe";
+import { getAppFromRoute, getAppAwareRoute } from "@/lib/app-routes";
+import type { App } from "@/lib/apps/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,11 +13,30 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tier, interval = "month", seats = 0 } = body;
+    const { tier, interval = "month", seats = 0, app: appParam } = body;
+
+    // Detect app from request
+    let app: App | null = appParam || null;
+    if (!app) {
+      const referer = request.headers.get("referer");
+      if (referer) {
+        try {
+          const url = new URL(referer);
+          app = getAppFromRoute(url.pathname);
+        } catch {
+          // Invalid URL, ignore
+        }
+      }
+    }
 
     // Validate tier
-    if (!tier || !["professional", "team", "business"].includes(tier)) {
+    if (!tier || !["professional", "team", "business", "plato-bake"].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier specified" }, { status: 400 });
+    }
+    
+    // Plato Bake only supports monthly billing
+    if (tier === "plato-bake" && interval !== "month") {
+      return NextResponse.json({ error: "Plato Bake only supports monthly billing" }, { status: 400 });
     }
 
     // Validate interval
@@ -43,13 +64,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Determine success/cancel URLs based on tier and app
+    const isPlatoBake = tier === "plato-bake";
+    const accountRoute = getAppAwareRoute("/dashboard/account", app || (isPlatoBake ? "plato_bake" : "plato"));
+    const successUrl = `${request.nextUrl.origin}${accountRoute}?success=true`;
+    
+    // Cancel URL - redirect to pricing page for the appropriate app
+    const cancelUrl = isPlatoBake
+      ? `${request.nextUrl.origin}/bake/pricing?canceled=true`
+      : `${request.nextUrl.origin}/pricing?canceled=true`;
+
     // Create checkout session
     const checkoutSession = await createCheckoutSession(
       customerId,
-      tier,
+      tier as "professional" | "team" | "business" | "plato-bake",
       interval,
-      `${request.nextUrl.origin}/dashboard/account?success=true`,
-      `${request.nextUrl.origin}/pricing?canceled=true`,
+      successUrl,
+      cancelUrl,
       seats
     );
 

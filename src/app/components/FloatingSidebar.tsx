@@ -1,80 +1,60 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
-import { useAppContext } from "./AppContextProvider";
 import { SectionUnlockModal } from "./unlock/SectionUnlockModal";
 import { FeatureModuleName } from "@/lib/stripe-features";
-
-// Pre-compute production items since ALL_NAVIGATION_ITEMS is constant
-const PRODUCTION_ITEMS_BY_APPCONTEXT = ALL_NAVIGATION_ITEMS.filter(item => 
-  item.appContext === 'production'
-);
-
-// Fallback: production items by value if appContext filter finds nothing
-const PRODUCTION_ITEMS_BY_VALUE = PRODUCTION_ITEMS_BY_APPCONTEXT.length === 0
-  ? ALL_NAVIGATION_ITEMS.filter(item => 
-      ['production', 'wholesale', 'analytics'].includes(item.value)
-    )
-  : PRODUCTION_ITEMS_BY_APPCONTEXT;
-
-const PRODUCTION_ITEMS = PRODUCTION_ITEMS_BY_VALUE;
-
-// Pre-compute safety items - use same pattern as production but compute inside component
-// This ensures ALL_NAVIGATION_ITEMS is fully loaded
-const getSafetyItems = () => {
-  // First try by appContext
-  const byAppContext = ALL_NAVIGATION_ITEMS.filter(item => 
-    item.appContext === 'safety'
-  );
-  if (byAppContext.length > 0) {
-    return byAppContext;
-  }
-  // Fallback: safety items by value if appContext filter finds nothing
-  const byValue = ALL_NAVIGATION_ITEMS.filter(item => 
-    item.value === 'safety'
-  );
-  if (byValue.length > 0) {
-    return byValue;
-  }
-  // Last resort: return a hardcoded safety item if nothing found
-  // This ensures it always shows up
-  return [{
-    value: "safety",
-    href: "/dashboard/safety",
-    label: "Safety",
-    shortLabel: "Safety",
-    appContext: "safety",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    )
-  }];
-};
+import { getAppConfig, appExists, getAllApps } from "@/lib/apps/registry";
+import { getAppAwareRoute, getAppFromRoute } from "@/lib/app-routes";
+import type { App } from "@/lib/apps/types";
 
 interface FloatingSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
+function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeApp, switchToApp } = useAppContext();
-  const [expandedSections, setExpandedSections] = useState({
-    recipes: true,
-    teams: true,
-    production: true,
-    make: true,
-    healthSafety: true
-  });
+  const searchParams = useSearchParams();
+  
+  // Detect app from route path (e.g., /bake/*) or query params (e.g., ?app=plato_bake)
+  const appFromRoute = getAppFromRoute(pathname);
+  const appParam = searchParams?.get("app");
+  // Prioritize route detection over query params, default to plato only if on /dashboard
+  let currentApp: App = "plato";
+  if (appFromRoute) {
+    currentApp = appFromRoute;
+  } else if (appParam && appExists(appParam)) {
+    currentApp = appParam;
+  }
+  const appConfig = getAppConfig(currentApp);
+  const appFeatures = appConfig?.features || [];
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean }> | null>(null);
   const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
+  const [showAppSwitcher, setShowAppSwitcher] = useState(false);
+  const [userApps, setUserApps] = useState<Array<{ id: App; name: string; hasAccess: boolean }>>([]);
 
-  // Fetch unlock status on mount and when pathname changes (user navigates)
+  // Fetch user's apps for app switcher
+  useEffect(() => {
+    fetch("/api/user/apps")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.apps) {
+          setUserApps(data.apps.map((app: any) => ({
+            id: app.id,
+            name: app.name,
+            hasAccess: app.hasAccess,
+          })));
+        }
+      })
+      .catch((err) => console.error("Failed to fetch user apps:", err));
+  }, []);
+
+  // Fetch unlock status on mount and when pathname changes
   const fetchUnlockStatus = () => {
     fetch("/api/features/unlock-status", {
       cache: 'no-store',
@@ -89,18 +69,10 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
         return res.json();
       })
       .then((data) => {
-        console.log('Unlock status fetched:', JSON.stringify(data, null, 2)); // Debug log
         if (data.unlockStatus) {
-          console.log('Setting unlock status:', {
-            production: data.unlockStatus.production?.unlocked,
-            make: data.unlockStatus.make?.unlocked,
-            teams: data.unlockStatus.teams?.unlocked,
-            safety: data.unlockStatus.safety?.unlocked,
-          });
           setUnlockStatus(data.unlockStatus);
         } else if (data.error) {
           console.error("API error:", data.error, data.details);
-          // Set default locked status if API returns error
           setUnlockStatus({
             recipes: { unlocked: true, isTrial: true },
             production: { unlocked: false, isTrial: false },
@@ -108,13 +80,10 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
             teams: { unlocked: false, isTrial: false },
             safety: { unlocked: false, isTrial: false },
           });
-        } else {
-          console.warn("API returned no unlockStatus and no error:", data);
         }
       })
       .catch((err) => {
         console.error("Failed to fetch unlock status:", err);
-        // Set default locked status on network error
         setUnlockStatus({
           recipes: { unlocked: true, isTrial: true },
           production: { unlocked: false, isTrial: false },
@@ -129,43 +98,78 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
     fetchUnlockStatus();
   }, []);
 
-  // Refresh unlock status when pathname changes (in case admin granted access)
   useEffect(() => {
     fetchUnlockStatus();
   }, [pathname]);
 
-  // Also refresh when sidebar opens (user might have granted access in admin panel)
   useEffect(() => {
     if (isOpen) {
       fetchUnlockStatus();
     }
   }, [isOpen]);
 
-  // Get all navigation items for global search
-  const allNavigationItems = ALL_NAVIGATION_ITEMS;
+  // Get filtered navigation items based on app features
+  const navigationItems = getFilteredNavigationItems(currentApp, appFeatures);
   
-  // Filter navigation items based on search
-  const filteredItems = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return allNavigationItems;
-    }
+  // Flatten all navigation items into a simple list (no sections/dropdowns)
+  const allNavItems = useMemo(() => {
+    // Get dashboard first
+    const dashboard = navigationItems.find(item => item.value === 'dashboard');
+    
+    // Get all other items, filtering by app features
+    const otherItems = navigationItems
+      .filter(item => {
+        if (item.value === 'dashboard' || item.value === 'account') return false;
+        
+        // Map appContext to feature names
+        const appContextToFeature: Record<string, string> = {
+          'recipes': 'recipes',
+          'production': 'production',
+          'make': 'make',
+          'teams': 'teams',
+          'safety': 'safety',
+        };
+        
+        const featureName = appContextToFeature[item.appContext];
+        if (featureName && appFeatures.length > 0) {
+          return appFeatures.includes(featureName);
+        }
+        
+        // Show global items
+        if (item.appContext === 'global') return true;
+        
+        return true;
+      })
+      .filter(item => {
+        // Check unlock status for locked features
+        if (item.appContext === 'production' && !unlockStatus?.production?.unlocked) return false;
+        if (item.appContext === 'make' && !unlockStatus?.make?.unlocked) return false;
+        if (item.appContext === 'teams' && !unlockStatus?.teams?.unlocked) return false;
+        if (item.appContext === 'safety' && !unlockStatus?.safety?.unlocked) return false;
+        return true;
+      });
+    
+    const items = dashboard ? [dashboard, ...otherItems] : otherItems;
+    
+    // Filter by search term if present
+    if (searchTerm.trim()) {
     const searchLower = searchTerm.toLowerCase();
-    return allNavigationItems.filter(item => 
+      return items.filter(item => 
       item.label.toLowerCase().includes(searchLower) ||
       item.value.toLowerCase().includes(searchLower) ||
       item.href.toLowerCase().includes(searchLower)
     );
-  }, [searchTerm, allNavigationItems]);
+    }
 
-  const navigationItems = getFilteredNavigationItems(activeApp?.id || null);
+    return items;
+  }, [navigationItems, appFeatures, unlockStatus, searchTerm]);
 
   // Close sidebar when route changes
   useEffect(() => {
     if (isOpen) {
       onClose();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]); // Only depend on pathname, not onClose
+  }, [pathname]);
 
   // Close on escape key
   useEffect(() => {
@@ -178,128 +182,36 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
       window.addEventListener("keydown", handleEscape);
       return () => window.removeEventListener("keydown", handleEscape);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]); // Only depend on isOpen, not onClose
+  }, [isOpen]);
 
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+  const handleAppSwitch = (appId: App) => {
+    // Update URL with app-specific route
+    if (appId === "plato") {
+      router.push("/dashboard");
+    } else if (appId === "plato_bake") {
+      router.push("/bake");
+    } else {
+      // For future apps, use the pattern
+      const appPrefix = `/${appId.replace("_", "-")}`;
+      router.push(appPrefix);
+    }
+    setShowAppSwitcher(false);
   };
 
-  // Group navigation items by app context
-  const recipesItems = useMemo(() => {
-    const items = navigationItems.filter(item => 
-      item.appContext === 'recipes' && item.value !== 'dashboard' && item.value !== 'production'
-    );
-    if (searchTerm.trim()) {
-      return items.filter(item => 
-        filteredItems.some(fi => fi.value === item.value)
-      );
-    }
-    return items;
-  }, [navigationItems, searchTerm, filteredItems]);
-
-  const teamsItems = useMemo(() => {
-    // Get teams items directly from ALL_NAVIGATION_ITEMS (like production items)
-    // Fallback to hardcoded items if ALL_NAVIGATION_ITEMS doesn't have them (cache issue)
-    let items = ALL_NAVIGATION_ITEMS.filter(item => 
-      item.appContext === 'teams' || ['team', 'scheduling', 'training'].includes(item.value)
-    );
+  // Helper function to generate app-aware routes
+  const getAppAwareHref = (href: string): string => {
+    // Ensure we're using the correct app - prioritize route detection
+    const appToUse = appFromRoute || currentApp;
+    let convertedRoute = getAppAwareRoute(href, appToUse);
     
-    // If we don't have all 3 items, use hardcoded fallback
-    if (items.length < 3) {
-      items = [
-        {
-          value: "team",
-          href: "/dashboard/team",
-          label: "Team",
-          shortLabel: "Team",
-          appContext: "teams",
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-            </svg>
-          )
-        },
-        {
-          value: "scheduling",
-          href: "/dashboard/scheduling",
-          label: "Scheduling",
-          shortLabel: "Schedule",
-          appContext: "teams",
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )
-        },
-        {
-          value: "training",
-          href: "/dashboard/training",
-          label: "Training",
-          shortLabel: "Training",
-          appContext: "teams",
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          )
-        }
-      ];
+    // Final safety check: ensure /plato-bake is always converted to /bake
+    if (convertedRoute.includes("/plato-bake")) {
+      convertedRoute = convertedRoute.replace(/\/plato-bake/g, "/bake");
     }
     
-    if (searchTerm.trim()) {
-      return items.filter(item => 
-        filteredItems.some(fi => fi.value === item.value) ||
-        item.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.value.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    return items;
-  }, [searchTerm, filteredItems]);
+    return convertedRoute;
+  };
 
-  const productionItems = useMemo(() => {
-    // Use pre-computed production items for better performance
-    if (searchTerm.trim()) {
-      return PRODUCTION_ITEMS.filter(item =>
-        filteredItems.some(fi => fi.value === item.value)
-      );
-    }
-    return PRODUCTION_ITEMS;
-  }, [searchTerm, filteredItems]);
-
-  const makeItems = useMemo(() => {
-    const items = ALL_NAVIGATION_ITEMS.filter(item =>
-      item.appContext === 'make'
-    );
-    if (searchTerm.trim()) {
-      return items.filter(item =>
-        filteredItems.some(fi => fi.value === item.value)
-      );
-    }
-    return items;
-  }, [searchTerm, filteredItems]);
-
-  // Health & Safety items - compute on demand to ensure ALL_NAVIGATION_ITEMS is loaded
-  const healthSafetyItems = useMemo(() => {
-    const safetyItems = getSafetyItems();
-    // Debug log
-    if (typeof window !== 'undefined' && safetyItems.length === 0) {
-      console.log('🛡️ Debug - ALL_NAVIGATION_ITEMS:', ALL_NAVIGATION_ITEMS.length);
-      console.log('🛡️ Debug - Items with safety appContext:', ALL_NAVIGATION_ITEMS.filter(i => i.appContext === 'safety'));
-      console.log('🛡️ Debug - Items with safety value:', ALL_NAVIGATION_ITEMS.filter(i => i.value === 'safety'));
-    }
-    if (searchTerm.trim()) {
-      return safetyItems.filter(item => 
-        filteredItems.some(fi => fi.value === item.value)
-      );
-    }
-    return safetyItems;
-  }, [searchTerm, filteredItems]);
-
-  // Settings item (move to bottom)
   const settingsItem = navigationItems.find(item => item.value === 'account');
 
   return (
@@ -313,32 +225,62 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
       )}
 
       {/* Sidebar */}
-      {/* Mobile (iPhone): Account for safe areas, iPad & Desktop: Standard */}
-      <div className={`fixed left-0 top-0 h-full w-80 bg-white/70 backdrop-blur-2xl border-r border-gray-200/80 flex flex-col z-50 transform transition-transform duration-300 ease-out
+      <div className={`fixed left-0 top-0 h-full w-80 bg-white flex flex-col z-50 transform transition-transform duration-300 ease-out
                       max-md:pt-[env(safe-area-inset-top,0px)] max-md:h-[100dvh]
                       ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Sidebar Header */}
-        {/* Mobile (iPhone): Larger padding for safe area, iPad & Desktop: Standard */}
-        <div className="px-4 py-3 border-b border-gray-200/80 max-md:pt-[env(safe-area-inset-top,0.75rem)]">
-          <div className="flex items-center justify-end mb-3">
+        <div className="px-4 py-3 border-b border-gray-200 max-md:pt-[env(safe-area-inset-top,0.75rem)]">
+          {/* App Switcher - Clickable app name */}
+          <div className="relative mb-3">
             <button 
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 transition-colors
-                         max-md:p-2 max-md:bg-gray-100/50 max-md:rounded-lg max-md:active:bg-gray-200/50
-                         md:p-1"
-              aria-label="Close menu"
+              onClick={() => setShowAppSwitcher(!showAppSwitcher)}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-left"
             >
-              <svg className="max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="text-base font-semibold text-gray-900 flex-1">{appConfig.name}</span>
+              <svg className={`w-4 h-4 text-gray-400 transform transition-transform ${showAppSwitcher ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
+            
+            {/* App Switcher Dropdown */}
+            {showAppSwitcher && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                {userApps.length > 0 ? (
+                  userApps.map((app) => {
+                    const appConfigItem = getAppConfig(app.id);
+                    const isCurrentApp = currentApp === app.id;
+                    return (
+                      <button
+                        key={app.id}
+                        onClick={() => handleAppSwitch(app.id)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors ${
+                          isCurrentApp ? 'bg-[var(--brand-secondary)]' : ''
+                        }`}
+                      >
+                        <span className={`text-sm font-medium ${isCurrentApp ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
+                          {appConfigItem.name}
+                        </span>
+                        {!app.hasAccess && app.id !== "plato" && (
+                          <span className="ml-auto text-xs text-gray-400">Locked</span>
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-3 py-2 text-sm text-gray-500">No apps available</div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Search Bar */}
           <div className="relative">
-            <svg className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -346,14 +288,14 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
               placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-100/80 rounded-lg pl-9 pr-9 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+              className="w-full bg-gray-100 rounded-lg pl-9 pr-9 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/50 transition-all"
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -361,349 +303,82 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
           </div>
         </div>
 
-        {/* Sidebar Content */}
-        <div className="flex-1 overflow-y-auto flex flex-col">
-          <div className="flex-1">
-            {/* Dashboard Link */}
-            {(() => {
-              const dashboardItem = ALL_NAVIGATION_ITEMS.find(item => item.value === 'dashboard');
-              if (!dashboardItem) return null;
-              const isActive = pathname === dashboardItem.href || pathname.startsWith(dashboardItem.href);
-              return (
-                <div className="px-2 pt-2 pb-1.5 border-b border-gray-200/80">
-                  <a
-                    href={dashboardItem.href}
-                    onClick={onClose}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
-                      isActive
-                        ? 'bg-blue-500/10 text-blue-600'
-                        : 'text-gray-700 hover:bg-gray-100/60'
-                    }`}
-                  >
-                    <div className="w-4 h-4">{dashboardItem.icon}</div>
-                    <span className="font-medium">{dashboardItem.label}</span>
-                  </a>
-                </div>
-              );
-            })()}
-
-            {/* Recipes Section */}
-            {(recipesItems.length > 0 || !searchTerm.trim()) && (
-              <div className="px-2 py-2">
-                <button
-                  onClick={() => toggleSection('recipes')}
-                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span>Recipes</span>
-                    {unlockStatus?.recipes?.isTrial && (
-                      <span className="px-1.5 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded uppercase">
-                        Trial
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-400">Detail</span>
-                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.recipes ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </button>
-                
-                {expandedSections.recipes && (
-                  <div className="mt-1 space-y-0.5">
-                    {recipesItems.map(item => {
-                      const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+        {/* Navigation Items - Simple list, no dropdowns */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="py-2">
+            {allNavItems.map(item => {
+              // Preserve app context in the URL - convert first
+              let appAwareHref = getAppAwareHref(item.href);
+              
+              // Final safety check: ensure no /plato-bake routes slip through
+              if (appAwareHref.includes("/plato-bake")) {
+                appAwareHref = appAwareHref.replace(/\/plato-bake/g, "/bake");
+              }
+              
+              // Check active state using the converted app-aware href
+              const normalizedPathname = pathname.endsWith("/") && pathname !== "/" ? pathname.slice(0, -1) : pathname;
+              const normalizedHref = appAwareHref.endsWith("/") && appAwareHref !== "/" ? appAwareHref.slice(0, -1) : appAwareHref;
+              const isActive = normalizedPathname === normalizedHref || 
+                (normalizedHref !== "/dashboard" && normalizedHref !== "/bake" && normalizedPathname.startsWith(normalizedHref + "/"));
+              
+              const isLocked = 
+                (item.appContext === 'production' && !unlockStatus?.production?.unlocked) ||
+                (item.appContext === 'make' && !unlockStatus?.make?.unlocked) ||
+                (item.appContext === 'teams' && !unlockStatus?.teams?.unlocked) ||
+                (item.appContext === 'safety' && !unlockStatus?.safety?.unlocked);
+              
                       return (
                         <a
                           key={item.value}
-                          href={item.href}
-                          onClick={onClose}
-                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
-                            isActive
-                              ? 'bg-blue-500/10 text-blue-600'
-                              : 'text-gray-700 hover:bg-gray-100/60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <svg className={`w-3.5 h-3.5 ${isActive ? 'fill-blue-500 text-blue-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10" />
-                            </svg>
-                            <span className="font-medium">{item.label}</span>
-                          </div>
-                        </a>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Production Section - Always show */}
-            <div className="px-2 py-2">
-                <button
-                  onClick={() => {
-                    if (!unlockStatus?.production?.unlocked) {
-                      setUnlockModal("production");
+                  href={appAwareHref}
+                  onClick={(e) => {
+                    if (isLocked) {
+                      e.preventDefault();
+                      // Show unlock modal for locked features
+                      if (item.appContext === 'production') setUnlockModal("production");
+                      if (item.appContext === 'make') setUnlockModal("make");
+                      if (item.appContext === 'teams') setUnlockModal("teams");
+                      if (item.appContext === 'safety') setUnlockModal("safety");
                     } else {
-                      toggleSection('production');
+                      onClose();
                     }
                   }}
-                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span>PRODUCTION DETAIL</span>
-                    {!unlockStatus?.production?.unlocked && (
-                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    )}
-                  </div>
-                  {unlockStatus?.production?.unlocked && (
-                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.production ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  )}
-                </button>
-
-                {expandedSections.production && unlockStatus?.production?.unlocked && (
-                  <div className="mt-1 space-y-0.5">
-                    {productionItems.length > 0 ? (
-                      productionItems.map(item => {
-                        const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                        return (
-                          <a
-                            key={item.value}
-                            href={item.href}
-                            onClick={onClose}
-                            className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
                               isActive
-                                ? 'bg-blue-500/10 text-blue-600'
-                                : 'text-gray-700 hover:bg-gray-100/60'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <svg className={`w-3.5 h-3.5 ${isActive ? 'fill-blue-500 text-blue-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" />
-                              </svg>
-                              <span className="font-medium">{item.label}</span>
-                            </div>
-                          </a>
-                        );
-                      })
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-gray-400 italic">
-                        No items found
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-            {/* Make Section - Label Generator */}
-            {(makeItems.length > 0 || !searchTerm.trim()) && (
-              <div className="px-2 py-2">
-                <button
-                  onClick={() => {
-                    if (!unlockStatus?.make?.unlocked) {
-                      setUnlockModal("make");
-                    } else {
-                      toggleSection('make');
-                    }
-                  }}
-                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
+                      ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span>MAKE</span>
-                    {!unlockStatus?.make?.unlocked && (
-                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    )}
-                    {unlockStatus?.make?.unlocked && (
-                      <>
-                        <span className="text-gray-400">Detail</span>
-                        <svg className={`w-3 h-3 transform transition-transform ${expandedSections.make ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </>
-                    )}
-                  </div>
-                </button>
-
-                {expandedSections.make && unlockStatus?.make?.unlocked && (
-                  <div className="mt-1 space-y-0.5">
-                    {makeItems.map(item => {
-                      const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                      return (
-                        <a
-                          key={item.value}
-                          href={item.href}
-                          onClick={onClose}
-                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
-                            isActive
-                              ? 'bg-blue-500/10 text-blue-600'
-                              : 'text-gray-700 hover:bg-gray-100/60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <svg className={`w-3.5 h-3.5 ${isActive ? 'fill-blue-500 text-blue-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10" />
-                            </svg>
-                            <span className="font-medium">{item.label}</span>
-                          </div>
-                        </a>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Teams Section - Always show, even if empty (like production) */}
-            <div className="px-2 py-2">
-              <button
-                onClick={() => {
-                  if (!unlockStatus?.teams?.unlocked) {
-                    setUnlockModal("teams");
-                  } else {
-                    toggleSection('teams');
-                  }
-                }}
-                className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span>TEAMS</span>
-                  {!unlockStatus?.teams?.unlocked && (
-                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-5 h-5 flex-shrink-0">{item.icon}</div>
+                  <span className="flex-1">{item.label}</span>
+                  {isLocked && (
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   )}
-                </div>
-                {unlockStatus?.teams?.unlocked && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-400">Detail</span>
-                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.teams ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-              
-              {expandedSections.teams && unlockStatus?.teams?.unlocked && (
-                <div className="mt-1 space-y-0.5">
-                  {teamsItems.length > 0 ? (
-                    teamsItems.map(item => {
-                      const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                      return (
-                        <a
-                          key={item.value}
-                          href={item.href}
-                          onClick={onClose}
-                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
-                            isActive
-                              ? 'bg-blue-500/10 text-blue-600'
-                              : 'text-gray-700 hover:bg-gray-100/60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <svg className={`w-3.5 h-3.5 ${isActive ? 'fill-blue-500 text-blue-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10" />
-                            </svg>
-                            <span className="font-medium">{item.label}</span>
-                          </div>
                         </a>
                       );
-                    })
-                  ) : (
-                    <div className="px-2 py-1.5 text-sm text-gray-400 italic">
-                      No items found
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Hygiene & Safety Section - Always show */}
-            <div className="px-2 py-2">
-              <button
-                onClick={() => {
-                  if (!unlockStatus?.safety?.unlocked) {
-                    setUnlockModal("safety");
-                  } else {
-                    toggleSection('healthSafety');
-                  }
-                }}
-                className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 uppercase tracking-wider transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span>Hygiene & Safety</span>
-                  {!unlockStatus?.safety?.unlocked && (
-                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  )}
-                </div>
-                {unlockStatus?.safety?.unlocked && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-400">Detail</span>
-                    <svg className={`w-3 h-3 transform transition-transform ${expandedSections.healthSafety ? 'rotate-0' : '-rotate-90'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-              
-              {expandedSections.healthSafety && unlockStatus?.safety?.unlocked && (
-                <div className="mt-1 space-y-0.5">
-                  {healthSafetyItems.length > 0 ? (
-                    healthSafetyItems.map(item => {
-                      const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                      return (
-                        <a
-                          key={item.value}
-                          href={item.href}
-                          onClick={onClose}
-                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors ${
-                            isActive
-                              ? 'bg-blue-500/10 text-blue-600'
-                              : 'text-gray-700 hover:bg-gray-100/60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <svg className={`w-3.5 h-3.5 ${isActive ? 'fill-blue-500 text-blue-500' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10" />
-                            </svg>
-                            <span className="font-medium">{item.label}</span>
-                          </div>
-                        </a>
-                      );
-                    })
-                  ) : (
-                    <div className="px-2 py-1.5 text-sm text-gray-400 italic">
-                      No items found
-                    </div>
-                  )}
-                </div>
-              )}
+            })}
             </div>
           </div>
 
-          {/* Settings at Bottom */}
+        {/* Bottom Section - Settings & Actions */}
+        <div className="border-t border-gray-200 px-4 py-3 space-y-2">
+          {/* Settings */}
           {settingsItem && (
-            <div className="px-2 py-2 border-t border-gray-200/80 mt-auto space-y-1">
               <a
-                href={settingsItem.href}
+              href={getAppAwareHref(settingsItem.href)}
                 onClick={onClose}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors rounded-lg ${
                   pathname === settingsItem.href || pathname.startsWith(settingsItem.href)
-                    ? 'bg-blue-500/10 text-blue-600'
-                    : 'text-gray-700 hover:bg-gray-100/60'
+                  ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className="w-4 h-4">{settingsItem.icon}</div>
-                <span className="font-medium">{settingsItem.label}</span>
+              <div className="w-5 h-5 flex-shrink-0">{settingsItem.icon}</div>
+              <span>{settingsItem.label}</span>
               </a>
+          )}
               
               {/* Logout Button */}
               <button
@@ -717,17 +392,15 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
                     console.error('Logout error:', error);
                   }
                 }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-red-600 hover:bg-red-50"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
               >
-                <div className="w-4 h-4">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-5 h-5 flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
                 </div>
-                <span className="font-medium">Logout</span>
+            <span>Logout</span>
               </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -743,3 +416,10 @@ export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
   );
 }
 
+export function FloatingSidebar({ isOpen, onClose }: FloatingSidebarProps) {
+  return (
+    <Suspense fallback={null}>
+      <FloatingSidebarInner isOpen={isOpen} onClose={onClose} />
+    </Suspense>
+  );
+}

@@ -1,5 +1,8 @@
 import { prisma } from './prisma';
 import { getUserFromSession } from './auth-simple';
+import type { Brand } from './brands/types';
+import type { BrandConfig } from './brands/types';
+import { getBrandConfig } from './brands/registry';
 
 export interface Company {
   id: number;
@@ -8,6 +11,7 @@ export interface Company {
   country?: string;
   phone?: string;
   logoUrl?: string;
+  brand?: Brand;
 }
 
 export interface UserWithMemberships {
@@ -28,6 +32,8 @@ export interface CurrentUserAndCompany {
   companyId: number | null;
   company: Company | null;
   user: UserWithMemberships;
+  brand?: Brand | null;
+  brandConfig?: BrandConfig | null;
 }
 
 // Cache for user data to avoid repeated queries
@@ -71,7 +77,8 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
                 businessType: true,
                 country: true,
                 phone: true,
-                logoUrl: true
+                logoUrl: true,
+                brand: true
               }
             }
           },
@@ -89,11 +96,17 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     const primaryMembership = userWithMemberships.memberships[0];
     const companyId = primaryMembership?.companyId || null;
     const company = primaryMembership?.company || null;
+    
+    // Get brand config if company has a brand
+    const brand = company?.brand || null;
+    const brandConfig = brand ? getBrandConfig(brand) : null;
 
     const result = {
       companyId,
       company,
-      user: userWithMemberships
+      user: userWithMemberships,
+      brand,
+      brandConfig
     };
 
     // Cache the result
@@ -119,7 +132,9 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         name: user.name,
         isAdmin: user.isAdmin,
         memberships: []
-      }
+      },
+      brand: null,
+      brandConfig: null
     };
   }
 }

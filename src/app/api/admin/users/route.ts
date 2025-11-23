@@ -39,6 +39,13 @@ export async function GET(request: NextRequest) {
             },
           },
         } : undefined,
+        UserAppSubscription: {
+          select: {
+            app: true,
+            status: true,
+            currentPeriodEnd: true,
+          },
+        },
         _count: {
           select: {
             memberships: true,

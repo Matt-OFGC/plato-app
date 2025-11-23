@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
 
 interface RecipeIdea {
   id: string;
@@ -146,7 +147,7 @@ export function RecipeIdeasList() {
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Link
-                    href={`/dashboard/recipes/new?name=${encodeURIComponent(idea.name)}`}
+                    href={toAppRoute(`/dashboard/recipes/new?name=${encodeURIComponent(idea.name)}`)}
                     className="p-2 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
                     title="Create recipe"
                   >

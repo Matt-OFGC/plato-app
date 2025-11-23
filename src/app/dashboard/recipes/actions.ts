@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { canAddRecipe, updateRecipeCount } from "@/lib/subscription";
+import { getAppAwareRouteForServer } from "@/lib/server-app-context";
 // Temporarily disabled to fix build error
 // import { isRecipesTrial } from "@/lib/features";
 import { z } from "zod";
@@ -80,8 +81,13 @@ export async function createRecipe(formData: FormData) {
     await updateRecipeCount(userId);
   }
 
-  revalidatePath("/recipes");
-  redirect("/recipes");
+  // Revalidate both possible paths
+  revalidatePath("/dashboard/recipes");
+  revalidatePath("/bake/recipes");
+  
+  // Redirect to app-aware route
+  const redirectPath = await getAppAwareRouteForServer("/dashboard/recipes");
+  redirect(redirectPath);
 }
 
 export async function updateRecipe(id: number, formData: FormData) {
@@ -119,8 +125,14 @@ export async function updateRecipe(id: number, formData: FormData) {
       data: data.items.map((it) => ({ recipeId: id, ingredientId: it.ingredientId, quantity: it.quantity, unit: it.unit })),
     }),
   ]);
-  revalidatePath("/recipes");
-  redirect("/recipes");
+  
+  // Revalidate both possible paths
+  revalidatePath("/dashboard/recipes");
+  revalidatePath("/bake/recipes");
+  
+  // Redirect to app-aware route
+  const redirectPath = await getAppAwareRouteForServer("/dashboard/recipes");
+  redirect(redirectPath);
 }
 
 export async function deleteRecipe(id: number) {
@@ -145,7 +157,9 @@ export async function deleteRecipe(id: number) {
     await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
   }
   
-  revalidatePath("/recipes");
+  // Revalidate both possible paths
+  revalidatePath("/dashboard/recipes");
+  revalidatePath("/bake/recipes");
 }
 
 export async function bulkDeleteRecipes(ids: number[]) {

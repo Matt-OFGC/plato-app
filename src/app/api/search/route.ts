@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { getAppFromRoute, getAppAwareRoute } from "@/lib/app-routes";
+import type { App } from "@/lib/apps/types";
 
 export interface SearchResult {
   type: string;
@@ -26,13 +28,33 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
+    const appParam = searchParams.get("app") as App | null;
 
     if (!query || query.length < 2) {
       return NextResponse.json({ results: [] });
     }
 
+    // Detect app from query param or referer
+    let app: App | null = appParam;
+    if (!app) {
+      const referer = request.headers.get("referer");
+      if (referer) {
+        try {
+          const url = new URL(referer);
+          app = getAppFromRoute(url.pathname);
+        } catch {
+          // Invalid URL, ignore
+        }
+      }
+    }
+
     const searchTerm = `%${query}%`;
     const results: SearchResult[] = [];
+    
+    // Helper function to generate app-aware links
+    const getAppAwareLink = (path: string): string => {
+      return getAppAwareRoute(path, app);
+    };
 
     // Search staff (users)
     const staffMembers = await prisma.membership.findMany({
@@ -63,7 +85,7 @@ export async function GET(request: NextRequest) {
         type: "staff",
         id: member.id,
         name: member.user.name || member.user.email,
-        link: `/dashboard/team/${member.id}`,
+        link: getAppAwareLink(`/dashboard/team/${member.id}`),
         description: member.user.email,
       });
     });
@@ -82,7 +104,7 @@ export async function GET(request: NextRequest) {
         type: "recipe",
         id: recipe.id,
         name: recipe.name,
-        link: `/dashboard/recipes/${recipe.id}`,
+        link: getAppAwareLink(`/dashboard/recipes/${recipe.id}`),
         description: recipe.description || undefined,
       });
     });
@@ -104,7 +126,7 @@ export async function GET(request: NextRequest) {
         type: "training",
         id: module.id,
         name: module.title,
-        link: `/dashboard/training/modules/${module.id}`,
+        link: getAppAwareLink(`/dashboard/training/modules/${module.id}`),
         description: module.description || undefined,
       });
     });
@@ -123,7 +145,7 @@ export async function GET(request: NextRequest) {
         type: "cleaning",
         id: job.id,
         name: job.name,
-        link: `/dashboard/team/cleaning`,
+        link: getAppAwareLink(`/dashboard/team/cleaning`),
         description: job.description || undefined,
       });
     });
@@ -142,7 +164,7 @@ export async function GET(request: NextRequest) {
         type: "production",
         id: plan.id,
         name: plan.name,
-        link: `/dashboard/production/view/${plan.id}`,
+        link: getAppAwareLink(`/dashboard/production/view/${plan.id}`),
         description: plan.notes || undefined,
       });
     });

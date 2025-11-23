@@ -354,6 +354,15 @@ export function Sidebar() {
                   : (moduleName ? !moduleStatus?.unlocked : false);
                 const isTrial = moduleName && moduleStatus?.isTrial;
                 
+                // For brand restrictions: completely hide sections not in brand's feature list
+                // If section is locked but user has paid subscription, it's a brand restriction - hide it
+                // If section is locked and user is on free tier, show it as locked (so they can upgrade)
+                const isBrandRestricted = isLocked && !isTrial && moduleStatus?.status !== "trialing";
+                if (isBrandRestricted) {
+                  // Completely hide this section (brand restriction, not a free tier lock)
+                  return null;
+                }
+                
                 // Enhanced debug logging for ALL modules (not just locked ones)
                 if (moduleName && typeof window !== 'undefined') {
                   console.log(`[Sidebar] 📊 Section ${sectionKey} (${moduleName}):`, {
