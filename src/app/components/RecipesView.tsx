@@ -184,13 +184,13 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
       </div>
 
       {/* Card Grid Layout - All Screen Sizes */}
-      {/* iPad optimization: Ensure proper scrolling and content fitting */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5 lg:gap-6 pb-8 md:pb-10 min-w-0">
+      {/* iPad optimization: 3 columns at 1024px, proper spacing and card sizing */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-4 lg:gap-5 pb-6 md:pb-8 min-w-0">
         {sortedRecipes.map((r) => (
           <Link 
             key={r.id}
             href={toAppRoute(`/dashboard/recipes/${r.id}`)}
-            className={`group bg-white rounded-xl border border-gray-200 p-4 md:p-6 lg:p-5 hover:shadow-lg hover:border-emerald-300 transition-all mobile-touch-target min-w-0 flex flex-col ${
+            className={`group bg-white rounded-xl border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-4 hover:shadow-lg hover:border-emerald-300 transition-all mobile-touch-target min-w-0 flex flex-col ${
               selectedIds.has(r.id) ? 'ring-2 ring-emerald-500 bg-emerald-50 border-emerald-300' : ''
             }`}
           >
@@ -212,24 +212,24 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
             )}
 
             {/* Recipe Image/Icon */}
-            <div className="w-full aspect-square mb-4 md:mb-5 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="w-full aspect-square mb-3 sm:mb-4 md:mb-4 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
               {r.imageUrl ? (
                 <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
               ) : (
-                <svg className="w-12 h-12 md:w-16 md:h-16 lg:w-14 lg:h-14 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               )}
             </div>
 
             {/* Recipe Name */}
-            <h3 className="text-base md:text-lg lg:text-base font-semibold text-gray-900 mb-1 md:mb-2 group-hover:text-emerald-600 transition-colors line-clamp-2 min-w-0 break-words flex-shrink-0">
+            <h3 className="text-sm sm:text-base md:text-base font-semibold text-gray-900 mb-1 sm:mb-1.5 md:mb-2 group-hover:text-emerald-600 transition-colors line-clamp-2 min-w-0 break-words flex-shrink-0">
               {r.name}
             </h3>
 
             {/* Description */}
             {r.description && (
-              <p className="text-xs md:text-sm lg:text-xs text-gray-500 mb-3 md:mb-4 lg:mb-3 line-clamp-2 min-w-0 break-words flex-shrink-0">
+              <p className="text-xs sm:text-xs md:text-sm text-gray-500 mb-2 sm:mb-3 md:mb-3 line-clamp-2 min-w-0 break-words flex-shrink-0">
                 {r.description}
               </p>
             )}
@@ -252,16 +252,16 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
             )}
 
             {/* Recipe Details Grid */}
-            <div className="space-y-2 md:space-y-2.5 pt-3 md:pt-4 border-t border-gray-100 min-w-0 flex-shrink-0 mt-auto">
+            <div className="space-y-1.5 sm:space-y-2 md:space-y-2 pt-2 sm:pt-3 md:pt-3 border-t border-gray-100 min-w-0 flex-shrink-0 mt-auto">
               {/* Yield */}
-              <div className="flex items-center justify-between text-sm md:text-sm lg:text-xs min-w-0 gap-2">
+              <div className="flex items-center justify-between text-xs sm:text-xs md:text-sm min-w-0 gap-2">
                 <span className="text-gray-500 flex-shrink-0">Yield:</span>
                 <span className="font-medium text-gray-900 truncate text-right">{String(r.yieldQuantity)} {r.yieldUnit}</span>
               </div>
 
               {/* Selling Price */}
               {r.sellingPrice && (
-                <div className="flex items-center justify-between text-sm md:text-sm lg:text-xs min-w-0 gap-2">
+                <div className="flex items-center justify-between text-xs sm:text-xs md:text-sm min-w-0 gap-2">
                   <span className="text-gray-500 flex-shrink-0">Price:</span>
                   <span className="font-semibold text-emerald-600 truncate text-right">£{r.sellingPrice.toFixed(2)}</span>
                 </div>
@@ -269,9 +269,9 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
 
               {/* COGS Percentage */}
               {r.cogsPercentage !== null && (
-                <div className="flex items-center justify-between text-sm md:text-sm lg:text-xs min-w-0 gap-2">
+                <div className="flex items-center justify-between text-xs sm:text-xs md:text-sm min-w-0 gap-2">
                   <span className="text-gray-500 flex-shrink-0">COGS:</span>
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                  <span className={`inline-flex px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
                     r.cogsPercentage <= 25 ? 'bg-emerald-100 text-emerald-700' :
                     r.cogsPercentage <= 33 ? 'bg-green-100 text-green-700' :
                     r.cogsPercentage <= 40 ? 'bg-yellow-100 text-yellow-700' :
@@ -283,10 +283,10 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
               )}
 
               {/* Steps and Time */}
-              <div className="flex items-center gap-2 md:gap-3 lg:gap-2 text-xs text-gray-500 pt-1 flex-wrap">
+              <div className="flex items-center gap-2 sm:gap-2 md:gap-2.5 text-xs text-gray-500 pt-1 flex-wrap">
                 {r.totalSteps > 0 && (
                   <span className="flex items-center gap-1 flex-shrink-0">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                     {r.totalSteps} steps
@@ -294,7 +294,7 @@ export function RecipesView({ recipes, selectedIds = new Set(), onSelect, onSele
                 )}
                 {r.totalTime && (
                   <span className="flex items-center gap-1 flex-shrink-0">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {r.totalTime}min
