@@ -29,33 +29,58 @@ export function ScrollHideNav({
       return;
     }
 
+    // Only run on client side
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     let ticking = false;
-    const scrollableContainer = document.querySelector('[class*="overflow-auto"]') as HTMLElement | null;
+    let scrollableContainer: HTMLElement | null = null;
+
+    // Find scrollable container after a short delay to ensure DOM is ready
+    const findScrollableContainer = () => {
+      try {
+        scrollableContainer = document.querySelector('[class*="overflow-auto"]') as HTMLElement | null;
+      } catch (e) {
+        // Ignore errors if document is not available
+        scrollableContainer = null;
+      }
+    };
+
+    // Delay container lookup slightly to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      findScrollableContainer();
+    }, 100);
 
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          // Check both window scroll and scrollable container
-          const windowScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-          const containerScrollY = scrollableContainer?.scrollTop || 0;
-          const currentScrollY = Math.max(windowScrollY, containerScrollY);
+          try {
+            // Check both window scroll and scrollable container
+            const windowScrollY = window.scrollY || window.pageYOffset || (document.documentElement?.scrollTop || 0);
+            const containerScrollY = scrollableContainer?.scrollTop || 0;
+            const currentScrollY = Math.max(windowScrollY, containerScrollY);
 
-          // Show if scrolled to top
-          if (currentScrollY < threshold) {
-            setIsVisible(true);
+            // Show if scrolled to top
+            if (currentScrollY < threshold) {
+              setIsVisible(true);
+              setLastScrollY(currentScrollY);
+              ticking = false;
+              return;
+            } 
+            
+            // Hide if scrolling down, show if scrolling up
+            if (currentScrollY > lastScrollY && currentScrollY > threshold) {
+              setIsVisible(false);
+            } else if (currentScrollY < lastScrollY) {
+              setIsVisible(true);
+            }
+
             setLastScrollY(currentScrollY);
-            ticking = false;
-            return;
-          } 
-          
-          // Hide if scrolling down, show if scrolling up
-          if (currentScrollY > lastScrollY && currentScrollY > threshold) {
-            setIsVisible(false);
-          } else if (currentScrollY < lastScrollY) {
-            setIsVisible(true);
+          } catch (e) {
+            // Ignore scroll errors
+            console.error('[ScrollHideNav] Scroll error:', e);
           }
-
-          setLastScrollY(currentScrollY);
           ticking = false;
         });
         ticking = true;
@@ -65,12 +90,17 @@ export function ScrollHideNav({
     // Listen to scroll on window
     window.addEventListener('scroll', handleScroll, { passive: true });
     
-    // Also listen to scrollable container if it exists
-    if (scrollableContainer) {
-      scrollableContainer.addEventListener('scroll', handleScroll, { passive: true });
-    }
+    // Also listen to scrollable container if it exists (after delay)
+    const containerTimeoutId = setTimeout(() => {
+      findScrollableContainer();
+      if (scrollableContainer) {
+        scrollableContainer.addEventListener('scroll', handleScroll, { passive: true });
+      }
+    }, 200);
 
     return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(containerTimeoutId);
       window.removeEventListener('scroll', handleScroll);
       if (scrollableContainer) {
         scrollableContainer.removeEventListener('scroll', handleScroll);
