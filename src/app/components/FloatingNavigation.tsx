@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getFilteredNavigationItems } from "@/lib/navigation-config";
 import { useAppContext } from "./AppContextProvider";
 import { usePageActions } from "./PageActionContext";
-import { FloatingFilter } from "./FloatingFilter";
 import { SmartImportButton } from "./SmartImportButton";
 import { useRecipeView } from "./RecipeViewContext";
 import { ScrollHideNav } from "./ScrollHideNav";
@@ -158,7 +157,6 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
   const recipeView = useRecipeView();
   const [activeTab, setActiveTab] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [localSearchTerm, setLocalSearchTerm] = useState(searchParams.get("search") || "");
   const showActionButtons = shouldShowActionButtons(pathname);
@@ -635,17 +633,6 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           </div>
 
           {/* Other Action Buttons */}
-          <button 
-            onClick={() => setIsFilterOpen(true)}
-            className="bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 flex-shrink-0 will-change-transform
-                       max-md:p-2.5
-                       md:p-2.5 lg:p-3"
-            aria-label="Filter"
-          >
-            <svg className="text-gray-700 max-md:w-4 max-md:h-4 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-          </button>
           {showSmartImport && (
             <SmartImportButton type={(pathname.startsWith('/dashboard/recipes') || pathname.startsWith('/bake/recipes')) ? 'recipes' : 'ingredients'} />
           )}
@@ -662,9 +649,6 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           </button>
         </div>
       )}
-      
-      {/* Floating Filter */}
-      <FloatingFilter isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
     </>
   );
 }

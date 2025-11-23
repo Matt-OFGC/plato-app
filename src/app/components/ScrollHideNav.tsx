@@ -29,25 +29,53 @@ export function ScrollHideNav({
       return;
     }
 
+    let ticking = false;
+    const scrollableContainer = document.querySelector('[class*="overflow-auto"]') as HTMLElement | null;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          // Check both window scroll and scrollable container
+          const windowScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+          const containerScrollY = scrollableContainer?.scrollTop || 0;
+          const currentScrollY = Math.max(windowScrollY, containerScrollY);
 
-      // Show if scrolled to top
-      if (currentScrollY < threshold) {
-        setIsVisible(true);
-      } 
-      // Hide if scrolling down, show if scrolling up
-      else if (currentScrollY > lastScrollY && currentScrollY > threshold) {
-        setIsVisible(false);
-      } else if (currentScrollY < lastScrollY) {
-        setIsVisible(true);
+          // Show if scrolled to top
+          if (currentScrollY < threshold) {
+            setIsVisible(true);
+            setLastScrollY(currentScrollY);
+            ticking = false;
+            return;
+          } 
+          
+          // Hide if scrolling down, show if scrolling up
+          if (currentScrollY > lastScrollY && currentScrollY > threshold) {
+            setIsVisible(false);
+          } else if (currentScrollY < lastScrollY) {
+            setIsVisible(true);
+          }
+
+          setLastScrollY(currentScrollY);
+          ticking = false;
+        });
+        ticking = true;
       }
-
-      setLastScrollY(currentScrollY);
     };
 
+    // Listen to scroll on window
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    // Also listen to scrollable container if it exists
+    if (scrollableContainer) {
+      scrollableContainer.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollableContainer) {
+        scrollableContainer.removeEventListener('scroll', handleScroll);
+      }
+    };
   }, [lastScrollY, hideOnScroll, threshold]);
 
   // Clone the child and add transform classes directly to it
