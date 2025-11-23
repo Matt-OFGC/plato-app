@@ -8,6 +8,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Brand {
+  plato
+  plato_bake
+}
+
+enum App {
+  plato
+  plato_bake
+}
+
 model ActivityLog {
   id         Int      @id @default(autoincrement())
   createdAt  DateTime @default(now())
@@ -1884,15 +1894,6 @@ enum BaseUnit {
   slices
 }
 
-enum App {
-  plato
-  plato_bake
-}
-
-enum Brand {
-  plato
-  plato_bake
-}
 
 model UserAppSubscription {
   id                    Int       @id @default(autoincrement())
