@@ -16,7 +16,7 @@ export function useBrandColors() {
     const detectBrand = () => {
       if (typeof document === "undefined") return null;
       
-      if (document.documentElement.classList.contains("brand-plato-bake")) {
+      if (document.documentElement.classList.contains("app-plato-bake")) {
         return "plato_bake";
       }
       return "plato";
