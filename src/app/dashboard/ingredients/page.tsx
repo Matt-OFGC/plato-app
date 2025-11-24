@@ -12,7 +12,14 @@ interface Props {
 
 export default async function IngredientsPage({ searchParams }: Props) {
   // Note: We don't use search here - filtering is done client-side for live search
-  const { companyId } = await getCurrentUserAndCompany();
+  let companyId: number | null = null;
+  try {
+    const result = await getCurrentUserAndCompany();
+    companyId = result.companyId;
+  } catch (error) {
+    // If getCurrentUserAndCompany fails, return empty state
+    return <IngredientsPageClient ingredients={[]} companyId={0} suppliers={[]} deleteIngredient={async () => {}} />;
+  }
   
   if (!companyId) {
     return <IngredientsPageClient ingredients={[]} companyId={0} suppliers={[]} deleteIngredient={async () => {}} />;

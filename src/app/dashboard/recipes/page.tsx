@@ -52,7 +52,17 @@ export default async function RecipesPage({ searchParams }: Props) {
       cacheKey,
       async () => {
         return await prisma.recipe.findMany({ 
-          where, 
+          where: {
+            ...where,
+            // Filter out test recipes
+            NOT: {
+              OR: [
+                { name: { contains: "Test Category", mode: "insensitive" } },
+                { name: { contains: "test category", mode: "insensitive" } },
+                { name: { startsWith: "Test ", mode: "insensitive" } },
+              ]
+            }
+          }, 
           orderBy: { name: "asc" },
           select: {
             id: true,
@@ -171,7 +181,17 @@ export default async function RecipesPage({ searchParams }: Props) {
     CacheKeys.categories(companyId),
     async () => {
       return await prisma.category.findMany({
-        where: { companyId },
+        where: { 
+          companyId,
+          // Filter out test categories
+          NOT: {
+            OR: [
+              { name: { contains: "Test Category", mode: "insensitive" } },
+              { name: { contains: "test category", mode: "insensitive" } },
+              { name: { startsWith: "Test ", mode: "insensitive" } },
+            ]
+          }
+        },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       });
