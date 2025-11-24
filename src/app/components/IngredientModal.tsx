@@ -292,6 +292,7 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
                 suppliers={suppliers}
                 onSubmit={handleSubmit}
                 initialData={convertedInitialData}
+                batchPricingJson={editIngredient?.batchPricing ? JSON.stringify(editIngredient.batchPricing) : undefined}
                 allergens={allergens}
                 onAllergenChange={setAllergens}
                 otherAllergen={otherAllergen}
