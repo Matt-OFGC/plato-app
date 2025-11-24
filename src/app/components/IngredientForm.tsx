@@ -741,15 +741,25 @@ export function IngredientForm({
                 <button
                   type="button"
                   onClick={() => {
-                    setIsBulkPurchaseMode(!isBulkPurchaseMode);
-                    if (!isBulkPurchaseMode) {
+                    const newBulkMode = !isBulkPurchaseMode;
+                    console.log('IngredientForm: Toggle clicked', { 
+                      currentMode: isBulkPurchaseMode, 
+                      newMode: newBulkMode,
+                      purchaseUnit,
+                      packUnit,
+                      batchPricing: initialData?.batchPricing
+                    });
+                    setIsBulkPurchaseMode(newBulkMode);
+                    if (newBulkMode) {
                       // Switching to bulk mode - set purchase unit to case if empty
                       if (!purchaseUnit || !packagingUnits.includes(purchaseUnit)) {
+                        console.log('IngredientForm: Setting purchaseUnit to "case" for bulk mode');
                         setPurchaseUnit('case');
                       }
                     } else {
                       // Switching to single mode - clear packaging unit, use pack unit
                       if (packagingUnits.includes(purchaseUnit)) {
+                        console.log('IngredientForm: Setting purchaseUnit to packUnit for single mode', packUnit);
                         setPurchaseUnit(packUnit || 'kg');
                       }
                     }
