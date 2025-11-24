@@ -87,15 +87,16 @@ export default async function EditIngredientPage({ params }: Props) {
   // Create a bound function for the IngredientForm
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
-  // CRITICAL FIX: Next.js RSC serialization strips empty arrays []
-  // We MUST ensure batchPricing is ALWAYS present with a non-empty structure
-  // Use a sentinel object that Next.js won't strip (has non-zero/non-false values)
+  // CRITICAL FIX: Next.js RSC serialization strips null/undefined/empty arrays
+  // We MUST ensure batchPricing is ALWAYS present as a non-empty array
+  // If empty, use a sentinel object with meaningful values (not all zeros)
   const batchPricingValue = (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0 && !parsedBatchPricing[0]?._empty) 
     ? parsedBatchPricing 
-    : [{ packQuantity: 1, packPrice: 0, _empty: true }] as any; // Use packQuantity: 1 instead of 0 to avoid being stripped
+    : [{ packQuantity: 1, packPrice: 0, _empty: true }] as any;
   
-  // Build initialData object - use Object.defineProperty to force inclusion
-  const initialFormDataBase = {
+  // Build initialData object - include batchPricing directly in object literal
+  // Next.js should serialize this if it's a non-empty array
+  const initialFormData = {
     name: ing.name,
     supplierId: ing.supplierId || undefined,
     packQuantity: originalQuantity,
@@ -105,19 +106,8 @@ export default async function EditIngredientPage({ params }: Props) {
     notes: ing.notes || "",
     allergens: ing.allergens || [],
     customConversions: ing.customConversions || undefined,
-  };
-  
-  // Force include batchPricing using Object.defineProperty with enumerable: true
-  const initialFormData = Object.defineProperty(
-    { ...initialFormDataBase },
-    'batchPricing',
-    {
-      value: batchPricingValue,
-      enumerable: true,
-      writable: true,
-      configurable: true,
-    }
-  );
+    batchPricing: batchPricingValue, // Always include, never null/undefined/empty
+  } as const;
   
   // Debug: Log what we're passing to the form
   console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
@@ -125,7 +115,11 @@ export default async function EditIngredientPage({ params }: Props) {
   console.log('EditIngredientPage: initialFormData keys:', Object.keys(initialFormData));
   console.log('EditIngredientPage: batchPricing length:', Array.isArray(initialFormData.batchPricing) ? initialFormData.batchPricing.length : 'N/A');
   console.log('EditIngredientPage: batchPricing[0]:', Array.isArray(initialFormData.batchPricing) && initialFormData.batchPricing.length > 0 ? initialFormData.batchPricing[0] : 'N/A');
-  console.log('EditIngredientPage: Object.getOwnPropertyDescriptor:', Object.getOwnPropertyDescriptor(initialFormData, 'batchPricing'));
+  
+  // CRITICAL: Force serialization by creating a new object with batchPricing explicitly set
+  // This ensures Next.js includes it in the serialized payload
+  const serializedData = JSON.parse(JSON.stringify(initialFormData));
+  console.log('EditIngredientPage: After JSON serialization, batchPricing:', serializedData.batchPricing, 'keys:', Object.keys(serializedData));
 
   return (
     <div className="app-container">
@@ -143,7 +137,7 @@ export default async function EditIngredientPage({ params }: Props) {
         <IngredientForm
           companyId={companyId || undefined}
           suppliers={suppliers}
-          initialData={initialFormData}
+          initialData={serializedData}
           onSubmit={handleSubmit}
         />
       </div>
