@@ -170,7 +170,7 @@ model User {
   subscriptionEndsAt         DateTime?
   subscriptionInterval       String                  @default("month")
   subscriptionStatus         String                  @default("free")
-  subscriptionTier           String                  @default("starter")
+  subscriptionTier           String                  @default("free") // Simplified: "free" or "paid"
   emailVerified              Boolean                 @default(false)
   verificationToken          String?                 @unique
   verificationTokenExpiresAt DateTime?
