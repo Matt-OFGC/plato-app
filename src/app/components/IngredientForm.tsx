@@ -65,7 +65,7 @@ interface IngredientFormProps {
     notes?: string;
     supplierId?: number;
     customConversions?: string;
-    batchPricing?: Array<{ packQuantity: number; packPrice: number }> | null;
+    batchPricing?: Array<{ packQuantity: number; packPrice: number; purchaseUnit?: string; unitSize?: number }> | null;
     servings?: number | null;
   };
   onSubmit: (formData: FormData) => void;
@@ -159,6 +159,7 @@ export function IngredientForm({
   const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
   const [hasUserModifiedPackSize, setHasUserModifiedPackSize] = useState<boolean>(false);
   const [hasUserModifiedPurchaseSize, setHasUserModifiedPurchaseSize] = useState<boolean>(false);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
   
   // Servings state - optional field for how many servings this ingredient purchase yields
   const [servings, setServings] = useState<number | null>(() => {
@@ -291,6 +292,7 @@ export function IngredientForm({
   
   // Sync bulk mode state when initialData changes (for edit mode)
   useEffect(() => {
+    setIsInitializing(true);
     const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
     const hasBulkInfo = initialData?.batchPricing && 
       Array.isArray(initialData.batchPricing) && 
@@ -298,18 +300,27 @@ export function IngredientForm({
       initialData.batchPricing[0]?.purchaseUnit &&
       packagingUnits.includes(initialData.batchPricing[0].purchaseUnit);
     
+    console.log('IngredientForm: Syncing bulk mode state', { hasBulkInfo, batchPricing: initialData?.batchPricing });
+    
     if (hasBulkInfo) {
       // Set bulk mode if batchPricing indicates bulk purchase
       setIsBulkPurchaseMode(true);
       const bulkData = initialData.batchPricing[0];
       
+      console.log('IngredientForm: Loading bulk purchase', {
+        purchaseUnit: bulkData.purchaseUnit,
+        packQuantity: bulkData.packQuantity,
+        unitSize: bulkData.unitSize,
+        totalPackQuantity: initialData?.packQuantity
+      });
+      
       // Sync purchase unit from batchPricing
-      if (bulkData.purchaseUnit && !hasUserModifiedPurchaseSize) {
+      if (bulkData.purchaseUnit) {
         setPurchaseUnit(bulkData.purchaseUnit);
       }
       
       // Sync pack size and unit size from batchPricing
-      if (bulkData.packQuantity && !hasUserModifiedPackSize) {
+      if (bulkData.packQuantity) {
         setPackSize(bulkData.packQuantity);
       }
       if (bulkData.unitSize) {
@@ -317,27 +328,48 @@ export function IngredientForm({
       }
       
       // Calculate purchase size from total quantity
-      if (initialData?.packQuantity && bulkData.packQuantity && bulkData.unitSize && !hasUserModifiedPurchaseSize) {
+      if (initialData?.packQuantity && bulkData.packQuantity && bulkData.unitSize) {
         const calculatedPurchaseSize = Math.round(initialData.packQuantity / (bulkData.packQuantity * bulkData.unitSize)) || 1;
+        console.log('IngredientForm: Calculated purchase size', {
+          total: initialData.packQuantity,
+          packSize: bulkData.packQuantity,
+          unitSize: bulkData.unitSize,
+          calculated: calculatedPurchaseSize
+        });
         setPurchaseSize(calculatedPurchaseSize);
       }
     } else if (initialData?.packUnit) {
       // Check if packUnit itself is a packaging unit (legacy bulk purchases)
       if (packagingUnits.includes(initialData.packUnit)) {
         setIsBulkPurchaseMode(true);
-        if (!hasUserModifiedPurchaseSize) {
-          setPurchaseUnit(initialData.packUnit);
-        }
+        setPurchaseUnit(initialData.packUnit);
       } else {
         setIsBulkPurchaseMode(false);
       }
     }
-  }, [initialData?.batchPricing, initialData?.packUnit, initialData?.packQuantity, hasUserModifiedPackSize, hasUserModifiedPurchaseSize]);
+    
+    // Mark initialization as complete after a brief delay to allow state to settle
+    setTimeout(() => setIsInitializing(false), 100);
+  }, [initialData?.batchPricing, initialData?.packUnit, initialData?.packQuantity]);
   
   // Sync packSize and purchaseSize with initialData when it changes (for edit mode)
   // BUT only if user hasn't manually modified the values
   // Also sync packPrice to ensure both update correctly
+  // IMPORTANT: Skip this if we have bulk purchase info (handled by the bulk mode useEffect above)
   useEffect(() => {
+    // Check if we have bulk purchase info - if so, skip this sync (it's handled above)
+    const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
+    const hasBulkInfo = initialData?.batchPricing && 
+      Array.isArray(initialData.batchPricing) && 
+      initialData.batchPricing.length > 0 &&
+      initialData.batchPricing[0]?.purchaseUnit &&
+      packagingUnits.includes(initialData.batchPricing[0].purchaseUnit);
+    
+    // Don't sync if we have bulk purchase info - it's handled by the bulk mode useEffect
+    if (hasBulkInfo) {
+      return;
+    }
+    
     // Sync purchaseSize for count units - only if user hasn't modified it
     if (initialData?.packUnit && !hasUserModifiedPurchaseSize && !isBulkPurchaseMode) {
       const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
@@ -358,7 +390,7 @@ export function IngredientForm({
     if (initialData?.packUnit !== undefined && !isBulkPurchaseMode) {
       setPurchaseUnit(initialData.packUnit);
     }
-  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, hasUserModifiedPackSize, hasUserModifiedPurchaseSize, isBulkPurchaseMode]);
+  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, initialData?.batchPricing, hasUserModifiedPackSize, hasUserModifiedPurchaseSize, isBulkPurchaseMode]);
   
   // Reset the "user modified" flags when initialData changes significantly (new ingredient or different ingredient)
   useEffect(() => {
@@ -778,6 +810,9 @@ export function IngredientForm({
                       name="purchaseUnit"
                       value={purchaseUnit}
                       onChange={(e) => {
+                        // Don't auto-switch modes during initialization
+                        if (isInitializing) return;
+                        
                         const newUnit = e.target.value;
                         setPurchaseUnit(newUnit);
                         // If switching to packaging unit, ensure bulk mode is on
