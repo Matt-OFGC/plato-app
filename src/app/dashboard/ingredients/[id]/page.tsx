@@ -32,6 +32,15 @@ export default async function EditIngredientPage({ params }: Props) {
   if (ing.companyId !== companyId) {
     return <div className="p-6">Unauthorized</div>;
   }
+  
+  // Debug: Log raw batchPricing from database
+  console.log('EditIngredientPage: Raw batchPricing from DB:', {
+    value: ing.batchPricing,
+    type: typeof ing.batchPricing,
+    isNull: ing.batchPricing === null,
+    isUndefined: ing.batchPricing === undefined,
+    stringified: JSON.stringify(ing.batchPricing)
+  });
 
   // Get suppliers for the dropdown (company-scoped)
   const suppliersRaw = await prisma.supplier.findMany({
@@ -53,16 +62,26 @@ export default async function EditIngredientPage({ params }: Props) {
     : Number(ing.packQuantity);
 
   // Parse batchPricing for debugging
-  let parsedBatchPricing = null;
-  if (ing.batchPricing) {
+  // Prisma Json type returns JavaScript objects directly, not strings
+  let parsedBatchPricing: any = null;
+  if (ing.batchPricing !== null && ing.batchPricing !== undefined) {
     try {
-      parsedBatchPricing = typeof ing.batchPricing === 'string' ? JSON.parse(ing.batchPricing) : ing.batchPricing;
+      // If it's already an object/array (Prisma Json type), use it directly
+      // If it's a string (legacy), parse it
+      if (typeof ing.batchPricing === 'string') {
+        parsedBatchPricing = JSON.parse(ing.batchPricing);
+      } else {
+        parsedBatchPricing = ing.batchPricing;
+      }
       console.log('EditIngredientPage: Loaded batchPricing:', JSON.stringify(parsedBatchPricing, null, 2));
+      console.log('EditIngredientPage: batchPricing type:', typeof parsedBatchPricing, 'isArray:', Array.isArray(parsedBatchPricing));
     } catch (e) {
-      console.error('EditIngredientPage: Error parsing batchPricing:', e);
+      console.error('EditIngredientPage: Error parsing batchPricing:', e, 'raw value:', ing.batchPricing);
+      parsedBatchPricing = null;
     }
   } else {
-    console.log('EditIngredientPage: No batchPricing found in database');
+    console.log('EditIngredientPage: No batchPricing found in database (null or undefined)');
+    parsedBatchPricing = null; // Explicitly set to null
   }
 
   // Create a bound function for the IngredientForm
@@ -94,7 +113,7 @@ export default async function EditIngredientPage({ params }: Props) {
             notes: ing.notes || "",
             allergens: ing.allergens || [],
             customConversions: ing.customConversions || undefined,
-            batchPricing: parsedBatchPricing,
+            batchPricing: parsedBatchPricing ?? null, // Explicitly pass null if undefined
           }}
           onSubmit={handleSubmit}
         />

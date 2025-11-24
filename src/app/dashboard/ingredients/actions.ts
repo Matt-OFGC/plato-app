@@ -178,12 +178,22 @@ export async function createIngredient(formData: FormData) {
 }
 
 export async function updateIngredient(id: number, formData: FormData) {
-  const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
+  // Log raw form data before validation
+  const rawData = Object.fromEntries(formData);
+  console.log('updateIngredient - Raw form data batchPricing:', rawData.batchPricing);
+  console.log('updateIngredient - Raw form data:', {
+    batchPricing: rawData.batchPricing,
+    batchPricingType: typeof rawData.batchPricing,
+    batchPricingLength: rawData.batchPricing ? String(rawData.batchPricing).length : 'N/A'
+  });
+  
+  const parsed = ingredientSchema.safeParse(rawData);
   if (!parsed.success) {
     console.error("Ingredient validation error:", parsed.error);
     redirect("/dashboard/ingredients?error=validation");
   }
   const data = parsed.data;
+  console.log('updateIngredient - Parsed data batchPricing:', data.batchPricing);
   
   try {
     // Verify the ingredient belongs to the user's company
