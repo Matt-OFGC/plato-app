@@ -3,6 +3,9 @@ import { getUserFromSession } from './auth-simple';
 import type { Brand } from '@/lib/brands/types';
 import type { BrandConfig } from '@/lib/brands/types';
 import { getBrandConfig } from '@/lib/brands/registry';
+import type { App } from '@/lib/apps/types';
+import type { AppConfig } from '@/lib/apps/types';
+import { getAppConfig } from '@/lib/apps/registry';
 import { logger } from './logger';
 import { getCache, setCache, deleteCache, CACHE_TTL, CacheKeys } from './redis';
 
@@ -36,6 +39,8 @@ export interface CurrentUserAndCompany {
   user: UserWithMemberships;
   brand?: Brand | null;
   brandConfig?: BrandConfig | null;
+  app?: App | null;
+  appConfig?: AppConfig | null;
 }
 
 // Get current user and their company information with caching
@@ -104,13 +109,19 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     // Get brand config if company has a brand
     const brand = company?.brand || null;
     const brandConfig = brand ? getBrandConfig(brand) : null;
+    
+    // Convert brand to app for compatibility (they're the same type)
+    const app = brand as App | null;
+    const appConfig = app ? getAppConfig(app) : null;
 
     const result = {
       companyId,
       company,
       user: userWithMemberships,
       brand,
-      brandConfig
+      brandConfig,
+      app,
+      appConfig
     };
 
     // Cache the result in Redis (silently fail if Redis unavailable)
@@ -141,7 +152,9 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         memberships: []
       },
       brand: null,
-      brandConfig: null
+      brandConfig: null,
+      app: null,
+      appConfig: null
     };
   }
 }
