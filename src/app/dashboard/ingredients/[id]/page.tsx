@@ -101,16 +101,18 @@ export default async function EditIngredientPage({ params }: Props) {
     customConversions: ing.customConversions || undefined,
   };
   
-  // Always include batchPricing - use null if not present (Next.js should serialize null)
-  if (parsedBatchPricing !== null && parsedBatchPricing !== undefined) {
+  // Always include batchPricing - use empty array instead of null to ensure serialization
+  // Next.js might strip null values, so use [] for empty to ensure property exists
+  if (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0) {
     initialFormData.batchPricing = parsedBatchPricing;
   } else {
-    initialFormData.batchPricing = null; // Explicitly set to null
+    // Use empty array instead of null to ensure property is serialized
+    initialFormData.batchPricing = [];
   }
   
   // Debug: Log what we're passing to the form
   console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
-  console.log('EditIngredientPage: batchPricing in initialData:', initialFormData.batchPricing, 'type:', typeof initialFormData.batchPricing, 'hasProperty:', 'batchPricing' in initialFormData);
+  console.log('EditIngredientPage: batchPricing in initialData:', initialFormData.batchPricing, 'type:', typeof initialFormData.batchPricing, 'hasProperty:', 'batchPricing' in initialFormData, 'isArray:', Array.isArray(initialFormData.batchPricing));
 
   return (
     <div className="app-container">

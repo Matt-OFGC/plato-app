@@ -297,11 +297,13 @@ export function IngredientForm({
     
     // Deep check for bulk purchase info
     const batchPricing = initialData?.batchPricing;
+    // Handle both null/undefined and empty array cases
     const hasBulkInfo = batchPricing && 
       Array.isArray(batchPricing) && 
       batchPricing.length > 0 &&
       batchPricing[0] &&
       typeof batchPricing[0] === 'object' &&
+      batchPricing[0] !== null &&
       'purchaseUnit' in batchPricing[0] &&
       batchPricing[0].purchaseUnit &&
       packagingUnits.includes(String(batchPricing[0].purchaseUnit));
