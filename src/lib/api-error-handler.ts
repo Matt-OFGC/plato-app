@@ -106,16 +106,22 @@ export function handleApiError(error: unknown, context: string): NextResponse<Er
   
   // Generic error response
   const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+  const errorStack = error instanceof Error ? error.stack : undefined;
   
-  return NextResponse.json(
-    {
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? errorMessage : 'An unexpected error occurred',
-      context,
-      timestamp: new Date().toISOString(),
-    },
-    { status: 500 }
-  );
+  // In development, include more details
+  const response: ErrorResponse = {
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? errorMessage : 'An unexpected error occurred',
+    context,
+    timestamp: new Date().toISOString(),
+  };
+  
+  // Include stack trace in development
+  if (process.env.NODE_ENV === 'development' && errorStack) {
+    (response as any).stack = errorStack;
+  }
+  
+  return NextResponse.json(response, { status: 500 });
 }
 
 
