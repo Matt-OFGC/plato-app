@@ -1,8 +1,8 @@
 import { prisma } from './prisma';
 import { getUserFromSession } from './auth-simple';
-import type { App } from '@/lib/apps/types';
-import type { AppConfig } from '@/lib/apps/types';
-import { getAppConfig } from '@/lib/apps/registry';
+import type { Brand } from '@/lib/brands/types';
+import type { BrandConfig } from '@/lib/brands/types';
+import { getBrandConfig } from '@/lib/brands/registry';
 import { logger } from './logger';
 import { getCache, setCache, deleteCache, CACHE_TTL, CacheKeys } from './redis';
 
@@ -13,7 +13,7 @@ export interface Company {
   country?: string;
   phone?: string;
   logoUrl?: string;
-  app?: App;
+  brand?: Brand;
 }
 
 export interface UserWithMemberships {
@@ -34,8 +34,8 @@ export interface CurrentUserAndCompany {
   companyId: number | null;
   company: Company | null;
   user: UserWithMemberships;
-  app?: App | null;
-  appConfig?: AppConfig | null;
+  brand?: Brand | null;
+  brandConfig?: BrandConfig | null;
 }
 
 // Get current user and their company information with caching
@@ -82,7 +82,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
                 country: true,
                 phone: true,
                 logoUrl: true,
-                app: true
+                brand: true
               }
             }
           },
@@ -101,16 +101,16 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     const companyId = primaryMembership?.companyId || null;
     const company = primaryMembership?.company || null;
     
-    // Get app config if company has an app
-    const app = company?.app || null;
-    const appConfig = app ? getAppConfig(app) : null;
+    // Get brand config if company has a brand
+    const brand = company?.brand || null;
+    const brandConfig = brand ? getBrandConfig(brand) : null;
 
     const result = {
       companyId,
       company,
       user: userWithMemberships,
-      app,
-      appConfig
+      brand,
+      brandConfig
     };
 
     // Cache the result in Redis (silently fail if Redis unavailable)
@@ -140,8 +140,8 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         isAdmin: user.isAdmin,
         memberships: []
       },
-      app: null,
-      appConfig: null
+      brand: null,
+      brandConfig: null
     };
   }
 }
