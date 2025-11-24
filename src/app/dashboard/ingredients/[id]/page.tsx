@@ -144,6 +144,7 @@ export default async function EditIngredientPage({ params }: Props) {
           companyId={companyId || undefined}
           suppliers={suppliers}
           initialData={initialFormData}
+          batchPricingJson={JSON.stringify(batchPricingValue)}
           onSubmit={handleSubmit}
         />
       </div>

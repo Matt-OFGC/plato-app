@@ -69,6 +69,7 @@ interface IngredientFormProps {
     batchPricing: Array<{ packQuantity: number; packPrice: number; purchaseUnit?: string; unitSize?: number }> | null | undefined;
     servings?: number | null;
   };
+  batchPricingJson?: string; // Pass as JSON string to avoid Next.js RSC serialization issues
   onSubmit: (formData: FormData) => void;
   allergens?: string[];
   onAllergenChange?: (allergens: string[]) => void;
@@ -82,6 +83,7 @@ export function IngredientForm({
   companyId, 
   suppliers = [], 
   initialData, 
+  batchPricingJson,
   onSubmit,
   allergens: externalAllergens,
   onAllergenChange,
@@ -90,6 +92,23 @@ export function IngredientForm({
   showOtherInput: externalShowOtherInput,
   onShowOtherInputChange
 }: IngredientFormProps) {
+  // Parse batchPricing from JSON string if provided (workaround for Next.js RSC serialization)
+  const parsedBatchPricingFromJson = batchPricingJson ? (() => {
+    try {
+      const parsed = JSON.parse(batchPricingJson);
+      // Filter out sentinel objects
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?._empty) {
+        return null;
+      }
+      return parsed;
+    } catch (e) {
+      console.error('IngredientForm: Error parsing batchPricingJson:', e);
+      return null;
+    }
+  })() : null;
+  
+  // Use batchPricingJson if available, otherwise fall back to initialData.batchPricing
+  const effectiveBatchPricing = parsedBatchPricingFromJson !== null ? parsedBatchPricingFromJson : initialData?.batchPricing;
   const [allergens, setAllergens] = useState<string[]>(externalAllergens || initialData?.allergens || []);
   const [selectedNutTypes, setSelectedNutTypes] = useState<string[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(initialData?.supplierId || null);
