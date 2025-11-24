@@ -126,12 +126,17 @@ export function IngredientForm({
   const hasBulkPurchaseInfo = effectiveBatchPricing && 
     Array.isArray(effectiveBatchPricing) && 
     effectiveBatchPricing.length > 0 &&
-    effectiveBatchPricing[0]?._empty !== true && // Ignore sentinel
-    effectiveBatchPricing[0]?.purchaseUnit &&
-    packagingUnits.includes(String(effectiveBatchPricing[0].purchaseUnit));
+    effectiveBatchPricing[0] &&
+    typeof effectiveBatchPricing[0] === 'object' &&
+    effectiveBatchPricing[0] !== null &&
+    !(effectiveBatchPricing[0] as any)._empty && // Ignore sentinel
+    (effectiveBatchPricing[0] as any).purchaseUnit &&
+    packagingUnits.includes(String((effectiveBatchPricing[0] as any).purchaseUnit));
   
   // Extract bulk purchase values for initialization
-  const bulkPurchaseData = hasBulkPurchaseInfo ? effectiveBatchPricing[0] : null;
+  const bulkPurchaseData = hasBulkPurchaseInfo && effectiveBatchPricing && Array.isArray(effectiveBatchPricing) && effectiveBatchPricing.length > 0 
+    ? effectiveBatchPricing[0] 
+    : null;
   
   // Initialize purchase mode based on batchPricing (for saved bulk purchases) or packUnit (for new/legacy)
   const [isBulkPurchaseMode, setIsBulkPurchaseMode] = useState<boolean>(() => {
