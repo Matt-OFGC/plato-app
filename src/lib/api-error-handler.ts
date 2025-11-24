@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logger } from './logger';
 
 /**
  * Standardized API error handling
@@ -17,8 +18,13 @@ interface ErrorResponse {
  * Handle API errors with consistent formatting and logging
  */
 export function handleApiError(error: unknown, context: string): NextResponse<ErrorResponse> {
-  // Log error for debugging
-  console.error(`[${context}] Error:`, error);
+  // Log error for debugging with full details
+  logger.error(`[${context}] API Error`, error, context);
+  
+  // Also log stack trace in development
+  if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+    logger.debug(`[${context}] Stack trace`, { stack: error.stack }, context);
+  }
 
   // Handle different error types
   if (error instanceof Error) {

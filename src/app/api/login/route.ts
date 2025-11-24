@@ -99,17 +99,27 @@ export async function POST(request: NextRequest) {
     await checkSuspiciousActivity(user.id, ipAddress, userAgent);
 
     // Create session with remember me option and request info for device tracking
-    await createSession({
-      id: user.id,
-      email: user.email,
-      name: user.name || undefined,
-      isAdmin: user.isAdmin,
-    }, rememberMe, { headers: request.headers });
+    try {
+      await createSession({
+        id: user.id,
+        email: user.email,
+        name: user.name || undefined,
+        isAdmin: user.isAdmin,
+      }, rememberMe, { headers: request.headers });
 
-    logger.info('Session created for user:', user.id, user.email);
+      logger.info('Session created for user:', user.id, user.email);
+    } catch (sessionError) {
+      logger.error('Failed to create session', sessionError, 'Auth/Login');
+      throw sessionError; // Re-throw to be caught by outer catch
+    }
 
     // Audit successful login
-    await auditLog.loginSuccess(user.id, request);
+    try {
+      await auditLog.loginSuccess(user.id, request);
+    } catch (auditError) {
+      // Don't fail login if audit logging fails
+      logger.warn('Failed to log successful login', auditError, 'Auth/Login');
+    }
 
     // Check if user is an owner/admin to enable device mode
     const membership = await prisma.membership.findFirst({
