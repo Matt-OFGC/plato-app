@@ -65,7 +65,8 @@ interface IngredientFormProps {
     notes?: string;
     supplierId?: number;
     customConversions?: string;
-    batchPricing?: Array<{ packQuantity: number; packPrice: number; purchaseUnit?: string; unitSize?: number }> | null;
+    // Make batchPricing always present (not optional) to ensure Next.js serializes it
+    batchPricing: Array<{ packQuantity: number; packPrice: number; purchaseUnit?: string; unitSize?: number }> | null | undefined;
     servings?: number | null;
   };
   onSubmit: (formData: FormData) => void;
