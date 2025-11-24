@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { getMentorSubscription, hasMentorAccess } from "@/lib/mentor/subscription";
+import { hasAIAccess, getAISubscriptionType } from "@/lib/subscription-simple";
 
 /**
  * Get Mentor subscription status
@@ -41,9 +41,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Check subscription
-    const hasAccess = await hasMentorAccess(companyId);
-    const subscription = await getMentorSubscription(companyId);
+    // Check subscription using new simplified system
+    const hasAccess = await hasAIAccess(companyId);
+    const subscriptionType = await getAISubscriptionType(companyId);
+    
+    // Get full subscription details for response
+    const subscription = await prisma.mentorSubscription.findFirst({
+      where: {
+        companyId,
+        status: "active",
+      },
+    });
     
     // In dev mode, allow access even without subscription (for testing)
     const isDev = process.env.NODE_ENV !== "production";
@@ -55,7 +63,7 @@ export async function GET(request: NextRequest) {
         ? {
             id: subscription.id,
             status: subscription.status,
-            subscriptionType: subscription.subscriptionType,
+            subscriptionType: subscription.subscriptionType || subscriptionType,
             currentPeriodStart: subscription.currentPeriodStart,
             currentPeriodEnd: subscription.currentPeriodEnd,
             cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,

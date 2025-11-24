@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { hasMentorAccess } from "@/lib/mentor/subscription";
 import { generateChatResponse } from "@/lib/mentor/chat";
 import { canUseAI } from "@/lib/subscription-simple";
 
@@ -65,16 +64,10 @@ export async function POST(request: NextRequest) {
     }
     
     if (!canUse && !isDev) {
-      // Use the membership we already fetched above
-      if (membership && membership.role !== "ADMIN" && membership.role !== "OWNER") {
-        return NextResponse.json(
-          { error: "Only admins can use the AI Assistant" },
-          { status: 403 }
-        );
-      }
-      
+      // canUseAI() already checks both role (ADMIN/OWNER) and subscription
+      // If it returns false, either role is wrong or subscription is missing
       return NextResponse.json(
-        { error: "AI Assistant subscription required" },
+        { error: "AI Assistant access requires ADMIN role and an active AI subscription" },
         { status: 403 }
       );
     }
@@ -173,16 +166,10 @@ export async function PUT(request: NextRequest) {
     }
     
     if (!canUse && !isDev) {
-      // Use the membership we already fetched above
-      if (membership && membership.role !== "ADMIN" && membership.role !== "OWNER") {
-        return NextResponse.json(
-          { error: "Only admins can use the AI Assistant" },
-          { status: 403 }
-        );
-      }
-      
+      // canUseAI() already checks both role (ADMIN/OWNER) and subscription
+      // If it returns false, either role is wrong or subscription is missing
       return NextResponse.json(
-        { error: "AI Assistant subscription required" },
+        { error: "AI Assistant access requires ADMIN role and an active AI subscription" },
         { status: 403 }
       );
     }
@@ -250,16 +237,10 @@ export async function GET(request: NextRequest) {
     }
     
     if (!canUse && !isDev) {
-      // Use the membership we already fetched above
-      if (membership && membership.role !== "ADMIN" && membership.role !== "OWNER") {
-        return NextResponse.json(
-          { error: "Only admins can use the AI Assistant" },
-          { status: 403 }
-        );
-      }
-      
+      // canUseAI() already checks both role (ADMIN/OWNER) and subscription
+      // If it returns false, either role is wrong or subscription is missing
       return NextResponse.json(
-        { error: "AI Assistant subscription required" },
+        { error: "AI Assistant access requires ADMIN role and an active AI subscription" },
         { status: 403 }
       );
     }
