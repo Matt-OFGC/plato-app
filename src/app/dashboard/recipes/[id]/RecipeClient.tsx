@@ -548,7 +548,11 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                         fill
                         className="object-cover"
                         priority
-                        unoptimized={(imageUrl || recipe.imageUrl)?.startsWith('/uploads/')}
+                        unoptimized={
+                          (imageUrl || recipe.imageUrl)?.startsWith('/uploads/') ||
+                          (imageUrl || recipe.imageUrl)?.startsWith('http://') ||
+                          (imageUrl || recipe.imageUrl)?.startsWith('https://')
+                        }
                         onError={(e) => {
                           console.error('Photo view image failed to load:', imageUrl || recipe.imageUrl);
                           const target = e.target as HTMLImageElement;

@@ -73,7 +73,11 @@ export default function RecipeHeader({
                 width={80}
                 height={80}
                 className="w-full h-full object-cover"
-                unoptimized={imageUrl.startsWith('/uploads/')}
+                unoptimized={
+                  imageUrl.startsWith('/uploads/') ||
+                  imageUrl.startsWith('http://') ||
+                  imageUrl.startsWith('https://')
+                }
                 onError={() => {
                   console.error('Image failed to load:', imageUrl);
                   setImageError(true);
@@ -199,7 +203,11 @@ export default function RecipeHeader({
                 fill
                 className="object-contain"
                 sizes="(max-width: 896px) 100vw, 896px"
-                unoptimized={imageUrl?.startsWith('/uploads/')}
+                unoptimized={
+                  imageUrl?.startsWith('/uploads/') ||
+                  imageUrl?.startsWith('http://') ||
+                  imageUrl?.startsWith('https://')
+                }
                 onError={(e) => {
                   console.error('Modal image failed to load:', imageUrl);
                   const target = e.target as HTMLImageElement;

@@ -11,6 +11,7 @@ interface RecipeImageProps {
 
 export default function RecipeImage({ imageUrl, title, isEditMode = false }: RecipeImageProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [hasError, setHasError] = useState(false);
   
   const handleImageClick = () => {
     if (isEditMode) {
@@ -21,6 +22,8 @@ export default function RecipeImage({ imageUrl, title, isEditMode = false }: Rec
 
   const maxWidth = isEditMode ? "max-w-[140px]" : "max-w-[200px]";
   const size = isEditMode ? 140 : 200;
+  const imageSrc = hasError ? "/images/placeholder-cake.png" : (imageUrl || "/images/placeholder-cake.png");
+  const isExternal = imageUrl?.startsWith('http://') || imageUrl?.startsWith('https://');
 
   return (
     <div 
@@ -32,11 +35,15 @@ export default function RecipeImage({ imageUrl, title, isEditMode = false }: Rec
       onMouseLeave={() => setIsHovered(false)}
     >
       <Image
-        src={imageUrl || "/images/placeholder-cake.png"}
+        src={imageSrc}
         alt={title}
         width={size}
         height={size}
         className="w-full h-full object-cover"
+        unoptimized={isExternal || imageUrl?.startsWith('/uploads/')}
+        onError={() => {
+          setHasError(true);
+        }}
       />
       
       {/* Upload overlay in edit mode */}
