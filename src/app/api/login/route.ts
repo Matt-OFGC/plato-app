@@ -157,17 +157,21 @@ export async function POST(request: NextRequest) {
       logger.warn('Failed to fetch membership for device mode', membershipError, 'Auth/Login');
     }
 
-    return NextResponse.json({
+    // Build response safely
+    const responseData = {
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.name || null,
       },
       canEnableDeviceMode: !!membership,
       company: membership?.company || null,
-    });
+    };
+
+    return NextResponse.json(responseData);
   } catch (error) {
+    logger.error('Login route error', error, 'Auth/Login');
     return handleApiError(error, 'Auth/Login');
   }
 }
