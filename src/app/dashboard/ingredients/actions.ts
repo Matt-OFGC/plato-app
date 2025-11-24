@@ -238,16 +238,18 @@ export async function updateIngredient(id: number, formData: FormData) {
     // Convert batch pricing quantities to base units if provided
     // For bulk purchases, preserve purchaseUnit and unitSize
     let batchPricingInBase = null;
-    if (data.batchPricing && Array.isArray(data.batchPricing)) {
+    if (data.batchPricing && Array.isArray(data.batchPricing) && data.batchPricing.length > 0) {
       batchPricingInBase = data.batchPricing.map(tier => {
         // If this is a bulk purchase (has purchaseUnit), preserve all fields
         if (tier.purchaseUnit) {
-          return {
+          const result = {
             packQuantity: tier.packQuantity, // Already in correct units (number of packs)
             packPrice: tier.packPrice,
             purchaseUnit: tier.purchaseUnit,
             unitSize: tier.unitSize, // Size per individual unit
           };
+          console.log('updateIngredient - Mapping bulk tier:', JSON.stringify(result, null, 2));
+          return result;
         }
         // Otherwise, convert to base units for regular batch pricing
         const { amount: tierBaseQty } = toBase(
@@ -261,6 +263,8 @@ export async function updateIngredient(id: number, formData: FormData) {
         };
       });
       console.log('updateIngredient - Saving batchPricing:', JSON.stringify(batchPricingInBase, null, 2));
+    } else {
+      console.log('updateIngredient - No batchPricing to save (null/empty):', data.batchPricing);
     }
     
     // Check if price changed
@@ -269,26 +273,32 @@ export async function updateIngredient(id: number, formData: FormData) {
     // Check if pack quantity changed (for updating timestamp)
     const packQuantityChanged = existingIngredient && Number(existingIngredient.packQuantity) !== baseQuantity;
     
-    await prisma.ingredient.update({
+    const updateData = {
+      name: data.name,
+      supplier: data.supplier ?? null,
+      supplierId: data.supplierId,
+      packQuantity: baseQuantity,
+      packUnit: baseUnit as BaseUnit,
+      originalUnit: data.packUnit as Unit,
+      packPrice: data.packPrice,
+      currency: data.currency,
+      densityGPerMl: (data.densityGPerMl as number | null) ?? null,
+      allergens: data.allergens,
+      batchPricing: batchPricingInBase,
+      customConversions: data.customConversions ?? null,
+      notes: data.notes ?? null,
+      // Update lastPriceUpdate timestamp if price or pack quantity changed
+      ...((priceChanged || packQuantityChanged) && { lastPriceUpdate: new Date() }),
+    };
+    
+    console.log('updateIngredient - Prisma update data batchPricing:', JSON.stringify(updateData.batchPricing, null, 2));
+    
+    const updated = await prisma.ingredient.update({
       where: { id },
-      data: {
-        name: data.name,
-        supplier: data.supplier ?? null,
-        supplierId: data.supplierId,
-        packQuantity: baseQuantity,
-        packUnit: baseUnit as BaseUnit,
-        originalUnit: data.packUnit as Unit,
-        packPrice: data.packPrice,
-        currency: data.currency,
-        densityGPerMl: (data.densityGPerMl as number | null) ?? null,
-        allergens: data.allergens,
-        batchPricing: batchPricingInBase,
-        customConversions: data.customConversions ?? null,
-        notes: data.notes ?? null,
-        // Update lastPriceUpdate timestamp if price or pack quantity changed
-        ...((priceChanged || packQuantityChanged) && { lastPriceUpdate: new Date() }),
-      },
+      data: updateData,
     });
+    
+    console.log('updateIngredient - After save, batchPricing in DB:', JSON.stringify(updated.batchPricing, null, 2));
     revalidatePath("/dashboard/ingredients");
     return { success: true };
   } catch (error) {
