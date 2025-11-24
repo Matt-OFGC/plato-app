@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { selectAllOnFocus } from "@/lib/utils";
 
 interface Recipe {
   id: number;
@@ -459,6 +460,7 @@ export function WholesaleProducts({
                   </label>
                   <textarea
                     value={description}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Product description..."
                     rows={3}
@@ -473,6 +475,7 @@ export function WholesaleProducts({
                     <input
                       type="text"
                       value={unit}
+                      onFocus={selectAllOnFocus}
                       onChange={(e) => setUnit(e.target.value)}
                       placeholder="e.g., per box, per tray"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -487,6 +490,7 @@ export function WholesaleProducts({
                       step="0.01"
                       min="0"
                       value={price}
+                      onFocus={selectAllOnFocus}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="0.00"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"

@@ -6,6 +6,7 @@ import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCostWithDensity, BaseUnit } from "@/lib/units";
 import Link from "next/link";
 import { initPaneVars } from "@/lib/paneHeight";
+import { selectAllOnFocus } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -753,6 +754,7 @@ function RecipePageInlineCompleteV2Component({
               <input
                 type="number"
                 value={localQuantity}
+                onFocus={selectAllOnFocus}
                 onChange={(e) => {
                   // Only update local state during typing - no global state update
                   setLocalQuantity(e.target.value);
@@ -830,6 +832,7 @@ function RecipePageInlineCompleteV2Component({
                   step="0.01"
                   min="0"
                   value={item.price || ""}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => onUpdate('price', e.target.value)}
                   placeholder="0.00"
                   className="flex-1 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
@@ -844,6 +847,7 @@ function RecipePageInlineCompleteV2Component({
                 <input
                   type="text"
                   value={item.note}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => onUpdate('note', e.target.value)}
                   placeholder="Note"
                   className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500"
@@ -941,6 +945,7 @@ function RecipePageInlineCompleteV2Component({
                   <input
                     type="text"
                     value={name}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setName(e.target.value)}
                     className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none w-full"
                     placeholder="Recipe name..."
@@ -1255,6 +1260,7 @@ function RecipePageInlineCompleteV2Component({
                 <input
                   type="number"
                   value={sellPrice}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
                   className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="0.00"

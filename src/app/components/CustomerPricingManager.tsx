@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { selectAllOnFocus } from "@/lib/utils";
 
 interface Recipe {
   id: number;
@@ -159,6 +160,7 @@ export function CustomerPricingManager({
                     step="0.01"
                     value={customPrice?.price || ""}
                     placeholder={recipe.sellingPrice || "0.00"}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => {
                       const newPricing = new Map(pricing);
                       newPricing.set(recipe.id, {

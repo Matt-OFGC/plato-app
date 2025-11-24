@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { formatCurrency } from "@/lib/currency";
 import { computeIngredientUsageCostWithDensity, BaseUnit, Unit } from "@/lib/units";
 import { SearchableSelect } from "./SearchableSelect";
+import { selectAllOnFocus } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -135,6 +136,7 @@ function SortableIngredientItem({
       <input
         type="number"
         value={item.quantity}
+        onFocus={selectAllOnFocus}
         onChange={(e) => onUpdate(item.id, "quantity", e.target.value)}
         className="col-span-2 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
         placeholder="Qty"
@@ -425,6 +427,7 @@ export function RecipeCreateForm({
             <input
               type="text"
               value={name}
+              onFocus={selectAllOnFocus}
               onChange={(e) => setName(e.target.value)}
               placeholder="Recipe Name (e.g., Classic Mac and Cheese)"
               className="text-4xl font-bold text-gray-900 mb-4 w-full border-2 border-emerald-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -444,6 +447,7 @@ export function RecipeCreateForm({
                 <input
                   type="number"
                   value={yieldQuantity}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => setYieldQuantity(parseFloat(e.target.value) || 0)}
                   className="w-20 px-2 py-1 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -719,6 +723,7 @@ export function RecipeCreateForm({
                         step="0.01"
                         min="0"
                         value={wholesalePrice}
+                        onFocus={selectAllOnFocus}
                         onChange={(e) => setWholesalePrice(e.target.value)}
                         placeholder="Per slice/unit"
                         className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"

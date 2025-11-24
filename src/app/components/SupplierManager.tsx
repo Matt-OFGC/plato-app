@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createSupplier, updateSupplier, deleteSupplier } from "@/app/suppliers/actions";
+import { selectAllOnFocus } from "@/lib/utils";
 
 interface Supplier {
   id: number;
@@ -207,6 +208,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                 <input
                   type="text"
                   value={formData.name}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   required
@@ -219,6 +221,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                 <input
                   type="text"
                   value={formData.contactName}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => setFormData(prev => ({ ...prev, contactName: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 />
@@ -230,6 +233,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                 <input
                   type="email"
                   value={formData.email}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 />
@@ -241,6 +245,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                 <input
                   type="tel"
                   value={formData.phone}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                 />
@@ -252,6 +257,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                 <input
                   type="text"
                   value={formData.website}
+                  onFocus={selectAllOnFocus}
                   onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   placeholder="https://example.com"
@@ -332,6 +338,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="text"
                     value={formData.accountLogin}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, accountLogin: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   />
@@ -343,6 +350,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="password"
                     value={formData.accountPassword}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, accountPassword: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   />
@@ -354,6 +362,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="text"
                     value={formData.accountNumber}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   />
@@ -372,6 +381,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="text"
                     value={formData.address}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   />
@@ -383,6 +393,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="text"
                     value={formData.city}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   />
@@ -394,6 +405,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="text"
                     value={formData.postcode}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, postcode: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   />
@@ -405,6 +417,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="text"
                     value={formData.country}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                   />
@@ -416,6 +429,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                   <input
                     type="text"
                     value={formData.paymentTerms}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, paymentTerms: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                     placeholder="e.g., Net 30, COD"
@@ -429,6 +443,7 @@ export function SupplierManager({ suppliers }: SupplierManagerProps) {
                     type="number"
                     step="0.01"
                     value={formData.minimumOrder}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => setFormData(prev => ({ ...prev, minimumOrder: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                     placeholder="0.00"

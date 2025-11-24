@@ -9,6 +9,7 @@ import { SearchableSelect } from "./SearchableSelect";
 import { CategorySelector } from "./CategorySelector";
 import { ShelfLifeSelector } from "./ShelfLifeSelector";
 import { StorageSelector } from "./StorageSelector";
+import { selectAllOnFocus } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -403,6 +404,7 @@ export function UnifiedRecipeForm({
                 step="any" 
                 name="yieldQuantity" 
                 value={yieldQuantity}
+                onFocus={selectAllOnFocus}
                 onChange={(e) => setYieldQuantity(Number(e.target.value))}
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
                 placeholder="1"
@@ -435,6 +437,7 @@ export function UnifiedRecipeForm({
               step="1" 
               name="portionsPerBatch" 
               value={portionsPerBatch}
+              onFocus={selectAllOnFocus}
               onChange={(e) => setPortionsPerBatch(e.target.value)}
               className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
               placeholder="e.g., 24 slices from 1 brownie tin"
@@ -454,6 +457,7 @@ export function UnifiedRecipeForm({
                 type="number" 
                 name="bakeTime" 
                 value={bakeTime}
+                onFocus={selectAllOnFocus}
                 onChange={(e) => setBakeTime(e.target.value)}
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
                 placeholder="e.g., 25"
@@ -465,6 +469,7 @@ export function UnifiedRecipeForm({
                 type="number" 
                 name="bakeTemp" 
                 value={bakeTemp}
+                onFocus={selectAllOnFocus}
                 onChange={(e) => setBakeTemp(e.target.value)}
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
                 placeholder="e.g., 180"
@@ -531,6 +536,7 @@ export function UnifiedRecipeForm({
               step="0.01"
               name="sellingPrice" 
               value={sellingPrice}
+              onFocus={selectAllOnFocus}
               onChange={(e) => setSellingPrice(e.target.value)}
               className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-colors" 
               placeholder="e.g., 4.00"

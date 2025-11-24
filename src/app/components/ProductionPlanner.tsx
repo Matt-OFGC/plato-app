@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { format, addDays, startOfWeek } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { selectAllOnFocus } from "@/lib/utils";
 
 interface Recipe {
   id: number;
@@ -356,6 +357,7 @@ export function ProductionPlanner({
                                 step={recipeYield}
                                 value={customYield || ""}
                                 placeholder={`e.g., ${recipeYield * 2}`}
+                                onFocus={selectAllOnFocus}
                                 onChange={(e) => {
                                   const value = parseFloat(e.target.value) || 0;
                                   setCustomYields({
