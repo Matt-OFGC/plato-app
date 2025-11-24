@@ -255,7 +255,8 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Import error:", error);
+    const { logger } = await import("@/lib/logger");
+    logger.error("Import error", error, "Import/Ingredients");
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Import failed" },
       { status: 500 }

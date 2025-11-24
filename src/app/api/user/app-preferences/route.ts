@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -36,7 +37,7 @@ export async function GET() {
       throw error;
     }
   } catch (error) {
-    console.error("Error fetching app preferences:", error);
+    logger.error("Error fetching app preferences", error, "User/Preferences");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -88,14 +89,14 @@ export async function POST(request: NextRequest) {
       });
     } catch (error: any) {
       // If there's an error, return a helpful message
-      console.error("Error saving app preferences:", error);
+      logger.error("Error saving app preferences", error, "User/Preferences");
       return NextResponse.json({ 
         error: "Database field not available yet. Preferences saved locally in your browser.",
         savedLocally: true
       }, { status: 200 }); // Return 200 so component treats it as success
     }
   } catch (error) {
-    console.error("Error saving app preferences:", error);
+    logger.error("Error saving app preferences", error, "User/Preferences");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

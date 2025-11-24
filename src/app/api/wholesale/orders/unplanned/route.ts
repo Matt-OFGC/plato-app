@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,9 +24,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const parsedCompanyId = parseInt(companyId);
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, parsedCompanyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
+    }
+
     // Build the where clause
     const where: any = {
-      companyId: parseInt(companyId),
+      companyId: parsedCompanyId,
       status: {
         in: ["pending", "confirmed", "in_production"],
       },
@@ -75,7 +89,7 @@ export async function GET(request: NextRequest) {
               in: order.items.map(item => item.recipeId),
             },
             plan: {
-              companyId: parseInt(companyId),
+              companyId: parsedCompanyId,
               startDate: { lte: order.deliveryDate || new Date() },
               endDate: { gte: order.deliveryDate || new Date() },
             },
@@ -105,9 +119,12 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json(ordersWithCoverage);
+    return createOptimizedResponse(ordersWithCoverage, {
+      cacheType: 'dynamic',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get unplanned orders error:", error);
+    logger.error("Failed to fetch unplanned orders", error, "Wholesale/Orders");
     return NextResponse.json(
       { error: "Failed to fetch unplanned orders" },
       { status: 500 }

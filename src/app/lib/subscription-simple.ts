@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "./prisma";
+import { logger } from "./logger";
 
 /**
  * Check if user has paid subscription
@@ -139,7 +140,7 @@ export async function canUseAI(userId: number, companyId: number): Promise<boole
     // Backward compatibility: OWNER is also allowed (will be migrated to ADMIN)
     return membership.role === "ADMIN" || membership.role === "OWNER";
   } catch (error) {
-    console.error("[canUseAI] Error checking AI access:", error);
+    logger.error("Error checking AI access", error, "Subscription");
     // Fail closed - deny access on error
     return false;
   }

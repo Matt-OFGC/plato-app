@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import bcrypt from "bcrypt";
 
 // Get membership details
@@ -50,7 +51,7 @@ export async function GET(
 
     return NextResponse.json({ membership });
   } catch (error) {
-    console.error("Admin membership details error:", error);
+    logger.error("Admin membership details error", error, "Admin/Memberships");
     return NextResponse.json(
       { error: "Failed to fetch membership details" },
       { status: 500 }
@@ -153,7 +154,7 @@ export async function PATCH(
       pin: pin !== undefined && pin !== null ? pin : undefined, // Return PIN if set
     });
   } catch (error) {
-    console.error("Admin membership update error:", error);
+    logger.error("Admin membership update error", error, "Admin/Memberships");
     return NextResponse.json(
       { error: "Failed to update membership" },
       { status: 500 }
@@ -230,7 +231,7 @@ export async function DELETE(
       message: "User removed from company successfully" 
     });
   } catch (error) {
-    console.error("Admin membership delete error:", error);
+    logger.error("Admin membership delete error", error, "Admin/Memberships");
     return NextResponse.json(
       { error: "Failed to remove user from company" },
       { status: 500 }

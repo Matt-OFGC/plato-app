@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -24,14 +26,23 @@ export async function PATCH(
       );
     }
 
-    // Verify the plan exists and belongs to the user's company
+    // Verify the plan exists and user has access
     const existingPlan = await prisma.productionPlan.findUnique({
       where: { id: planId },
-      include: { company: true },
+      select: { id: true, companyId: true },
     });
 
     if (!existingPlan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, existingPlan.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this plan" },
+        { status: 403 }
+      );
     }
 
     // Delete existing items and create new ones
@@ -74,7 +85,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedPlan);
   } catch (error) {
-    console.error("Update production plan error:", error);
+    logger.error("Update production plan error", error, "Production/Plans");
     return NextResponse.json(
       { error: "Failed to update production plan" },
       { status: 500 }
@@ -95,13 +106,23 @@ export async function DELETE(
     const { id } = await params;
     const planId = parseInt(id);
 
-    // Verify the plan exists
+    // Verify the plan exists and user has access
     const existingPlan = await prisma.productionPlan.findUnique({
       where: { id: planId },
+      select: { id: true, companyId: true },
     });
 
     if (!existingPlan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, existingPlan.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this plan" },
+        { status: 403 }
+      );
     }
 
     // Delete the plan (cascade will delete items and tasks)
@@ -111,7 +132,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete production plan error:", error);
+    logger.error("Delete production plan error", error, "Production/Plans");
     return NextResponse.json(
       { error: "Failed to delete production plan" },
       { status: 500 }

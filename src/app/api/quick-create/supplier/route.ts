@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, supplier });
   } catch (error) {
-    console.error("Error creating supplier:", error);
+    logger.error("Error creating supplier", error, "QuickCreate/Supplier");
     return NextResponse.json(
       { error: "Failed to create supplier" },
       { status: 500 }

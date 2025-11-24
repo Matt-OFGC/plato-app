@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 // Get inventory by ID with full movement history
 export async function GET(
@@ -18,6 +21,40 @@ export async function GET(
 
     const inventory = await prisma.inventory.findUnique({
       where: { id: inventoryId },
+      select: {
+        id: true,
+        companyId: true,
+        recipeId: true,
+        quantity: true,
+        unit: true,
+        lowStockThreshold: true,
+        lastRestocked: true,
+        recipe: true,
+        movements: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+    
+    if (!inventory) {
+      return NextResponse.json(
+        { error: "Inventory not found" },
+        { status: 404 }
+      );
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, inventory.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this inventory" },
+        { status: 403 }
+      );
+    }
+
+    // Re-fetch with full data after authorization check
+    const fullInventory = await prisma.inventory.findUnique({
+      where: { id: inventoryId },
       include: {
         recipe: true,
         movements: {
@@ -26,16 +63,12 @@ export async function GET(
       },
     });
 
-    if (!inventory) {
-      return NextResponse.json(
-        { error: "Inventory not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(inventory);
+    return createOptimizedResponse(fullInventory, {
+      cacheType: 'dynamic',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get inventory error:", error);
+    logger.error("Get inventory error", error, "Inventory");
     return NextResponse.json(
       { error: "Failed to fetch inventory" },
       { status: 500 }

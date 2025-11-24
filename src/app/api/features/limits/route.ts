@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
+import { logger } from "@/lib/logger";
 // Temporarily disabled to fix build error
 // import { checkRecipesLimits } from "@/lib/features";
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(limits);
   } catch (error) {
-    console.error("Get limits error:", error);
+    logger.error("Get limits error", error, "Features/Limits");
     return NextResponse.json(
       { error: "Failed to get limits" },
       { status: 500 }

@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { generateChatResponse } from "@/lib/mentor/chat";
 import { canUseAI } from "@/lib/subscription-simple";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,27 +23,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's company
-    const membership = await prisma.membership.findFirst({
-      where: {
-        userId: session.id,
-        isActive: true,
-      },
-      include: {
-        company: true,
-      },
-    });
+    // OPTIMIZATION: Get membership, conversation, and subscription check in parallel
+    const [membership, conversation] = await Promise.all([
+      prisma.membership.findFirst({
+        where: {
+          userId: session.id,
+          isActive: true,
+        },
+        include: {
+          company: true,
+        },
+      }),
+      prisma.mentorConversation.findUnique({
+        where: { id: conversationId },
+      }),
+    ]);
 
     if (!membership || !membership.company) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
     const companyId = membership.company.id;
-
-    // Verify conversation belongs to company
-    const conversation = await prisma.mentorConversation.findUnique({
-      where: { id: conversationId },
-    });
 
     if (!conversation || conversation.companyId !== companyId) {
       return NextResponse.json(
@@ -89,32 +91,39 @@ export async function POST(request: NextRequest) {
       message
     );
 
-    // Save assistant response
-    const assistantMessage = await prisma.mentorMessage.create({
-      data: {
-        conversationId,
-        role: "assistant",
-        content: response,
-        tokensUsed,
-        metadata: {
-          dataSourcesUsed,
+    // OPTIMIZATION: Save assistant message and update conversation in parallel using transaction
+    const [assistantMessage] = await prisma.$transaction([
+      prisma.mentorMessage.create({
+        data: {
+          conversationId,
+          role: "assistant",
+          content: response,
+          tokensUsed,
+          metadata: {
+            dataSourcesUsed,
+          },
         },
+      }),
+      prisma.mentorConversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
+
+    // Use optimized response with compression
+    return createOptimizedResponse(
+      {
+        message: assistantMessage,
+        tokensUsed,
+        dataSourcesUsed,
       },
-    });
-
-    // Update conversation timestamp
-    await prisma.mentorConversation.update({
-      where: { id: conversationId },
-      data: { updatedAt: new Date() },
-    });
-
-    return NextResponse.json({
-      message: assistantMessage,
-      tokensUsed,
-      dataSourcesUsed,
-    });
+      {
+        cacheType: 'noCache', // Chat responses shouldn't be cached
+        compression: true,
+      }
+    );
   } catch (error) {
-    console.error("[Mentor Chat API] Error:", error);
+    logger.error("Failed to process chat message", error, "Mentor/Chat");
     return NextResponse.json(
       { error: "Failed to process chat message" },
       { status: 500 }
@@ -185,7 +194,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ conversation });
   } catch (error) {
-    console.error("[Mentor Chat API] Error creating conversation:", error);
+    logger.error("Failed to create conversation", error, "Mentor/Chat");
     return NextResponse.json(
       { error: "Failed to create conversation" },
       { status: 500 }
@@ -284,7 +293,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ conversations });
     }
   } catch (error) {
-    console.error("[Mentor Chat API] Error:", error);
+    logger.error("Failed to fetch conversations", error, "Mentor/Chat");
     return NextResponse.json(
       { error: "Failed to fetch conversations" },
       { status: 500 }

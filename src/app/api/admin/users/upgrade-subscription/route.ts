@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,28 +36,31 @@ export async function POST(request: NextRequest) {
       include: {
         subscription: true,
         memberships: {
-          where: { role: { in: ["OWNER", "ADMIN"] } }, // Backward compatibility
+          where: { role: "ADMIN" },
           include: { company: true },
         },
       },
     });
 
     if (!user) {
-      console.error(`[Admin Upgrade] User not found: ${userEmail}`);
+      logger.error(`User not found: ${userEmail}`, null, "Admin/UpgradeSubscription");
       return NextResponse.json(
         { error: `User with email ${userEmail} not found` },
         { status: 404 }
       );
     }
 
-    console.log(`[Admin Upgrade] Found user:`, {
-      id: user.id,
-      email: user.email,
-      currentTier: user.subscriptionTier,
-      currentStatus: user.subscriptionStatus,
-      requestedTier: tier,
-      isLifetime,
-    });
+    // Only log in development mode
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug("Found user for upgrade", {
+        id: user.id,
+        email: user.email,
+        currentTier: user.subscriptionTier,
+        currentStatus: user.subscriptionStatus,
+        requestedTier: tier,
+        isLifetime,
+      }, "Admin/UpgradeSubscription");
+    }
 
     // Calculate subscription end date
     let subscriptionEndsAt: Date | null = null;
@@ -98,14 +102,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`[Admin Upgrade] User updated in database:`, {
-      userId: updatedUser.id,
-      email: updatedUser.email,
-      subscriptionTier: updatedUser.subscriptionTier,
-      subscriptionStatus: updatedUser.subscriptionStatus,
-      subscriptionEndsAt: updatedUser.subscriptionEndsAt,
-      subscriptionInterval: updatedUser.subscriptionInterval,
-    });
+    // Only log in development mode
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug("User updated in database", {
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        subscriptionTier: updatedUser.subscriptionTier,
+        subscriptionStatus: updatedUser.subscriptionStatus,
+        subscriptionEndsAt: updatedUser.subscriptionEndsAt,
+        subscriptionInterval: updatedUser.subscriptionInterval,
+      }, "Admin/UpgradeSubscription");
+    }
 
     // Create or update subscription record with limits
     await prisma.subscription.upsert({
@@ -196,18 +203,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(`[Admin Upgrade] Verification read from database:`, verifyUser);
-
     if (!verifyUser) {
       throw new Error("Failed to verify user update");
     }
 
     if (verifyUser.subscriptionTier !== subscriptionTier) {
-      console.error(`[Admin Upgrade] MISMATCH! Expected tier ${subscriptionTier}, got ${verifyUser.subscriptionTier}`);
+      logger.error(`MISMATCH! Expected tier ${subscriptionTier}, got ${verifyUser.subscriptionTier}`, null, "Admin/UpgradeSubscription");
       throw new Error(`Database update failed: tier mismatch (expected ${subscriptionTier}, got ${verifyUser.subscriptionTier})`);
     }
 
-    console.log(`[Admin Upgrade] Successfully updated user ${userEmail} (${user.id}) to ${tier} tier`);
+    logger.info(`Successfully updated user ${userEmail} (${user.id}) to ${tier} tier`, null, "Admin/UpgradeSubscription");
 
     return NextResponse.json({
       success: true,
@@ -229,10 +234,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Upgrade subscription error:", error);
+    logger.error("Upgrade subscription error", error, "Admin/UpgradeSubscription");
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error("Error details:", { errorMessage, errorStack, error });
     return NextResponse.json(
       { 
         error: "Failed to upgrade subscription",

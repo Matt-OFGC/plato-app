@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 // GET /api/wholesale/products/[id] - Get a specific wholesale product
 export async function GET(
@@ -14,8 +17,43 @@ export async function GET(
     }
 
     const { id } = await params;
+    const productId = parseInt(id);
+    
     const product = await prisma.wholesaleProduct.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: productId },
+      select: {
+        id: true,
+        companyId: true,
+        recipe: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+            yieldQuantity: true,
+            yieldUnit: true,
+            category: true,
+          },
+        },
+      },
+    });
+    
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, product.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this product" },
+        { status: 403 }
+      );
+    }
+
+    // Re-fetch with full data after authorization check
+    const fullProduct = await prisma.wholesaleProduct.findUnique({
+      where: { id: productId },
       include: {
         recipe: {
           select: {
@@ -31,13 +69,9 @@ export async function GET(
       },
     });
 
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
     // Serialize Decimal fields
     const serializedProduct = {
-      ...product,
+      ...fullProduct,
       price: product.price.toString(),
       recipe: product.recipe
         ? {
@@ -47,9 +81,12 @@ export async function GET(
         : null,
     };
 
-    return NextResponse.json(serializedProduct);
+    return createOptimizedResponse(serializedProduct, {
+      cacheType: 'frequent',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get wholesale product error:", error);
+    logger.error("Get wholesale product error", error, "Wholesale/Products");
     return NextResponse.json(
       { error: "Failed to fetch wholesale product" },
       { status: 500 }
@@ -82,6 +119,25 @@ export async function PATCH(
       imageUrl,
       notes,
     } = body;
+
+    // Verify product exists and user has access
+    const existingProduct = await prisma.wholesaleProduct.findUnique({
+      where: { id: parseInt(params.id) },
+      select: { companyId: true },
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, existingProduct.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this product" },
+        { status: 403 }
+      );
+    }
 
     const updateData: any = {};
     
@@ -129,7 +185,7 @@ export async function PATCH(
 
     return NextResponse.json(serializedProduct);
   } catch (error) {
-    console.error("Update wholesale product error:", error);
+    logger.error("Update wholesale product error", error, "Wholesale/Products");
     return NextResponse.json(
       { error: "Failed to update wholesale product" },
       { status: 500 }
@@ -148,13 +204,32 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify product exists and user has access
+    const product = await prisma.wholesaleProduct.findUnique({
+      where: { id: parseInt(params.id) },
+      select: { companyId: true },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, product.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this product" },
+        { status: 403 }
+      );
+    }
+
     await prisma.wholesaleProduct.delete({
       where: { id: parseInt(params.id) },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete wholesale product error:", error);
+    logger.error("Delete wholesale product error", error, "Wholesale/Products");
     return NextResponse.json(
       { error: "Failed to delete wholesale product" },
       { status: 500 }

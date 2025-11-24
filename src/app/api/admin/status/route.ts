@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       databaseStatus.status = "Healthy";
     } catch (error) {
       databaseStatus.status = "Error";
-      console.error("Database connection test failed:", error);
+      logger.error("Database connection test failed", error, "Admin/Status");
     }
 
     // Get basic stats
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
         ingredients: ingredientCount
       };
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      logger.error("Failed to fetch stats", error, "Admin/Status");
     }
 
     return NextResponse.json({
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("System status error:", error);
+    logger.error("System status error", error, "Admin/Status");
     return NextResponse.json(
       { error: "Failed to fetch system status" },
       { status: 500 }

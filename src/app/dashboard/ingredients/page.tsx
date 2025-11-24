@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { deleteIngredient } from "./actions";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { IngredientsPageClient } from "./IngredientsPageClient";
+import { getOrCompute, CacheKeys, CACHE_TTL } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 
@@ -13,35 +14,47 @@ export default async function IngredientsPage({ searchParams }: Props) {
   // Note: We don't use search here - filtering is done client-side for live search
   const { companyId } = await getCurrentUserAndCompany();
   
-  // Load ALL ingredients - filtering happens client-side for instant live search
-  const where = companyId 
-    ? { companyId }
-    : {};
-      
-  const ingredientsRaw = await prisma.ingredient.findMany({ 
-    where, 
-    include: { supplierRef: true },
-    orderBy: { name: "asc" } 
-  });
+  if (!companyId) {
+    return <IngredientsPageClient ingredients={[]} companyId={0} suppliers={[]} deleteIngredient={async () => {}} />;
+  }
 
-  // Serialize ingredients to convert Decimal to number for Client Components
-  const ingredients = ingredientsRaw.map(ing => ({
-    ...ing,
-    packQuantity: ing.packQuantity.toNumber(),
-    packPrice: ing.packPrice.toNumber(),
-    densityGPerMl: ing.densityGPerMl?.toNumber() || null,
-    supplierRef: ing.supplierRef ? {
-      ...ing.supplierRef,
-      minimumOrder: ing.supplierRef.minimumOrder ? Number(ing.supplierRef.minimumOrder) : null,
-    } : null,
-  }));
+  // Load ALL ingredients with Redis caching - filtering happens client-side for instant live search
+  const ingredients = await getOrCompute(
+    CacheKeys.ingredients(companyId),
+    async () => {
+      const ingredientsRaw = await prisma.ingredient.findMany({ 
+        where: { companyId },
+        include: { supplierRef: true },
+        orderBy: { name: "asc" } 
+      });
 
-  // Fetch suppliers for bulk edit
-  const suppliers = await prisma.supplier.findMany({
-    where: { companyId },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
+      // Serialize ingredients to convert Decimal to number for Client Components
+      return ingredientsRaw.map(ing => ({
+        ...ing,
+        packQuantity: ing.packQuantity.toNumber(),
+        packPrice: ing.packPrice.toNumber(),
+        densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+        supplierRef: ing.supplierRef ? {
+          ...ing.supplierRef,
+          minimumOrder: ing.supplierRef.minimumOrder ? Number(ing.supplierRef.minimumOrder) : null,
+        } : null,
+      }));
+    },
+    CACHE_TTL.INGREDIENTS
+  );
+
+  // Fetch suppliers for bulk edit with caching
+  const suppliers = await getOrCompute(
+    CacheKeys.suppliers(companyId),
+    async () => {
+      return await prisma.supplier.findMany({
+        where: { companyId },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      });
+    },
+    CACHE_TTL.SUPPLIERS
+  );
 
   return (
     <IngredientsPageClient 

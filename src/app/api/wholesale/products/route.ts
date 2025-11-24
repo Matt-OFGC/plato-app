@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { canAccessWholesale, createFeatureGateError } from "@/lib/subscription";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 // GET /api/wholesale/products - Get all wholesale products for a company
 export async function GET(request: NextRequest) {
@@ -31,8 +34,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const parsedCompanyId = parseInt(companyId);
+
+    // SECURITY: Verify user has access to this company
+    const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
+    if (!hasCompany) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
+    }
+
     const where: any = {
-      companyId: parseInt(companyId),
+      companyId: parsedCompanyId,
     };
 
     if (activeOnly) {
@@ -72,9 +86,12 @@ export async function GET(request: NextRequest) {
         : null,
     }));
 
-    return NextResponse.json(serializedProducts);
+    return createOptimizedResponse(serializedProducts, {
+      cacheType: 'frequent',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get wholesale products error:", error);
+    logger.error("Failed to fetch wholesale products", error, "Wholesale/Products");
     return NextResponse.json(
       { error: "Failed to fetch wholesale products" },
       { status: 500 }
@@ -113,6 +130,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsedCompanyId = parseInt(companyId);
+
+    // SECURITY: Verify user has access to this company
+    const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
+    if (!hasCompany) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
+    }
+
     // Must have either recipeId or name
     if (!recipeId && !name) {
       return NextResponse.json(
@@ -123,7 +151,7 @@ export async function POST(request: NextRequest) {
 
     const product = await prisma.wholesaleProduct.create({
       data: {
-        companyId: parseInt(companyId),
+        companyId: parsedCompanyId,
         recipeId: recipeId ? parseInt(recipeId) : null,
         name,
         description,
@@ -165,7 +193,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(serializedProduct);
   } catch (error) {
-    console.error("Create wholesale product error:", error);
+    logger.error("Failed to create wholesale product", error, "Wholesale/Products");
     return NextResponse.json(
       { error: "Failed to create wholesale product" },
       { status: 500 }

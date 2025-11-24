@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { createMVPCheckout, createAICheckout, createStripeCustomer } from "@/lib/stripe";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
       url: checkoutSession.url,
     });
   } catch (error) {
-    console.error("Checkout error:", error);
+    logger.error("Checkout error", error, "Subscription/Checkout");
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 }

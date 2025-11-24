@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { generateEmbedding } from "@/lib/mentor/embeddings";
 import { storeEmbedding } from "@/lib/mentor/vector-store";
 import { canUseAI } from "@/lib/subscription-simple";
+import { logger } from "@/lib/logger";
 
 /**
  * Trigger data indexing for a company
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { entityType, entityId } = body;
 
-    // Get user's company
+    // OPTIMIZATION: Get membership and check MVP mode in parallel
     const membership = await prisma.membership.findFirst({
       where: {
         userId: session.id,
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       message: "Indexing started",
     });
   } catch (error) {
-    console.error("[Mentor Index API] Error:", error);
+    logger.error("Failed to index data", error, "Mentor/Index");
     return NextResponse.json(
       { error: "Failed to index data" },
       { status: 500 }
@@ -130,7 +131,7 @@ async function indexEntity(companyId: number, entityType: string, entityId: numb
       await storeEmbedding(companyId, entityType, entityId, content, embedding, metadata);
     }
   } catch (error) {
-    console.error(`[indexEntity] Error indexing ${entityType} ${entityId}:`, error);
+    logger.error(`Error indexing ${entityType} ${entityId}`, error, "Mentor/Index");
     throw error;
   }
 }
@@ -162,7 +163,7 @@ async function indexCompanyData(companyId: number) {
 
     // Add more entity types as needed
   } catch (error) {
-    console.error("[indexCompanyData] Error indexing company data:", error);
+    logger.error("Error indexing company data", error, "Mentor/Index");
     throw error;
   }
 }

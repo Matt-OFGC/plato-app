@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth-simple";
 import { cookies } from "next/headers";
 import { getAppFromRoute, getAppAwareRoute } from "@/lib/app-routes";
+import { logger } from "@/lib/logger";
 import type { App } from "@/lib/apps/types";
 
 // Handle OAuth callback
@@ -188,7 +189,7 @@ export async function GET(
     // User has a company, go to dashboard
     return NextResponse.redirect(new URL(getDashboardRoute(), request.url));
   } catch (error) {
-    console.error(`OAuth callback error for ${provider}:`, error);
+    logger.error(`OAuth callback error for ${provider}`, error, "Auth/OAuth");
     return NextResponse.redirect(
       new URL('/login?error=oauth_failed', request.url)
     );

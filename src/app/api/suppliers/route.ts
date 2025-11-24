@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 import { z } from "zod";
 
 const supplierSchema = z.object({
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, supplier });
   } catch (error) {
-    console.error("Error creating supplier:", error);
+    logger.error("Failed to create supplier", error, "Suppliers");
     return NextResponse.json({ error: "Failed to create supplier" }, { status: 500 });
   }
 }
@@ -97,9 +99,12 @@ export async function GET() {
       minimumOrder: supplier.minimumOrder ? Number(supplier.minimumOrder) : null,
     }));
 
-    return NextResponse.json({ suppliers: serializedSuppliers });
+    return createOptimizedResponse({ suppliers: serializedSuppliers }, {
+      cacheType: 'frequent',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Error fetching suppliers:", error);
+    logger.error("Failed to fetch suppliers", error, "Suppliers");
     return NextResponse.json({ error: "Failed to fetch suppliers" }, { status: 500 });
   }
 }

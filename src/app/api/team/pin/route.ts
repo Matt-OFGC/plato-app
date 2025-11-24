@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
@@ -148,7 +149,7 @@ export async function PUT(request: NextRequest) {
       company: membership.company,
     });
   } catch (error) {
-    console.error("PIN verification error:", error);
+    logger.error("PIN verification error", error, "Team/PIN");
     return NextResponse.json(
       { error: "Failed to verify PIN" },
       { status: 500 }

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 // Get all collections for a company
 export async function GET(request: NextRequest) {
@@ -15,6 +18,15 @@ export async function GET(request: NextRequest) {
 
     if (!companyId) {
       return NextResponse.json({ error: "Company ID required" }, { status: 400 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
     }
 
     const collections = await prisma.collection.findMany({
@@ -39,9 +51,12 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ collections });
+    return createOptimizedResponse({ collections }, {
+      cacheType: 'frequent',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get collections error:", error);
+    logger.error("Failed to get collections", error, "Collections");
     return NextResponse.json(
       { error: "Failed to get collections" },
       { status: 500 }
@@ -81,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(collection);
   } catch (error) {
-    console.error("Create collection error:", error);
+    logger.error("Failed to create collection", error, "Collections");
     return NextResponse.json(
       { error: "Failed to create collection" },
       { status: 500 }

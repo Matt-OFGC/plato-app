@@ -3,6 +3,8 @@
  * Handles internet search for additional context
  */
 
+import { logger } from "../logger";
+
 /**
  * Search the web using Tavily API
  */
@@ -13,7 +15,7 @@ export async function searchWeb(query: string, maxResults: number = 5): Promise<
   score?: number;
 }>> {
   if (!process.env.TAVILY_API_KEY) {
-    console.warn("[searchWeb] TAVILY_API_KEY not configured, skipping web search");
+    logger.warn("TAVILY_API_KEY not configured, skipping web search", undefined, "Mentor/WebSearch");
     return [];
   }
 
@@ -47,7 +49,7 @@ export async function searchWeb(query: string, maxResults: number = 5): Promise<
       score: result.score,
     }));
   } catch (error) {
-    console.error("[searchWeb] Error searching web:", error);
+    logger.error("Error searching web", error, "Mentor/WebSearch");
     // Return empty array on error - don't break the flow
     return [];
   }

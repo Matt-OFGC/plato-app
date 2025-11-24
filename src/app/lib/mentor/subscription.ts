@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "../prisma";
+import { logger } from "../logger";
 
 /**
  * Check if a company has an active Mentor subscription
@@ -23,7 +24,7 @@ export async function hasMentorAccess(companyId: number): Promise<boolean> {
 
     return subscription !== null;
   } catch (error) {
-    console.error(`[hasMentorAccess] Error checking access for company ${companyId}:`, error);
+    logger.error(`Error checking access for company ${companyId}`, error, "Mentor/Subscription");
     return false;
   }
 }
@@ -49,7 +50,7 @@ export async function getMentorSubscription(companyId: number) {
       },
     });
   } catch (error) {
-    console.error(`[getMentorSubscription] Error getting subscription for company ${companyId}:`, error);
+    logger.error(`Error getting subscription for company ${companyId}`, error, "Mentor/Subscription");
     return null;
   }
 }
@@ -100,7 +101,7 @@ export async function upsertMentorSubscription(
       },
     });
   } catch (error) {
-    console.error(`[upsertMentorSubscription] Error upserting subscription:`, error);
+    logger.error("Error upserting subscription", error, "Mentor/Subscription");
     throw error;
   }
 }

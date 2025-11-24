@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 // Get customer info and available products by portal token
 export async function GET(
@@ -96,7 +97,7 @@ export async function GET(
       };
     });
 
-    // Get customer's recent orders
+    // Get customer's recent orders (already parallelized with products/pricing above)
     const recentOrders = await prisma.wholesaleOrder.findMany({
       where: {
         customerId: customer.id,
@@ -117,7 +118,7 @@ export async function GET(
       take: 5,
     });
 
-    return NextResponse.json({
+    return createOptimizedResponse({
       customer: {
         id: customer.id,
         name: customer.name,
@@ -132,9 +133,13 @@ export async function GET(
           price: item.price ? item.price.toString() : null,
         })),
       })),
+    }, {
+      cacheType: 'dynamic',
+      compression: true,
     });
   } catch (error) {
-    console.error("Get portal info error:", error);
+    const { logger } = await import("@/lib/logger");
+    logger.error("Get portal info error", error, "Wholesale/Portal");
     return NextResponse.json(
       { error: "Failed to load portal" },
       { status: 500 }

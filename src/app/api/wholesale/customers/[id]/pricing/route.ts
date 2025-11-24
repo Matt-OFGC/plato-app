@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 // Get all custom pricing for a customer
 export async function GET(
@@ -15,6 +18,25 @@ export async function GET(
 
     const { id } = await params;
     const customerId = parseInt(id);
+
+    // Verify customer exists and user has access
+    const customer = await prisma.wholesaleCustomer.findUnique({
+      where: { id: customerId },
+      select: { companyId: true },
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, customer.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this customer" },
+        { status: 403 }
+      );
+    }
 
     const pricing = await prisma.customerPricing.findMany({
       where: { customerId },
@@ -32,9 +54,12 @@ export async function GET(
       orderBy: { recipe: { name: "asc" } },
     });
 
-    return NextResponse.json(pricing);
+    return createOptimizedResponse(pricing, {
+      cacheType: 'frequent',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get customer pricing error:", error);
+    logger.error("Get customer pricing error", error, "Wholesale/Customers/Pricing");
     return NextResponse.json(
       { error: "Failed to fetch pricing" },
       { status: 500 }
@@ -62,6 +87,25 @@ export async function POST(
       return NextResponse.json(
         { error: "Recipe ID and price are required" },
         { status: 400 }
+      );
+    }
+
+    // Verify customer exists and user has access
+    const customer = await prisma.wholesaleCustomer.findUnique({
+      where: { id: customerId },
+      select: { companyId: true },
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, customer.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this customer" },
+        { status: 403 }
       );
     }
 
@@ -98,7 +142,7 @@ export async function POST(
 
     return NextResponse.json(pricing);
   } catch (error) {
-    console.error("Set customer pricing error:", error);
+    logger.error("Set customer pricing error", error, "Wholesale/Customers/Pricing");
     return NextResponse.json(
       { error: "Failed to set pricing" },
       { status: 500 }
@@ -129,6 +173,25 @@ export async function DELETE(
       );
     }
 
+    // Verify customer exists and user has access
+    const customer = await prisma.wholesaleCustomer.findUnique({
+      where: { id: customerId },
+      select: { companyId: true },
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, customer.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this customer" },
+        { status: 403 }
+      );
+    }
+
     await prisma.customerPricing.delete({
       where: {
         customerId_recipeId: {
@@ -140,7 +203,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete customer pricing error:", error);
+    logger.error("Delete customer pricing error", error, "Wholesale/Customers/Pricing");
     return NextResponse.json(
       { error: "Failed to delete pricing" },
       { status: 500 }

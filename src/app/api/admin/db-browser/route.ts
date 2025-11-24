@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,15 +53,22 @@ export async function GET(request: NextRequest) {
       model.count(),
     ]);
 
-    return NextResponse.json({
+    return createOptimizedResponse({
       data,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+    }, {
+      cacheType: 'dynamic',
+      pagination: {
+        page,
+        limit,
+        total,
+      },
     });
   } catch (error) {
-    console.error("Database browser error:", error);
+    logger.error("Database browser error", error, "Admin/DBBrowser");
     return NextResponse.json(
       { error: "Failed to fetch data" },
       { status: 500 }

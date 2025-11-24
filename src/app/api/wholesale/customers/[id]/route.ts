@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -28,6 +30,25 @@ export async function PATCH(
       isActive,
     } = body;
 
+    // Verify customer exists and user has access
+    const existingCustomer = await prisma.wholesaleCustomer.findUnique({
+      where: { id: customerId },
+      select: { companyId: true },
+    });
+
+    if (!existingCustomer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, existingCustomer.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this customer" },
+        { status: 403 }
+      );
+    }
+
     const customer = await prisma.wholesaleCustomer.update({
       where: { id: customerId },
       data: {
@@ -54,7 +75,7 @@ export async function PATCH(
 
     return NextResponse.json(customer);
   } catch (error) {
-    console.error("Update wholesale customer error:", error);
+    logger.error("Update wholesale customer error", error, "Wholesale/Customers");
     return NextResponse.json(
       { error: "Failed to update customer" },
       { status: 500 }
@@ -74,13 +95,32 @@ export async function DELETE(
 
     const customerId = parseInt(params.id);
 
+    // Verify customer exists and user has access
+    const customer = await prisma.wholesaleCustomer.findUnique({
+      where: { id: customerId },
+      select: { companyId: true },
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, customer.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this customer" },
+        { status: 403 }
+      );
+    }
+
     await prisma.wholesaleCustomer.delete({
       where: { id: customerId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete wholesale customer error:", error);
+    logger.error("Delete wholesale customer error", error, "Wholesale/Customers");
     return NextResponse.json(
       { error: "Failed to delete customer" },
       { status: 500 }

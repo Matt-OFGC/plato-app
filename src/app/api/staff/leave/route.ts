@@ -56,9 +56,12 @@ export async function GET(request: NextRequest) {
       orderBy: { startDate: 'asc' },
     });
 
-    return NextResponse.json({ leaveRequests });
+    return createOptimizedResponse({ leaveRequests }, {
+      cacheType: 'dynamic',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get leave requests error:", error);
+    logger.error("Get leave requests error", error, "Staff/Leave");
     return NextResponse.json(
       { error: "Failed to get leave requests" },
       { status: 500 }
@@ -165,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ leaveRequest }, { status: 201 });
   } catch (error) {
-    console.error("Create leave request error:", error);
+    logger.error("Create leave request error", error, "Staff/Leave");
     return NextResponse.json(
       { error: "Failed to create leave request" },
       { status: 500 }

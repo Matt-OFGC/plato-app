@@ -7,6 +7,7 @@ import { prisma } from "../prisma";
 import { generateEmbedding } from "./embeddings";
 import { searchSimilarContent } from "./vector-store";
 import { getMentorConfig } from "./config";
+import { logger } from "../logger";
 
 export interface BusinessContext {
   recipes?: any[];
@@ -136,7 +137,7 @@ export async function retrieveBusinessContext(
 
     return context;
   } catch (error) {
-    console.error("[retrieveBusinessContext] Error retrieving context:", error);
+    logger.error("Error retrieving context", error, "Mentor/ContextRetrieval");
     throw error;
   }
 }

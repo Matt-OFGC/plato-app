@@ -223,7 +223,8 @@ export async function GET(request: NextRequest) {
       results,
     });
   } catch (error) {
-    console.error("Generate production plans cron error:", error);
+    const { logger } = await import("@/lib/logger");
+    logger.error("Generate production plans cron error", error, "Cron/ProductionPlan");
     return NextResponse.json(
       {
         error: "Failed to generate production plans",

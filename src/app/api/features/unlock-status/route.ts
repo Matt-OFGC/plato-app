@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getUnlockStatus, checkRecipesLimits, UnlockStatus } from "@/lib/features";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Ensure this route is dynamic
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
-      console.error('[Unlock Status] No session found');
+      logger.warn("No session found", null, "Features/UnlockStatus");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -29,35 +30,25 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      console.error('[Unlock Status] User not found in database:', session.id);
+      logger.error("User not found in database", { userId: session.id }, "Features/UnlockStatus");
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     if (!user.isActive) {
-      console.error('[Unlock Status] User is inactive:', session.id);
+      logger.warn("User is inactive", { userId: session.id }, "Features/UnlockStatus");
       return NextResponse.json({ error: "User account is inactive" }, { status: 403 });
     }
 
-    console.log('[Unlock Status] User subscription:', {
-      userId: session.id,
-      email: session.email,
-      tier: user.subscriptionTier,
-      status: user.subscriptionStatus,
-      subscriptionEndsAt: user.subscriptionEndsAt,
-    });
+    // OPTIMIZATION: Run unlock status and recipes limits checks in parallel
+    const [unlockStatus, recipesLimits] = await Promise.all([
+      getUnlockStatus(session.id),
+      checkRecipesLimits(session.id),
+    ]);
     
-    const unlockStatus: UnlockStatus = await getUnlockStatus(session.id);
-    const recipesLimits = await checkRecipesLimits(session.id);
-    
-    console.log('[Unlock Status] Final unlock status result:', JSON.stringify(unlockStatus, null, 2));
-    console.log('[Unlock Status] Recipes limits:', recipesLimits);
-    console.log('[Unlock Status] Module unlock states:', {
-      recipes: unlockStatus.recipes?.unlocked,
-      production: unlockStatus.production?.unlocked,
-      make: unlockStatus.make?.unlocked,
-      teams: unlockStatus.teams?.unlocked,
-      safety: unlockStatus.safety?.unlocked,
-    });
+    // Only log in development mode to reduce production noise
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug("Unlock status result", { unlockStatus, recipesLimits }, "Features/UnlockStatus");
+    }
 
     const response = NextResponse.json({
       unlockStatus,
@@ -79,20 +70,14 @@ export async function GET(request: NextRequest) {
     
     return response;
   } catch (error) {
-    console.error("Get unlock status error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
     
-    // Log full error details
-    console.error("Full error details:", {
-      message: errorMessage,
-      stack: errorStack,
-      error: error,
-    });
+    logger.error("Get unlock status error", error, "Features/UnlockStatus");
     
     // If it's a Prisma error about missing fields, try to return unlocked status anyway
     if (errorMessage.includes("maxIngredients") || errorMessage.includes("maxRecipes") || errorMessage.includes("ingredientCount") || errorMessage.includes("recipeCount")) {
-      console.warn("[Unlock Status] Prisma field error detected - returning unlocked status as fallback");
+      logger.warn("Prisma field error detected - returning unlocked status as fallback", error, "Features/UnlockStatus");
       return NextResponse.json({
         unlockStatus: {
           recipes: { unlocked: true, isTrial: false, status: "active" },

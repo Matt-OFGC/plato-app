@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { canAccessWholesale, createFeatureGateError } from "@/lib/subscription";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +43,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsedCompanyId = typeof companyId === 'string' ? parseInt(companyId) : companyId;
+
+    // SECURITY: Verify user has access to this company
+    const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
+    if (!hasCompany) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
+    }
+
     const customer = await prisma.wholesaleCustomer.create({
       data: {
         name,
@@ -53,7 +66,7 @@ export async function POST(request: NextRequest) {
         country,
         notes,
         isActive: isActive ?? true,
-        companyId,
+        companyId: parsedCompanyId,
       },
       include: {
         _count: {
@@ -67,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(customer);
   } catch (error) {
-    console.error("Create wholesale customer error:", error);
+    logger.error("Failed to create wholesale customer", error, "Wholesale/Customers");
     return NextResponse.json(
       { error: "Failed to create customer" },
       { status: 500 }
@@ -101,9 +114,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const parsedCompanyId = parseInt(companyId);
+
+    // SECURITY: Verify user has access to this company
+    const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
+    if (!hasCompany) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
+    }
+
     const customers = await prisma.wholesaleCustomer.findMany({
       where: {
-        companyId: parseInt(companyId),
+        companyId: parsedCompanyId,
         isActive: true,
       },
       orderBy: { name: "asc" },
@@ -111,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(customers);
   } catch (error) {
-    console.error("Get wholesale customers error:", error);
+    logger.error("Failed to fetch wholesale customers", error, "Wholesale/Customers");
     return NextResponse.json(
       { error: "Failed to fetch customers" },
       { status: 500 }

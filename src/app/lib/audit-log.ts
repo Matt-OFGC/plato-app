@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
+import { logger } from './logger';
 
 export interface AuditLogEntry {
   id?: number;
@@ -39,7 +40,7 @@ export async function loginSuccess(userId: number, request: NextRequest): Promis
       }
     });
   } catch (error) {
-    console.error('Failed to log login success:', error);
+    logger.error('Failed to log login success', error, 'AuditLog');
   }
 }
 
@@ -60,7 +61,7 @@ export async function loginFailed(email: string, request: NextRequest, reason: s
       }
     });
   } catch (error) {
-    console.error('Failed to log login failure:', error);
+    logger.error('Failed to log login failure', error, 'AuditLog');
   }
 }
 
@@ -89,7 +90,7 @@ export async function logAction(
       }
     });
   } catch (error) {
-    console.error('Failed to log action:', error);
+    logger.error('Failed to log action', error, 'AuditLog');
   }
 }
 
@@ -111,7 +112,7 @@ export async function logSystemEvent(
       }
     });
   } catch (error) {
-    console.error('Failed to log system event:', error);
+    logger.error('Failed to log system event', error, 'AuditLog');
   }
 }
 
@@ -131,7 +132,7 @@ export async function getUserAuditLogs(
     
     return logs;
   } catch (error) {
-    console.error('Failed to get user audit logs:', error);
+    logger.error('Failed to get user audit logs', error, 'AuditLog');
     return [];
   }
 }
@@ -159,7 +160,7 @@ export async function getRecentAuditLogs(
     
     return logs;
   } catch (error) {
-    console.error('Failed to get recent audit logs:', error);
+    logger.error('Failed to get recent audit logs', error, 'AuditLog');
     return [];
   }
 }

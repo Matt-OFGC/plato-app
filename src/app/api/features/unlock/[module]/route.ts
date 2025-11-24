@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createFeatureModuleCheckout, createStripeCustomer } from "@/lib/stripe";
 import { FeatureModuleName } from "@/lib/stripe-features";
 import { getAppFromRoute, getAppAwareRoute } from "@/lib/app-routes";
+import { logger } from "@/lib/logger";
 import type { App } from "@/lib/apps/types";
 
 export async function POST(
@@ -85,7 +86,7 @@ export async function POST(
       url: checkoutSession.url,
     });
   } catch (error) {
-    console.error("Unlock module error:", error);
+    logger.error("Unlock module error", error, "Features/Unlock");
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
+import { logger } from "@/lib/logger";
 // Temporarily disabled to fix build error
 // import { isRecipesTrial } from "@/lib/features";
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Bulk ingredient creation error:", error);
+    logger.error("Bulk ingredient creation error", error, "Ingredients/Bulk");
     return NextResponse.json(
       { 
         error: "Failed to create ingredients",

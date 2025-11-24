@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "../prisma";
+import { logger } from "../logger";
 
 /**
  * Store embedding in knowledge index
@@ -51,7 +52,7 @@ export async function storeEmbedding(
       });
     }
   } catch (error) {
-    console.error("[storeEmbedding] Error storing embedding:", error);
+    logger.error("Error storing embedding", error, "Mentor/VectorStore");
     throw error;
   }
 }
@@ -109,7 +110,7 @@ export async function searchSimilarContent(
 
     return results;
   } catch (error) {
-    console.error("[searchSimilarContent] Error searching similar content:", error);
+    logger.error("Error searching similar content", error, "Mentor/VectorStore");
     throw error;
   }
 }
@@ -162,7 +163,7 @@ export async function deleteEmbeddings(
       where,
     });
   } catch (error) {
-    console.error("[deleteEmbeddings] Error deleting embeddings:", error);
+    logger.error("Error deleting embeddings", error, "Mentor/VectorStore");
     throw error;
   }
 }

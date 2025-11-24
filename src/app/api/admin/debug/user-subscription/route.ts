@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { isPaidTier, getUnlockStatus } from "@/lib/features";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,9 +34,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check what isPaidTier returns
-    const paid = await isPaidTier(user.id);
-    const unlockStatus = await getUnlockStatus(user.id);
+    // OPTIMIZATION: Run checks in parallel
+    const [paid, unlockStatus] = await Promise.all([
+      isPaidTier(user.id),
+      getUnlockStatus(user.id),
+    ]);
 
     return NextResponse.json({
       user: {
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Debug subscription error:", error);
+    logger.error("Debug subscription error", error, "Admin/DebugSubscription");
     return NextResponse.json(
       { error: "Failed to debug subscription", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }

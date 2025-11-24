@@ -45,11 +45,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Get owner's subscription for billing info
-    const ownerMembership = await prisma.membership.findFirst({
+    // Get admin's subscription for billing info
+    const adminMembership = await prisma.membership.findFirst({
       where: { 
         companyId,
-        role: "OWNER",
+        role: "ADMIN",
         isActive: true,
       },
     });
@@ -58,9 +58,9 @@ export async function GET(request: NextRequest) {
     let basePrice = 9.99; // Default base price
     let pricePerSeat = 5.00; // Default seat price
 
-    if (ownerMembership) {
+    if (adminMembership) {
       const subscription = await prisma.subscription.findUnique({
-        where: { userId: ownerMembership.userId },
+        where: { userId: adminMembership.userId },
       });
 
       if (subscription?.stripeSubscriptionId) {

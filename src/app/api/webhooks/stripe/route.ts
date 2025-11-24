@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe, STRIPE_CONFIG, getTierFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { getModuleFromStripePriceId } from "@/lib/stripe-features";
+import { logger } from "@/lib/logger";
 import Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, STRIPE_CONFIG.webhookSecret);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+    logger.error("Webhook signature verification failed", err, "Webhooks/Stripe");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -44,12 +45,12 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.debug(`Unhandled event type: ${event.type}`, null, "Webhooks/Stripe");
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    logger.error("Webhook handler error", error, "Webhooks/Stripe");
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }
@@ -70,7 +71,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   });
 
   if (!user) {
-    console.error("User not found for customer:", customerId);
+    logger.error("User not found for customer", { customerId }, "Webhooks/Stripe");
     return;
   }
 
@@ -166,12 +167,12 @@ async function handleAICheckout(
   subscriptionItem: Stripe.SubscriptionItem,
   subscriptionType: "unlimited" | "capped"
 ) {
-  // Get user's company (backward compatibility: check OWNER or ADMIN)
+  // Get user's company (check ADMIN role)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
       memberships: {
-        where: { role: { in: ["OWNER", "ADMIN"] } },
+        where: { role: "ADMIN" },
         include: { company: true },
       },
     },
@@ -203,12 +204,12 @@ async function handleMentorCheckout(
   subscription: Stripe.Subscription,
   subscriptionItem: Stripe.SubscriptionItem
 ) {
-  // Get user's company (backward compatibility: check OWNER or ADMIN)
+  // Get user's company (check ADMIN role)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
       memberships: {
-        where: { role: { in: ["OWNER", "ADMIN"] } },
+        where: { role: "ADMIN" },
         include: { company: true },
       },
     },

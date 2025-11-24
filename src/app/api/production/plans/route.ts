@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { canAccessProduction, createFeatureGateError } from "@/lib/subscription";
+import { hasCompanyAccess } from "@/lib/current";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +31,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsedCompanyId = typeof companyId === 'string' ? parseInt(companyId) : companyId;
+
+    // SECURITY: Verify user has access to this company
+    const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
+    if (!hasCompany) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
+    }
+
     // Create production plan with items and allocations
     const plan = await prisma.productionPlan.create({
       data: {
@@ -36,7 +49,7 @@ export async function POST(request: NextRequest) {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         notes,
-        companyId,
+        companyId: parsedCompanyId,
         createdBy: session.id,
         items: {
           create: items.map((item: any, index: number) => ({

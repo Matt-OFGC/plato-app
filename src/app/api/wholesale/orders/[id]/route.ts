@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, generateOrderStatusEmail } from "@/lib/email";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function GET(
   request: NextRequest,
@@ -17,6 +20,41 @@ export async function GET(
     const orderId = parseInt(id);
 
     const order = await prisma.wholesaleOrder.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        companyId: true,
+        customer: true,
+        items: {
+          include: {
+            recipe: {
+              select: {
+                id: true,
+                name: true,
+                yieldQuantity: true,
+                yieldUnit: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, order.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this order" },
+        { status: 403 }
+      );
+    }
+
+    // Re-fetch with full data after authorization check
+    const fullOrder = await prisma.wholesaleOrder.findUnique({
       where: { id: orderId },
       include: {
         customer: true,
@@ -35,13 +73,12 @@ export async function GET(
       },
     });
 
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(order);
+    return createOptimizedResponse(fullOrder, {
+      cacheType: 'dynamic',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Get wholesale order error:", error);
+    logger.error("Get wholesale order error", error, "Wholesale/Orders");
     return NextResponse.json(
       { error: "Failed to fetch order" },
       { status: 500 }
@@ -75,13 +112,31 @@ export async function PATCH(
       nextRecurrenceDate,
     } = body;
 
-    // Get existing order to check if status changed
+    // Get existing order to check if status changed and verify access
     const existingOrder = await prisma.wholesaleOrder.findUnique({
       where: { id: orderId },
-      include: { customer: true },
+      select: {
+        id: true,
+        companyId: true,
+        status: true,
+        customer: true,
+      },
     });
 
-    const statusChanged = status && existingOrder && status !== existingOrder.status;
+    if (!existingOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, existingOrder.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this order" },
+        { status: 403 }
+      );
+    }
+
+    const statusChanged = status && status !== existingOrder.status;
 
     // If items are provided, update them
     if (items) {
@@ -164,7 +219,7 @@ export async function PATCH(
           text: emailContent.text,
         });
       } catch (emailError) {
-        console.error("Failed to send status update email:", emailError);
+        logger.error("Failed to send status update email", emailError, "Wholesale/Orders");
       }
     }
 
@@ -214,14 +269,14 @@ export async function PATCH(
           });
         }
       } catch (inventoryError) {
-        console.error("Failed to update inventory on delivery:", inventoryError);
+        logger.error("Failed to update inventory on delivery", inventoryError, "Wholesale/Orders");
         // Don't fail the order update if inventory fails
       }
     }
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error("Update wholesale order error:", error);
+    logger.error("Update wholesale order error", error, "Wholesale/Orders");
     return NextResponse.json(
       { error: "Failed to update order" },
       { status: 500 }
@@ -242,13 +297,32 @@ export async function DELETE(
     const { id } = await params;
     const orderId = parseInt(id);
 
+    // Verify order exists and user has access
+    const order = await prisma.wholesaleOrder.findUnique({
+      where: { id: orderId },
+      select: { companyId: true },
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, order.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this order" },
+        { status: 403 }
+      );
+    }
+
     await prisma.wholesaleOrder.delete({
       where: { id: orderId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete wholesale order error:", error);
+    logger.error("Delete wholesale order error", error, "Wholesale/Orders");
     return NextResponse.json(
       { error: "Failed to delete order" },
       { status: 500 }

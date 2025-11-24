@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { hasAIAccess, getAISubscriptionType } from "@/lib/subscription-simple";
+import { logger } from "@/lib/logger";
 
 /**
  * Get Mentor subscription status
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
       isDevMode: isDev,
     });
   } catch (error) {
-    console.error("[Mentor Subscription API] Error:", error);
+    logger.error("Failed to fetch subscription status", error, "Mentor/Subscription");
     return NextResponse.json(
       { error: "Failed to fetch subscription status" },
       { status: 500 }

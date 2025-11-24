@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
 import { updateSubscriptionSeats } from "@/lib/stripe";
 import { auditLog } from "@/lib/audit-log";
+import { logger } from "@/lib/logger";
 
 // Get team members
 export async function GET(request: NextRequest) {
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ members, invitations });
   } catch (error) {
-    console.error("Get members error:", error);
+    logger.error("Failed to get team members", error, "Team/Members");
     return NextResponse.json(
       { error: "Failed to get team members" },
       { status: 500 }
@@ -100,12 +101,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
 
-    // Don't allow removing the last ADMIN (or OWNER for backward compatibility)
-    if (role !== 'ADMIN' && role !== 'OWNER' && (membership.role === 'ADMIN' || membership.role === 'OWNER')) {
+    // Don't allow removing the last ADMIN
+    if (role !== 'ADMIN' && membership.role === 'ADMIN') {
       const adminCount = await prisma.membership.count({
         where: { 
           companyId, 
-          role: { in: ['ADMIN', 'OWNER'] }, // Count both ADMIN and OWNER
+          role: 'ADMIN',
           isActive: true 
         },
       });
@@ -137,7 +138,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, membership: updated });
   } catch (error) {
-    console.error("Update role error:", error);
+    logger.error("Failed to update member role", error, "Team/Members");
     return NextResponse.json(
       { error: "Failed to update member role" },
       { status: 500 }
@@ -167,38 +168,38 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "No permission to manage team" }, { status: 403 });
     }
 
-    // Don't allow removing the last owner
+    // Don't allow removing the last admin
     const membership = await prisma.membership.findUnique({
       where: { id: membershipId },
     });
     
-    if (membership?.role === 'OWNER') {
-      const ownerCount = await prisma.membership.count({
-        where: { companyId, role: 'OWNER', isActive: true },
+    if (membership?.role === 'ADMIN') {
+      const adminCount = await prisma.membership.count({
+        where: { companyId, role: 'ADMIN', isActive: true },
       });
       
-      if (ownerCount <= 1) {
+      if (adminCount <= 1) {
         return NextResponse.json({ 
-          error: "Cannot remove the last owner" 
+          error: "Cannot remove the last admin" 
         }, { status: 400 });
       }
     }
 
-    // Get company owner's subscription to update billing
-    const ownerMembership = await prisma.membership.findFirst({
+    // Get company admin's subscription to update billing
+    const adminMembership = await prisma.membership.findFirst({
       where: { 
         companyId,
-        role: "OWNER",
+        role: "ADMIN",
         isActive: true,
       },
     });
 
-    if (ownerMembership) {
-      const ownerSubscription = await prisma.subscription.findUnique({
-        where: { userId: ownerMembership.userId },
+    if (adminMembership) {
+      const adminSubscription = await prisma.subscription.findUnique({
+        where: { userId: adminMembership.userId },
       });
 
-      if (ownerSubscription?.stripeSubscriptionId) {
+      if (adminSubscription?.stripeSubscriptionId) {
         // Calculate new seat count after removal
         const remainingActiveMembers = await prisma.membership.count({
           where: { 
@@ -211,7 +212,7 @@ export async function DELETE(request: NextRequest) {
 
         try {
           await updateSubscriptionSeats(
-            ownerSubscription.stripeSubscriptionId,
+            adminSubscription.stripeSubscriptionId,
             1, // base seats
             additionalSeatsNeeded
           );

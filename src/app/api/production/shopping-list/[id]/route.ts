@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 import Decimal from "decimal.js";
 
 export async function GET(
@@ -15,6 +18,25 @@ export async function GET(
 
     const { id } = await params;
     const planId = parseInt(id);
+
+    // Get production plan with company info first for authorization check
+    const planCheck = await prisma.productionPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, companyId: true },
+    });
+
+    if (!planCheck) {
+      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, planCheck.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this plan" },
+        { status: 403 }
+      );
+    }
 
     // Get production plan with all items and ingredients
     const plan = await prisma.productionPlan.findUnique({

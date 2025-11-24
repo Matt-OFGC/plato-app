@@ -316,7 +316,7 @@ model Membership {
   pin            String?
   pinHash        String?
   updatedAt      DateTime       @default(now()) @updatedAt
-  role           MemberRole     @default(VIEWER)
+  role           MemberRole     @default(EMPLOYEE)
   currency       String         @default("GBP")
   employmentType String?
   endDate        DateTime?
@@ -485,7 +485,7 @@ model TeamInvitation {
   updatedAt  DateTime   @updatedAt
   companyId  Int
   email      String
-  role       MemberRole @default(VIEWER)
+  role       MemberRole @default(EMPLOYEE)
   invitedBy  Int
   token      String     @unique
   acceptedAt DateTime?

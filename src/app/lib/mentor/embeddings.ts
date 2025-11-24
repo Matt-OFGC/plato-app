@@ -6,6 +6,8 @@
 // This will be implemented with OpenAI embeddings API
 // For now, this is a placeholder structure
 
+import { logger } from "../logger";
+
 export interface EmbeddingResult {
   embedding: number[];
   text: string;
@@ -45,7 +47,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     const data = await response.json();
     return data.data[0].embedding;
   } catch (error) {
-    console.error("[generateEmbedding] Error generating embedding:", error);
+    logger.error("Error generating embedding", error, "Mentor/Embeddings");
     throw error;
   }
 }
@@ -80,7 +82,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     const data = await response.json();
     return data.data.map((item: any) => item.embedding);
   } catch (error) {
-    console.error("[generateEmbeddings] Error generating embeddings:", error);
+    logger.error("Error generating embeddings", error, "Mentor/Embeddings");
     throw error;
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { canAccessWholesale, createFeatureGateError } from "@/lib/subscription";
+import { hasCompanyAccess } from "@/lib/current";
 import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function POST(request: NextRequest) {
@@ -128,8 +129,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const parsedCompanyId = parseInt(companyId);
+
+    // SECURITY: Verify user has access to this company
+    const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
+    if (!hasCompany) {
+      return NextResponse.json(
+        { error: "No access to this company" },
+        { status: 403 }
+      );
+    }
+
     const where: any = {
-      companyId: parseInt(companyId),
+      companyId: parsedCompanyId,
     };
 
     if (customerId) {
@@ -166,7 +178,10 @@ export async function GET(request: NextRequest) {
 
     return createOptimizedResponse(
       orders,
-      { cacheType: 'dynamic' } // Orders change frequently
+      { 
+        cacheType: 'dynamic', // Orders change frequently
+        compression: true,
+      }
     );
   } catch (error) {
     const { handleApiError } = await import("@/lib/api-error-handler");

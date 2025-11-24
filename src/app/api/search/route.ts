@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { getAppFromRoute, getAppAwareRoute } from "@/lib/app-routes";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 import type { App } from "@/lib/apps/types";
 
 export interface SearchResult {
@@ -56,8 +58,16 @@ export async function GET(request: NextRequest) {
       return getAppAwareRoute(path, app);
     };
 
-    // Search staff (users)
-    const staffMembers = await prisma.membership.findMany({
+    // OPTIMIZATION: Run all searches in parallel for better performance
+    const [
+      staffMembers,
+      recipes,
+      trainingModules,
+      cleaningJobs,
+      productionPlans,
+    ] = await Promise.all([
+      // Search staff (users)
+      prisma.membership.findMany({
       where: {
         companyId,
         isActive: true,
@@ -78,8 +88,45 @@ export async function GET(request: NextRequest) {
         },
       },
       take: 5,
-    });
+      }),
+      // Search recipes
+      prisma.recipe.findMany({
+      where: {
+        companyId,
+        name: { contains: query, mode: "insensitive" },
+      },
+      take: 5,
+      }),
+      // Search training modules
+      prisma.trainingModule.findMany({
+      where: {
+        companyId,
+        OR: [
+          { title: { contains: query, mode: "insensitive" } },
+          { description: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      take: 5,
+      }),
+      // Search cleaning jobs
+      prisma.cleaningJob.findMany({
+      where: {
+        companyId,
+        name: { contains: query, mode: "insensitive" },
+      },
+      take: 5,
+      }),
+      // Search production plans
+      prisma.productionPlan.findMany({
+      where: {
+        companyId,
+        name: { contains: query, mode: "insensitive" },
+      },
+      take: 5,
+      }),
+    ]);
 
+    // Process results
     staffMembers.forEach((member) => {
       results.push({
         type: "staff",
@@ -88,15 +135,6 @@ export async function GET(request: NextRequest) {
         link: getAppAwareLink(`/dashboard/team/${member.id}`),
         description: member.user.email,
       });
-    });
-
-    // Search recipes
-    const recipes = await prisma.recipe.findMany({
-      where: {
-        companyId,
-        name: { contains: query, mode: "insensitive" },
-      },
-      take: 5,
     });
 
     recipes.forEach((recipe) => {
@@ -109,18 +147,6 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    // Search training modules
-    const trainingModules = await prisma.trainingModule.findMany({
-      where: {
-        companyId,
-        OR: [
-          { title: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
-        ],
-      },
-      take: 5,
-    });
-
     trainingModules.forEach((module) => {
       results.push({
         type: "training",
@@ -129,15 +155,6 @@ export async function GET(request: NextRequest) {
         link: getAppAwareLink(`/dashboard/training/modules/${module.id}`),
         description: module.description || undefined,
       });
-    });
-
-    // Search cleaning jobs
-    const cleaningJobs = await prisma.cleaningJob.findMany({
-      where: {
-        companyId,
-        name: { contains: query, mode: "insensitive" },
-      },
-      take: 5,
     });
 
     cleaningJobs.forEach((job) => {
@@ -150,15 +167,6 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    // Search production plans
-    const productionPlans = await prisma.productionPlan.findMany({
-      where: {
-        companyId,
-        name: { contains: query, mode: "insensitive" },
-      },
-      take: 5,
-    });
-
     productionPlans.forEach((plan) => {
       results.push({
         type: "production",
@@ -169,9 +177,12 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    return NextResponse.json({ results });
+    return createOptimizedResponse({ results }, {
+      cacheType: 'dynamic',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Search error:", error);
+    logger.error("Search error", error, "Search");
     return NextResponse.json(
       { error: "Failed to perform search" },
       { status: 500 }

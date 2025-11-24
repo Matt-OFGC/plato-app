@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { hasCompanyAccess } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -35,7 +37,20 @@ export async function PATCH(
       },
     });
 
-    const wasJustCompleted = completed === true && existingItem && !existingItem.completed;
+    if (!existingItem) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+
+    // SECURITY: Verify user has access to this company
+    const hasAccess = await hasCompanyAccess(session.id, existingItem.plan.companyId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "No access to this production item" },
+        { status: 403 }
+      );
+    }
+
+    const wasJustCompleted = completed === true && !existingItem.completed;
     const wasJustUncompleted = completed === false && existingItem && existingItem.completed;
 
     const item = await prisma.productionItem.update({
@@ -123,14 +138,14 @@ export async function PATCH(
           },
         });
       } catch (inventoryError) {
-        console.error("Failed to update inventory:", inventoryError);
+        logger.error("Failed to update inventory", inventoryError, "Production/Items");
         // Don't fail the production item update if inventory fails
       }
     }
 
     return NextResponse.json(item);
   } catch (error) {
-    console.error("Update production item error:", error);
+    logger.error("Update production item error", error, "Production/Items");
     return NextResponse.json(
       { error: "Failed to update production item" },
       { status: 500 }

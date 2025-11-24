@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "../prisma";
+import { logger } from "../logger";
 
 /**
  * Get or create Mentor config for a company
@@ -39,7 +40,7 @@ export async function getMentorConfig(companyId: number) {
 
     return config;
   } catch (error) {
-    console.error(`[getMentorConfig] Error getting config for company ${companyId}:`, error);
+    logger.error(`Error getting config for company ${companyId}`, error, "Mentor/Config");
     throw error;
   }
 }
@@ -70,7 +71,7 @@ export async function updateMentorConfig(
       update: data,
     });
   } catch (error) {
-    console.error(`[updateMentorConfig] Error updating config for company ${companyId}:`, error);
+    logger.error(`Error updating config for company ${companyId}`, error, "Mentor/Config");
     throw error;
   }
 }

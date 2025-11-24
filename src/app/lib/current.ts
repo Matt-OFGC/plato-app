@@ -3,6 +3,8 @@ import { getUserFromSession } from './auth-simple';
 import type { App } from '@/lib/apps/types';
 import type { AppConfig } from '@/lib/apps/types';
 import { getAppConfig } from '@/lib/apps/registry';
+import { logger } from './logger';
+import { getOrCompute, CacheKeys, CACHE_TTL, deleteCache } from './redis';
 
 export interface Company {
   id: number;
@@ -36,10 +38,6 @@ export interface CurrentUserAndCompany {
   appConfig?: AppConfig | null;
 }
 
-// Cache for user data to avoid repeated queries
-const userCache = new Map<number, { data: CurrentUserAndCompany; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
 // Get current user and their company information with caching
 export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany> {
   const user = await getUserFromSession();
@@ -48,16 +46,23 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     throw new Error('User not authenticated');
   }
 
-  // Check cache first
-  const cached = userCache.get(user.id);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
+  // Use Redis cache with fallback
+  return getOrCompute(
+    CacheKeys.userSession(user.id),
+    async () => {
+      return await fetchUserAndCompany(user.id);
+    },
+    CACHE_TTL.USER_SESSION
+  );
+}
+
+// Internal function to fetch user and company data
+async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
 
   try {
     // Optimized query - get only what we need
     const userWithMemberships = await prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -101,36 +106,31 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     const app = company?.app || null;
     const appConfig = app ? getAppConfig(app) : null;
 
-    const result = {
+    return {
       companyId,
       company,
       user: userWithMemberships,
       app,
       appConfig
     };
-
-    // Cache the result
-    userCache.set(user.id, { data: result, timestamp: Date.now() });
-
-    return result;
   } catch (error) {
-    console.error('Database error in getCurrentUserAndCompany:', error);
+    logger.error('Database error in getCurrentUserAndCompany', error, 'Current');
     
     // In development, provide more detailed error information
     if (process.env.NODE_ENV === 'development') {
-      console.error('Database connection failed. Check your .env file and DATABASE_URL.');
-      console.error('Error details:', error);
+      logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', error, 'Current');
     }
     
     // Return a fallback structure to prevent page crashes
+    const user = await getUserFromSession();
     return {
       companyId: null,
       company: null,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: user.isAdmin,
+        id: user?.id || 0,
+        email: user?.email || '',
+        name: user?.name || null,
+        isAdmin: user?.isAdmin || false,
         memberships: []
       },
       app: null,
@@ -140,12 +140,13 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
 }
 
 // Clear user cache (call when user data changes)
-export function clearUserCache(userId?: number) {
+export async function clearUserCache(userId?: number) {
   if (userId) {
-    userCache.delete(userId);
-  } else {
-    userCache.clear();
+    await deleteCache(CacheKeys.userSession(userId));
+    await deleteCache(CacheKeys.userCompanies(userId));
   }
+  // Note: Pattern deletion for all users requires deleteCachePattern which is async
+  // For now, we'll clear individual caches as needed
 }
 
 // Get user's role in a specific company with caching

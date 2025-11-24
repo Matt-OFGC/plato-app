@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
+import { createOptimizedResponse } from "@/lib/api-optimization";
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,14 +43,14 @@ export async function GET(request: NextRequest) {
         orderBy: { name: "asc" },
         include: includeObject,
       });
-      console.log(`Fetched ${recipesRaw.length} recipes`);
+      logger.debug(`Fetched ${recipesRaw.length} recipes`, null, "Recipes");
     } catch (prismaError: any) {
-      console.error("Prisma query error:", prismaError);
-      console.error("Error details:", {
+      logger.error("Prisma query error", prismaError, "Recipes");
+      logger.debug("Error details", {
         message: prismaError?.message,
         code: prismaError?.code,
         meta: prismaError?.meta,
-      });
+      }, "Recipes");
       throw prismaError;
     }
 
@@ -74,7 +76,7 @@ export async function GET(request: NextRequest) {
                 allergens.forEach((allergen: string) => allergenSet.add(allergen));
               }
             } catch (e) {
-              console.warn('Failed to parse allergens for ingredient:', item.ingredient?.id, e);
+              logger.warn('Failed to parse allergens for ingredient', e, "Recipes");
             }
           }
         });
@@ -90,7 +92,7 @@ export async function GET(request: NextRequest) {
             recipeAllergens.forEach((allergen: string) => allergenSet.add(allergen));
           }
         } catch (e) {
-          console.warn('Failed to parse recipe allergens:', recipe.id, e);
+          logger.warn('Failed to parse recipe allergens', e, "Recipes");
         }
       }
 
@@ -103,7 +105,7 @@ export async function GET(request: NextRequest) {
             : Number(recipe.sellingPrice);
         }
       } catch (e) {
-        console.warn('Failed to convert sellingPrice for recipe:', recipe.id, e);
+        logger.warn('Failed to convert sellingPrice for recipe', e, "Recipes");
       }
 
       const result: any = {
@@ -181,14 +183,12 @@ export async function GET(request: NextRequest) {
       return result;
     });
 
-    return NextResponse.json(recipes);
+    return createOptimizedResponse(recipes, {
+      cacheType: includeFullData ? 'dynamic' : 'frequent',
+      compression: true,
+    });
   } catch (error) {
-    console.error("Error fetching recipes:", error);
-    // Log more details about the error
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    }
+    logger.error("Error fetching recipes", error, "Recipes");
     return NextResponse.json(
       { error: "Failed to fetch recipes", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

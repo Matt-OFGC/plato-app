@@ -8,6 +8,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
 import { getAppAwareRouteForServer } from "@/lib/server-app-context";
+import { invalidateCompanyCache } from "@/lib/redis";
 // Temporarily disabled to fix build error
 // import { isRecipesTrial } from "@/lib/features";
 
@@ -166,6 +167,12 @@ export async function createIngredient(formData: FormData) {
         // Revalidate both possible paths
         revalidatePath("/dashboard/ingredients");
         revalidatePath("/bake/ingredients");
+        
+        // Invalidate cache
+        if (companyId) {
+          await invalidateCompanyCache(companyId);
+        }
+        
         return { success: true };
   } catch (error) {
     console.error("Error in createIngredient:", error);
@@ -274,6 +281,12 @@ export async function updateIngredient(id: number, formData: FormData) {
     });
     
     revalidatePath("/dashboard/ingredients");
+    
+    // Invalidate cache
+    if (companyId) {
+      await invalidateCompanyCache(companyId);
+    }
+    
     return { success: true };
   } catch (error) {
     console.error("Error updating ingredient:", error);
@@ -338,6 +351,11 @@ export async function deleteIngredient(id: number) {
   }
   
   revalidatePath("/dashboard/ingredients");
+  
+  // Invalidate cache
+  if (companyId) {
+    await invalidateCompanyCache(companyId);
+  }
 }
 
 export async function getSuppliers() {

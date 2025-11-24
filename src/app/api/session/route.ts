@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -36,7 +37,7 @@ export async function GET() {
       company: membership?.company || null,
     });
   } catch (error) {
-    console.error("Session error:", error);
+    logger.error("Session error", error, "Session");
     return NextResponse.json({ user: null, company: null });
   }
 }

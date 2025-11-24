@@ -7,6 +7,7 @@ import { prisma } from "../prisma";
 import { retrieveBusinessContext, formatContextForPrompt } from "./context-retrieval";
 import { searchWeb, formatWebSearchResults } from "./web-search";
 import { getMentorConfig } from "./config";
+import { logger } from "../logger";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -97,7 +98,7 @@ Remember:
       dataSourcesUsed,
     };
   } catch (error) {
-    console.error("[generateChatResponse] Error generating response:", error);
+    logger.error("Error generating chat response", error, "Mentor/Chat");
     throw error;
   }
 }
@@ -133,7 +134,7 @@ async function callOpenAI(messages: Array<{ role: string; content: string }>): P
     const data = await response.json();
     return data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response.";
   } catch (error) {
-    console.error("[callOpenAI] Error calling OpenAI:", error);
+    logger.error("Error calling OpenAI API", error, "Mentor/OpenAI");
     throw error;
   }
 }
