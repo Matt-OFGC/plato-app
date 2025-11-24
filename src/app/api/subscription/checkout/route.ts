@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { createMVPCheckout, createAICheckout, createStripeCustomer } from "@/lib/stripe";
-import { getCurrentUserAndCompany } from "@/lib/current";
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,8 +55,17 @@ export async function POST(request: NextRequest) {
       const subscriptionType = type === "ai-unlimited" ? "unlimited" : "capped";
       
       // For AI subscriptions, we need a company
-      const { companyId } = await getCurrentUserAndCompany();
-      if (!companyId) {
+      const membership = await prisma.membership.findFirst({
+        where: {
+          userId: user.id,
+          isActive: true,
+        },
+        include: {
+          company: true,
+        },
+      });
+
+      if (!membership || !membership.company) {
         return NextResponse.json(
           { error: "Company required for AI subscription" },
           { status: 400 }

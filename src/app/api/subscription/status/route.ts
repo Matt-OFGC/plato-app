@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth-simple";
 import { getUserSubscription } from "@/lib/subscription";
 import { hasAIAccess, getAISubscriptionType } from "@/lib/subscription-simple";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUserAndCompany } from "@/lib/current";
 
 export async function GET() {
   try {
@@ -25,8 +24,18 @@ export async function GET() {
     // Get AI subscription info if user has a company
     let aiSubscription = null;
     try {
-      const { companyId } = await getCurrentUserAndCompany();
-      if (companyId) {
+      const membership = await prisma.membership.findFirst({
+        where: {
+          userId: user.id,
+          isActive: true,
+        },
+        include: {
+          company: true,
+        },
+      });
+
+      if (membership?.company) {
+        const companyId = membership.company.id;
         const hasAI = await hasAIAccess(companyId);
         if (hasAI) {
           const aiType = await getAISubscriptionType(companyId);
