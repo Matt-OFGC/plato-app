@@ -121,6 +121,26 @@ export default async function EditIngredientPage({ params }: Props) {
   console.log('EditIngredientPage: initialFormData.batchPricing === undefined:', initialFormData.batchPricing === undefined);
   console.log('EditIngredientPage: initialFormData.batchPricing value:', initialFormData.batchPricing);
 
+  // CRITICAL FIX: Next.js RSC serialization strips empty arrays/null
+  // We need to ensure batchPricing is always present with a non-empty value
+  // Use a sentinel object when empty to ensure serialization
+  const finalInitialData = {
+    ...initialFormData,
+    // Force include batchPricing - if empty, use a sentinel array with a marker
+    batchPricing: initialFormData.batchPricing.length > 0 
+      ? initialFormData.batchPricing 
+      : [{ packQuantity: 0, packPrice: 0, _empty: true }] as any, // Sentinel to ensure serialization
+  };
+  
+  // Remove the sentinel marker after serialization if needed
+  if (finalInitialData.batchPricing.length === 1 && (finalInitialData.batchPricing[0] as any)._empty) {
+    // This will be handled client-side
+  }
+  
+  console.log('EditIngredientPage: Final initialData before passing:', JSON.stringify(finalInitialData, null, 2));
+  console.log('EditIngredientPage: Final initialData keys:', Object.keys(finalInitialData));
+  console.log('EditIngredientPage: batchPricing in final:', finalInitialData.batchPricing, 'hasProperty:', 'batchPricing' in finalInitialData);
+
   return (
     <div className="app-container">
       <RecentItemsTracker
@@ -137,7 +157,7 @@ export default async function EditIngredientPage({ params }: Props) {
         <IngredientForm
           companyId={companyId || undefined}
           suppliers={suppliers}
-          initialData={initialFormData}
+          initialData={finalInitialData}
           onSubmit={handleSubmit}
         />
       </div>
