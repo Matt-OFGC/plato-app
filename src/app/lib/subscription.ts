@@ -1,6 +1,6 @@
 /**
- * Subscription utilities - tier-based system
- * Free tier: 10 ingredients, 2 recipes, only recipes section
+ * Subscription utilities - simplified system
+ * Free tier: 5 ingredients, 5 recipes, only recipes section
  * Paid tier: Unlimited everything, all sections unlocked
  */
 
@@ -30,7 +30,7 @@ export async function canInviteTeamMembers(userId: number): Promise<boolean> {
 
 /**
  * Check if user can add more ingredients
- * Free tier: Limited to 10
+ * Free tier: Limited to 5
  * Paid tier: Unlimited
  */
 export async function canAddIngredient(userId: number): Promise<boolean> {
@@ -40,7 +40,7 @@ export async function canAddIngredient(userId: number): Promise<boolean> {
 
 /**
  * Check if user can add more recipes
- * Free tier: Limited to 2
+ * Free tier: Limited to 5
  * Paid tier: Unlimited
  */
 export async function canAddRecipe(userId: number): Promise<boolean> {

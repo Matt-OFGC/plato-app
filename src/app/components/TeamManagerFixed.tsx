@@ -38,10 +38,12 @@ function getRoleDisplayName(role: MemberRole): string {
 
 function getRoleDescription(role: MemberRole): string {
   switch (role) {
-    case "OWNER": return "Full access, can manage team, billing, and delete company";
-    case "ADMIN": return "Full access to content, can manage team members";
-    case "EDITOR": return "Can create and edit all content";
-    case "VIEWER": return "Read-only access to all content";
+    case "OWNER": return "Full access including AI, billing, and team management (legacy role - maps to ADMIN)";
+    case "ADMIN": return "Full access including AI Assistant, billing, and team management";
+    case "EDITOR": return "Can view and edit everything except AI (legacy role - maps to MANAGER)";
+    case "VIEWER": return "View-only access (legacy role - maps to EMPLOYEE)";
+    case "MANAGER": return "Can view and edit everything except AI Assistant";
+    case "EMPLOYEE": return "View-only access to content needed for their job";
     default: return "";
   }
 }

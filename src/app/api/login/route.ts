@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       where: { 
         userId: user.id,
         isActive: true,
-        role: { in: ["OWNER", "ADMIN"] },
+        role: { in: ["OWNER", "ADMIN"] }, // Backward compatibility: OWNER maps to ADMIN
       },
       include: {
         company: {

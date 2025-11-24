@@ -1,0 +1,313 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth-simple";
+import { prisma } from "@/lib/prisma";
+import { hasMentorAccess } from "@/lib/mentor/subscription";
+import { generateChatResponse } from "@/lib/mentor/chat";
+import { canUseAI } from "@/lib/subscription-simple";
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { conversationId, message } = body;
+
+    if (!conversationId || !message) {
+      return NextResponse.json(
+        { error: "conversationId and message are required" },
+        { status: 400 }
+      );
+    }
+
+    // Get user's company
+    const membership = await prisma.membership.findFirst({
+      where: {
+        userId: session.id,
+        isActive: true,
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    if (!membership || !membership.company) {
+      return NextResponse.json({ error: "Company not found" }, { status: 404 });
+    }
+
+    const companyId = membership.company.id;
+
+    // Verify conversation belongs to company
+    const conversation = await prisma.mentorConversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conversation || conversation.companyId !== companyId) {
+      return NextResponse.json(
+        { error: "Conversation not found or access denied" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user can use AI (must be ADMIN role AND company must have AI subscription)
+    const canUse = await canUseAI(session.id, companyId);
+    const isDev = process.env.NODE_ENV !== "production";
+    const isMVP = process.env.MVP_MODE === "true" || process.env.NEXT_PUBLIC_MVP_MODE === "true";
+    
+    // Hide Mentor in MVP mode
+    if (isMVP) {
+      return NextResponse.json(
+        { error: "Mentor AI is not available in MVP mode" },
+        { status: 403 }
+      );
+    }
+    
+    if (!canUse && !isDev) {
+      // Use the membership we already fetched above
+      if (membership && membership.role !== "ADMIN" && membership.role !== "OWNER") {
+        return NextResponse.json(
+          { error: "Only admins can use the AI Assistant" },
+          { status: 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: "AI Assistant subscription required" },
+        { status: 403 }
+      );
+    }
+
+    // Save user message
+    await prisma.mentorMessage.create({
+      data: {
+        conversationId,
+        role: "user",
+        content: message,
+      },
+    });
+
+    // Generate AI response
+    const { response, tokensUsed, dataSourcesUsed } = await generateChatResponse(
+      companyId,
+      session.id,
+      conversationId,
+      message
+    );
+
+    // Save assistant response
+    const assistantMessage = await prisma.mentorMessage.create({
+      data: {
+        conversationId,
+        role: "assistant",
+        content: response,
+        tokensUsed,
+        metadata: {
+          dataSourcesUsed,
+        },
+      },
+    });
+
+    // Update conversation timestamp
+    await prisma.mentorConversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() },
+    });
+
+    return NextResponse.json({
+      message: assistantMessage,
+      tokensUsed,
+      dataSourcesUsed,
+    });
+  } catch (error) {
+    console.error("[Mentor Chat API] Error:", error);
+    return NextResponse.json(
+      { error: "Failed to process chat message" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Create a new conversation
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { title } = body;
+
+    // Get user's company
+    const membership = await prisma.membership.findFirst({
+      where: {
+        userId: session.id,
+        isActive: true,
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    if (!membership || !membership.company) {
+      return NextResponse.json({ error: "Company not found" }, { status: 404 });
+    }
+
+    const companyId = membership.company.id;
+
+    // Check if user can use AI (must be ADMIN role AND company must have AI subscription)
+    const canUse = await canUseAI(session.id, companyId);
+    const isDev = process.env.NODE_ENV !== "production";
+    const isMVP = process.env.MVP_MODE === "true" || process.env.NEXT_PUBLIC_MVP_MODE === "true";
+    
+    // Hide Mentor in MVP mode
+    if (isMVP) {
+      return NextResponse.json(
+        { error: "Mentor AI is not available in MVP mode" },
+        { status: 403 }
+      );
+    }
+    
+    if (!canUse && !isDev) {
+      // Use the membership we already fetched above
+      if (membership && membership.role !== "ADMIN" && membership.role !== "OWNER") {
+        return NextResponse.json(
+          { error: "Only admins can use the AI Assistant" },
+          { status: 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: "AI Assistant subscription required" },
+        { status: 403 }
+      );
+    }
+
+    // Create new conversation
+    const conversation = await prisma.mentorConversation.create({
+      data: {
+        companyId,
+        userId: session.id,
+        title: title || null,
+      },
+    });
+
+    return NextResponse.json({ conversation });
+  } catch (error) {
+    console.error("[Mentor Chat API] Error creating conversation:", error);
+    return NextResponse.json(
+      { error: "Failed to create conversation" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Get conversation history
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const conversationId = searchParams.get("conversationId");
+
+    // Get user's company
+    const membership = await prisma.membership.findFirst({
+      where: {
+        userId: session.id,
+        isActive: true,
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    if (!membership || !membership.company) {
+      return NextResponse.json({ error: "Company not found" }, { status: 404 });
+    }
+
+    const companyId = membership.company.id;
+
+    // Check if user can use AI (must be ADMIN role AND company must have AI subscription)
+    const canUse = await canUseAI(session.id, companyId);
+    const isDev = process.env.NODE_ENV !== "production";
+    const isMVP = process.env.MVP_MODE === "true" || process.env.NEXT_PUBLIC_MVP_MODE === "true";
+    
+    // Hide Mentor in MVP mode
+    if (isMVP) {
+      return NextResponse.json(
+        { error: "Mentor AI is not available in MVP mode" },
+        { status: 403 }
+      );
+    }
+    
+    if (!canUse && !isDev) {
+      // Use the membership we already fetched above
+      if (membership && membership.role !== "ADMIN" && membership.role !== "OWNER") {
+        return NextResponse.json(
+          { error: "Only admins can use the AI Assistant" },
+          { status: 403 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: "AI Assistant subscription required" },
+        { status: 403 }
+      );
+    }
+
+    if (conversationId) {
+      // Get specific conversation with messages
+      const conversation = await prisma.mentorConversation.findUnique({
+        where: { id: parseInt(conversationId) },
+        include: {
+          MentorMessage: {
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+
+      if (!conversation || conversation.companyId !== companyId) {
+        return NextResponse.json(
+          { error: "Conversation not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({ conversation });
+    } else {
+      // Get all conversations for company
+      const conversations = await prisma.mentorConversation.findMany({
+        where: {
+          companyId,
+          userId: session.id,
+          isArchived: false,
+        },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          MentorMessage: {
+            orderBy: { createdAt: "desc" },
+            take: 1, // Just get last message for preview
+          },
+        },
+      });
+
+      return NextResponse.json({ conversations });
+    }
+  } catch (error) {
+    console.error("[Mentor Chat API] Error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch conversations" },
+      { status: 500 }
+    );
+  }
+}
+

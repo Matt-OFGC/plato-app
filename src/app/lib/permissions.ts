@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { canUseAI } from "@/lib/subscription-simple";
 
 export type Permission =
   // Staff Management
@@ -84,8 +85,8 @@ export async function checkPermission(
       return false;
     }
 
-    // Owner always has all permissions
-    if (membership.role === "OWNER") {
+    // ADMIN and OWNER (backward compatibility) always have all permissions
+    if (membership.role === "ADMIN" || membership.role === "OWNER") {
       return true;
     }
 
@@ -106,28 +107,53 @@ export async function checkPermission(
 
 /**
  * Check permissions using legacy role system
+ * Maps old roles to new simplified roles:
+ * OWNER/ADMIN → ADMIN (all permissions)
+ * EDITOR → MANAGER (all permissions except AI)
+ * VIEWER → EMPLOYEE (view-only)
  */
 function checkLegacyPermission(
   role: string,
   permission: Permission
 ): boolean {
-  // Legacy role mappings
-  switch (role) {
-    case "OWNER":
-      return true; // Owner has all permissions
+  // Map old roles to new roles
+  let mappedRole = role;
+  if (role === "OWNER") {
+    mappedRole = "ADMIN"; // OWNER maps to ADMIN
+  } else if (role === "EDITOR") {
+    mappedRole = "MANAGER"; // EDITOR maps to MANAGER
+  } else if (role === "VIEWER") {
+    mappedRole = "EMPLOYEE"; // VIEWER maps to EMPLOYEE
+  }
+
+  // New simplified role system
+  switch (mappedRole) {
     case "ADMIN":
-      // Admin has most permissions except financial turnover
-      return !permission.startsWith("financial:turnover");
-    case "EDITOR":
-      return (
-        permission.startsWith("recipes:") ||
-        permission.startsWith("ingredients:") ||
-        permission.startsWith("production:view") ||
-        permission.startsWith("training:view")
-      );
-    case "VIEWER":
-      return permission.endsWith(":view");
+      return true; // ADMIN has all permissions
+    case "MANAGER":
+      // MANAGER has all permissions except AI (which is checked separately)
+      return true;
+    case "EMPLOYEE":
+      return permission.endsWith(":view"); // EMPLOYEE is view-only
     default:
+      // Backward compatibility: if role is still old format, use old logic
+      if (role === "OWNER") {
+        return true;
+      }
+      if (role === "ADMIN") {
+        return !permission.startsWith("financial:turnover");
+      }
+      if (role === "EDITOR") {
+        return (
+          permission.startsWith("recipes:") ||
+          permission.startsWith("ingredients:") ||
+          permission.startsWith("production:view") ||
+          permission.startsWith("training:view")
+        );
+      }
+      if (role === "VIEWER") {
+        return permission.endsWith(":view");
+      }
       return false;
   }
 }
@@ -160,8 +186,8 @@ export async function getUserPermissions(
       return [];
     }
 
-    // Owner has all permissions
-    if (membership.role === "OWNER") {
+    // ADMIN and OWNER (backward compatibility) have all permissions
+    if (membership.role === "ADMIN" || membership.role === "OWNER") {
       return getAllPermissions();
     }
 
@@ -232,28 +258,51 @@ export function getAllPermissions(): Permission[] {
 
 /**
  * Get permissions for legacy role
+ * Maps old roles to new simplified roles
  */
 function getLegacyPermissions(role: string): Permission[] {
   const allPermissions = getAllPermissions();
   
-  switch (role) {
-    case "OWNER":
-      return allPermissions;
+  // Map old roles to new roles
+  let mappedRole = role;
+  if (role === "OWNER") {
+    mappedRole = "ADMIN";
+  } else if (role === "EDITOR") {
+    mappedRole = "MANAGER";
+  } else if (role === "VIEWER") {
+    mappedRole = "EMPLOYEE";
+  }
+
+  // New simplified role system
+  switch (mappedRole) {
     case "ADMIN":
-      return allPermissions.filter(
-        (p) => !p.startsWith("financial:turnover")
-      );
-    case "EDITOR":
-      return allPermissions.filter(
-        (p) =>
-          p.startsWith("recipes:") ||
-          p.startsWith("ingredients:") ||
-          p === "production:view" ||
-          p === "training:view"
-      );
-    case "VIEWER":
-      return allPermissions.filter((p) => p.endsWith(":view"));
+      return allPermissions; // ADMIN has all permissions
+    case "MANAGER":
+      return allPermissions; // MANAGER has all permissions (AI access checked separately)
+    case "EMPLOYEE":
+      return allPermissions.filter((p) => p.endsWith(":view")); // EMPLOYEE is view-only
     default:
+      // Backward compatibility: if role is still old format, use old logic
+      if (role === "OWNER") {
+        return allPermissions;
+      }
+      if (role === "ADMIN") {
+        return allPermissions.filter(
+          (p) => !p.startsWith("financial:turnover")
+        );
+      }
+      if (role === "EDITOR") {
+        return allPermissions.filter(
+          (p) =>
+            p.startsWith("recipes:") ||
+            p.startsWith("ingredients:") ||
+            p === "production:view" ||
+            p === "training:view"
+        );
+      }
+      if (role === "VIEWER") {
+        return allPermissions.filter((p) => p.endsWith(":view"));
+      }
       return [];
   }
 }
@@ -286,5 +335,41 @@ export async function canViewWages(
   companyId: number
 ): Promise<boolean> {
   return checkPermission(userId, companyId, "financial:wages:view");
+}
+
+/**
+ * Check if user can use AI Assistant
+ * Requires: ADMIN role AND company must have AI subscription
+ */
+export async function canUseAIAssistant(
+  userId: number,
+  companyId: number
+): Promise<boolean> {
+  try {
+    // Check role first (must be ADMIN)
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
+      return false;
+    }
+
+    // Only ADMIN role can use AI (OWNER is backward compatible)
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      return false;
+    }
+
+    // Check if company has AI subscription
+    return await canUseAI(userId, companyId);
+  } catch (error) {
+    console.error("[canUseAIAssistant] Error checking AI access:", error);
+    return false;
+  }
 }
 

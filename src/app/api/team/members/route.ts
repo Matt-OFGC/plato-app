@@ -100,15 +100,19 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
 
-    // Don't allow removing the last owner
-    if (role !== 'OWNER' && membership.role === 'OWNER') {
-      const ownerCount = await prisma.membership.count({
-        where: { companyId, role: 'OWNER', isActive: true },
+    // Don't allow removing the last ADMIN (or OWNER for backward compatibility)
+    if (role !== 'ADMIN' && role !== 'OWNER' && (membership.role === 'ADMIN' || membership.role === 'OWNER')) {
+      const adminCount = await prisma.membership.count({
+        where: { 
+          companyId, 
+          role: { in: ['ADMIN', 'OWNER'] }, // Count both ADMIN and OWNER
+          isActive: true 
+        },
       });
       
-      if (ownerCount <= 1) {
+      if (adminCount <= 1) {
         return NextResponse.json({ 
-          error: "Cannot change role of the last owner" 
+          error: "Cannot change role of the last admin" 
         }, { status: 400 });
       }
     }

@@ -11,7 +11,15 @@ export const STRIPE_CONFIG = {
   secretKey: process.env.STRIPE_SECRET_KEY || "",
   publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
-  // Tier-based prices (for backwards compatibility - deprecated)
+  // Simplified pricing - MVP and AI subscriptions only
+  mvp: {
+    monthlyPriceId: process.env.STRIPE_MVP_MONTHLY_PRICE_ID || "",
+  },
+  ai: {
+    unlimitedPriceId: process.env.STRIPE_AI_UNLIMITED_MONTHLY_PRICE_ID || "",
+    cappedPriceId: process.env.STRIPE_AI_CAPPED_MONTHLY_PRICE_ID || "",
+  },
+  // Tier-based prices (for backwards compatibility - deprecated, will be removed)
   products: {
     pro: {
       productId: process.env.STRIPE_PRO_PRODUCT_ID || "",
@@ -44,39 +52,37 @@ export const STRIPE_CONFIG = {
 };
 
 // Get tier from price ID (for backwards compatibility)
+// Returns "paid" for MVP subscription or old paid tiers
 export function getTierFromPriceId(priceId: string): { tier: string; interval: "month" | "year" } | null {
-  // Check professional prices
+  // Check new MVP price
+  if (priceId === STRIPE_CONFIG.mvp.monthlyPriceId) {
+    return { tier: "paid", interval: "month" };
+  }
+
+  // Backward compatibility: old paid tiers map to "paid"
   if (priceId === STRIPE_CONFIG.products.professional.monthlyPriceId) {
-    return { tier: "professional", interval: "month" };
+    return { tier: "paid", interval: "month" };
   }
   if (priceId === STRIPE_CONFIG.products.professional.annualPriceId) {
-    return { tier: "professional", interval: "year" };
+    return { tier: "paid", interval: "year" };
   }
-
-  // Check team prices
   if (priceId === STRIPE_CONFIG.products.team.monthlyPriceId) {
-    return { tier: "team", interval: "month" };
+    return { tier: "paid", interval: "month" };
   }
   if (priceId === STRIPE_CONFIG.products.team.annualPriceId) {
-    return { tier: "team", interval: "year" };
+    return { tier: "paid", interval: "year" };
   }
-
-  // Check business prices
   if (priceId === STRIPE_CONFIG.products.business.monthlyPriceId) {
-    return { tier: "business", interval: "month" };
+    return { tier: "paid", interval: "month" };
   }
   if (priceId === STRIPE_CONFIG.products.business.annualPriceId) {
-    return { tier: "business", interval: "year" };
+    return { tier: "paid", interval: "year" };
   }
-
-  // Check Plato Bake prices
   if (priceId === STRIPE_CONFIG.products["plato-bake"].monthlyPriceId) {
-    return { tier: "plato-bake", interval: "month" };
+    return { tier: "paid", interval: "month" };
   }
-
-  // Fallback to old pro price
   if (priceId === STRIPE_CONFIG.products.pro.priceId) {
-    return { tier: "professional", interval: "month" };
+    return { tier: "paid", interval: "month" };
   }
 
   return null;
@@ -90,7 +96,69 @@ export async function createStripeCustomer(user: { email: string; name: string |
   });
 }
 
-// Create checkout session (for tier-based - backwards compatibility)
+// Create checkout session for MVP subscription
+export async function createMVPCheckout(
+  customerId: string,
+  successUrl: string,
+  cancelUrl: string
+): Promise<Stripe.Checkout.Session> {
+  const priceId = STRIPE_CONFIG.mvp.monthlyPriceId;
+
+  if (!priceId) {
+    throw new Error("MVP price ID not configured");
+  }
+
+  return await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      type: "mvp",
+    },
+  });
+}
+
+// Create checkout session for AI subscription
+export async function createAICheckout(
+  customerId: string,
+  subscriptionType: "unlimited" | "capped",
+  successUrl: string,
+  cancelUrl: string
+): Promise<Stripe.Checkout.Session> {
+  const priceId = subscriptionType === "unlimited" 
+    ? STRIPE_CONFIG.ai.unlimitedPriceId 
+    : STRIPE_CONFIG.ai.cappedPriceId;
+
+  if (!priceId) {
+    throw new Error(`AI ${subscriptionType} price ID not configured`);
+  }
+
+  return await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      type: "ai",
+      subscriptionType,
+    },
+  });
+}
+
+// Legacy function for backward compatibility (deprecated)
 export async function createCheckoutSession(
   customerId: string,
   tier: "professional" | "team" | "business" | "plato-bake",
@@ -99,11 +167,13 @@ export async function createCheckoutSession(
   cancelUrl: string,
   seats: number = 0
 ): Promise<Stripe.Checkout.Session> {
+  // Map old tiers to MVP checkout
   const priceKey = interval === "month" ? "monthlyPriceId" : "annualPriceId";
   const priceId = STRIPE_CONFIG.products[tier]?.[priceKey];
 
   if (!priceId) {
-    throw new Error(`Price ID not found for tier ${tier} interval ${interval}`);
+    // Fallback to MVP if old tier not found
+    return createMVPCheckout(customerId, successUrl, cancelUrl);
   }
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
@@ -113,7 +183,7 @@ export async function createCheckoutSession(
     },
   ];
 
-  // Add seat addon if needed
+  // Add seat addon if needed (deprecated - no longer used)
   if (seats > 0 && STRIPE_CONFIG.products.seat.priceId) {
     lineItems.push({
       price: STRIPE_CONFIG.products.seat.priceId,
@@ -130,6 +200,7 @@ export async function createCheckoutSession(
     metadata: {
       tier,
       interval,
+      type: "legacy",
     },
   });
 }

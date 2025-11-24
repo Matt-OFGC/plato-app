@@ -6,29 +6,16 @@ interface FeatureGateModalProps {
   isOpen: boolean;
   onClose: () => void;
   feature: string;
-  requiredTier: "professional" | "team" | "business";
+  requiredTier?: "mvp";
   benefits: string[];
   previewImage?: string;
 }
 
 const tierInfo = {
-  professional: {
-    name: "Professional",
-    price: "£30",
-    priceAnnual: "£25",
+  mvp: {
+    name: "Plato MVP",
+    price: "£19.99",
     color: "emerald",
-  },
-  team: {
-    name: "Team",
-    price: "£59",
-    priceAnnual: "£47",
-    color: "blue",
-  },
-  business: {
-    name: "Business",
-    price: "£149",
-    priceAnnual: "£119",
-    color: "purple",
   },
 };
 
@@ -36,7 +23,7 @@ export function FeatureGateModal({
   isOpen,
   onClose,
   feature,
-  requiredTier,
+  requiredTier = "mvp",
   benefits,
   previewImage,
 }: FeatureGateModalProps) {
@@ -119,9 +106,6 @@ export function FeatureGateModal({
             <div className="flex items-baseline justify-center gap-2 mb-1">
               <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
               <span className="text-gray-600">/month</span>
-            </div>
-            <div className="text-sm text-gray-500">
-              or {tier.priceAnnual}/month billed annually (save 20%)
             </div>
           </div>
 

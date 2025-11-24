@@ -11,6 +11,10 @@ interface SubscriptionData {
       maxRecipes: number | null;
     };
   };
+  aiSubscription: {
+    active: boolean;
+    type: "unlimited" | "capped" | null;
+  } | null;
   user: {
     subscriptionTier: string;
     subscriptionStatus: string;
@@ -42,11 +46,10 @@ export function SubscriptionStatus() {
 
   const handleUpgrade = async () => {
     try {
-      // Default upgrade to Professional monthly unless overridden elsewhere
       const response = await fetch("/api/subscription/checkout", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: 'professional', interval: 'month' }),
+        body: JSON.stringify({ type: 'mvp' }),
       });
       const data = await response.json();
       if (data.url) {
@@ -86,8 +89,8 @@ export function SubscriptionStatus() {
     return null;
   }
 
-  const { subscription: sub, user } = subscription;
-  const isPro = sub.tier === "pro";
+  const { subscription: sub, aiSubscription, user } = subscription;
+  const isPaid = sub.tier === "paid" || ["professional", "team", "business", "plato-bake"].includes(sub.tier.toLowerCase());
   const isActive = user.subscriptionStatus === "active" || user.subscriptionStatus === "free";
 
   return (
@@ -97,10 +100,10 @@ export function SubscriptionStatus() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-xl font-bold text-gray-900 mb-1">
-              {isPro ? "✨ Pro Plan" : "Free Plan"}
+              {isPaid ? "✨ MVP Plan" : "Free Trial"}
             </h3>
             <p className="text-sm text-gray-700">
-              {isPro ? "Unlimited ingredients and recipes" : "Limited to 15 ingredients and 5 recipes"}
+              {isPaid ? "Unlimited ingredients and recipes" : "Limited to 5 ingredients and 5 recipes"}
             </p>
           </div>
           <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
@@ -133,14 +136,31 @@ export function SubscriptionStatus() {
         </div>
       </div>
 
+      {/* AI Subscription Status */}
+      {aiSubscription?.active && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-lg font-bold text-purple-900 mb-1">AI Assistant Active</h4>
+              <p className="text-sm text-purple-800">
+                {aiSubscription.type === "unlimited" ? "Unlimited conversations" : "100 messages/month"}
+              </p>
+            </div>
+            <span className="px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-semibold">
+              {aiSubscription.type === "unlimited" ? "Unlimited" : "Capped"}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Upgrade or Manage Section */}
-      {!isPro && (
+      {!isPaid && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6 shadow-lg">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex-1">
-              <h4 className="text-lg font-bold text-blue-900 mb-2">Upgrade to Pro Plan</h4>
+              <h4 className="text-lg font-bold text-blue-900 mb-2">Upgrade to MVP</h4>
               <p className="text-sm text-blue-800 mb-1">Get unlimited ingredients and recipes</p>
-              <p className="text-xl font-bold text-blue-900">£9.99/month</p>
+              <p className="text-xl font-bold text-blue-900">£19.99/month</p>
             </div>
             <button
               onClick={handleUpgrade}
@@ -152,11 +172,11 @@ export function SubscriptionStatus() {
         </div>
       )}
 
-      {isPro && (
+      {isPaid && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex-1">
-              <h4 className="text-lg font-bold text-green-900 mb-2">Pro Plan Active</h4>
+              <h4 className="text-lg font-bold text-green-900 mb-2">MVP Plan Active</h4>
               <p className="text-sm text-green-800">
                 {user.subscriptionEndsAt ? (
                   <>Renews on <span className="font-semibold">{new Date(user.subscriptionEndsAt).toLocaleDateString()}</span></>

@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
       unlockStatus,
       debug: {
         subscriptionTierLowercase: user.subscriptionTier?.toLowerCase(),
-        paidTiers: ["professional", "team", "business"],
-        isInPaidTiers: ["professional", "team", "business"].includes(user.subscriptionTier?.toLowerCase() || ""),
+        paidTiers: ["paid", "professional", "team", "business", "plato-bake"], // Backward compatibility
+        isInPaidTiers: ["paid", "professional", "team", "business", "plato-bake"].includes(user.subscriptionTier?.toLowerCase() || ""),
         subscriptionEndsAtDate: user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null,
         now: new Date(),
         endsAtGreaterThanNow: user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) > new Date() : null,

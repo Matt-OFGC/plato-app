@@ -284,22 +284,18 @@ export function TeamManager({ companyId, currentUserRole }: { companyId: number;
       {/* Role Information */}
       <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Permission Levels</h3>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-3">
           <div className="bg-white rounded-lg p-3 border border-gray-200">
-            <p className="font-semibold text-sm text-gray-900">👑 Owner</p>
-            <p className="text-xs text-gray-600 mt-1">Full access including billing and team management</p>
+            <p className="font-semibold text-sm text-gray-900">⚙️ Admin</p>
+            <p className="text-xs text-gray-600 mt-1">Full access including AI Assistant, billing, and team management</p>
           </div>
           <div className="bg-white rounded-lg p-3 border border-gray-200">
-            <p className="font-semibold text-sm text-gray-900">⚙️ Administrator</p>
-            <p className="text-xs text-gray-600 mt-1">Full access to content and can manage team</p>
+            <p className="font-semibold text-sm text-gray-900">✏️ Manager</p>
+            <p className="text-xs text-gray-600 mt-1">Can view and edit everything except AI Assistant</p>
           </div>
           <div className="bg-white rounded-lg p-3 border border-gray-200">
-            <p className="font-semibold text-sm text-gray-900">✏️ Editor</p>
-            <p className="text-xs text-gray-600 mt-1">Can create and edit all recipes and ingredients</p>
-          </div>
-          <div className="bg-white rounded-lg p-3 border border-gray-200">
-            <p className="font-semibold text-sm text-gray-900">👁️ Viewer</p>
-            <p className="text-xs text-gray-600 mt-1">Can view all content but cannot make changes</p>
+            <p className="font-semibold text-sm text-gray-900">👁️ Employee</p>
+            <p className="text-xs text-gray-600 mt-1">View-only access to content needed for their job</p>
           </div>
         </div>
       </div>

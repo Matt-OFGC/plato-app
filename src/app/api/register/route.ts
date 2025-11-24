@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await prisma.membership.create({ data: { userId: user.id, companyId: co.id, role: "OWNER" } });
+      await prisma.membership.create({ data: { userId: user.id, companyId: co.id, role: "ADMIN" } });
       
       logger.info(`New company created for existing user: ${email} (User ID: ${user.id}), Company: ${company} (ID: ${co.id}), App: ${app}`);
       

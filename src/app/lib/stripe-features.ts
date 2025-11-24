@@ -3,7 +3,7 @@
  * These should be set in your environment variables
  */
 
-export type FeatureModuleName = "recipes" | "production" | "make" | "teams" | "safety";
+export type FeatureModuleName = "recipes" | "production" | "make" | "teams" | "safety" | "mentor";
 
 export interface FeatureModuleConfig {
   name: string;
@@ -81,6 +81,21 @@ export const FEATURE_MODULES: Record<FeatureModuleName, FeatureModuleConfig> = {
       "Compliance tracking",
       "Safety diary",
       "Automated alerts",
+    ],
+  },
+  mentor: {
+    name: "Mentor AI Assistant",
+    priceMonthly: 49,
+    stripePriceIdMonthly: process.env.STRIPE_MENTOR_MONTHLY_PRICE_ID,
+    description: "Your AI business mentor that learns everything about your business and provides intelligent advice",
+    benefits: [
+      "Unlimited AI conversations",
+      "Business insights and advice",
+      "Pricing recommendations",
+      "Goal tracking and progress",
+      "Proactive alerts and reminders",
+      "Internet search for industry benchmarks",
+      "Personalized learning paths",
     ],
   },
 };

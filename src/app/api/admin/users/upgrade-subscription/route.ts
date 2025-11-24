@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       include: {
         subscription: true,
         memberships: {
-          where: { role: "OWNER" },
+          where: { role: { in: ["OWNER", "ADMIN"] } }, // Backward compatibility
           include: { company: true },
         },
       },
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate subscription end date
     let subscriptionEndsAt: Date | null = null;
-    let subscriptionTier = "starter"; // Default free tier
+    let subscriptionTier = "free"; // Default free tier
     let subscriptionStatus = "free";
 
     if (tier === "paid") {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       subscriptionStatus = "active";
     } else {
       // Free tier
-      subscriptionTier = "starter";
+      subscriptionTier = "free";
       subscriptionStatus = "free";
       subscriptionEndsAt = null;
     }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       subscriptionInterval: updatedUser.subscriptionInterval,
     });
 
-    // Create or update subscription record
+    // Create or update subscription record with limits
     await prisma.subscription.upsert({
       where: { userId: user.id },
       create: {
@@ -120,10 +120,13 @@ export async function POST(request: NextRequest) {
         status: subscriptionStatus,
         tier: subscriptionTier,
         price: 0,
-        currency: "usd",
+        currency: "gbp",
         interval: isLifetime ? "lifetime" : "month",
         currentPeriodStart: new Date(),
         currentPeriodEnd: subscriptionEndsAt || new Date(),
+        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
+        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
+        aiSubscriptionType: null, // MVP subscription doesn't include AI
       },
       update: {
         stripeSubscriptionId: tier === "paid" 
@@ -134,27 +137,51 @@ export async function POST(request: NextRequest) {
         status: subscriptionStatus,
         tier: subscriptionTier,
         price: 0,
-        currency: "usd",
+        currency: "gbp",
         interval: isLifetime ? "lifetime" : "month",
         currentPeriodStart: new Date(),
         currentPeriodEnd: subscriptionEndsAt || new Date(),
+        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
+        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
       },
     });
-
-    // Update company seat limits (unlimited for paid)
-    if (user.memberships.length > 0) {
-      const maxSeats = tier === "paid" ? 999999 : 1;
-      for (const membership of user.memberships) {
-        if (membership.company) {
-          await prisma.company.update({
-            where: { id: membership.company.id },
-            data: {
-              maxSeats: maxSeats,
-            },
-          });
-        }
-      }
-    }
+    await prisma.subscription.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        stripeSubscriptionId: tier === "paid" 
+          ? (isLifetime ? `lifetime_${user.id}` : `admin_upgrade_${user.id}`)
+          : `free_${user.id}`,
+        stripePriceId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        stripeProductId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        status: subscriptionStatus,
+        tier: subscriptionTier,
+        price: 0,
+        currency: "gbp",
+        interval: isLifetime ? "lifetime" : "month",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: subscriptionEndsAt || new Date(),
+        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
+        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
+        aiSubscriptionType: null, // MVP subscription doesn't include AI
+      },
+      update: {
+        stripeSubscriptionId: tier === "paid" 
+          ? (isLifetime ? `lifetime_${user.id}` : `admin_upgrade_${user.id}`)
+          : `free_${user.id}`,
+        stripePriceId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        stripeProductId: tier === "paid" ? (isLifetime ? "lifetime" : "admin_upgrade") : "free",
+        status: subscriptionStatus,
+        tier: subscriptionTier,
+        price: 0,
+        currency: "gbp",
+        interval: isLifetime ? "lifetime" : "month",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: subscriptionEndsAt || new Date(),
+        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
+        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
+      },
+    });
 
     // Verify the update actually happened by reading back from database
     const verifyUser = await prisma.user.findUnique({

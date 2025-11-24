@@ -5,9 +5,8 @@ import Link from "next/link";
 
 export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
 
-  const handleUpgrade = async (tier: "professional" | "team" | "business", seats: number = 0) => {
+  const handleUpgrade = async (type: "mvp" | "ai-unlimited" | "ai-capped") => {
     setIsLoading(true);
     try {
       const response = await fetch("/api/subscription/checkout", {
@@ -16,9 +15,7 @@ export default function PricingPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          tier,
-          interval: billingInterval,
-          seats,
+          type,
         }),
       });
 
@@ -40,14 +37,13 @@ export default function PricingPage() {
 
   const plans = [
     {
-      id: "starter",
-      name: "Starter",
-      price: { month: 0, year: 0 },
-      period: "forever",
-      description: "Perfect for home cooks and small kitchens",
+      id: "free",
+      name: "Free Trial",
+      price: 0,
+      description: "Try out Plato MVP with limited features",
       features: [
-        "Up to 10 ingredients",
-        "Up to 2 recipes",
+        "5 ingredients",
+        "5 recipes",
         "Basic unit conversions",
         "Cost calculations",
         "Community support",
@@ -56,68 +52,64 @@ export default function PricingPage() {
       ctaLink: "/register",
       popular: false,
       isLink: true,
-      tier: null,
+      type: null,
     },
     {
-      id: "professional",
-      name: "Professional",
-      price: { month: 30, year: 25 },
-      description: "Ideal for professional chefs and restaurants",
+      id: "mvp",
+      name: "Plato MVP",
+      price: 19.99,
+      description: "Full access to all MVP features",
       features: [
         "Unlimited ingredients",
         "Unlimited recipes",
-        "Advanced unit conversions",
+        "All unit conversions",
         "Real-time cost tracking",
         "Recipe scaling",
         "Export to PDF",
-        "Analytics dashboard",
-        "Inventory tracking",
+        "Production planning",
+        "Team management",
+        "All MVP features",
         "Priority support",
       ],
-      cta: "Upgrade to Professional",
-      popular: false,
-      isLink: false,
-      tier: "professional" as const,
-    },
-    {
-      id: "team",
-      name: "Team",
-      price: { month: 59, year: 47 },
-      description: "For growing food businesses with teams",
-      features: [
-        "Everything in Professional",
-        "5 team seats included",
-        "Production planning & scheduling",
-        "Device/PIN login for kitchen",
-        "Team collaboration tools",
-        "Shopping list generation",
-        "Priority support",
-        "£6/month per additional seat",
-      ],
-      cta: "Upgrade to Team",
+      cta: "Subscribe to MVP",
       popular: true,
       isLink: false,
-      tier: "team" as const,
+      type: "mvp" as const,
     },
     {
-      id: "business",
-      name: "Business",
-      price: { month: 149, year: 119 },
-      description: "For established wholesale operations",
+      id: "ai-unlimited",
+      name: "AI Assistant - Unlimited",
+      price: 50,
+      description: "Unlimited AI conversations (requires MVP)",
       features: [
-        "Everything in Team",
-        "Unlimited team seats",
-        "Wholesale customer management",
-        "Customer ordering portal",
-        "Custom pricing per customer",
-        "Recurring orders automation",
-        "Advanced analytics & reporting",
-        "Dedicated support",
+        "Unlimited AI conversations",
+        "Business insights and advice",
+        "Pricing recommendations",
+        "Goal tracking",
+        "Proactive alerts",
+        "Internet search for benchmarks",
       ],
-      cta: "Upgrade to Business",
+      cta: "Add AI Unlimited",
       popular: false,
       isLink: false,
-      tier: "business" as const,
+      type: "ai-unlimited" as const,
+    },
+    {
+      id: "ai-capped",
+      name: "AI Assistant - Capped",
+      price: 25,
+      description: "Capped AI usage (requires MVP)",
+      features: [
+        "100 messages per month",
+        "Business insights and advice",
+        "Pricing recommendations",
+        "Goal tracking",
+        "Proactive alerts",
+      ],
+      cta: "Add AI Capped",
+      popular: false,
+      isLink: false,
+      type: "ai-capped" as const,
     },
   ];
 
@@ -161,42 +153,12 @@ export default function PricingPage() {
             Simple, Transparent Pricing
           </h1>
           <p className="text-xl text-gray-600 app-container mb-8">
-            Choose the plan that fits your needs. Start free and upgrade anytime as your business
-            grows.
+            Simple, transparent pricing. Start free and upgrade when you're ready.
           </p>
-
-          {/* Billing Toggle */}
-          <div className="inline-flex items-center gap-3 bg-gray-100 rounded-xl p-1.5">
-            <button
-              onClick={() => setBillingInterval("month")}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                billingInterval === "month"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingInterval("year")}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                billingInterval === "year"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600"
-              }`}
-            >
-              Annually
-              <span className="ml-2 text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">
-                Save 20%
-              </span>
-            </button>
-          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-4 mb-16">
           {plans.map((plan) => {
-            const price = billingInterval === "month" ? plan.price.month : plan.price.year;
-
             return (
               <div
                 key={plan.id}
@@ -218,19 +180,12 @@ export default function PricingPage() {
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                   <div className="mb-2">
                     <span className="text-4xl font-bold text-gray-900">
-                      {price === 0 ? "Free" : `£${price}`}
+                      {plan.price === 0 ? "Free" : `£${plan.price}`}
                     </span>
-                    {price > 0 && (
-                      <span className="text-gray-600 ml-1">
-                        /{billingInterval === "month" ? "month" : "month"}
-                      </span>
+                    {plan.price > 0 && (
+                      <span className="text-gray-600 ml-1">/month</span>
                     )}
                   </div>
-                  {billingInterval === "year" && price > 0 && (
-                    <div className="text-sm text-emerald-600 font-semibold">
-                      £{price * 12}/year (20% off)
-                    </div>
-                  )}
                   <p className="text-gray-600 text-sm mt-2">{plan.description}</p>
                 </div>
 
@@ -268,7 +223,7 @@ export default function PricingPage() {
                   </Link>
                 ) : (
                   <button
-                    onClick={() => plan.tier && handleUpgrade(plan.tier)}
+                    onClick={() => plan.type && handleUpgrade(plan.type)}
                     disabled={isLoading}
                     className={`block w-full text-center py-3 px-6 rounded-xl font-semibold transition-all ${
                       plan.popular
@@ -307,11 +262,10 @@ export default function PricingPage() {
             </div>
             <div className="text-left">
               <h3 className="font-semibold text-gray-900 mb-2 text-lg">
-                How do team seats work?
+                How does the AI Assistant work?
               </h3>
               <p className="text-gray-600">
-                Team plan includes 5 seats. Need more? Add additional seats for £6/month each.
-                Business plan includes unlimited seats.
+                The AI Assistant is an add-on that requires MVP subscription. Choose between unlimited (£50/month) or capped (£25/month for 100 messages). Only company admins can use the AI.
               </p>
             </div>
             <div className="text-left">

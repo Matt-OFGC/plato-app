@@ -196,17 +196,17 @@ export async function DELETE(
       return NextResponse.json({ error: "Membership not found" }, { status: 404 });
     }
 
-    // Prevent deleting the last owner
-    if (membership.role === "OWNER") {
-      const ownerCount = await prisma.membership.count({
+    // Prevent deleting the last ADMIN (or OWNER for backward compatibility)
+    if (membership.role === "ADMIN" || membership.role === "OWNER") {
+      const adminCount = await prisma.membership.count({
         where: {
           companyId: membership.companyId,
-          role: "OWNER",
+          role: { in: ["ADMIN", "OWNER"] }, // Count both ADMIN and OWNER
           isActive: true,
         },
       });
 
-      if (ownerCount <= 1) {
+      if (adminCount <= 1) {
         return NextResponse.json(
           { error: "Cannot remove the last owner of a company" },
           { status: 400 }

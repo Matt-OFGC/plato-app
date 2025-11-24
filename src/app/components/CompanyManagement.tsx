@@ -43,7 +43,7 @@ export function CompanyManagement() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberName, setNewMemberName] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState("VIEWER");
+  const [newMemberRole, setNewMemberRole] = useState("EMPLOYEE");
 
   useEffect(() => {
     fetchCompanies();
@@ -558,10 +558,9 @@ export function CompanyManagement() {
                         onChange={(e) => setNewMemberRole(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       >
-                        <option value="VIEWER">Viewer</option>
-                        <option value="EDITOR">Editor</option>
-                        <option value="ADMIN">Admin</option>
-                        <option value="OWNER">Owner</option>
+                        <option value="EMPLOYEE">Employee (View-only)</option>
+                        <option value="MANAGER">Manager (Edit, no AI)</option>
+                        <option value="ADMIN">Admin (Full access + AI)</option>
                       </select>
                     </div>
                     <div className="flex gap-2">
@@ -577,7 +576,7 @@ export function CompanyManagement() {
                           setShowAddMember(false);
                           setNewMemberEmail("");
                           setNewMemberName("");
-                          setNewMemberRole("VIEWER");
+                          setNewMemberRole("EMPLOYEE");
                         }}
                         className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                       >
@@ -615,10 +614,13 @@ export function CompanyManagement() {
                               disabled={actionLoading}
                               className="text-sm border border-gray-300 rounded px-2 py-1"
                             >
-                              <option value="VIEWER">Viewer</option>
-                              <option value="EDITOR">Editor</option>
-                              <option value="ADMIN">Admin</option>
-                              <option value="OWNER">Owner</option>
+                              <option value="EMPLOYEE">Employee (View-only)</option>
+                              <option value="MANAGER">Manager (Edit, no AI)</option>
+                              <option value="ADMIN">Admin (Full access + AI)</option>
+                              {/* Legacy roles for backward compatibility */}
+                              <option value="VIEWER">Viewer (Legacy)</option>
+                              <option value="EDITOR">Editor (Legacy)</option>
+                              <option value="OWNER">Owner (Legacy)</option>
                             </select>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">

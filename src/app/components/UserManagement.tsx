@@ -137,14 +137,14 @@ export function UserManagement() {
         console.log(`[Admin] Upgrade successful:`, data);
         
         // Verify the response shows the correct tier
-        if (data.user && data.user.subscriptionTier !== (tier === "paid" ? "paid" : "starter")) {
+        if (data.user && data.user.subscriptionTier !== (tier === "paid" ? "paid" : "free")) {
           console.error(`[Admin] Response tier mismatch!`, {
             requested: tier,
-            expected: tier === "paid" ? "paid" : "starter",
+            expected: tier === "paid" ? "paid" : "free",
             actual: data.user.subscriptionTier,
             fullResponse: data,
           });
-          alert(`⚠️ WARNING: Tier mismatch detected!\n\nExpected: ${tier === "paid" ? "paid" : "starter"}\nGot: ${data.user.subscriptionTier}\n\nPlease check server logs and database.`);
+          alert(`⚠️ WARNING: Tier mismatch detected!\n\nExpected: ${tier === "paid" ? "paid" : "free"}\nGot: ${data.user.subscriptionTier}\n\nPlease check server logs and database.`);
         } else {
           alert(`${data.message || `Successfully set ${userEmail} to ${tier} tier`}\n\nTier: ${data.user?.subscriptionTier}\nStatus: ${data.user?.subscriptionStatus}\n\nPlease refresh the page to see changes.`);
         }
@@ -759,7 +759,9 @@ export function UserManagement() {
                           <div className="flex justify-between items-center">
                             <div className="flex-1">
                               <p className="font-medium text-gray-900">{m.company.name}</p>
-                              <p className="text-sm text-gray-500">Role: {m.role} | Status: {m.isActive ? "Active" : "Inactive"}</p>
+                              <p className="text-sm text-gray-500">
+                                Role: {m.role === "OWNER" ? "ADMIN (legacy)" : m.role === "EDITOR" ? "MANAGER (legacy)" : m.role === "VIEWER" ? "EMPLOYEE (legacy)" : m.role} | Status: {m.isActive ? "Active" : "Inactive"}
+                              </p>
                               {pinInfo && pinInfo.hasPin && (
                                 <p className="text-sm text-gray-600 mt-1">
                                   PIN: <span className="font-mono font-semibold">{pinInfo.pin}</span>
@@ -884,22 +886,22 @@ export function UserManagement() {
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 mb-2">
-                      <strong>Free Tier:</strong> 10 ingredients, 2 recipes, only Recipes section unlocked
+                      <strong>Free Tier:</strong> 5 ingredients, 5 recipes, only Recipes section unlocked
                     </p>
                     <p className="text-sm text-gray-600">
-                      <strong>Paid Tier:</strong> Unlimited everything, all sections unlocked (based on app subscriptions)
+                      <strong>Paid Tier (MVP):</strong> Unlimited everything, all MVP features unlocked
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
                         if (!selectedUser) return;
-                        if (!confirm(`Set ${selectedUser.email} to FREE tier? This will limit them to 10 ingredients and 2 recipes.`)) return;
+                        if (!confirm(`Set ${selectedUser.email} to FREE tier? This will limit them to 5 ingredients and 5 recipes.`)) return;
                         handleUpgradeSubscription(selectedUser.email, "free");
                       }}
-                      disabled={actionLoading || (selectedUser.subscriptionTier === "starter" && selectedUser.subscriptionStatus === "free")}
+                      disabled={actionLoading || (selectedUser.subscriptionTier === "free" && selectedUser.subscriptionStatus === "free")}
                       className={`px-4 py-2 text-sm rounded ${
-                        selectedUser.subscriptionTier === "starter" && selectedUser.subscriptionStatus === "free"
+                        selectedUser.subscriptionTier === "free" && selectedUser.subscriptionStatus === "free"
                           ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
