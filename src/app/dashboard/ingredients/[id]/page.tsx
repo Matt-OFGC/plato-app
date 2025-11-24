@@ -87,9 +87,9 @@ export default async function EditIngredientPage({ params }: Props) {
   // Create a bound function for the IngredientForm
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
-  // Build initialData object - ensure batchPricing is always included
-  // Use empty array instead of null to ensure it's serialized
-  const initialFormData: any = {
+  // Build initialData object - ensure batchPricing is ALWAYS included as a required property
+  // Next.js serialization can strip undefined/null, so we must ensure it's always present
+  const initialFormData = {
     name: ing.name,
     supplierId: ing.supplierId || undefined,
     packQuantity: originalQuantity,
@@ -99,20 +99,17 @@ export default async function EditIngredientPage({ params }: Props) {
     notes: ing.notes || "",
     allergens: ing.allergens || [],
     customConversions: ing.customConversions || undefined,
+    // CRITICAL: Always include batchPricing - use empty array if no data exists
+    // This ensures Next.js serializes it and the client component receives it
+    batchPricing: (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0) 
+      ? parsedBatchPricing 
+      : [] as Array<{ packQuantity: number; packPrice: number; purchaseUnit?: string; unitSize?: number }>,
   };
-  
-  // Always include batchPricing - use empty array instead of null to ensure serialization
-  // Next.js might strip null values, so use [] for empty to ensure property exists
-  if (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0) {
-    initialFormData.batchPricing = parsedBatchPricing;
-  } else {
-    // Use empty array instead of null to ensure property is serialized
-    initialFormData.batchPricing = [];
-  }
   
   // Debug: Log what we're passing to the form
   console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
   console.log('EditIngredientPage: batchPricing in initialData:', initialFormData.batchPricing, 'type:', typeof initialFormData.batchPricing, 'hasProperty:', 'batchPricing' in initialFormData, 'isArray:', Array.isArray(initialFormData.batchPricing));
+  console.log('EditIngredientPage: initialFormData keys:', Object.keys(initialFormData));
 
   return (
     <div className="app-container">
