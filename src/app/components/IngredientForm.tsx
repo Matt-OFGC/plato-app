@@ -430,6 +430,14 @@ export function IngredientForm({
     console.log('IngredientForm initialData changed:', initialData);
     console.log('IngredientForm batchPricing from props:', initialData?.batchPricing, 'type:', typeof initialData?.batchPricing, 'isArray:', Array.isArray(initialData?.batchPricing));
     console.log('IngredientForm has batchPricing property:', 'batchPricing' in (initialData || {}));
+    console.log('IngredientForm initialData keys:', initialData ? Object.keys(initialData) : 'no initialData');
+    console.log('IngredientForm initialData JSON:', JSON.stringify(initialData, null, 2));
+    
+    // Check if batchPricing exists in the serialized data
+    if (initialData) {
+      const serialized = JSON.parse(JSON.stringify(initialData));
+      console.log('IngredientForm serialized batchPricing:', serialized.batchPricing, 'hasProperty:', 'batchPricing' in serialized);
+    }
   }, [initialData]);
   
   // Debug: Track when bulk mode changes
