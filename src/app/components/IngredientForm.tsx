@@ -298,8 +298,18 @@ export function IngredientForm({
     
     // Deep check for bulk purchase info
     const batchPricing = initialData?.batchPricing;
-    // Handle both null/undefined and empty array cases
-    const hasBulkInfo = batchPricing && 
+    // Handle sentinel marker (_empty: true) which indicates empty data
+    // This is used to ensure Next.js serializes the property even when empty
+    const isEmptySentinel = Array.isArray(batchPricing) && 
+      batchPricing.length === 1 && 
+      batchPricing[0] && 
+      typeof batchPricing[0] === 'object' &&
+      batchPricing[0] !== null &&
+      (batchPricing[0] as any)._empty === true;
+    
+    // Check for actual bulk purchase info (not sentinel)
+    const hasBulkInfo = !isEmptySentinel &&
+      batchPricing && 
       Array.isArray(batchPricing) && 
       batchPricing.length > 0 &&
       batchPricing[0] &&
