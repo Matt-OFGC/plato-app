@@ -32,6 +32,7 @@ export async function GET() {
     });
 
     // Format sessions for response (don't expose full token)
+    const currentSessionToken = session.id; // Use the already-fetched session
     const formattedSessions = sessions.map((s) => ({
       id: s.id,
       deviceInfo: s.deviceInfo || 'Unknown Device',
@@ -40,12 +41,12 @@ export async function GET() {
       createdAt: s.createdAt,
       lastUsedAt: s.lastUsedAt,
       expiresAt: s.expiresAt,
-      isCurrent: s.token === (await getSession())?.id, // Simplified check
+      isCurrent: s.token === currentSessionToken, // Simplified check
     }));
 
     return NextResponse.json({ sessions: formattedSessions });
   } catch (error) {
-    console.error("Get sessions error:", error);
+    // Error handled
     return NextResponse.json(
       { error: "Failed to get sessions" },
       { status: 500 }
@@ -92,7 +93,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Revoke session error:", error);
+    // Error handled
     return NextResponse.json(
       { error: "Failed to revoke session" },
       { status: 500 }
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error) {
-    console.error("Revoke all sessions error:", error);
+    // Error handled
     return NextResponse.json(
       { error: "Failed to revoke sessions" },
       { status: 500 }
