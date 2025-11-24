@@ -122,6 +122,7 @@ interface IngredientModalProps {
     allergens?: string[];
     customConversions?: string | null;
     notes?: string | null;
+    batchPricing?: any; // Include batchPricing if available
   } | null;
 }
 
@@ -242,6 +243,7 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
       allergens: editIngredient.allergens || [],
       customConversions: editIngredient.customConversions || undefined,
       notes: editIngredient.notes || "",
+      batchPricing: editIngredient.batchPricing ? (typeof editIngredient.batchPricing === 'string' ? JSON.parse(editIngredient.batchPricing) : editIngredient.batchPricing) : undefined,
     };
   }, [editIngredient]);
 
