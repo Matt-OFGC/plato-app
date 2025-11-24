@@ -54,14 +54,27 @@ export default async function RecipesPage({ searchParams }: Props) {
         return await prisma.recipe.findMany({ 
           where: {
             ...where,
-            // Filter out test recipes
-            NOT: {
-              OR: [
-                { name: { contains: "Test Category", mode: "insensitive" } },
-                { name: { contains: "test category", mode: "insensitive" } },
-                { name: { startsWith: "Test ", mode: "insensitive" } },
-              ]
-            }
+            // Filter out test recipes and test categories
+            AND: [
+              {
+                NOT: {
+                  OR: [
+                    { name: { contains: "Test Category", mode: "insensitive" } },
+                    { name: { startsWith: "Test ", mode: "insensitive" } },
+                  ]
+                }
+              },
+              {
+                categoryRef: {
+                  NOT: {
+                    OR: [
+                      { name: { contains: "Test Category", mode: "insensitive" } },
+                      { name: { startsWith: "Test ", mode: "insensitive" } },
+                    ]
+                  }
+                }
+              }
+            ]
           }, 
           orderBy: { name: "asc" },
           select: {
