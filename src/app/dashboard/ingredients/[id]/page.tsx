@@ -87,8 +87,9 @@ export default async function EditIngredientPage({ params }: Props) {
   // Create a bound function for the IngredientForm
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
-  // Build initialData object
-  const initialFormData = {
+  // Build initialData object - ensure batchPricing is always included
+  // Use empty array instead of null to ensure it's serialized
+  const initialFormData: any = {
     name: ing.name,
     supplierId: ing.supplierId || undefined,
     packQuantity: originalQuantity,
@@ -98,12 +99,18 @@ export default async function EditIngredientPage({ params }: Props) {
     notes: ing.notes || "",
     allergens: ing.allergens || [],
     customConversions: ing.customConversions || undefined,
-    batchPricing: parsedBatchPricing ?? null, // Explicitly pass null if undefined
   };
+  
+  // Always include batchPricing - use null if not present (Next.js should serialize null)
+  if (parsedBatchPricing !== null && parsedBatchPricing !== undefined) {
+    initialFormData.batchPricing = parsedBatchPricing;
+  } else {
+    initialFormData.batchPricing = null; // Explicitly set to null
+  }
   
   // Debug: Log what we're passing to the form
   console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
-  console.log('EditIngredientPage: batchPricing in initialData:', initialFormData.batchPricing, 'type:', typeof initialFormData.batchPricing);
+  console.log('EditIngredientPage: batchPricing in initialData:', initialFormData.batchPricing, 'type:', typeof initialFormData.batchPricing, 'hasProperty:', 'batchPricing' in initialFormData);
 
   return (
     <div className="app-container">
