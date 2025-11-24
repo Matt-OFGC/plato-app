@@ -88,15 +88,14 @@ export default async function EditIngredientPage({ params }: Props) {
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
   // CRITICAL FIX: Next.js RSC serialization strips empty arrays []
-  // We MUST use a sentinel object from the start, never an empty array
-  // If batchPricing is empty, use a sentinel object with _empty marker
-  const batchPricingValue = (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0) 
+  // We MUST ensure batchPricing is ALWAYS present with a non-empty structure
+  // Use a sentinel object that Next.js won't strip (has non-zero/non-false values)
+  const batchPricingValue = (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0 && !parsedBatchPricing[0]?._empty) 
     ? parsedBatchPricing 
-    : [{ packQuantity: 0, packPrice: 0, _empty: true }] as any; // ALWAYS use sentinel, never []
+    : [{ packQuantity: 1, packPrice: 0, _empty: true }] as any; // Use packQuantity: 1 instead of 0 to avoid being stripped
   
-  // Build initialData object with batchPricing as a required property
-  // Include it directly in the object literal to ensure it's never stripped
-  const initialFormData = {
+  // Build initialData object - use Object.defineProperty to force inclusion
+  const initialFormDataBase = {
     name: ing.name,
     supplierId: ing.supplierId || undefined,
     packQuantity: originalQuantity,
@@ -106,10 +105,19 @@ export default async function EditIngredientPage({ params }: Props) {
     notes: ing.notes || "",
     allergens: ing.allergens || [],
     customConversions: ing.customConversions || undefined,
-    // CRITICAL: Always include batchPricing with sentinel if empty
-    // This ensures Next.js serializes it because it's a non-empty array
-    batchPricing: batchPricingValue,
   };
+  
+  // Force include batchPricing using Object.defineProperty with enumerable: true
+  const initialFormData = Object.defineProperty(
+    { ...initialFormDataBase },
+    'batchPricing',
+    {
+      value: batchPricingValue,
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    }
+  );
   
   // Debug: Log what we're passing to the form
   console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
@@ -117,6 +125,7 @@ export default async function EditIngredientPage({ params }: Props) {
   console.log('EditIngredientPage: initialFormData keys:', Object.keys(initialFormData));
   console.log('EditIngredientPage: batchPricing length:', Array.isArray(initialFormData.batchPricing) ? initialFormData.batchPricing.length : 'N/A');
   console.log('EditIngredientPage: batchPricing[0]:', Array.isArray(initialFormData.batchPricing) && initialFormData.batchPricing.length > 0 ? initialFormData.batchPricing[0] : 'N/A');
+  console.log('EditIngredientPage: Object.getOwnPropertyDescriptor:', Object.getOwnPropertyDescriptor(initialFormData, 'batchPricing'));
 
   return (
     <div className="app-container">
