@@ -41,6 +41,7 @@ export function OptimizedImage({
 }: OptimizedImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   
   // Only use blur if blurDataURL is provided, otherwise use empty placeholder
@@ -55,10 +56,53 @@ export function OptimizedImage({
     setHasError(true);
     setIsLoading(false);
     onError?.();
+    // If Next.js Image fails and it's an external URL, try fallback
+    if ((src.startsWith('http://') || src.startsWith('https://')) && !useFallback) {
+      setUseFallback(true);
+      setHasError(false); // Reset error to allow fallback to render
+      setIsLoading(true); // Reset loading state
+    }
   };
 
-  // Fallback for broken images
-  if (hasError) {
+  const handleFallbackError = () => {
+    setHasError(true);
+    setIsLoading(false);
+  };
+
+  // Fallback for broken images - try regular img tag for external URLs
+  if (useFallback && !hasError) {
+    return (
+      <div
+        className={cn('relative overflow-hidden', className)}
+        style={style}
+        onClick={onClick}
+      >
+        <img
+          src={src}
+          alt={alt}
+          width={fill ? undefined : width}
+          height={fill ? undefined : height}
+          className={cn(
+            'transition-opacity duration-300',
+            isLoading ? 'opacity-0' : 'opacity-100',
+            onClick && 'cursor-pointer hover:opacity-90',
+            fill ? 'w-full h-full object-cover' : ''
+          )}
+          style={fill ? { objectFit: 'cover' } : { width, height, ...style }}
+          onLoad={handleLoad}
+          onError={handleFallbackError}
+        />
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Show placeholder if both Next Image and fallback failed
+  if (hasError && useFallback) {
     return (
       <div
         className={cn(
