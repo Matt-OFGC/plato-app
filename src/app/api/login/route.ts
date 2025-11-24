@@ -11,7 +11,9 @@ import { checkSuspiciousActivity } from "@/lib/security-alerts";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => {
+      throw new Error('Invalid request body');
+    });
     const { email, password, rememberMe = true } = body;
 
     // Apply rate limiting (both IP and email-based)
@@ -37,18 +39,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        passwordHash: true,
-        isAdmin: true,
-        isActive: true,
-        lastLoginAt: true,
-      },
-    });
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          passwordHash: true,
+          isAdmin: true,
+          isActive: true,
+          lastLoginAt: true,
+        },
+      });
+    } catch (dbError) {
+      logger.error('Database error fetching user', dbError, 'Auth/Login');
+      throw new Error('Database connection failed');
+    }
 
     if (!user || !user.passwordHash) {
       // Audit failed login
@@ -96,7 +104,12 @@ export async function POST(request: NextRequest) {
                       'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
     
-    await checkSuspiciousActivity(user.id, ipAddress, userAgent);
+    try {
+      await checkSuspiciousActivity(user.id, ipAddress, userAgent);
+    } catch (suspiciousError) {
+      // Don't fail login if suspicious activity check fails
+      logger.warn('Failed to check suspicious activity', suspiciousError, 'Auth/Login');
+    }
 
     // Create session with remember me option and request info for device tracking
     try {
