@@ -50,15 +50,22 @@ const ingredientSchema = z.object({
     if (!v || v === "" || v === "[]") return null;
     try {
       const parsed = JSON.parse(v);
-      // Ensure it's a valid array of {packQuantity, packPrice}
+      // Ensure it's a valid array
       if (!Array.isArray(parsed)) return null;
-      const valid = parsed.every((tier: any) => 
-        tier && 
-        typeof tier.packQuantity === 'number' && 
-        typeof tier.packPrice === 'number' &&
-        tier.packQuantity > 0 &&
-        tier.packPrice > 0
-      );
+      // For bulk purchases, we store {packQuantity, packPrice, purchaseUnit, unitSize}
+      // packPrice can be 0 for bulk purchases (price is stored at the purchase level)
+      // For regular batch pricing, packPrice must be > 0
+      const valid = parsed.every((tier: any) => {
+        if (!tier || typeof tier.packQuantity !== 'number' || tier.packQuantity <= 0) {
+          return false;
+        }
+        // If it has purchaseUnit, it's a bulk purchase - packPrice can be 0
+        if (tier.purchaseUnit) {
+          return typeof tier.packPrice === 'number' && tier.packPrice >= 0;
+        }
+        // Otherwise, it's regular batch pricing - packPrice must be > 0
+        return typeof tier.packPrice === 'number' && tier.packPrice > 0;
+      });
       return valid ? parsed : null;
     } catch {
       return null;
