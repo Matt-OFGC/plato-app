@@ -17,7 +17,8 @@ let redisEnabled = false;
 
 // Initialize Redis client
 async function initRedis() {
-  if (redisClient !== null) {
+  // If already initialized (even if failed), return the client or null
+  if (redisClient !== null || redisEnabled === false) {
     return redisClient;
   }
 
@@ -25,6 +26,7 @@ async function initRedis() {
   if (!redisUrl) {
     logger.debug("Redis not configured, caching disabled", undefined, "Redis");
     redisEnabled = false;
+    redisClient = null; // Mark as attempted
     return null;
   }
 
@@ -39,10 +41,12 @@ async function initRedis() {
       },
       enableReadyCheck: true,
       lazyConnect: true,
+      connectTimeout: 5000, // 5 second timeout
+      commandTimeout: 5000, // 5 second command timeout
     });
 
     redisClient.on("error", (error: Error) => {
-      logger.error("Redis connection error", error, "Redis");
+      logger.warn("Redis connection error", error, "Redis");
       redisEnabled = false;
     });
 
@@ -51,12 +55,20 @@ async function initRedis() {
       redisEnabled = true;
     });
 
-    await redisClient.connect();
+    // Try to connect with timeout
+    await Promise.race([
+      redisClient.connect(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Redis connection timeout")), 5000)
+      )
+    ]);
+    
     redisEnabled = true;
     return redisClient;
   } catch (error) {
     logger.warn("Redis initialization failed, caching disabled", error, "Redis");
     redisEnabled = false;
+    redisClient = null; // Mark as attempted
     return null;
   }
 }
@@ -95,14 +107,21 @@ export async function getCache<T>(key: string): Promise<T | null> {
       return null;
     }
 
-    const value = await client.get(key);
+    // Add timeout to prevent hanging
+    const value = await Promise.race([
+      client.get(key),
+      new Promise<string | null>((_, reject) => 
+        setTimeout(() => reject(new Error("Redis get timeout")), 2000)
+      )
+    ]) as string | null;
+    
     if (!value) {
       return null;
     }
 
     return JSON.parse(value) as T;
   } catch (error) {
-    logger.warn("Cache get failed", error, "Redis");
+    // Silently fail - don't log warnings for expected failures
     return null;
   }
 }
@@ -121,10 +140,17 @@ export async function setCache(
       return false;
     }
 
-    await client.setex(key, ttl, JSON.stringify(value));
+    // Add timeout to prevent hanging
+    await Promise.race([
+      client.setex(key, ttl, JSON.stringify(value)),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Redis set timeout")), 2000)
+      )
+    ]);
+    
     return true;
   } catch (error) {
-    logger.warn("Cache set failed", error, "Redis");
+    // Silently fail - don't log warnings for expected failures
     return false;
   }
 }

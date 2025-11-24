@@ -47,8 +47,13 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
   }
 
   const cacheKey = CacheKeys.userSession(user.id);
-  // Check Redis cache first
-  const cached = await getCache<CurrentUserAndCompany>(cacheKey);
+  // Check Redis cache first (silently fail if Redis unavailable)
+  let cached: CurrentUserAndCompany | null = null;
+  try {
+    cached = await getCache<CurrentUserAndCompany>(cacheKey);
+  } catch (error) {
+    // Redis unavailable, continue without cache
+  }
   if (cached) {
     return cached;
   }
@@ -108,8 +113,12 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
       appConfig
     };
 
-    // Cache the result in Redis
-    await setCache(cacheKey, result, CACHE_TTL.USER_SESSION);
+    // Cache the result in Redis (silently fail if Redis unavailable)
+    try {
+      await setCache(cacheKey, result, CACHE_TTL.USER_SESSION);
+    } catch (error) {
+      // Redis unavailable, continue without caching
+    }
 
     return result;
   } catch (error) {
