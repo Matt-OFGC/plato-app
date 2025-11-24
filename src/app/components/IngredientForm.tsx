@@ -122,14 +122,16 @@ export function IngredientForm({
   const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
   
   // Check batchPricing to determine if this is a bulk purchase
-  const hasBulkPurchaseInfo = initialData?.batchPricing && 
-    Array.isArray(initialData.batchPricing) && 
-    initialData.batchPricing.length > 0 &&
-    initialData.batchPricing[0]?.purchaseUnit &&
-    packagingUnits.includes(initialData.batchPricing[0].purchaseUnit);
+  // Use effectiveBatchPricing (from batchPricingJson or initialData.batchPricing)
+  const hasBulkPurchaseInfo = effectiveBatchPricing && 
+    Array.isArray(effectiveBatchPricing) && 
+    effectiveBatchPricing.length > 0 &&
+    effectiveBatchPricing[0]?._empty !== true && // Ignore sentinel
+    effectiveBatchPricing[0]?.purchaseUnit &&
+    packagingUnits.includes(String(effectiveBatchPricing[0].purchaseUnit));
   
   // Extract bulk purchase values for initialization
-  const bulkPurchaseData = hasBulkPurchaseInfo ? initialData.batchPricing[0] : null;
+  const bulkPurchaseData = hasBulkPurchaseInfo ? effectiveBatchPricing[0] : null;
   
   // Initialize purchase mode based on batchPricing (for saved bulk purchases) or packUnit (for new/legacy)
   const [isBulkPurchaseMode, setIsBulkPurchaseMode] = useState<boolean>(() => {
@@ -315,8 +317,8 @@ export function IngredientForm({
     setIsInitializing(true);
     const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
     
-    // Deep check for bulk purchase info
-    const batchPricing = initialData?.batchPricing;
+    // Use effectiveBatchPricing (from batchPricingJson or initialData.batchPricing)
+    const batchPricing = effectiveBatchPricing;
     // Handle sentinel marker (_empty: true) which indicates empty data
     // This is used to ensure Next.js serializes the property even when empty
     const isEmptySentinel = Array.isArray(batchPricing) && 
@@ -340,13 +342,14 @@ export function IngredientForm({
     
     console.log('IngredientForm: Syncing bulk mode state', { 
       hasBulkInfo, 
-      batchPricing: initialData?.batchPricing,
-      batchPricingType: typeof initialData?.batchPricing,
-      batchPricingIsArray: Array.isArray(initialData?.batchPricing),
-      batchPricingLength: Array.isArray(initialData?.batchPricing) ? initialData.batchPricing.length : 'N/A',
-      firstItem: Array.isArray(initialData?.batchPricing) && initialData.batchPricing.length > 0 ? initialData.batchPricing[0] : 'N/A',
-      purchaseUnit: Array.isArray(initialData?.batchPricing) && initialData.batchPricing.length > 0 && initialData.batchPricing[0] ? (initialData.batchPricing[0] as any).purchaseUnit : 'N/A',
-      packUnit: initialData?.packUnit
+      batchPricing: effectiveBatchPricing,
+      batchPricingType: typeof effectiveBatchPricing,
+      batchPricingIsArray: Array.isArray(effectiveBatchPricing),
+      batchPricingLength: Array.isArray(effectiveBatchPricing) ? effectiveBatchPricing.length : 'N/A',
+      firstItem: Array.isArray(effectiveBatchPricing) && effectiveBatchPricing.length > 0 ? effectiveBatchPricing[0] : 'N/A',
+      purchaseUnit: Array.isArray(effectiveBatchPricing) && effectiveBatchPricing.length > 0 && effectiveBatchPricing[0] ? (effectiveBatchPricing[0] as any).purchaseUnit : 'N/A',
+      packUnit: initialData?.packUnit,
+      batchPricingJson: batchPricingJson ? 'provided' : 'not provided'
     });
     
     if (hasBulkInfo) {
@@ -406,7 +409,7 @@ export function IngredientForm({
     
     // Mark initialization as complete after a brief delay to allow state to settle
     setTimeout(() => setIsInitializing(false), 100);
-  }, [initialData?.batchPricing, initialData?.packUnit, initialData?.packQuantity]);
+  }, [effectiveBatchPricing, initialData?.packUnit, initialData?.packQuantity, batchPricingJson]);
   
   // Sync packSize and purchaseSize with initialData when it changes (for edit mode)
   // BUT only if user hasn't manually modified the values
@@ -415,11 +418,12 @@ export function IngredientForm({
   useEffect(() => {
     // Check if we have bulk purchase info - if so, skip this sync (it's handled above)
     const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
-    const hasBulkInfo = initialData?.batchPricing && 
-      Array.isArray(initialData.batchPricing) && 
-      initialData.batchPricing.length > 0 &&
-      initialData.batchPricing[0]?.purchaseUnit &&
-      packagingUnits.includes(initialData.batchPricing[0].purchaseUnit);
+    const hasBulkInfo = effectiveBatchPricing && 
+      Array.isArray(effectiveBatchPricing) && 
+      effectiveBatchPricing.length > 0 &&
+      effectiveBatchPricing[0]?._empty !== true && // Ignore sentinel
+      effectiveBatchPricing[0]?.purchaseUnit &&
+      packagingUnits.includes(String(effectiveBatchPricing[0].purchaseUnit));
     
     // Don't sync if we have bulk purchase info - it's handled by the bulk mode useEffect
     if (hasBulkInfo) {
@@ -446,7 +450,7 @@ export function IngredientForm({
     if (initialData?.packUnit !== undefined && !isBulkPurchaseMode) {
       setPurchaseUnit(initialData.packUnit);
     }
-  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, initialData?.batchPricing, hasUserModifiedPackSize, hasUserModifiedPurchaseSize, isBulkPurchaseMode]);
+  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, effectiveBatchPricing, hasUserModifiedPackSize, hasUserModifiedPurchaseSize, isBulkPurchaseMode]);
   
   // Reset the "user modified" flags when initialData changes significantly (new ingredient or different ingredient)
   useEffect(() => {
@@ -457,8 +461,9 @@ export function IngredientForm({
   // Debug: Log initialData when it changes
   useEffect(() => {
     console.log('IngredientForm initialData changed:', initialData);
-    console.log('IngredientForm batchPricing from props:', initialData?.batchPricing, 'type:', typeof initialData?.batchPricing, 'isArray:', Array.isArray(initialData?.batchPricing));
-    console.log('IngredientForm has batchPricing property:', 'batchPricing' in (initialData || {}));
+    console.log('IngredientForm batchPricing from props:', effectiveBatchPricing, 'type:', typeof effectiveBatchPricing, 'isArray:', Array.isArray(effectiveBatchPricing));
+    console.log('IngredientForm has batchPricing property:', effectiveBatchPricing !== null && effectiveBatchPricing !== undefined);
+    console.log('IngredientForm batchPricingJson:', batchPricingJson ? 'provided' : 'not provided');
     console.log('IngredientForm initialData keys:', initialData ? Object.keys(initialData) : 'no initialData');
     console.log('IngredientForm initialData JSON:', JSON.stringify(initialData, null, 2));
     
@@ -917,7 +922,7 @@ export function IngredientForm({
                         }
                         // Only switch away from bulk mode if user explicitly selects a non-packaging unit
                         // AND we're not loading from batchPricing (which would have already set bulk mode)
-                        else if (packagingUnits.includes(purchaseUnit) && !initialData?.batchPricing) {
+                        else if (packagingUnits.includes(purchaseUnit) && !effectiveBatchPricing) {
                           console.log('IngredientForm: Switching to single mode (non-packaging unit selected)');
                           setIsBulkPurchaseMode(false);
                         }
