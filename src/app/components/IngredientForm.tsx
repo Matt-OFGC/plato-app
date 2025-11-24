@@ -97,42 +97,68 @@ export function IngredientForm({
   const [otherNutType, setOtherNutType] = useState<string>("");
   const [showOtherNutInput, setShowOtherNutInput] = useState<boolean>(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState<boolean>(false);
-  const [packSize, setPackSize] = useState<number>(initialData?.packQuantity || 1);
-  const [packPrice, setPackPrice] = useState<number>(initialData?.packPrice || 0);
-  const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
-  const [hasUserModifiedPackSize, setHasUserModifiedPackSize] = useState<boolean>(false);
-  const [hasUserModifiedPurchaseSize, setHasUserModifiedPurchaseSize] = useState<boolean>(false);
-  const [purchaseUnit, setPurchaseUnit] = useState<string>(initialData?.packUnit || '');
-  
-  // Determine if this is bulk purchase mode (packaging unit selected)
+  // Initialize packSize - from batchPricing if bulk purchase, otherwise from packQuantity
+  // Determine if this is bulk purchase mode by checking batchPricing
   const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
-  const isBulkPurchase = packagingUnits.includes(purchaseUnit || initialData?.packUnit || '');
   
-  // Initialize purchase mode based on existing data
+  // Check batchPricing to determine if this is a bulk purchase
+  const hasBulkPurchaseInfo = initialData?.batchPricing && 
+    Array.isArray(initialData.batchPricing) && 
+    initialData.batchPricing.length > 0 &&
+    initialData.batchPricing[0]?.purchaseUnit &&
+    packagingUnits.includes(initialData.batchPricing[0].purchaseUnit);
+  
+  // Extract bulk purchase values for initialization
+  const bulkPurchaseData = hasBulkPurchaseInfo ? initialData.batchPricing[0] : null;
+  
+  // Initialize purchase mode based on batchPricing (for saved bulk purchases) or packUnit (for new/legacy)
   const [isBulkPurchaseMode, setIsBulkPurchaseMode] = useState<boolean>(() => {
+    if (hasBulkPurchaseInfo) {
+      return true;
+    }
     if (initialData?.packUnit) {
       return packagingUnits.includes(initialData.packUnit);
     }
     return false;
   });
   
-  const [packUnit, setPackUnit] = useState<string>(() => {
-    // If bulk purchase, try to infer pack unit from batchPricing or use a default
-    if (isBulkPurchaseMode && initialData?.batchPricing && Array.isArray(initialData.batchPricing) && initialData.batchPricing.length > 0) {
-      // Try to determine from batch pricing or use original unit
-      return initialData.packUnit || 'l';
+  // Initialize purchaseUnit - from batchPricing if bulk, otherwise from packUnit
+  const [purchaseUnit, setPurchaseUnit] = useState<string>(() => {
+    if (bulkPurchaseData?.purchaseUnit) {
+      return bulkPurchaseData.purchaseUnit;
     }
+    return initialData?.packUnit || '';
+  });
+  
+  // Initialize packUnit - this is the individual unit (kg, L, etc.) stored in packUnit
+  const [packUnit, setPackUnit] = useState<string>(() => {
     return initialData?.packUnit || 'l';
   });
   
+  // Initialize packSize - from batchPricing if bulk purchase, otherwise from packQuantity
+  const [packSize, setPackSize] = useState<number>(() => {
+    if (bulkPurchaseData?.packQuantity) {
+      return bulkPurchaseData.packQuantity;
+    }
+    return initialData?.packQuantity || 1;
+  });
+  
+  // Initialize packUnitSize - from batchPricing if available
   const [packUnitSize, setPackUnitSize] = useState<number>(() => {
-    // For bulk purchases, try to calculate unit size from packQuantity and packSize
-    // e.g., if packQuantity = 12L and packSize = 6, then unitSize = 2L
+    if (bulkPurchaseData?.unitSize) {
+      return bulkPurchaseData.unitSize;
+    }
+    // Fallback: try to calculate from packQuantity and packSize
     if (isBulkPurchaseMode && initialData?.packQuantity && packSize > 0) {
       return initialData.packQuantity / packSize;
     }
     return 1;
   });
+  
+  const [packPrice, setPackPrice] = useState<number>(initialData?.packPrice || 0);
+  const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
+  const [hasUserModifiedPackSize, setHasUserModifiedPackSize] = useState<boolean>(false);
+  const [hasUserModifiedPurchaseSize, setHasUserModifiedPurchaseSize] = useState<boolean>(false);
   
   // Servings state - optional field for how many servings this ingredient purchase yields
   const [servings, setServings] = useState<number | null>(() => {
@@ -177,9 +203,18 @@ export function IngredientForm({
         return initialData.packQuantity || 1;
       }
     }
-    // For bulk purchases, initialize purchase size (e.g., 1 case)
+    // For bulk purchases, calculate purchase size from total quantity
+    // e.g., if packQuantity = 12kg, packSize = 6, packUnitSize = 2kg, then purchaseSize = 12 / (6 * 2) = 1
+    if (bulkPurchaseData && initialData?.packQuantity) {
+      const calculatedPackSize = bulkPurchaseData.packQuantity || 1;
+      const calculatedUnitSize = bulkPurchaseData.unitSize || 1;
+      if (calculatedPackSize > 0 && calculatedUnitSize > 0) {
+        return Math.round(initialData.packQuantity / (calculatedPackSize * calculatedUnitSize)) || 1;
+      }
+    }
+    // For bulk purchases without full data, default to 1
     if (isBulkPurchaseMode) {
-      return 1; // Default to 1 case/box/etc
+      return 1;
     }
     // For single purchases, use packQuantity directly
     return initialData?.packQuantity || 1;
@@ -254,30 +289,76 @@ export function IngredientForm({
     }
   }, [servings, purchaseSize, purchaseUnit, packSize, packUnit, servingsUnit, initialData?.densityGPerMl]);
   
+  // Sync bulk mode state when initialData changes (for edit mode)
+  useEffect(() => {
+    const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
+    const hasBulkInfo = initialData?.batchPricing && 
+      Array.isArray(initialData.batchPricing) && 
+      initialData.batchPricing.length > 0 &&
+      initialData.batchPricing[0]?.purchaseUnit &&
+      packagingUnits.includes(initialData.batchPricing[0].purchaseUnit);
+    
+    if (hasBulkInfo) {
+      // Set bulk mode if batchPricing indicates bulk purchase
+      setIsBulkPurchaseMode(true);
+      const bulkData = initialData.batchPricing[0];
+      
+      // Sync purchase unit from batchPricing
+      if (bulkData.purchaseUnit && !hasUserModifiedPurchaseSize) {
+        setPurchaseUnit(bulkData.purchaseUnit);
+      }
+      
+      // Sync pack size and unit size from batchPricing
+      if (bulkData.packQuantity && !hasUserModifiedPackSize) {
+        setPackSize(bulkData.packQuantity);
+      }
+      if (bulkData.unitSize) {
+        setPackUnitSize(bulkData.unitSize);
+      }
+      
+      // Calculate purchase size from total quantity
+      if (initialData?.packQuantity && bulkData.packQuantity && bulkData.unitSize && !hasUserModifiedPurchaseSize) {
+        const calculatedPurchaseSize = Math.round(initialData.packQuantity / (bulkData.packQuantity * bulkData.unitSize)) || 1;
+        setPurchaseSize(calculatedPurchaseSize);
+      }
+    } else if (initialData?.packUnit) {
+      // Check if packUnit itself is a packaging unit (legacy bulk purchases)
+      if (packagingUnits.includes(initialData.packUnit)) {
+        setIsBulkPurchaseMode(true);
+        if (!hasUserModifiedPurchaseSize) {
+          setPurchaseUnit(initialData.packUnit);
+        }
+      } else {
+        setIsBulkPurchaseMode(false);
+      }
+    }
+  }, [initialData?.batchPricing, initialData?.packUnit, initialData?.packQuantity, hasUserModifiedPackSize, hasUserModifiedPurchaseSize]);
+  
   // Sync packSize and purchaseSize with initialData when it changes (for edit mode)
   // BUT only if user hasn't manually modified the values
   // Also sync packPrice to ensure both update correctly
   useEffect(() => {
     // Sync purchaseSize for count units - only if user hasn't modified it
-    if (initialData?.packUnit && !hasUserModifiedPurchaseSize) {
+    if (initialData?.packUnit && !hasUserModifiedPurchaseSize && !isBulkPurchaseMode) {
       const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
       if (countUnits.includes(initialData.packUnit) && initialData.packQuantity !== undefined && initialData.packQuantity > 0) {
         setPurchaseSize(initialData.packQuantity);
       }
     }
     
-    // Only sync packSize if user hasn't manually changed it
-    if (!hasUserModifiedPackSize && initialData?.packQuantity !== undefined && initialData.packQuantity > 0) {
+    // Only sync packSize if user hasn't manually changed it and not in bulk mode
+    if (!hasUserModifiedPackSize && !isBulkPurchaseMode && initialData?.packQuantity !== undefined && initialData.packQuantity > 0) {
       console.log('IngredientForm: Setting packSize from initialData:', initialData.packQuantity);
       setPackSize(initialData.packQuantity);
     }
     if (initialData?.packPrice !== undefined) {
       setPackPrice(initialData.packPrice);
     }
-    if (initialData?.packUnit !== undefined) {
+    // Only sync purchaseUnit if not in bulk mode (bulk mode is handled above)
+    if (initialData?.packUnit !== undefined && !isBulkPurchaseMode) {
       setPurchaseUnit(initialData.packUnit);
     }
-  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, hasUserModifiedPackSize, hasUserModifiedPurchaseSize]);
+  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, hasUserModifiedPackSize, hasUserModifiedPurchaseSize, isBulkPurchaseMode]);
   
   // Reset the "user modified" flags when initialData changes significantly (new ingredient or different ingredient)
   useEffect(() => {
