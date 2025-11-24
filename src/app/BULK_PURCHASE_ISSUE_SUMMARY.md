@@ -154,3 +154,28 @@ GET http://localhost:3000/_next/static/chunks/[...] 404 (Not Found)
 - The sentinel object approach was meant to ensure the property exists, but Next.js still strips it
 - Need to verify if `batchPricingJson` prop is actually being received by the client component
 
+## IMMEDIATE ACTION REQUIRED
+
+**The dev server is currently broken** - getting 404 errors for Next.js static chunks. This needs to be fixed first:
+
+```bash
+cd /Users/matt/plato/src/app
+# Kill any running dev servers
+pkill -f "next dev" || true
+# Clear build cache
+rm -rf .next
+# Restart dev server
+npm run dev
+```
+
+Wait for the server to fully start (watch for "Ready" message), then test the ingredients page again.
+
+## Current Browser Errors (Need Fixing)
+
+```
+GET http://localhost:3000/_next/static/chunks/[...] 404 (Not Found)
+GET http://localhost:3000/ 500 (Internal Server Error)
+```
+
+These errors indicate the Next.js dev server is not running properly or the `.next` directory is corrupted. The `.next` directory has been cleared - restart the dev server.
+
