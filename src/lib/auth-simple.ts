@@ -74,7 +74,12 @@ export async function createSession(
   rememberMe: boolean = true,
   request?: { headers: Headers },
 ): Promise<void> {
-  const cookieStore = await cookies();
+  let cookieStore;
+  try {
+    cookieStore = await cookies();
+  } catch (cookieError) {
+    throw new Error(`Failed to access cookies: ${cookieError instanceof Error ? cookieError.message : 'Unknown error'}`);
+  }
   
   // Generate refresh token
   const refreshToken = generateToken();
