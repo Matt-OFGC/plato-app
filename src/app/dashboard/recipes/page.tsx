@@ -54,27 +54,22 @@ export default async function RecipesPage({ searchParams }: Props) {
         return await prisma.recipe.findMany({ 
           where: {
             ...where,
-            // Filter out test recipes and test categories
-            AND: [
-              {
-                NOT: {
-                  OR: [
-                    { name: { contains: "Test Category", mode: "insensitive" } },
-                    { name: { startsWith: "Test ", mode: "insensitive" } },
-                  ]
-                }
-              },
-              {
-                categoryRef: {
-                  NOT: {
+            // Filter out test recipes
+            NOT: {
+              OR: [
+                { name: { contains: "Test Category", mode: "insensitive" } },
+                { name: { startsWith: "Test ", mode: "insensitive" } },
+                // Also filter recipes in test categories
+                {
+                  categoryRef: {
                     OR: [
                       { name: { contains: "Test Category", mode: "insensitive" } },
                       { name: { startsWith: "Test ", mode: "insensitive" } },
                     ]
                   }
                 }
-              }
-            ]
+              ]
+            }
           }, 
           orderBy: { name: "asc" },
           select: {
@@ -187,7 +182,18 @@ export default async function RecipesPage({ searchParams }: Props) {
   }
 
   // Get categories from the already fetched recipes (no extra query needed)
-  const categories = Array.from(new Set(recipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();
+  // Filter out test categories
+  const categories = Array.from(
+    new Set(
+      recipes
+        .map(r => r.categoryRef?.name)
+        .filter(Boolean)
+        .filter((name): name is string => {
+          const nameLower = (name || '').toLowerCase();
+          return !nameLower.includes('test category') && !nameLower.startsWith('test ');
+        })
+    )
+  ).sort();
 
   // Fetch categories with IDs for bulk edit with caching
   const categoriesWithIds = await getOrCompute(
