@@ -135,21 +135,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is an owner/admin to enable device mode
-    const membership = await prisma.membership.findFirst({
-      where: { 
-        userId: user.id,
-        isActive: true,
-        role: { in: ["OWNER", "ADMIN"] }, // Backward compatibility: OWNER maps to ADMIN
-      },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
+    let membership = null;
+    try {
+      membership = await prisma.membership.findFirst({
+        where: { 
+          userId: user.id,
+          isActive: true,
+          role: { in: ["OWNER", "ADMIN"] }, // Backward compatibility: OWNER maps to ADMIN
+        },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (membershipError) {
+      // Don't fail login if membership query fails
+      logger.warn('Failed to fetch membership for device mode', membershipError, 'Auth/Login');
+    }
 
     return NextResponse.json({
       success: true,
@@ -159,7 +165,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
       },
       canEnableDeviceMode: !!membership,
-      company: membership?.company,
+      company: membership?.company || null,
     });
   } catch (error) {
     return handleApiError(error, 'Auth/Login');
