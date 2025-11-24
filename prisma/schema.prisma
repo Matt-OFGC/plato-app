@@ -362,7 +362,7 @@ model Subscription {
   stripePriceId        String?
   stripeProductId      String?
   status               String    @default("active")
-  tier                 String    @default("professional")
+  tier                 String    @default("paid") // Simplified: "free" or "paid"
   price                Decimal   @default(19.00)
   currency             String    @default("GBP")
   interval             String    @default("month")
@@ -372,6 +372,7 @@ model Subscription {
   canceledAt           DateTime?
   maxIngredients       Int?
   maxRecipes           Int?
+  aiSubscriptionType   String?   // null, "unlimited", or "capped"
   metadata             Json?
   user                 User      @relation(fields: [userId], references: [id])
 }
@@ -1879,10 +1880,9 @@ enum Brand {
 }
 
 enum MemberRole {
-  OWNER
-  ADMIN
-  EDITOR
-  VIEWER
+  ADMIN    // Full access including AI, can manage team and billing
+  MANAGER  // Can view and edit everything except AI
+  EMPLOYEE // View-only access
 }
 
 model OAuthAccount {
