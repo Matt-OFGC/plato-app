@@ -425,6 +425,8 @@ export function IngredientForm({
   // Debug: Log initialData when it changes
   useEffect(() => {
     console.log('IngredientForm initialData changed:', initialData);
+    console.log('IngredientForm batchPricing from props:', initialData?.batchPricing, 'type:', typeof initialData?.batchPricing, 'isArray:', Array.isArray(initialData?.batchPricing));
+    console.log('IngredientForm has batchPricing property:', 'batchPricing' in (initialData || {}));
   }, [initialData]);
   
   // Debug: Track when bulk mode changes

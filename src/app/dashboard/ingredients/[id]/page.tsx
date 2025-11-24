@@ -87,6 +87,24 @@ export default async function EditIngredientPage({ params }: Props) {
   // Create a bound function for the IngredientForm
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
+  // Build initialData object
+  const initialFormData = {
+    name: ing.name,
+    supplierId: ing.supplierId || undefined,
+    packQuantity: originalQuantity,
+    packUnit: ing.originalUnit || ing.packUnit,
+    packPrice: Number(ing.packPrice),
+    densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined,
+    notes: ing.notes || "",
+    allergens: ing.allergens || [],
+    customConversions: ing.customConversions || undefined,
+    batchPricing: parsedBatchPricing ?? null, // Explicitly pass null if undefined
+  };
+  
+  // Debug: Log what we're passing to the form
+  console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
+  console.log('EditIngredientPage: batchPricing in initialData:', initialFormData.batchPricing, 'type:', typeof initialFormData.batchPricing);
+
   return (
     <div className="app-container">
       <RecentItemsTracker
@@ -103,18 +121,7 @@ export default async function EditIngredientPage({ params }: Props) {
         <IngredientForm
           companyId={companyId || undefined}
           suppliers={suppliers}
-          initialData={{
-            name: ing.name,
-            supplierId: ing.supplierId || undefined,
-            packQuantity: originalQuantity,
-            packUnit: ing.originalUnit || ing.packUnit,
-            packPrice: Number(ing.packPrice),
-            densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined,
-            notes: ing.notes || "",
-            allergens: ing.allergens || [],
-            customConversions: ing.customConversions || undefined,
-            batchPricing: parsedBatchPricing ?? null, // Explicitly pass null if undefined
-          }}
+          initialData={initialFormData}
           onSubmit={handleSubmit}
         />
       </div>
