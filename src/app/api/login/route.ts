@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (dbError) {
-      logger.error('Database error fetching user', dbError, 'Auth/Login');
+      logger.error('[Auth/Login] Database error fetching user', dbError);
       throw new Error('Database connection failed');
     }
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       await checkSuspiciousActivity(user.id, ipAddress, userAgent);
     } catch (suspiciousError) {
       // Don't fail login if suspicious activity check fails
-      logger.warn('Failed to check suspicious activity', suspiciousError, 'Auth/Login');
+      logger.warn('[Auth/Login] Failed to check suspicious activity', suspiciousError);
     }
 
     // Create session with remember me option and request info for device tracking
@@ -120,9 +120,9 @@ export async function POST(request: NextRequest) {
         isAdmin: user.isAdmin,
       }, rememberMe, { headers: request.headers });
 
-      logger.info('Session created for user', { userId: user.id, email: user.email }, 'Auth/Login');
+      logger.info('[Auth/Login] Session created for user', { userId: user.id, email: user.email });
     } catch (sessionError) {
-      logger.error('Failed to create session', sessionError, 'Auth/Login');
+      logger.error('[Auth/Login] Failed to create session', sessionError);
       throw sessionError; // Re-throw to be caught by outer catch
     }
 
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       await auditLog.loginSuccess(user.id, request);
     } catch (auditError) {
       // Don't fail login if audit logging fails
-      logger.warn('Failed to log successful login', auditError, 'Auth/Login');
+      logger.warn('[Auth/Login] Failed to log successful login', auditError);
     }
 
     // Check if user is an owner/admin to enable device mode
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (membershipError) {
       // Don't fail login if membership query fails
-      logger.warn('Failed to fetch membership for device mode', membershipError, 'Auth/Login');
+      logger.warn('[Auth/Login] Failed to fetch membership for device mode', membershipError);
     }
 
     // Build response safely
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(responseData);
   } catch (error) {
-    logger.error('Login route error', error, 'Auth/Login');
+    logger.error('[Auth/Login] Login route error', error);
     return handleApiError(error, 'Auth/Login');
   }
 }
