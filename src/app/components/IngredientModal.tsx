@@ -209,14 +209,6 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
     const originalUnit = editIngredient.originalUnit || editIngredient.packUnit;
     let originalQuantity: number;
     
-    // Debug logging
-    console.log('IngredientModal conversion:', {
-      packQuantity: editIngredient.packQuantity,
-      packUnit: editIngredient.packUnit,
-      originalUnit: editIngredient.originalUnit,
-      targetUnit: originalUnit
-    });
-    
     if (editIngredient.originalUnit && editIngredient.packUnit) {
       // Convert from base unit back to original unit
       const converted = fromBase(
@@ -224,14 +216,11 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
         editIngredient.packUnit as BaseUnit, 
         originalUnit as Unit
       );
-      console.log('Converted value:', converted);
       // Ensure we have a valid positive number
       originalQuantity = isNaN(converted) || converted <= 0 ? Number(editIngredient.packQuantity) : converted;
     } else {
       originalQuantity = Number(editIngredient.packQuantity) || 1;
     }
-    
-    console.log('Final originalQuantity:', originalQuantity);
     
     return {
       name: editIngredient.name,
@@ -243,9 +232,25 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
       allergens: editIngredient.allergens || [],
       customConversions: editIngredient.customConversions || undefined,
       notes: editIngredient.notes || "",
-      batchPricing: editIngredient.batchPricing ? (typeof editIngredient.batchPricing === 'string' ? JSON.parse(editIngredient.batchPricing) : editIngredient.batchPricing) : undefined,
     };
   }, [editIngredient]);
+
+  // Prepare batchPricingJson - always pass as stringified JSON (never undefined)
+  // Parse batchPricing if it exists, otherwise use empty array
+  const batchPricingJson = useMemo(() => {
+    if (!editIngredient?.batchPricing) {
+      return JSON.stringify([]);
+    }
+    try {
+      const parsed = typeof editIngredient.batchPricing === 'string' 
+        ? JSON.parse(editIngredient.batchPricing) 
+        : editIngredient.batchPricing;
+      return JSON.stringify(Array.isArray(parsed) && parsed.length > 0 ? parsed : []);
+    } catch (e) {
+      console.error('IngredientModal: Error parsing batchPricing:', e);
+      return JSON.stringify([]);
+    }
+  }, [editIngredient?.batchPricing]);
 
   if (!isOpen) return null;
 
@@ -292,7 +297,7 @@ export function IngredientModal({ isOpen, onClose, onSuccess, companyId, editIng
                 suppliers={suppliers}
                 onSubmit={handleSubmit}
                 initialData={convertedInitialData}
-                batchPricingJson={editIngredient?.batchPricing ? JSON.stringify(editIngredient.batchPricing) : undefined}
+                batchPricingJson={batchPricingJson}
                 allergens={allergens}
                 onAllergenChange={setAllergens}
                 otherAllergen={otherAllergen}

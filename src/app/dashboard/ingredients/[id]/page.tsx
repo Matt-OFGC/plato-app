@@ -33,15 +33,6 @@ export default async function EditIngredientPage({ params }: Props) {
     return <div className="p-6">Unauthorized</div>;
   }
   
-  // Debug: Log raw batchPricing from database
-  console.log('EditIngredientPage: Raw batchPricing from DB:', {
-    value: ing.batchPricing,
-    type: typeof ing.batchPricing,
-    isNull: ing.batchPricing === null,
-    isUndefined: ing.batchPricing === undefined,
-    stringified: JSON.stringify(ing.batchPricing)
-  });
-
   // Get suppliers for the dropdown (company-scoped)
   const suppliersRaw = await prisma.supplier.findMany({
     where: companyId ? { companyId } : {},
@@ -61,8 +52,7 @@ export default async function EditIngredientPage({ params }: Props) {
     ? fromBase(Number(ing.packQuantity), ing.packUnit as BaseUnit, originalUnit as Unit)
     : Number(ing.packQuantity);
 
-  // Parse batchPricing for debugging
-  // Prisma Json type returns JavaScript objects directly, not strings
+  // Parse batchPricing - Prisma Json type returns JavaScript objects directly, not strings
   let parsedBatchPricing: any = null;
   if (ing.batchPricing !== null && ing.batchPricing !== undefined) {
     try {
@@ -73,41 +63,24 @@ export default async function EditIngredientPage({ params }: Props) {
       } else {
         parsedBatchPricing = ing.batchPricing;
       }
-      console.log('EditIngredientPage: Loaded batchPricing:', JSON.stringify(parsedBatchPricing, null, 2));
-      console.log('EditIngredientPage: batchPricing type:', typeof parsedBatchPricing, 'isArray:', Array.isArray(parsedBatchPricing));
     } catch (e) {
-      console.error('EditIngredientPage: Error parsing batchPricing:', e, 'raw value:', ing.batchPricing);
+      console.error('EditIngredientPage: Error parsing batchPricing:', e);
       parsedBatchPricing = null;
     }
-  } else {
-    console.log('EditIngredientPage: No batchPricing found in database (null or undefined)');
-    parsedBatchPricing = null; // Explicitly set to null
   }
 
   // Create a bound function for the IngredientForm
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
-  // CRITICAL FIX: Next.js RSC serialization strips null/undefined/empty arrays
-  // We MUST ensure batchPricing is ALWAYS present as a non-empty array
-  // If empty, use a sentinel object with meaningful values (not all zeros)
-  const batchPricingValue: any[] = (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0 && !parsedBatchPricing[0]?._empty) 
-    ? parsedBatchPricing 
-    : [{ packQuantity: 1, packPrice: 0, _empty: true }];
+  // Prepare batchPricingJson - always pass as stringified JSON (never undefined)
+  // Use empty array if null/undefined to ensure prop is always present
+  const batchPricingForJson = (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0)
+    ? parsedBatchPricing
+    : [];
+  const batchPricingJson = JSON.stringify(batchPricingForJson);
   
-  // Build initialData object - include batchPricing directly in object literal
-  // Use explicit type annotation to ensure TypeScript doesn't narrow the type
-  const initialFormData: {
-    name: string;
-    supplierId?: number;
-    packQuantity: number;
-    packUnit: string;
-    packPrice: number;
-    densityGPerMl?: number;
-    notes: string;
-    allergens: string[];
-    customConversions?: any;
-    batchPricing: any[];
-  } = {
+  // Build initialData object (batchPricing will be stripped by RSC, so we rely on batchPricingJson)
+  const initialFormData = {
     name: ing.name,
     supplierId: ing.supplierId || undefined,
     packQuantity: originalQuantity,
@@ -117,15 +90,7 @@ export default async function EditIngredientPage({ params }: Props) {
     notes: ing.notes || "",
     allergens: ing.allergens || [],
     customConversions: ing.customConversions || undefined,
-    batchPricing: batchPricingValue, // Always include, never null/undefined/empty
   };
-  
-  // Debug: Log what we're passing to the form
-  console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
-  console.log('EditIngredientPage: batchPricing in initialData:', initialFormData.batchPricing, 'type:', typeof initialFormData.batchPricing, 'hasProperty:', 'batchPricing' in initialFormData, 'isArray:', Array.isArray(initialFormData.batchPricing));
-  console.log('EditIngredientPage: initialFormData keys:', Object.keys(initialFormData));
-  console.log('EditIngredientPage: batchPricing length:', Array.isArray(initialFormData.batchPricing) ? initialFormData.batchPricing.length : 'N/A');
-  console.log('EditIngredientPage: batchPricing[0]:', Array.isArray(initialFormData.batchPricing) && initialFormData.batchPricing.length > 0 ? initialFormData.batchPricing[0] : 'N/A');
 
   return (
     <div className="app-container">
@@ -144,7 +109,7 @@ export default async function EditIngredientPage({ params }: Props) {
           companyId={companyId || undefined}
           suppliers={suppliers}
           initialData={initialFormData}
-          batchPricingJson={JSON.stringify(batchPricingValue)}
+          batchPricingJson={batchPricingJson}
           onSubmit={handleSubmit}
         />
       </div>

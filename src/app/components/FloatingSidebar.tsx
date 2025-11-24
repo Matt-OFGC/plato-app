@@ -64,15 +64,39 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
     })
       .then((res) => {
         if (!res.ok) {
-          throw new Error(`API returned ${res.status}`);
+          // Handle 404 and other errors gracefully without throwing
+          if (res.status === 404) {
+            // Route not found - use default unlocked status
+            setUnlockStatus({
+              recipes: { unlocked: true, isTrial: true },
+              production: { unlocked: false, isTrial: false },
+              make: { unlocked: false, isTrial: false },
+              teams: { unlocked: false, isTrial: false },
+              safety: { unlocked: false, isTrial: false },
+            });
+            return;
+          }
+          // For other errors, try to parse JSON for error details
+          return res.json().catch(() => {
+            // If JSON parsing fails, use default status
+            setUnlockStatus({
+              recipes: { unlocked: true, isTrial: true },
+              production: { unlocked: false, isTrial: false },
+              make: { unlocked: false, isTrial: false },
+              teams: { unlocked: false, isTrial: false },
+              safety: { unlocked: false, isTrial: false },
+            });
+          });
         }
         return res.json();
       })
       .then((data) => {
+        if (!data) return; // Already handled in error case
+        
         if (data.unlockStatus) {
           setUnlockStatus(data.unlockStatus);
         } else if (data.error) {
-          console.error("API error:", data.error, data.details);
+          // API returned an error response but with valid JSON
           setUnlockStatus({
             recipes: { unlocked: true, isTrial: true },
             production: { unlocked: false, isTrial: false },
@@ -83,7 +107,10 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
         }
       })
       .catch((err) => {
-        console.error("Failed to fetch unlock status:", err);
+        // Only log non-404 errors to avoid console noise
+        if (!err.message?.includes('404')) {
+          console.error("Failed to fetch unlock status:", err);
+        }
         setUnlockStatus({
           recipes: { unlocked: true, isTrial: true },
           production: { unlocked: false, isTrial: false },

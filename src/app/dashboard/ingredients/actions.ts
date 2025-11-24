@@ -178,14 +178,7 @@ export async function createIngredient(formData: FormData) {
 }
 
 export async function updateIngredient(id: number, formData: FormData) {
-  // Log raw form data before validation
   const rawData = Object.fromEntries(formData);
-  console.log('updateIngredient - Raw form data batchPricing:', rawData.batchPricing);
-  console.log('updateIngredient - Raw form data:', {
-    batchPricing: rawData.batchPricing,
-    batchPricingType: typeof rawData.batchPricing,
-    batchPricingLength: rawData.batchPricing ? String(rawData.batchPricing).length : 'N/A'
-  });
   
   const parsed = ingredientSchema.safeParse(rawData);
   if (!parsed.success) {
@@ -193,7 +186,6 @@ export async function updateIngredient(id: number, formData: FormData) {
     redirect("/dashboard/ingredients?error=validation");
   }
   const data = parsed.data;
-  console.log('updateIngredient - Parsed data batchPricing:', data.batchPricing);
   
   try {
     // Verify the ingredient belongs to the user's company
@@ -225,37 +217,19 @@ export async function updateIngredient(id: number, formData: FormData) {
       data.densityGPerMl ?? undefined
     );
     
-    // Debug logging
-    console.log('updateIngredient - Saving:', {
-      packQuantity: data.packQuantity,
-      packUnit: data.packUnit,
-      baseQuantity,
-      baseUnit,
-      originalUnit: data.packUnit,
-      batchPricing: data.batchPricing
-    });
-    
     // Convert batch pricing quantities to base units if provided
     // For bulk purchases, preserve purchaseUnit and unitSize
     let batchPricingInBase: any = null;
-    console.log('updateIngredient - Processing batchPricing:', {
-      exists: !!data.batchPricing,
-      isArray: Array.isArray(data.batchPricing),
-      length: Array.isArray(data.batchPricing) ? data.batchPricing.length : 'N/A',
-      value: JSON.stringify(data.batchPricing)
-    });
     if (data.batchPricing && Array.isArray(data.batchPricing) && data.batchPricing.length > 0) {
       batchPricingInBase = data.batchPricing.map(tier => {
         // If this is a bulk purchase (has purchaseUnit), preserve all fields
         if (tier.purchaseUnit) {
-          const result = {
+          return {
             packQuantity: tier.packQuantity, // Already in correct units (number of packs)
             packPrice: tier.packPrice,
             purchaseUnit: tier.purchaseUnit,
             unitSize: tier.unitSize, // Size per individual unit
           };
-          console.log('updateIngredient - Mapping bulk tier:', JSON.stringify(result, null, 2));
-          return result;
         }
         // Otherwise, convert to base units for regular batch pricing
         const { amount: tierBaseQty } = toBase(
@@ -268,9 +242,6 @@ export async function updateIngredient(id: number, formData: FormData) {
           packPrice: tier.packPrice,
         };
       });
-      console.log('updateIngredient - Saving batchPricing:', JSON.stringify(batchPricingInBase, null, 2));
-    } else {
-      console.log('updateIngredient - No batchPricing to save (null/empty):', data.batchPricing);
     }
     
     // Check if price changed
@@ -297,14 +268,11 @@ export async function updateIngredient(id: number, formData: FormData) {
       ...((priceChanged || packQuantityChanged) && { lastPriceUpdate: new Date() }),
     };
     
-    console.log('updateIngredient - Prisma update data batchPricing:', JSON.stringify(updateData.batchPricing, null, 2));
-    
-    const updated = await prisma.ingredient.update({
+    await prisma.ingredient.update({
       where: { id },
       data: updateData,
     });
     
-    console.log('updateIngredient - After save, batchPricing in DB:', JSON.stringify(updated.batchPricing, null, 2));
     revalidatePath("/dashboard/ingredients");
     return { success: true };
   } catch (error) {

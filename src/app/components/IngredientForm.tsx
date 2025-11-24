@@ -92,23 +92,21 @@ export function IngredientForm({
   showOtherInput: externalShowOtherInput,
   onShowOtherInputChange
 }: IngredientFormProps) {
-  // Parse batchPricing from JSON string if provided (workaround for Next.js RSC serialization)
-  const parsedBatchPricingFromJson = batchPricingJson ? (() => {
+  // Parse batchPricing from JSON string - this is the ONLY source of truth
+  // Next.js RSC serialization strips batchPricing from initialData, so we rely exclusively on batchPricingJson
+  const effectiveBatchPricing = batchPricingJson ? (() => {
     try {
       const parsed = JSON.parse(batchPricingJson);
-      // Filter out sentinel objects
-      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?._empty) {
-        return null;
+      // Return null if empty array, otherwise return parsed array
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
       }
-      return parsed;
+      return null;
     } catch (e) {
       console.error('IngredientForm: Error parsing batchPricingJson:', e);
       return null;
     }
   })() : null;
-  
-  // Use batchPricingJson if available, otherwise fall back to initialData.batchPricing
-  const effectiveBatchPricing = parsedBatchPricingFromJson !== null ? parsedBatchPricingFromJson : initialData?.batchPricing;
   const [allergens, setAllergens] = useState<string[]>(externalAllergens || initialData?.allergens || []);
   const [selectedNutTypes, setSelectedNutTypes] = useState<string[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(initialData?.supplierId || null);
@@ -122,14 +120,13 @@ export function IngredientForm({
   const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
   
   // Check batchPricing to determine if this is a bulk purchase
-  // Use effectiveBatchPricing (from batchPricingJson or initialData.batchPricing)
+  // Use effectiveBatchPricing (from batchPricingJson only)
   const hasBulkPurchaseInfo = effectiveBatchPricing && 
     Array.isArray(effectiveBatchPricing) && 
     effectiveBatchPricing.length > 0 &&
     effectiveBatchPricing[0] &&
     typeof effectiveBatchPricing[0] === 'object' &&
     effectiveBatchPricing[0] !== null &&
-    !(effectiveBatchPricing[0] as any)._empty && // Ignore sentinel
     (effectiveBatchPricing[0] as any).purchaseUnit &&
     packagingUnits.includes(String((effectiveBatchPricing[0] as any).purchaseUnit));
   
@@ -187,6 +184,7 @@ export function IngredientForm({
   const [hasUserModifiedPackSize, setHasUserModifiedPackSize] = useState<boolean>(false);
   const [hasUserModifiedPurchaseSize, setHasUserModifiedPurchaseSize] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [hasInitializedFromBatchPricing, setHasInitializedFromBatchPricing] = useState<boolean>(false);
   
   // Servings state - optional field for how many servings this ingredient purchase yields
   const [servings, setServings] = useState<number | null>(() => {
@@ -317,25 +315,22 @@ export function IngredientForm({
     }
   }, [servings, purchaseSize, purchaseUnit, packSize, packUnit, servingsUnit, initialData?.densityGPerMl]);
   
-  // Sync bulk mode state when initialData changes (for edit mode)
+  // Sync bulk mode state when batchPricingJson changes (for edit mode)
+  // Only run once when batchPricingJson is first loaded, not on every change
   useEffect(() => {
+    // Skip if we've already initialized from batchPricing to prevent resetting user changes
+    if (hasInitializedFromBatchPricing) {
+      return;
+    }
+    
     setIsInitializing(true);
     const packagingUnits = ['case', 'box', 'pack', 'carton', 'bundle'];
     
-    // Use effectiveBatchPricing (from batchPricingJson or initialData.batchPricing)
+    // Use effectiveBatchPricing (from batchPricingJson only)
     const batchPricing = effectiveBatchPricing;
-    // Handle sentinel marker (_empty: true) which indicates empty data
-    // This is used to ensure Next.js serializes the property even when empty
-    const isEmptySentinel = Array.isArray(batchPricing) && 
-      batchPricing.length === 1 && 
-      batchPricing[0] && 
-      typeof batchPricing[0] === 'object' &&
-      batchPricing[0] !== null &&
-      (batchPricing[0] as any)._empty === true;
     
-    // Check for actual bulk purchase info (not sentinel)
-    const hasBulkInfo = !isEmptySentinel &&
-      batchPricing && 
+    // Check for actual bulk purchase info
+    const hasBulkInfo = batchPricing && 
       Array.isArray(batchPricing) && 
       batchPricing.length > 0 &&
       batchPricing[0] &&
@@ -345,30 +340,10 @@ export function IngredientForm({
       batchPricing[0].purchaseUnit &&
       packagingUnits.includes(String(batchPricing[0].purchaseUnit));
     
-    console.log('IngredientForm: Syncing bulk mode state', { 
-      hasBulkInfo, 
-      batchPricing: effectiveBatchPricing,
-      batchPricingType: typeof effectiveBatchPricing,
-      batchPricingIsArray: Array.isArray(effectiveBatchPricing),
-      batchPricingLength: Array.isArray(effectiveBatchPricing) ? effectiveBatchPricing.length : 'N/A',
-      firstItem: Array.isArray(effectiveBatchPricing) && effectiveBatchPricing.length > 0 ? effectiveBatchPricing[0] : 'N/A',
-      purchaseUnit: Array.isArray(effectiveBatchPricing) && effectiveBatchPricing.length > 0 && effectiveBatchPricing[0] ? (effectiveBatchPricing[0] as any).purchaseUnit : 'N/A',
-      packUnit: initialData?.packUnit,
-      batchPricingJson: batchPricingJson ? 'provided' : 'not provided'
-    });
-    
     if (hasBulkInfo) {
       // Set bulk mode if batchPricing indicates bulk purchase
-      console.log('IngredientForm: Setting bulk mode to TRUE from batchPricing');
       setIsBulkPurchaseMode(true);
       const bulkData = batchPricing[0] as any;
-      
-      console.log('IngredientForm: Loading bulk purchase', {
-        purchaseUnit: bulkData.purchaseUnit,
-        packQuantity: bulkData.packQuantity,
-        unitSize: bulkData.unitSize,
-        totalPackQuantity: initialData?.packQuantity
-      });
       
       // Sync purchase unit from batchPricing
       if (bulkData.purchaseUnit) {
@@ -386,35 +361,31 @@ export function IngredientForm({
       // Calculate purchase size from total quantity
       if (initialData?.packQuantity && bulkData.packQuantity && bulkData.unitSize) {
         const calculatedPurchaseSize = Math.round(initialData.packQuantity / (bulkData.packQuantity * bulkData.unitSize)) || 1;
-        console.log('IngredientForm: Calculated purchase size', {
-          total: initialData.packQuantity,
-          packSize: bulkData.packQuantity,
-          unitSize: bulkData.unitSize,
-          calculated: calculatedPurchaseSize
-        });
         setPurchaseSize(calculatedPurchaseSize);
       }
+      
+      setHasInitializedFromBatchPricing(true);
     } else {
       // Only check packUnit if we DON'T have bulk info from batchPricing
       // This prevents overriding bulk mode when batchPricing exists but packUnit is not a packaging unit
       if (initialData?.packUnit) {
         if (packagingUnits.includes(initialData.packUnit)) {
-          console.log('IngredientForm: Setting bulk mode to TRUE from packUnit (legacy)');
           setIsBulkPurchaseMode(true);
           setPurchaseUnit(initialData.packUnit);
         } else {
-          console.log('IngredientForm: Setting bulk mode to FALSE - no bulk info found');
           setIsBulkPurchaseMode(false);
         }
       } else {
-        console.log('IngredientForm: Setting bulk mode to FALSE - no packUnit');
         setIsBulkPurchaseMode(false);
       }
+      
+      // Mark as initialized even if no bulk info (so we don't keep checking)
+      setHasInitializedFromBatchPricing(true);
     }
     
     // Mark initialization as complete after a brief delay to allow state to settle
     setTimeout(() => setIsInitializing(false), 100);
-  }, [effectiveBatchPricing, initialData?.packUnit, initialData?.packQuantity, batchPricingJson]);
+  }, [effectiveBatchPricing, initialData?.packUnit, initialData?.packQuantity, batchPricingJson, hasInitializedFromBatchPricing]);
   
   // Sync packSize and purchaseSize with initialData when it changes (for edit mode)
   // BUT only if user hasn't manually modified the values
@@ -426,7 +397,6 @@ export function IngredientForm({
     const hasBulkInfo = effectiveBatchPricing && 
       Array.isArray(effectiveBatchPricing) && 
       effectiveBatchPricing.length > 0 &&
-      effectiveBatchPricing[0]?._empty !== true && // Ignore sentinel
       effectiveBatchPricing[0]?.purchaseUnit &&
       packagingUnits.includes(String(effectiveBatchPricing[0].purchaseUnit));
     
@@ -445,7 +415,6 @@ export function IngredientForm({
     
     // Only sync packSize if user hasn't manually changed it and not in bulk mode
     if (!hasUserModifiedPackSize && !isBulkPurchaseMode && initialData?.packQuantity !== undefined && initialData.packQuantity > 0) {
-      console.log('IngredientForm: Setting packSize from initialData:', initialData.packQuantity);
       setPackSize(initialData.packQuantity);
     }
     if (initialData?.packPrice !== undefined) {
@@ -457,36 +426,14 @@ export function IngredientForm({
     }
   }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, effectiveBatchPricing, hasUserModifiedPackSize, hasUserModifiedPurchaseSize, isBulkPurchaseMode]);
   
-  // Reset the "user modified" flags when initialData changes significantly (new ingredient or different ingredient)
+  // Reset the "user modified" flags and initialization state when initialData changes significantly (new ingredient or different ingredient)
   useEffect(() => {
     setHasUserModifiedPackSize(false);
     setHasUserModifiedPurchaseSize(false);
+    setHasInitializedFromBatchPricing(false); // Reset so we can initialize again for new ingredient
+    setIsInitializing(true);
   }, [initialData?.name]); // Reset when ingredient name changes (new/different ingredient)
   
-  // Debug: Log initialData when it changes
-  useEffect(() => {
-    console.log('IngredientForm initialData changed:', initialData);
-    console.log('IngredientForm batchPricing from props:', effectiveBatchPricing, 'type:', typeof effectiveBatchPricing, 'isArray:', Array.isArray(effectiveBatchPricing));
-    console.log('IngredientForm has batchPricing property:', effectiveBatchPricing !== null && effectiveBatchPricing !== undefined);
-    console.log('IngredientForm batchPricingJson:', batchPricingJson ? 'provided' : 'not provided');
-    console.log('IngredientForm initialData keys:', initialData ? Object.keys(initialData) : 'no initialData');
-    console.log('IngredientForm initialData JSON:', JSON.stringify(initialData, null, 2));
-    
-    // Check if batchPricing exists in the serialized data
-    if (initialData) {
-      const serialized = JSON.parse(JSON.stringify(initialData));
-      console.log('IngredientForm serialized batchPricing:', serialized.batchPricing, 'hasProperty:', 'batchPricing' in serialized);
-    }
-  }, [initialData]);
-  
-  // Debug: Track when bulk mode changes
-  useEffect(() => {
-    console.log('IngredientForm: isBulkPurchaseMode changed to:', isBulkPurchaseMode, {
-      purchaseUnit,
-      batchPricing: initialData?.batchPricing,
-      stackTrace: new Error().stack
-    });
-  }, [isBulkPurchaseMode, purchaseUnit]);
   
   // Sync with external state if provided
   useEffect(() => {
@@ -794,24 +741,15 @@ export function IngredientForm({
                   type="button"
                   onClick={() => {
                     const newBulkMode = !isBulkPurchaseMode;
-                    console.log('IngredientForm: Toggle clicked', { 
-                      currentMode: isBulkPurchaseMode, 
-                      newMode: newBulkMode,
-                      purchaseUnit,
-                      packUnit,
-                      batchPricing: initialData?.batchPricing
-                    });
                     setIsBulkPurchaseMode(newBulkMode);
                     if (newBulkMode) {
                       // Switching to bulk mode - set purchase unit to case if empty
                       if (!purchaseUnit || !packagingUnits.includes(purchaseUnit)) {
-                        console.log('IngredientForm: Setting purchaseUnit to "case" for bulk mode');
                         setPurchaseUnit('case');
                       }
                     } else {
                       // Switching to single mode - clear packaging unit, use pack unit
                       if (packagingUnits.includes(purchaseUnit)) {
-                        console.log('IngredientForm: Setting purchaseUnit to packUnit for single mode', packUnit);
                         setPurchaseUnit(packUnit || 'kg');
                       }
                     }
@@ -905,30 +843,16 @@ export function IngredientForm({
                       name="purchaseUnit"
                       value={purchaseUnit}
                       onChange={(e) => {
-                        // Don't auto-switch modes during initialization
-                        if (isInitializing) {
-                          console.log('IngredientForm: Skipping purchaseUnit onChange during initialization');
-                          return;
-                        }
-                        
                         const newUnit = e.target.value;
-                        console.log('IngredientForm: purchaseUnit changed', { 
-                          oldUnit: purchaseUnit, 
-                          newUnit, 
-                          currentBulkMode: isBulkPurchaseMode 
-                        });
-                        
                         setPurchaseUnit(newUnit);
                         
                         // If switching to packaging unit, ensure bulk mode is on
                         if (packagingUnits.includes(newUnit)) {
-                          console.log('IngredientForm: Switching to bulk mode (packaging unit selected)');
                           setIsBulkPurchaseMode(true);
                         }
                         // Only switch away from bulk mode if user explicitly selects a non-packaging unit
                         // AND we're not loading from batchPricing (which would have already set bulk mode)
-                        else if (packagingUnits.includes(purchaseUnit) && !effectiveBatchPricing) {
-                          console.log('IngredientForm: Switching to single mode (non-packaging unit selected)');
+                        else if (packagingUnits.includes(purchaseUnit)) {
                           setIsBulkPurchaseMode(false);
                         }
                       }}

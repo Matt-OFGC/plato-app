@@ -3,6 +3,10 @@ import { getSession } from "@/lib/auth-simple";
 import { getUnlockStatus, checkRecipesLimits, UnlockStatus } from "@/lib/features";
 import { prisma } from "@/lib/prisma";
 
+// Ensure this route is dynamic
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
