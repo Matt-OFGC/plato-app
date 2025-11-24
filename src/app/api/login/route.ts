@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         isAdmin: user.isAdmin,
       }, rememberMe, { headers: request.headers });
 
-      logger.info('Session created for user:', user.id, user.email);
+      logger.info('Session created for user', { userId: user.id, email: user.email }, 'Auth/Login');
     } catch (sessionError) {
       logger.error('Failed to create session', sessionError, 'Auth/Login');
       throw sessionError; // Re-throw to be caught by outer catch
