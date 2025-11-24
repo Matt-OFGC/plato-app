@@ -237,7 +237,13 @@ export async function updateIngredient(id: number, formData: FormData) {
     
     // Convert batch pricing quantities to base units if provided
     // For bulk purchases, preserve purchaseUnit and unitSize
-    let batchPricingInBase = null;
+    let batchPricingInBase: any = null;
+    console.log('updateIngredient - Processing batchPricing:', {
+      exists: !!data.batchPricing,
+      isArray: Array.isArray(data.batchPricing),
+      length: Array.isArray(data.batchPricing) ? data.batchPricing.length : 'N/A',
+      value: JSON.stringify(data.batchPricing)
+    });
     if (data.batchPricing && Array.isArray(data.batchPricing) && data.batchPricing.length > 0) {
       batchPricingInBase = data.batchPricing.map(tier => {
         // If this is a bulk purchase (has purchaseUnit), preserve all fields
