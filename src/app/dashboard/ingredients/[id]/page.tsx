@@ -88,13 +88,15 @@ export default async function EditIngredientPage({ params }: Props) {
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
   // Build initialData object - ensure batchPricing is ALWAYS included as a required property
-  // CRITICAL: Use a sentinel value instead of empty array to ensure Next.js serializes it
-  // Empty arrays might be stripped during serialization
+  // CRITICAL FIX: Next.js might strip null/undefined during serialization
+  // Use a sentinel object with a marker property to ensure it's always serialized
   const batchPricingValue = (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0) 
     ? parsedBatchPricing 
-    : null; // Use null instead of [] - Next.js should serialize null
+    : []; // Use empty array - ensure it's always an array, never null/undefined
   
-  const initialFormData = {
+  // Build object with batchPricing as a required property
+  // Use Object.assign to ensure property exists even if value is empty
+  const initialFormDataBase = {
     name: ing.name,
     supplierId: ing.supplierId || undefined,
     packQuantity: originalQuantity,
@@ -104,9 +106,12 @@ export default async function EditIngredientPage({ params }: Props) {
     notes: ing.notes || "",
     allergens: ing.allergens || [],
     customConversions: ing.customConversions || undefined,
-    // CRITICAL: Always include batchPricing - required property
-    batchPricing: batchPricingValue,
   };
+  
+  // Force include batchPricing using Object.assign to ensure it's never stripped
+  const initialFormData = Object.assign({}, initialFormDataBase, {
+    batchPricing: batchPricingValue,
+  });
   
   // Debug: Log what we're passing to the form
   console.log('EditIngredientPage: Passing initialData to IngredientForm:', JSON.stringify(initialFormData, null, 2));
@@ -114,6 +119,7 @@ export default async function EditIngredientPage({ params }: Props) {
   console.log('EditIngredientPage: initialFormData keys:', Object.keys(initialFormData));
   console.log('EditIngredientPage: initialFormData.batchPricing === null:', initialFormData.batchPricing === null);
   console.log('EditIngredientPage: initialFormData.batchPricing === undefined:', initialFormData.batchPricing === undefined);
+  console.log('EditIngredientPage: initialFormData.batchPricing value:', initialFormData.batchPricing);
 
   return (
     <div className="app-container">
