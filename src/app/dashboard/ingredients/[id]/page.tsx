@@ -52,6 +52,19 @@ export default async function EditIngredientPage({ params }: Props) {
     ? fromBase(Number(ing.packQuantity), ing.packUnit as BaseUnit, originalUnit as Unit)
     : Number(ing.packQuantity);
 
+  // Parse batchPricing for debugging
+  let parsedBatchPricing = null;
+  if (ing.batchPricing) {
+    try {
+      parsedBatchPricing = typeof ing.batchPricing === 'string' ? JSON.parse(ing.batchPricing) : ing.batchPricing;
+      console.log('EditIngredientPage: Loaded batchPricing:', JSON.stringify(parsedBatchPricing, null, 2));
+    } catch (e) {
+      console.error('EditIngredientPage: Error parsing batchPricing:', e);
+    }
+  } else {
+    console.log('EditIngredientPage: No batchPricing found in database');
+  }
+
   // Create a bound function for the IngredientForm
   const handleSubmit = handleIngredientUpdate.bind(null, id);
 
@@ -81,7 +94,7 @@ export default async function EditIngredientPage({ params }: Props) {
             notes: ing.notes || "",
             allergens: ing.allergens || [],
             customConversions: ing.customConversions || undefined,
-            batchPricing: ing.batchPricing ? (typeof ing.batchPricing === 'string' ? JSON.parse(ing.batchPricing) : ing.batchPricing) : null,
+            batchPricing: parsedBatchPricing,
           }}
           onSubmit={handleSubmit}
         />

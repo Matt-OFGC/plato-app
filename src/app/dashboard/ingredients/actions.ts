@@ -111,9 +111,20 @@ export async function createIngredient(formData: FormData) {
     );
     
     // Convert batch pricing quantities to base units if provided
+    // For bulk purchases, preserve purchaseUnit and unitSize
     let batchPricingInBase = null;
     if (data.batchPricing && Array.isArray(data.batchPricing)) {
       batchPricingInBase = data.batchPricing.map(tier => {
+        // If this is a bulk purchase (has purchaseUnit), preserve all fields
+        if (tier.purchaseUnit) {
+          return {
+            packQuantity: tier.packQuantity, // Already in correct units (number of packs)
+            packPrice: tier.packPrice,
+            purchaseUnit: tier.purchaseUnit,
+            unitSize: tier.unitSize, // Size per individual unit
+          };
+        }
+        // Otherwise, convert to base units for regular batch pricing
         const { amount: tierBaseQty } = toBase(
           tier.packQuantity,
           data.packUnit as Unit,
@@ -210,13 +221,25 @@ export async function updateIngredient(id: number, formData: FormData) {
       packUnit: data.packUnit,
       baseQuantity,
       baseUnit,
-      originalUnit: data.packUnit
+      originalUnit: data.packUnit,
+      batchPricing: data.batchPricing
     });
     
     // Convert batch pricing quantities to base units if provided
+    // For bulk purchases, preserve purchaseUnit and unitSize
     let batchPricingInBase = null;
     if (data.batchPricing && Array.isArray(data.batchPricing)) {
       batchPricingInBase = data.batchPricing.map(tier => {
+        // If this is a bulk purchase (has purchaseUnit), preserve all fields
+        if (tier.purchaseUnit) {
+          return {
+            packQuantity: tier.packQuantity, // Already in correct units (number of packs)
+            packPrice: tier.packPrice,
+            purchaseUnit: tier.purchaseUnit,
+            unitSize: tier.unitSize, // Size per individual unit
+          };
+        }
+        // Otherwise, convert to base units for regular batch pricing
         const { amount: tierBaseQty } = toBase(
           tier.packQuantity,
           data.packUnit as Unit,
@@ -227,6 +250,7 @@ export async function updateIngredient(id: number, formData: FormData) {
           packPrice: tier.packPrice,
         };
       });
+      console.log('updateIngredient - Saving batchPricing:', JSON.stringify(batchPricingInBase, null, 2));
     }
     
     // Check if price changed
