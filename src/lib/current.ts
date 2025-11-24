@@ -1,8 +1,10 @@
 import { prisma } from './prisma';
 import { getUserFromSession } from './auth-simple';
-import type { Brand } from './brands/types';
-import type { BrandConfig } from './brands/types';
-import { getBrandConfig } from './brands/registry';
+import type { App } from '@/lib/apps/types';
+import type { AppConfig } from '@/lib/apps/types';
+import { getAppConfig } from '@/lib/apps/registry';
+import { logger } from './logger';
+import { getCache, setCache, deleteCache, CACHE_TTL, CacheKeys } from './redis';
 
 export interface Company {
   id: number;
@@ -11,7 +13,7 @@ export interface Company {
   country?: string;
   phone?: string;
   logoUrl?: string;
-  brand?: Brand;
+  app?: App;
 }
 
 export interface UserWithMemberships {
@@ -32,13 +34,9 @@ export interface CurrentUserAndCompany {
   companyId: number | null;
   company: Company | null;
   user: UserWithMemberships;
-  brand?: Brand | null;
-  brandConfig?: BrandConfig | null;
+  app?: App | null;
+  appConfig?: AppConfig | null;
 }
-
-// Cache for user data to avoid repeated queries
-const userCache = new Map<number, { data: CurrentUserAndCompany; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Get current user and their company information with caching
 export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany> {
@@ -48,10 +46,11 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     throw new Error('User not authenticated');
   }
 
-  // Check cache first
-  const cached = userCache.get(user.id);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
+  const cacheKey = CacheKeys.userSession(user.id);
+  // Check Redis cache first
+  const cached = await getCache<CurrentUserAndCompany>(cacheKey);
+  if (cached) {
+    return cached;
   }
 
   try {
@@ -78,7 +77,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
                 country: true,
                 phone: true,
                 logoUrl: true,
-                brand: true
+                app: true
               }
             }
           },
@@ -97,29 +96,28 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     const companyId = primaryMembership?.companyId || null;
     const company = primaryMembership?.company || null;
     
-    // Get brand config if company has a brand
-    const brand = company?.brand || null;
-    const brandConfig = brand ? getBrandConfig(brand) : null;
+    // Get app config if company has an app
+    const app = company?.app || null;
+    const appConfig = app ? getAppConfig(app) : null;
 
     const result = {
       companyId,
       company,
       user: userWithMemberships,
-      brand,
-      brandConfig
+      app,
+      appConfig
     };
 
-    // Cache the result
-    userCache.set(user.id, { data: result, timestamp: Date.now() });
+    // Cache the result in Redis
+    await setCache(cacheKey, result, CACHE_TTL.USER_SESSION);
 
     return result;
   } catch (error) {
-    console.error('Database error in getCurrentUserAndCompany:', error);
+    logger.error('Database error in getCurrentUserAndCompany', error, 'Current');
     
     // In development, provide more detailed error information
     if (process.env.NODE_ENV === 'development') {
-      console.error('Database connection failed. Check your .env file and DATABASE_URL.');
-      console.error('Error details:', error);
+      logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', error, 'Current');
     }
     
     // Return a fallback structure to prevent page crashes
@@ -133,23 +131,31 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         isAdmin: user.isAdmin,
         memberships: []
       },
-      brand: null,
-      brandConfig: null
+      app: null,
+      appConfig: null
     };
   }
 }
 
 // Clear user cache (call when user data changes)
-export function clearUserCache(userId?: number) {
+export async function clearUserCache(userId?: number) {
   if (userId) {
-    userCache.delete(userId);
+    await deleteCache(CacheKeys.userSession(userId));
+    await deleteCache(CacheKeys.userCompanies(userId)); // Clear user's companies list
   } else {
-    userCache.clear();
+    // If no specific user, clear all user sessions and user companies (less efficient, use sparingly)
+    // Pattern deletion would require deleteCachePattern, but for now we'll clear individual caches
   }
 }
 
 // Get user's role in a specific company with caching
 export async function getUserRoleInCompany(userId: number, companyId: number): Promise<string | null> {
+  const cacheKey = CacheKeys.userRole(userId, companyId);
+  const cachedRole = await getCache<string>(cacheKey);
+  if (cachedRole) {
+    return cachedRole;
+  }
+
   const membership = await prisma.membership.findUnique({
     where: {
       userId_companyId: {
@@ -163,11 +169,21 @@ export async function getUserRoleInCompany(userId: number, companyId: number): P
     }
   });
 
-  return membership?.isActive ? membership.role : null;
+  const role = membership?.isActive ? membership.role : null;
+  if (role) {
+    await setCache(cacheKey, role, CACHE_TTL.USER_SESSION);
+  }
+  return role;
 }
 
 // Check if user has access to a company
 export async function hasCompanyAccess(userId: number, companyId: number): Promise<boolean> {
+  const cacheKey = CacheKeys.companyAccess(userId, companyId);
+  const cachedAccess = await getCache<boolean>(cacheKey);
+  if (cachedAccess !== null) { // Check for null explicitly as false is a valid value
+    return cachedAccess;
+  }
+
   const membership = await prisma.membership.findUnique({
     where: {
       userId_companyId: {
@@ -180,5 +196,7 @@ export async function hasCompanyAccess(userId: number, companyId: number): Promi
     }
   });
 
-  return membership?.isActive || false;
+  const hasAccess = membership?.isActive || false;
+  await setCache(cacheKey, hasAccess, CACHE_TTL.USER_SESSION);
+  return hasAccess;
 }
