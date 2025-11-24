@@ -14,15 +14,20 @@ BEGIN
 END $$;
 
 -- AlterEnum: Change MemberRole enum
--- First, create new enum type
+-- First, drop default constraints if they exist
+ALTER TABLE "Membership" ALTER COLUMN "role" DROP DEFAULT;
+ALTER TABLE IF EXISTS "TeamInvitation" ALTER COLUMN "role" DROP DEFAULT;
+
+-- Create new enum type
 DO $$ BEGIN
     CREATE TYPE "MemberRole_new" AS ENUM ('ADMIN', 'MANAGER', 'EMPLOYEE');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- Temporarily change column to text to allow updates
+-- Temporarily change columns to text to allow updates
 ALTER TABLE "Membership" ALTER COLUMN "role" TYPE TEXT USING "role"::TEXT;
+ALTER TABLE IF EXISTS "TeamInvitation" ALTER COLUMN "role" TYPE TEXT USING "role"::TEXT;
 
 -- Update existing records to map old roles to new ones
 UPDATE "Membership" SET "role" = 'ADMIN' WHERE "role" = 'OWNER';
@@ -30,11 +35,18 @@ UPDATE "Membership" SET "role" = 'ADMIN' WHERE "role" = 'ADMIN';
 UPDATE "Membership" SET "role" = 'MANAGER' WHERE "role" = 'EDITOR';
 UPDATE "Membership" SET "role" = 'EMPLOYEE' WHERE "role" = 'VIEWER';
 
--- Alter the column to use the new enum
-ALTER TABLE "Membership" ALTER COLUMN "role" TYPE "MemberRole_new" USING ("role"::"MemberRole_new");
+-- Update TeamInvitation if it exists
+UPDATE "TeamInvitation" SET "role" = 'ADMIN' WHERE "role" = 'OWNER';
+UPDATE "TeamInvitation" SET "role" = 'ADMIN' WHERE "role" = 'ADMIN';
+UPDATE "TeamInvitation" SET "role" = 'MANAGER' WHERE "role" = 'EDITOR';
+UPDATE "TeamInvitation" SET "role" = 'EMPLOYEE' WHERE "role" = 'VIEWER';
 
--- Drop old enum and rename new one
-DROP TYPE IF EXISTS "MemberRole";
+-- Alter the columns to use the new enum
+ALTER TABLE "Membership" ALTER COLUMN "role" TYPE "MemberRole_new" USING ("role"::"MemberRole_new");
+ALTER TABLE IF EXISTS "TeamInvitation" ALTER COLUMN "role" TYPE "MemberRole_new" USING ("role"::"MemberRole_new");
+
+-- Drop old enum and rename new one (CASCADE to handle any other dependencies)
+DROP TYPE IF EXISTS "MemberRole" CASCADE;
 ALTER TYPE "MemberRole_new" RENAME TO "MemberRole";
 
 -- Update User subscriptionTier defaults (for new records only, existing records unchanged)
