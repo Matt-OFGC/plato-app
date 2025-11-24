@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return createOptimizedResponse({ apps: appsWithAccess }, {
       cacheType: 'user',
-      compression: true,
+      compression: false, // Disable compression to avoid ERR_CONTENT_DECODING_FAILED
     });
   } catch (error) {
     logger.error("User apps API error", error, "User/Apps");

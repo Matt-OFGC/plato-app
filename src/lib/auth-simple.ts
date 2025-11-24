@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { prisma } from './prisma';
 import { SignJWT, jwtVerify } from 'jose';
 import { randomBytes } from 'crypto';
+import { logger } from './logger';
 
 export interface SessionUser {
   id: number;
@@ -175,7 +176,7 @@ export async function getSession(): Promise<Session | null> {
 
     return null;
   } catch (error) {
-    console.error('Session error:', error);
+    logger.error('Session error', error, 'Auth/Session');
     return null;
   }
 }
@@ -226,15 +227,22 @@ async function refreshSession(refreshToken: string): Promise<Session | null> {
       },
     });
 
-    // Set new access token cookie
-    const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, newAccessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: ACCESS_TOKEN_EXPIRY,
-      path: '/',
-    });
+    // Try to set new access token cookie (only works in Route Handlers/Server Actions)
+    // Silently fail if we're in a server component context
+    try {
+      const cookieStore = await cookies();
+      cookieStore.set(SESSION_COOKIE_NAME, newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: ACCESS_TOKEN_EXPIRY,
+        path: '/',
+      });
+    } catch (cookieError) {
+      // Cookies can only be modified in Route Handlers or Server Actions
+      // This is expected when called from server components - the session is still refreshed in DB
+      // The cookie will be set on the next request that goes through a Route Handler
+    }
 
     return {
       id: user.id,
@@ -243,7 +251,10 @@ async function refreshSession(refreshToken: string): Promise<Session | null> {
       isAdmin: user.isAdmin,
     };
   } catch (error) {
-    console.error('Refresh session error:', error);
+    // Only log if it's not a cookie modification error (expected in server components)
+    if (!(error instanceof Error && error.message.includes('Cookies can only be modified'))) {
+      logger.error('Refresh session error', error, 'Auth/Session');
+    }
     return null;
   }
 }
