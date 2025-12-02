@@ -192,3 +192,6 @@ ALTER TABLE "MentorInsight" ADD CONSTRAINT "MentorInsight_companyId_fkey" FOREIG
 ALTER TABLE "MentorReminder" ADD CONSTRAINT "MentorReminder_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "MentorReminder" ADD CONSTRAINT "MentorReminder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+
+
+

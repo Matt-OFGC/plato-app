@@ -50,3 +50,6 @@ node -e "console.log('STRIPE_MENTOR_MONTHLY_PRICE_ID:', process.env.STRIPE_MENTO
 - **For Vercel**: Add variables in Vercel dashboard → Settings → Environment Variables
 - **For production**: Ensure all variables are set in your hosting platform
 
+
+
+

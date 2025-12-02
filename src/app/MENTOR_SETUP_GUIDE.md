@@ -191,3 +191,6 @@ If you encounter issues:
 3. Check database connection and table existence
 4. Verify Stripe webhook is receiving events
 
+
+
+
