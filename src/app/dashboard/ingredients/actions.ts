@@ -8,7 +8,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
 import { getAppAwareRouteForServer } from "@/lib/server-app-context";
-import { invalidateCompanyCache } from "@/lib/redis";
+import { invalidateIngredientsCache, invalidateRecipesCache } from "@/lib/redis";
 // Temporarily disabled to fix build error
 // import { isRecipesTrial } from "@/lib/features";
 
@@ -181,7 +181,9 @@ export async function createIngredient(formData: FormData) {
         
         // Invalidate cache
         if (companyId) {
-          await invalidateCompanyCache(companyId);
+          await invalidateIngredientsCache(companyId);
+          // Also invalidate recipes cache since ingredient prices affect recipe costs
+          await invalidateRecipesCache(companyId);
         }
         
         return { success: true };

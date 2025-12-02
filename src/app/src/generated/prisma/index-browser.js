@@ -404,7 +404,9 @@ exports.Prisma.IngredientScalarFieldEnum = {
   priceHistory: 'priceHistory',
   supplierId: 'supplierId',
   customConversions: 'customConversions',
-  batchPricing: 'batchPricing'
+  batchPricing: 'batchPricing',
+  servingsPerPack: 'servingsPerPack',
+  servingUnit: 'servingUnit'
 };
 
 exports.Prisma.IngredientPriceHistoryScalarFieldEnum = {
@@ -1084,6 +1086,7 @@ exports.Prisma.SubscriptionScalarFieldEnum = {
   canceledAt: 'canceledAt',
   maxIngredients: 'maxIngredients',
   maxRecipes: 'maxRecipes',
+  aiSubscriptionType: 'aiSubscriptionType',
   metadata: 'metadata'
 };
 
@@ -1437,6 +1440,125 @@ exports.Prisma.UserAppSubscriptionScalarFieldEnum = {
   cancelAtPeriodEnd: 'cancelAtPeriodEnd'
 };
 
+exports.Prisma.MentorSubscriptionScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId',
+  companyId: 'companyId',
+  stripeSubscriptionId: 'stripeSubscriptionId',
+  stripePriceId: 'stripePriceId',
+  status: 'status',
+  subscriptionType: 'subscriptionType',
+  currentPeriodStart: 'currentPeriodStart',
+  currentPeriodEnd: 'currentPeriodEnd',
+  cancelAtPeriodEnd: 'cancelAtPeriodEnd'
+};
+
+exports.Prisma.MentorConversationScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyId: 'companyId',
+  userId: 'userId',
+  title: 'title',
+  isArchived: 'isArchived'
+};
+
+exports.Prisma.MentorMessageScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  conversationId: 'conversationId',
+  role: 'role',
+  content: 'content',
+  metadata: 'metadata',
+  tokensUsed: 'tokensUsed'
+};
+
+exports.Prisma.MentorKnowledgeIndexScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyId: 'companyId',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  embedding: 'embedding',
+  content: 'content',
+  metadata: 'metadata',
+  lastIndexedAt: 'lastIndexedAt'
+};
+
+exports.Prisma.MentorConfigScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyId: 'companyId',
+  enabled: 'enabled',
+  dataSources: 'dataSources',
+  piiMaskingEnabled: 'piiMaskingEnabled',
+  piiMaskingRules: 'piiMaskingRules',
+  conversationRetention: 'conversationRetention',
+  enableInternetSearch: 'enableInternetSearch',
+  enableProactiveAlerts: 'enableProactiveAlerts',
+  preferences: 'preferences'
+};
+
+exports.Prisma.MentorGoalScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyId: 'companyId',
+  userId: 'userId',
+  title: 'title',
+  description: 'description',
+  targetValue: 'targetValue',
+  currentValue: 'currentValue',
+  unit: 'unit',
+  targetDate: 'targetDate',
+  status: 'status',
+  category: 'category'
+};
+
+exports.Prisma.MentorProgressScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  goalId: 'goalId',
+  value: 'value',
+  notes: 'notes'
+};
+
+exports.Prisma.MentorInsightScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  companyId: 'companyId',
+  insightType: 'insightType',
+  title: 'title',
+  content: 'content',
+  priority: 'priority',
+  isRead: 'isRead',
+  isDismissed: 'isDismissed',
+  metadata: 'metadata',
+  relatedEntityType: 'relatedEntityType',
+  relatedEntityId: 'relatedEntityId'
+};
+
+exports.Prisma.MentorReminderScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  companyId: 'companyId',
+  userId: 'userId',
+  title: 'title',
+  description: 'description',
+  reminderType: 'reminderType',
+  dueDate: 'dueDate',
+  isCompleted: 'isCompleted',
+  completedAt: 'completedAt',
+  isRecurring: 'isRecurring',
+  recurringRule: 'recurringRule',
+  metadata: 'metadata'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1503,10 +1625,9 @@ exports.Unit = exports.$Enums.Unit = {
 };
 
 exports.MemberRole = exports.$Enums.MemberRole = {
-  OWNER: 'OWNER',
   ADMIN: 'ADMIN',
-  EDITOR: 'EDITOR',
-  VIEWER: 'VIEWER'
+  MANAGER: 'MANAGER',
+  EMPLOYEE: 'EMPLOYEE'
 };
 
 exports.Prisma.ModelName = {
@@ -1587,7 +1708,16 @@ exports.Prisma.ModelName = {
   WholesaleOrder: 'WholesaleOrder',
   WholesaleOrderItem: 'WholesaleOrderItem',
   WholesaleProduct: 'WholesaleProduct',
-  UserAppSubscription: 'UserAppSubscription'
+  UserAppSubscription: 'UserAppSubscription',
+  MentorSubscription: 'MentorSubscription',
+  MentorConversation: 'MentorConversation',
+  MentorMessage: 'MentorMessage',
+  MentorKnowledgeIndex: 'MentorKnowledgeIndex',
+  MentorConfig: 'MentorConfig',
+  MentorGoal: 'MentorGoal',
+  MentorProgress: 'MentorProgress',
+  MentorInsight: 'MentorInsight',
+  MentorReminder: 'MentorReminder'
 };
 
 /**

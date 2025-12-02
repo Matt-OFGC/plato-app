@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { canAddRecipe, updateRecipeCount } from "@/lib/subscription";
 import { getAppAwareRouteForServer } from "@/lib/server-app-context";
-import { invalidateCompanyCache } from "@/lib/redis";
+import { invalidateRecipesCache } from "@/lib/redis";
 // Temporarily disabled to fix build error
 // import { isRecipesTrial } from "@/lib/features";
 import { z } from "zod";
@@ -86,9 +86,9 @@ export async function createRecipe(formData: FormData) {
   revalidatePath("/dashboard/recipes");
   revalidatePath("/bake/recipes");
   
-  // Invalidate cache
+  // Invalidate only recipes cache (more targeted)
   if (companyId) {
-    await invalidateCompanyCache(companyId);
+    await invalidateRecipesCache(companyId);
   }
   
   // Redirect to app-aware route
@@ -136,9 +136,9 @@ export async function updateRecipe(id: number, formData: FormData) {
   revalidatePath("/dashboard/recipes");
   revalidatePath("/bake/recipes");
   
-  // Invalidate cache
+  // Invalidate only recipes cache (more targeted)
   if (companyId) {
-    await invalidateCompanyCache(companyId);
+    await invalidateRecipesCache(companyId);
   }
   
   // Redirect to app-aware route
@@ -172,9 +172,9 @@ export async function deleteRecipe(id: number) {
   revalidatePath("/dashboard/recipes");
   revalidatePath("/bake/recipes");
   
-  // Invalidate cache
+  // Invalidate only recipes cache (more targeted)
   if (companyId) {
-    await invalidateCompanyCache(companyId);
+    await invalidateRecipesCache(companyId);
   }
 }
 

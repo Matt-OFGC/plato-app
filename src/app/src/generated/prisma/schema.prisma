@@ -8,6 +8,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum App {
+  plato
+  plato_bake
+}
+
 model ActivityLog {
   id         Int      @id @default(autoincrement())
   createdAt  DateTime @default(now())
@@ -229,6 +234,13 @@ model Company {
   WholesaleCustomer     WholesaleCustomer[]
   WholesaleOrder        WholesaleOrder[]
   WholesaleProduct      WholesaleProduct[]
+  MentorSubscription    MentorSubscription[]
+  MentorConversation    MentorConversation[]
+  MentorKnowledgeIndex  MentorKnowledgeIndex[]
+  MentorConfig          MentorConfig?
+  MentorGoal            MentorGoal[]
+  MentorInsight         MentorInsight[]
+  MentorReminder        MentorReminder[]
 
   @@index([app])
 }
@@ -420,6 +432,8 @@ model Ingredient {
   supplierId             Int?
   customConversions      String?
   batchPricing           Json?
+  servingsPerPack        Int?
+  servingUnit            String?
   Company                Company?                 @relation(fields: [companyId], references: [id])
   Supplier               Supplier?                @relation(fields: [supplierId], references: [id])
   IngredientPriceHistory IngredientPriceHistory[]
@@ -656,7 +670,7 @@ model Membership {
   pin            String?
   pinHash        String?
   updatedAt      DateTime       @default(now())
-  role           MemberRole     @default(VIEWER)
+  role           MemberRole     @default(EMPLOYEE)
   currency       String         @default("GBP")
   employmentType String?
   endDate        DateTime?
@@ -1377,7 +1391,7 @@ model Subscription {
   stripePriceId        String?
   stripeProductId      String?
   status               String    @default("active")
-  tier                 String    @default("professional")
+  tier                 String    @default("paid") // Simplified: "free" or "paid"
   price                Decimal   @default(19.00)
   currency             String    @default("GBP")
   interval             String    @default("month")
@@ -1387,6 +1401,7 @@ model Subscription {
   canceledAt           DateTime?
   maxIngredients       Int?
   maxRecipes           Int?
+  aiSubscriptionType   String? // null, "unlimited", or "capped"
   metadata             Json?
   User                 User      @relation(fields: [userId], references: [id])
 }
@@ -1552,7 +1567,7 @@ model TeamInvitation {
   updatedAt  DateTime
   companyId  Int
   email      String
-  role       MemberRole @default(VIEWER)
+  role       MemberRole @default(EMPLOYEE)
   invitedBy  Int
   token      String     @unique
   acceptedAt DateTime?
@@ -1706,7 +1721,7 @@ model User {
   subscriptionEndsAt                             DateTime?
   subscriptionInterval                           String                  @default("month")
   subscriptionStatus                             String                  @default("free")
-  subscriptionTier                               String                  @default("starter")
+  subscriptionTier                               String                  @default("free") // Simplified: "free" or "paid"
   emailVerified                                  Boolean                 @default(false)
   verificationToken                              String?                 @unique
   verificationTokenExpiresAt                     DateTime?
@@ -1731,6 +1746,10 @@ model User {
   TemperatureRecord                              TemperatureRecord[]
   UserPreference                                 UserPreference?
   UserAppSubscription                            UserAppSubscription[]
+  MentorSubscription                             MentorSubscription[]
+  MentorConversation                             MentorConversation[]
+  MentorGoal                                     MentorGoal[]
+  MentorReminder                                 MentorReminder[]
 }
 
 model UserPreference {
@@ -1882,11 +1901,6 @@ enum BaseUnit {
   slices
 }
 
-enum App {
-  plato
-  plato_bake
-}
-
 model UserAppSubscription {
   id                   Int       @id @default(autoincrement())
   createdAt            DateTime  @default(now())
@@ -1908,10 +1922,9 @@ model UserAppSubscription {
 }
 
 enum MemberRole {
-  OWNER
-  ADMIN
-  EDITOR
-  VIEWER
+  ADMIN // Full access including AI, can manage team and billing
+  MANAGER // Can view and edit everything except AI
+  EMPLOYEE // View-only access
 }
 
 enum Unit {
@@ -1936,4 +1949,178 @@ enum Unit {
   large
   medium
   small
+}
+
+model MentorSubscription {
+  id                   Int       @id @default(autoincrement())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  userId               Int
+  companyId            Int
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  status               String    @default("active") // active, canceled, expired
+  subscriptionType     String    @default("unlimited") // "unlimited" or "capped"
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  User                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Company              Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+  @@index([userId, status])
+  @@index([status])
+}
+
+model MentorConversation {
+  id            Int             @id @default(autoincrement())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  companyId     Int
+  userId        Int
+  title         String?
+  isArchived    Boolean         @default(false)
+  Company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  MentorMessage MentorMessage[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([companyId, isArchived])
+}
+
+model MentorMessage {
+  id                 Int                @id @default(autoincrement())
+  createdAt          DateTime           @default(now())
+  conversationId     Int
+  role               String // "user" or "assistant"
+  content            String
+  metadata           Json? // Store context, data sources used, etc.
+  tokensUsed         Int? // Track token usage for cost calculation
+  MentorConversation MentorConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+}
+
+model MentorKnowledgeIndex {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  companyId     Int
+  entityType    String // "recipe", "ingredient", "sales", etc.
+  entityId      Int?
+  embedding     String? // Store vector embedding (JSON or base64)
+  content       String // The text content that was embedded
+  metadata      Json? // Additional metadata about the entity
+  lastIndexedAt DateTime @default(now())
+  Company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, entityType, entityId])
+  @@index([companyId])
+  @@index([companyId, entityType])
+  @@index([entityType, entityId])
+  @@index([lastIndexedAt])
+}
+
+model MentorConfig {
+  id                    Int      @id @default(autoincrement())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  companyId             Int      @unique
+  enabled               Boolean  @default(true)
+  dataSources           Json? // Which data sources to include (recipes, ingredients, etc.)
+  piiMaskingEnabled     Boolean  @default(true)
+  piiMaskingRules       Json? // Custom PII masking rules
+  conversationRetention Int      @default(90) // Days to keep conversations
+  enableInternetSearch  Boolean  @default(true)
+  enableProactiveAlerts Boolean  @default(true)
+  preferences           Json? // User preferences for Mentor behavior
+  Company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model MentorGoal {
+  id             Int              @id @default(autoincrement())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  companyId      Int
+  userId         Int
+  title          String
+  description    String?
+  targetValue    Decimal?
+  currentValue   Decimal?         @default(0)
+  unit           String? // e.g., "percentage", "GBP", "count"
+  targetDate     DateTime?
+  status         String           @default("active") // active, completed, paused, canceled
+  category       String? // e.g., "food_cost", "revenue", "efficiency"
+  Company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  MentorProgress MentorProgress[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([companyId, status])
+  @@index([companyId, createdAt(sort: Desc)])
+}
+
+model MentorProgress {
+  id         Int        @id @default(autoincrement())
+  createdAt  DateTime   @default(now())
+  goalId     Int
+  value      Decimal
+  notes      String?
+  MentorGoal MentorGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([goalId, createdAt(sort: Desc)])
+}
+
+model MentorInsight {
+  id                Int      @id @default(autoincrement())
+  createdAt         DateTime @default(now())
+  companyId         Int
+  insightType       String // "pricing", "efficiency", "trend", "alert", etc.
+  title             String
+  content           String
+  priority          String   @default("normal") // low, normal, high, urgent
+  isRead            Boolean  @default(false)
+  isDismissed       Boolean  @default(false)
+  metadata          Json? // Additional data, charts, etc.
+  relatedEntityType String? // "recipe", "ingredient", etc.
+  relatedEntityId   Int?
+  Company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, isRead, isDismissed])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([insightType])
+}
+
+model MentorReminder {
+  id            Int       @id @default(autoincrement())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  companyId     Int
+  userId        Int?
+  title         String
+  description   String?
+  reminderType  String // "birthday", "compliance", "custom", etc.
+  dueDate       DateTime
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  isRecurring   Boolean   @default(false)
+  recurringRule String? // e.g., "monthly", "weekly", "yearly"
+  metadata      Json? // Additional reminder data
+  Company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  User          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([companyId, dueDate])
+  @@index([companyId, isCompleted])
+  @@index([userId])
 }

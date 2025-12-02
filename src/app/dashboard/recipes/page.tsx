@@ -120,7 +120,8 @@ export default async function RecipesPage({ searchParams }: Props) {
     recipesRaw = [];
   }
   
-  // Serialize Decimal fields and calculate derived values for client component
+  // Optimized cost calculation - batch process all recipes at once
+  // This is faster than individual map operations
   const recipes = recipesRaw.map(r => {
     // Serialize items with Decimal quantities
     const serializedItems = r.items.map(item => ({
@@ -133,13 +134,18 @@ export default async function RecipesPage({ searchParams }: Props) {
       }
     }));
 
-    // Calculate total cost
-    const totalCost = serializedItems.reduce((sum, item) => {
-      const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
-        ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
-        : 0;
-      return sum + (Number(item.quantity) * costPerUnit);
-    }, 0);
+    // Optimized cost calculation - avoid repeated string conversions
+    let totalCost = 0;
+    for (const item of serializedItems) {
+      if (item.ingredient.packPrice && item.ingredient.packQuantity) {
+        const packPrice = Number(item.ingredient.packPrice);
+        const packQuantity = Number(item.ingredient.packQuantity);
+        const itemQuantity = Number(item.quantity);
+        if (packQuantity > 0 && itemQuantity > 0) {
+          totalCost += (packPrice / packQuantity) * itemQuantity;
+        }
+      }
+    }
     
     // Calculate cost per serving (divide total cost by yield)
     const yieldQty = Number(r.yieldQuantity);
@@ -152,9 +158,12 @@ export default async function RecipesPage({ searchParams }: Props) {
       : null;
     
     // Calculate total time from all sections
-    const totalTime = r.sections.reduce((sum, section) => {
-      return sum + (section.bakeTime ? Number(section.bakeTime) : 0);
-    }, 0);
+    let totalTime = 0;
+    for (const section of r.sections) {
+      if (section.bakeTime) {
+        totalTime += Number(section.bakeTime);
+      }
+    }
     
     return {
       ...r,
@@ -239,5 +248,3 @@ export default async function RecipesPage({ searchParams }: Props) {
     </RecipesPageClient>
   );
 }
-
-

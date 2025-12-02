@@ -172,6 +172,7 @@ export async function deleteCachePattern(pattern: string): Promise<number> {
 
 /**
  * Invalidate cache for a company (useful when company data changes)
+ * This is a full invalidation - use more targeted functions when possible
  */
 export async function invalidateCompanyCache(companyId: number): Promise<void> {
   const patterns = [
@@ -184,8 +185,26 @@ export async function invalidateCompanyCache(companyId: number): Promise<void> {
 
   await Promise.all(patterns.map(key => deleteCache(key)));
   
+  // Also invalidate recipe-specific cache keys (with filters)
+  await deleteCachePattern(`company:${companyId}:recipes:*`);
+  
   // Also invalidate user companies cache for all users (pattern match)
   await deleteCachePattern(`user:*:companies`);
+}
+
+/**
+ * Invalidate only recipes cache (more targeted than full company cache)
+ */
+export async function invalidateRecipesCache(companyId: number): Promise<void> {
+  await deleteCache(CacheKeys.recipes(companyId));
+  await deleteCachePattern(`company:${companyId}:recipes:*`);
+}
+
+/**
+ * Invalidate only ingredients cache (more targeted than full company cache)
+ */
+export async function invalidateIngredientsCache(companyId: number): Promise<void> {
+  await deleteCache(CacheKeys.ingredients(companyId));
 }
 
 /**
