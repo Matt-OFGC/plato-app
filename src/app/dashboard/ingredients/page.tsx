@@ -26,12 +26,39 @@ export default async function IngredientsPage({ searchParams }: Props) {
   }
 
   // Load ALL ingredients with Redis caching - filtering happens client-side for instant live search
+  // Use select instead of include to only fetch needed fields for better performance
   const ingredients = await getOrCompute(
     CacheKeys.ingredients(companyId),
     async () => {
       const ingredientsRaw = await prisma.ingredient.findMany({ 
         where: { companyId },
-        include: { supplierRef: true },
+        select: {
+          id: true,
+          name: true,
+          supplier: true,
+          supplierId: true,
+          packQuantity: true,
+          packUnit: true,
+          packPrice: true,
+          currency: true,
+          densityGPerMl: true,
+          allergens: true,
+          notes: true,
+          lastPriceUpdate: true,
+          customConversions: true,
+          batchPricing: true,
+          servingsPerPack: true,
+          servingUnit: true,
+          supplierRef: {
+            select: {
+              id: true,
+              name: true,
+              contactEmail: true,
+              phone: true,
+              minimumOrder: true,
+            }
+          }
+        },
         orderBy: { name: "asc" } 
       });
 
