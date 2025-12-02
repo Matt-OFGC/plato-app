@@ -202,18 +202,25 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   };
 
   const downloadTemplate = () => {
-    const fields = importType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
+    // Use importType if set, otherwise fall back to type prop
+    const currentType = importType || type;
+    if (!currentType) {
+      alert('Please select what you want to import first (Ingredients or Recipes)');
+      return;
+    }
+    
+    const fields = currentType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
     const headers = fields.map(f => f.label);
     
     // Create sample data
-    const sampleRow = importType === 'ingredients'
+    const sampleRow = currentType === 'ingredients'
       ? ['Flour', 'Acme Suppliers', '1000', 'g', '2.50', 'GBP', '', 'Gluten', 'Organic']
       : ['Sourdough Bread', 'Artisan bread with natural starter', '800', 'g', 'Mix, proof, bake', '45', '220', 'Bread', 'Room temperature', '3 days'];
 
     const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, importType === 'ingredients' ? 'Ingredients' : 'Recipes');
-    XLSX.writeFile(wb, `${importType}_template.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, currentType === 'ingredients' ? 'Ingredients' : 'Recipes');
+    XLSX.writeFile(wb, `${currentType}_template.xlsx`);
   };
 
   const reset = () => {
