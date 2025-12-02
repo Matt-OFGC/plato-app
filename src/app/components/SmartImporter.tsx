@@ -163,14 +163,19 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   }, []);
 
   const handleImport = async () => {
-    if (!parsedData || !importType) return;
+    // Use importType if set, otherwise fall back to type prop
+    const currentType = importType || type;
+    if (!parsedData || !currentType) {
+      alert('Please select what you want to import (Ingredients or Recipes)');
+      return;
+    }
 
     setStep('importing');
     setImporting(true);
     setProgress(0);
 
     try {
-      const endpoint = importType === 'ingredients' 
+      const endpoint = currentType === 'ingredients' 
         ? '/api/import/ingredients' 
         : '/api/import/recipes';
 
