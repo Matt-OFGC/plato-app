@@ -297,9 +297,16 @@ export async function updateIngredient(id: number, formData: FormData) {
     
     revalidatePath("/dashboard/ingredients");
     
-    // Invalidate cache
+    // Invalidate cache (non-blocking - don't fail if cache invalidation fails)
     if (companyId) {
-      await invalidateCompanyCache(companyId);
+      try {
+        await invalidateIngredientsCache(companyId);
+        // Also invalidate recipes cache since ingredient prices affect recipe costs
+        await invalidateRecipesCache(companyId);
+      } catch (cacheError) {
+        // Log but don't fail the update if cache invalidation fails
+        console.error("Cache invalidation failed (non-blocking):", cacheError);
+      }
     }
     
     return { success: true };
@@ -369,7 +376,12 @@ export async function deleteIngredient(id: number) {
   
   // Invalidate cache
   if (companyId) {
-    await invalidateCompanyCache(companyId);
+      try {
+        await invalidateIngredientsCache(companyId);
+        await invalidateRecipesCache(companyId);
+      } catch (cacheError) {
+        console.error("Cache invalidation failed (non-blocking):", cacheError);
+      }
   }
 }
 
