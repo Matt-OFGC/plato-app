@@ -379,10 +379,15 @@ export async function deleteRecipe(id: number) {
     
     // Audit deletion (fire-and-forget, don't await to prevent blocking)
     if (user && companyId) {
-      // Use setImmediate or Promise.resolve().then() to make it truly non-blocking
+      // Use Promise.resolve().then() to make it truly non-blocking
       Promise.resolve().then(async () => {
         try {
-          await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
+          // Check if auditLog exists and has the method before calling
+          if (auditLog && typeof auditLog.recipeDeleted === 'function') {
+            await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
+          } else {
+            console.warn('auditLog.recipeDeleted is not available, skipping audit log');
+          }
         } catch (auditError) {
           console.error("Audit log error (non-blocking):", auditError);
           // Silently fail - don't affect the deletion
