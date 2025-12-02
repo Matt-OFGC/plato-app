@@ -327,7 +327,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                           <button
                             onClick={() => setImportType('ingredients')}
                             className={`p-6 rounded-xl border-2 transition-all ${
-                              importType === 'ingredients'
+                              currentType === 'ingredients'
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-blue-300'
                             }`}
@@ -344,7 +344,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                           <button
                             onClick={() => setImportType('recipes')}
                             className={`p-6 rounded-xl border-2 transition-all ${
-                              importType === 'recipes'
+                              currentType === 'recipes'
                                 ? 'border-purple-500 bg-purple-50'
                                 : 'border-gray-200 hover:border-purple-300'
                             }`}
@@ -397,7 +397,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                             </div>
                             <h3 className="font-semibold text-gray-900">AI Scanner</h3>
                             <p className="text-sm text-gray-500 mt-1">
-                              {importType === 'ingredients' ? 'Scan invoices' : 'Scan menus'}
+                              {currentType === 'ingredients' ? 'Scan invoices' : 'Scan menus'}
                             </p>
                           </button>
                         </div>
@@ -407,9 +407,9 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                 )}
 
                 {/* Step: AI Scanner */}
-                {step === 'scanner' && importType && (
+                {step === 'scanner' && currentType && (
                   <div className="relative">
-                    {importType === 'ingredients' ? (
+                    {currentType === 'ingredients' ? (
                       <InvoiceScanner
                         onIngredientsExtracted={async (ingredients) => {
                           // Handle the scanned ingredients
