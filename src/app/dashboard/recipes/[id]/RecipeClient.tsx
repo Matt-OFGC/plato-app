@@ -500,7 +500,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         <div className="flex-shrink-0 px-6 pt-6 pb-4">
           <div className="max-w-[1600px] mx-auto">
             <RecipeHeader
-              title={isNew ? recipeTitle || "New Recipe" : recipe.title}
+              title={recipeTitle || recipe.title || "New Recipe"}
               category={categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}
               categoryId={categoryId}
               servings={servings}
@@ -511,7 +511,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
               imageUrl={imageUrl}
               onImageUpload={viewMode === "edit" ? handleImageUpload : undefined}
               isUploadingImage={isUploadingImage}
-              onTitleChange={isNew ? setRecipeTitle : undefined}
+              onTitleChange={viewMode === "edit" ? setRecipeTitle : undefined}
               onDelete={!isNew ? handleDelete : undefined}
               recipeId={recipeId}
             />
