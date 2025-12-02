@@ -110,7 +110,9 @@ export default async function RecipePage({ params }: Props) {
             packQuantity: true,
             densityGPerMl: true,
             allergens: true,
-            batchPricing: true
+            batchPricing: true,
+            servingsPerPack: true,
+            servingUnit: true
           }
         });
       },
