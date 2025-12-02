@@ -165,19 +165,22 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   }, []);
 
   const handleImport = async () => {
-    // Use importType if set, otherwise fall back to type prop
-    const currentType = importType || type;
-    if (!parsedData || !currentType) {
+    // Always prioritize type prop (from page context) over importType state
+    // This ensures imports go to the correct endpoint based on the page
+    const importTypeToUse = type || importType;
+    if (!parsedData || !importTypeToUse) {
       alert('Please select what you want to import (Ingredients or Recipes)');
       return;
     }
+
+    console.log('Importing:', { type, importType, importTypeToUse });
 
     setStep('importing');
     setImporting(true);
     setProgress(0);
 
     try {
-      const endpoint = currentType === 'ingredients' 
+      const endpoint = importTypeToUse === 'ingredients' 
         ? '/api/import/ingredients' 
         : '/api/import/recipes';
 
@@ -209,25 +212,28 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   };
 
   const downloadTemplate = () => {
-    // Use importType if set, otherwise fall back to type prop
-    const currentType = importType || type;
-    if (!currentType) {
+    // Always prioritize type prop (from page context) over importType state
+    // This ensures the template matches the page the user is on
+    const templateType = type || importType;
+    if (!templateType) {
       alert('Please select what you want to import first (Ingredients or Recipes)');
       return;
     }
     
-    const fields = currentType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
+    console.log('Downloading template:', { type, importType, templateType });
+    
+    const fields = templateType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
     const headers = fields.map(f => f.label);
     
     // Create sample data
-    const sampleRow = currentType === 'ingredients'
+    const sampleRow = templateType === 'ingredients'
       ? ['Flour', 'Acme Suppliers', '1000', 'g', '2.50', 'GBP', '', 'Gluten', 'Organic']
       : ['Sourdough Bread', 'Artisan bread with natural starter', '800', 'g', 'Mix, proof, bake', '45', '220', 'Bread', 'Room temperature', '3 days'];
 
     const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, currentType === 'ingredients' ? 'Ingredients' : 'Recipes');
-    XLSX.writeFile(wb, `${currentType}_template.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, templateType === 'ingredients' ? 'Ingredients' : 'Recipes');
+    XLSX.writeFile(wb, `${templateType}_template.xlsx`);
   };
 
   const reset = () => {
