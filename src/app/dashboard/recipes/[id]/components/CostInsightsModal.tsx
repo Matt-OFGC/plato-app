@@ -151,7 +151,7 @@ export default function CostInsightsModal({
 
             {/* Quick Markup Buttons */}
             <div className="grid grid-cols-4 gap-2 mb-6">
-              {[2, 2.5, 3, 4].map((multiplier) => (
+              {[2, 3, 4, 5].map((multiplier) => (
                 <button
                   key={multiplier}
                   onClick={() => {
@@ -161,7 +161,7 @@ export default function CostInsightsModal({
                   }}
                   className="px-3 py-2 text-sm font-medium bg-gray-100 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg transition-colors"
                 >
-                  {multiplier}x
+                  X{multiplier}
                 </button>
               ))}
             </div>
