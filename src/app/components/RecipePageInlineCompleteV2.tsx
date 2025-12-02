@@ -1120,20 +1120,49 @@ function RecipePageInlineCompleteV2Component({
               </button>
               
               {!isLocked && (
-                <button 
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 touch-manipulation min-h-11 sm:min-h-0"
-                >
-                  {isSaving ? '...' : (
-                    <span className="flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="hidden sm:inline">Save</span>
-                    </span>
-                  )}
-                </button>
+                <>
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 touch-manipulation min-h-11 sm:min-h-0"
+                  >
+                    {isSaving ? '...' : (
+                      <span className="flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="hidden sm:inline">Save</span>
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+                        return;
+                      }
+                      try {
+                        const response = await fetch(`/dashboard/recipes/${recipe.id}/delete`, {
+                          method: 'POST',
+                        });
+                        if (response.ok) {
+                          window.location.href = '/dashboard/recipes';
+                        } else {
+                          const data = await response.json();
+                          alert(data.error || 'Failed to delete recipe');
+                        }
+                      } catch (error) {
+                        console.error('Error deleting recipe:', error);
+                        alert('Failed to delete recipe. Please try again.');
+                      }
+                    }}
+                    className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-xs sm:text-sm font-medium touch-manipulation min-h-11 sm:min-h-0 flex items-center gap-1"
+                  >
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span className="hidden sm:inline">Delete</span>
+                  </button>
+                </>
               )}
               
               <Link 
@@ -1145,35 +1174,6 @@ function RecipePageInlineCompleteV2Component({
                 </svg>
                 <span className="hidden sm:inline">Print</span>
               </Link>
-              {!isLocked && (
-                <button
-                  onClick={async () => {
-                    if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-                      return;
-                    }
-                    try {
-                      const response = await fetch(`/dashboard/recipes/${recipe.id}/delete`, {
-                        method: 'POST',
-                      });
-                      if (response.ok) {
-                        window.location.href = '/dashboard/recipes';
-                      } else {
-                        const data = await response.json();
-                        alert(data.error || 'Failed to delete recipe');
-                      }
-                    } catch (error) {
-                      console.error('Error deleting recipe:', error);
-                      alert('Failed to delete recipe. Please try again.');
-                    }
-                  }}
-                  className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-xs sm:text-sm font-medium touch-manipulation min-h-11 sm:min-h-0 flex items-center gap-1"
-                >
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span className="hidden sm:inline">Delete</span>
-                </button>
-              )}
               {!isLocked && (
                 <div className="flex items-center gap-2">
                   <select
