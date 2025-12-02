@@ -70,8 +70,8 @@ export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCat
   };
 
   // Filter categories based on search term
-  const filteredCategories = categories.filter(category =>
-    category.toLowerCase().includes(categorySearchTerm.toLowerCase())
+  const filteredCategories = (categories || []).filter(category =>
+    category && category.toLowerCase().includes(categorySearchTerm.toLowerCase())
   );
 
   return (
@@ -138,7 +138,7 @@ export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCat
                     </svg>
                     <span>All Categories</span>
                     <span className="ml-auto text-gray-400 text-xs">
-                      ({categories.length})
+                      ({(categories || []).length})
                     </span>
                   </button>
 
