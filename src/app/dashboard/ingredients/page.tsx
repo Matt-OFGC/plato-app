@@ -53,7 +53,7 @@ export default async function IngredientsPage({ searchParams }: Props) {
             select: {
               id: true,
               name: true,
-              contactEmail: true,
+              email: true,
               phone: true,
               minimumOrder: true,
             }
