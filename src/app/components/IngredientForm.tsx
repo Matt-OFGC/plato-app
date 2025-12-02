@@ -187,8 +187,17 @@ export function IngredientForm({
   const [hasInitializedFromBatchPricing, setHasInitializedFromBatchPricing] = useState<boolean>(false);
   
   // Servings state - optional field for how many servings this ingredient purchase yields
+  // First check for new fields (servingsPerPack/servingUnit), then fall back to old JSON format in notes
   const [servings, setServings] = useState<number | null>(() => {
-    // Try to extract from notes if stored as JSON metadata
+    // Try to get from initialData.servingsPerPack (new field)
+    if ((initialData as any)?.servingsPerPack !== undefined && (initialData as any)?.servingsPerPack !== null) {
+      return (initialData as any).servingsPerPack;
+    }
+    // Try to get from initialData.servings (legacy)
+    if (initialData?.servings !== undefined) {
+      return initialData.servings;
+    }
+    // Otherwise, try to parse from notes JSON (backward compatibility)
     if (initialData?.notes) {
       try {
         const parsed = JSON.parse(initialData.notes);
@@ -204,7 +213,15 @@ export function IngredientForm({
   
   // Servings unit state
   const [servingsUnit, setServingsUnit] = useState<string>(() => {
-    // Try to extract from notes if stored as JSON metadata
+    // Try to get from initialData.servingUnit (new field)
+    if ((initialData as any)?.servingUnit) {
+      return (initialData as any).servingUnit;
+    }
+    // Try to get from initialData.servingsUnit (legacy)
+    if ((initialData as any)?.servingsUnit) {
+      return (initialData as any).servingsUnit;
+    }
+    // Otherwise, try to parse from notes JSON (backward compatibility)
     if (initialData?.notes) {
       try {
         const parsed = JSON.parse(initialData.notes);
