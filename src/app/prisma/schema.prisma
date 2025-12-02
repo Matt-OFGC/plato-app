@@ -432,6 +432,8 @@ model Ingredient {
   supplierId             Int?
   customConversions      String?
   batchPricing           Json?
+  servingsPerPack        Int?
+  servingUnit            String?
   Company                Company?                 @relation(fields: [companyId], references: [id])
   Supplier               Supplier?                @relation(fields: [supplierId], references: [id])
   IngredientPriceHistory IngredientPriceHistory[]
