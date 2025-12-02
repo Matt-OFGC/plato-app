@@ -164,3 +164,108 @@ export async function getRecentAuditLogs(
     return [];
   }
 }
+
+// Audit log object with specific action methods
+export const auditLog = {
+  async recipeDeleted(
+    userId: number,
+    recipeId: number,
+    recipeName: string,
+    companyId: number
+  ): Promise<void> {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId,
+          action: 'RECIPE_DELETED',
+          resource: 'recipe',
+          resourceId: recipeId.toString(),
+          details: {
+            recipeName,
+            companyId,
+          },
+          timestamp: new Date()
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to log recipe deletion', error, 'AuditLog');
+    }
+  },
+
+  async ingredientDeleted(
+    userId: number,
+    ingredientId: number,
+    ingredientName: string,
+    companyId: number
+  ): Promise<void> {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId,
+          action: 'INGREDIENT_DELETED',
+          resource: 'ingredient',
+          resourceId: ingredientId.toString(),
+          details: {
+            ingredientName,
+            companyId,
+          },
+          timestamp: new Date()
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to log ingredient deletion', error, 'AuditLog');
+    }
+  },
+
+  async memberRemoved(
+    userId: number,
+    removedUserId: number,
+    removedUserEmail: string,
+    companyId: number
+  ): Promise<void> {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId,
+          action: 'MEMBER_REMOVED',
+          resource: 'team',
+          resourceId: removedUserId.toString(),
+          details: {
+            removedUserEmail,
+            companyId,
+          },
+          timestamp: new Date()
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to log member removal', error, 'AuditLog');
+    }
+  },
+
+  async roleChanged(
+    userId: number,
+    targetUserId: number,
+    oldRole: string,
+    newRole: string,
+    companyId: number
+  ): Promise<void> {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId,
+          action: 'ROLE_CHANGED',
+          resource: 'team',
+          resourceId: targetUserId.toString(),
+          details: {
+            oldRole,
+            newRole,
+            companyId,
+          },
+          timestamp: new Date()
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to log role change', error, 'AuditLog');
+    }
+  },
+};
