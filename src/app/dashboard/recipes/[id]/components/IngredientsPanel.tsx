@@ -30,8 +30,8 @@ interface IngredientsPanelProps {
     densityGPerMl: number | null;
     allergens: string[];
     batchPricing: Array<{ packQuantity: number; packPrice: number }> | null;
-    servingsPerPack: number | null;
-    servingUnit: string | null;
+    servingsPerPack?: number | null;
+    servingUnit?: string | null;
   }>;
 }
 

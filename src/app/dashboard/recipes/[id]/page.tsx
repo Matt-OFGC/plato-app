@@ -110,9 +110,10 @@ export default async function RecipePage({ params }: Props) {
             packQuantity: true,
             densityGPerMl: true,
             allergens: true,
-            batchPricing: true,
-            servingsPerPack: true,
-            servingUnit: true
+            batchPricing: true
+            // Note: servingsPerPack and servingUnit will be added after migration is run
+            // servingsPerPack: true,
+            // servingUnit: true
           }
         });
       },
