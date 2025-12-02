@@ -269,18 +269,112 @@ function RecipePageInlineCompleteV2Component({
   const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.price || "");
   
   // Batch recipe state
-  const [isBatchRecipe, setIsBatchRecipe] = useState(recipe.yieldUnit === 'slices');
+  // Default to single recipe unless explicitly a batch recipe (yieldUnit === 'slices' AND yieldQuantity > 1)
+  // For new recipes or recipes with yieldQuantity === 1, default to single
+  const isNewRecipe = recipe.sections.length === 0 && recipe.items.length === 0;
+  const shouldDefaultToBatch = recipe.yieldUnit === 'slices' && recipe.yieldQuantity > 1 && !isNewRecipe;
+  const [isBatchRecipe, setIsBatchRecipe] = useState(shouldDefaultToBatch);
   const [slicesPerBatch, setSlicesPerBatch] = useState(
-    recipe.yieldUnit === 'slices' ? Number(recipe.yieldQuantity) || 8 : 8
+    shouldDefaultToBatch ? Number(recipe.yieldQuantity) || 8 : 1
   );
+  
+  // Store the original slices per batch when switching modes for scaling
+  const previousSlicesPerBatchRef = useRef(slicesPerBatch);
+
+  // Handle batch/single toggle with ingredient scaling
+  const handleBatchToggle = useCallback((newIsBatch: boolean) => {
+    if (newIsBatch === isBatchRecipe) return; // No change
+    
+    const currentSlices = slicesPerBatch;
+    
+    if (newIsBatch) {
+      // Switching to batch: scale ingredients UP
+      // Use a default of 8 slices if current is 1 (single recipe)
+      const targetSlices = currentSlices === 1 ? 8 : currentSlices;
+      previousSlicesPerBatchRef.current = currentSlices;
+      
+      // Scale all ingredient quantities up
+      const scaleFactor = targetSlices / currentSlices;
+      const updatedSections = sections.map(section => ({
+        ...section,
+        items: section.items.map(item => {
+          const currentQty = parseFloat(item.quantity) || 0;
+          if (currentQty <= 0) return item; // Skip invalid quantities
+          const newQty = currentQty * scaleFactor;
+          return {
+            ...item,
+            quantity: newQty > 0.001 ? newQty.toFixed(3).replace(/\.?0+$/, '') : '0',
+          };
+        }),
+      }));
+      setSections(updatedSections);
+      setSlicesPerBatch(targetSlices);
+      setIsBatchRecipe(true);
+      setYieldUnit('slices');
+      setYieldQuantity(targetSlices);
+    } else {
+      // Switching to single: scale ingredients DOWN
+      previousSlicesPerBatchRef.current = currentSlices;
+      
+      // Scale all ingredient quantities down
+      const scaleFactor = 1 / currentSlices;
+      const updatedSections = sections.map(section => ({
+        ...section,
+        items: section.items.map(item => {
+          const currentQty = parseFloat(item.quantity) || 0;
+          if (currentQty <= 0) return item; // Skip invalid quantities
+          const newQty = currentQty * scaleFactor;
+          return {
+            ...item,
+            quantity: newQty > 0.001 ? newQty.toFixed(3).replace(/\.?0+$/, '') : '0',
+          };
+        }),
+      }));
+      setSections(updatedSections);
+      setSlicesPerBatch(1);
+      setIsBatchRecipe(false);
+      setYieldUnit('each');
+      setYieldQuantity(1);
+    }
+  }, [isBatchRecipe, slicesPerBatch, sections, setSections, setYieldUnit, setYieldQuantity]);
+
+  // Scale ingredients when slicesPerBatch changes in batch mode (but not on initial mount)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      previousSlicesPerBatchRef.current = slicesPerBatch;
+      return;
+    }
+    
+    if (isBatchRecipe && previousSlicesPerBatchRef.current !== slicesPerBatch && previousSlicesPerBatchRef.current > 0) {
+      const scaleFactor = slicesPerBatch / previousSlicesPerBatchRef.current;
+      setSections(prevSections => prevSections.map(section => ({
+        ...section,
+        items: section.items.map(item => {
+          const currentQty = parseFloat(item.quantity) || 0;
+          if (currentQty <= 0) return item; // Skip invalid quantities
+          const newQty = currentQty * scaleFactor;
+          return {
+            ...item,
+            quantity: newQty > 0.001 ? newQty.toFixed(3).replace(/\.?0+$/, '') : '0',
+          };
+        }),
+      })));
+      previousSlicesPerBatchRef.current = slicesPerBatch;
+    }
+  }, [slicesPerBatch, isBatchRecipe, setSections]);
 
   // Keep yield in sync with batch mode for accurate saving and scaling
   useEffect(() => {
     if (isBatchRecipe) {
       if (yieldUnit !== 'slices') setYieldUnit('slices');
       if (yieldQuantity !== slicesPerBatch) setYieldQuantity(slicesPerBatch);
+    } else {
+      if (yieldUnit === 'slices') setYieldUnit('each');
+      if (yieldQuantity !== 1) setYieldQuantity(1);
     }
-  }, [isBatchRecipe, slicesPerBatch]);
+  }, [isBatchRecipe, slicesPerBatch, yieldUnit, yieldQuantity]);
   
   // Allergens popup state
   const [showAllergensPopup, setShowAllergensPopup] = useState(false);
@@ -392,9 +486,12 @@ function RecipePageInlineCompleteV2Component({
   }, [sections, ingredients]);
 
   const currentCostPerUnit = useMemo(() => {
-    if (recipe.yieldQuantity <= 0 || !currentRecipeCost) return 0;
-    return currentRecipeCost / recipe.yieldQuantity;
-  }, [currentRecipeCost, recipe.yieldQuantity]);
+    // For single recipes, yieldQuantity is 1, so cost per unit = total cost
+    // For batch recipes, use slicesPerBatch for accurate per-slice cost
+    const effectiveYield = isBatchRecipe ? slicesPerBatch : yieldQuantity;
+    if (effectiveYield <= 0 || !currentRecipeCost) return 0;
+    return currentRecipeCost / effectiveYield;
+  }, [currentRecipeCost, isBatchRecipe, slicesPerBatch, yieldQuantity]);
 
   // Get all ingredients for progress calculation
   const allIngredients = useMemo(() => {
@@ -1124,7 +1221,7 @@ function RecipePageInlineCompleteV2Component({
                 <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Recipe Type</div>
                 <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1">
                   <button
-                    onClick={() => setIsBatchRecipe(false)}
+                    onClick={() => handleBatchToggle(false)}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                       !isBatchRecipe 
                         ? 'bg-white text-gray-900 shadow-sm' 
@@ -1134,7 +1231,7 @@ function RecipePageInlineCompleteV2Component({
                     Single
                   </button>
                   <button
-                    onClick={() => setIsBatchRecipe(true)}
+                    onClick={() => handleBatchToggle(true)}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                       isBatchRecipe 
                         ? 'bg-white text-gray-900 shadow-sm' 
