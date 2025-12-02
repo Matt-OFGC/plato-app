@@ -190,20 +190,6 @@ export default async function RecipesPage({ searchParams }: Props) {
     });
   }
 
-  // Get categories from the already fetched recipes (no extra query needed)
-  // Filter out test categories
-  const categories = Array.from(
-    new Set(
-      recipes
-        .map(r => r.categoryRef?.name)
-        .filter(Boolean)
-        .filter((name): name is string => {
-          const nameLower = (name || '').toLowerCase();
-          return !nameLower.includes('test category') && !nameLower.startsWith('test ');
-        })
-    )
-  ).sort();
-
   // Fetch categories with IDs for bulk edit with caching
   const categoriesWithIds = await getOrCompute(
     CacheKeys.categories(companyId),
@@ -226,6 +212,9 @@ export default async function RecipesPage({ searchParams }: Props) {
     },
     CACHE_TTL.CATEGORIES
   );
+
+  // Extract category names for the filter (use all categories from database, not just those assigned to recipes)
+  const categories = categoriesWithIds.map(cat => cat.name).sort();
 
   return (
     <RecipesPageClient>
