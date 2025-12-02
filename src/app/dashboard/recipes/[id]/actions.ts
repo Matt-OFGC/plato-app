@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { revalidatePath } from "next/cache";
+import { auditLog } from "@/lib/audit-log";
 
 export async function saveSellPrice(recipeId: number, sellPrice: number) {
   try {
@@ -372,10 +373,14 @@ export async function deleteRecipe(id: number) {
     
     await prisma.recipe.delete({ where: { id } });
     
-    // Audit deletion
+    // Audit deletion (non-blocking)
     if (user && companyId) {
-      const { auditLog } = await import("@/lib/audit-log");
-      await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
+      try {
+        await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
+      } catch (auditError) {
+        console.error("Audit log error (non-blocking):", auditError);
+        // Don't fail the deletion if audit logging fails
+      }
     }
     
     revalidatePath("/dashboard/recipes");
