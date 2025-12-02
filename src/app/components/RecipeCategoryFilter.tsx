@@ -18,6 +18,15 @@ export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCat
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Debug: Log categories to help diagnose issues
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      console.log('RecipeCategoryFilter: Categories loaded:', categories.length, categories);
+    } else {
+      console.warn('RecipeCategoryFilter: No categories received or empty array');
+    }
+  }, [categories]);
+
   // Sync search term with URL params
   useEffect(() => {
     const currentSearch = searchParams.get("search") || "";
@@ -167,6 +176,14 @@ export function RecipeCategoryFilter({ categories, selectedCategory }: RecipeCat
                         <span className="truncate">{category}</span>
                       </button>
                     ))
+                  ) : categorySearchTerm ? (
+                    <div className="px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-gray-500 text-center">
+                      No categories match "{categorySearchTerm}"
+                    </div>
+                  ) : (categories || []).length === 0 ? (
+                    <div className="px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-gray-500 text-center">
+                      No categories available
+                    </div>
                   ) : (
                     <div className="px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-gray-500 text-center">
                       No categories found
