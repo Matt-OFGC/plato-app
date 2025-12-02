@@ -76,7 +76,9 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-  const fields = importType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
+  // Use importType if set, otherwise fall back to type prop
+  const currentType = importType || type;
+  const fields = currentType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
 
   const handleFileUpload = async (file: File) => {
     try {
