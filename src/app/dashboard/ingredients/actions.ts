@@ -73,6 +73,15 @@ const ingredientSchema = z.object({
     }
   }),
   notes: z.string().optional().nullable(),
+  servingsPerPack: z.string().optional().transform((v) => {
+    if (!v || v === "") return null;
+    const num = parseFloat(v);
+    return isNaN(num) || num <= 0 ? null : num;
+  }),
+  servingUnit: z.string().optional().nullable().transform((v) => {
+    if (!v || v === "") return null;
+    return v;
+  }),
 });
 
 export async function createIngredient(formData: FormData) {
@@ -152,6 +161,8 @@ export async function createIngredient(formData: FormData) {
       batchPricing: batchPricingInBase,
       customConversions: data.customConversions ?? null,
       notes: data.notes ?? null,
+      servingsPerPack: data.servingsPerPack ?? null,
+      servingUnit: data.servingUnit ?? null,
       companyId: companyId ?? undefined,
     };
     
@@ -271,6 +282,8 @@ export async function updateIngredient(id: number, formData: FormData) {
       batchPricing: batchPricingInBase,
       customConversions: data.customConversions ?? null,
       notes: data.notes ?? null,
+      servingsPerPack: data.servingsPerPack ?? null,
+      servingUnit: data.servingUnit ?? null,
       // Update lastPriceUpdate timestamp if price or pack quantity changed
       ...((priceChanged || packQuantityChanged) && { lastPriceUpdate: new Date() }),
     };

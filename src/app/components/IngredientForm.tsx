@@ -577,40 +577,43 @@ export function IngredientForm({
     const formData = new FormData(ev.currentTarget);
     formData.set("allergens", JSON.stringify(allAllergens));
     
-    // Handle servings - store in notes as JSON metadata if provided, otherwise keep notes as-is
+    // Handle servings - save to dedicated servingsPerPack and servingUnit fields
     const notesInput = ev.currentTarget.querySelector('#notes') as HTMLTextAreaElement;
     const notesText = notesInput?.value || "";
     const servingsInput = ev.currentTarget.querySelector('#servings') as HTMLInputElement;
     const servingsValue = servingsInput ? parseFloat(servingsInput.value) : null;
     const servingsUnitInput = ev.currentTarget.querySelector('#servingsUnit') as HTMLSelectElement;
-    const servingsUnitValue = servingsUnitInput?.value || 'servings';
+    const servingsUnitValue = servingsUnitInput?.value || null;
     
-    // If servings is provided, store text, servings quantity, and servings unit in JSON format
-    // Otherwise, just store the notes text as-is
+    // Save servings to dedicated fields
     if (servingsValue !== null && !isNaN(servingsValue) && servingsValue > 0) {
-      // Store text, servings quantity, and servings unit in JSON format
-      const notesData = {
-        text: notesText,
-        servings: servingsValue,
-        servingsUnit: servingsUnitValue
-      };
-      formData.set("notes", JSON.stringify(notesData));
-    } else {
-      // No servings, check if notes was previously JSON and extract text, otherwise use as-is
-      let finalNotes = notesText;
-      if (initialData?.notes) {
-        try {
-          const parsed = JSON.parse(initialData.notes);
-          if (parsed && typeof parsed === 'object' && parsed.text) {
-            // Was JSON before, but no servings now - just store the text part
-            finalNotes = parsed.text;
-          }
-        } catch {
-          // Wasn't JSON before, use new text as-is
-        }
+      formData.set("servingsPerPack", servingsValue.toString());
+      if (servingsUnitValue && servingsUnitValue !== 'servings' && servingsUnitValue !== 'portions') {
+        formData.set("servingUnit", servingsUnitValue);
+      } else {
+        // If unit is "servings" or "portions", use a more descriptive default or leave null
+        formData.set("servingUnit", servingsUnitValue || "");
       }
-      formData.set("notes", finalNotes);
+    } else {
+      // Clear servings fields if not provided
+      formData.set("servingsPerPack", "");
+      formData.set("servingUnit", "");
     }
+    
+    // Handle notes - extract text if it was previously stored as JSON with servings
+    let finalNotes = notesText;
+    if (initialData?.notes) {
+      try {
+        const parsed = JSON.parse(initialData.notes);
+        if (parsed && typeof parsed === 'object' && parsed.text) {
+          // Was JSON before (old format), extract just the text part
+          finalNotes = parsed.text;
+        }
+      } catch {
+        // Wasn't JSON before, use as-is
+      }
+    }
+    formData.set("notes", finalNotes);
     
     // Serialize custom conversions to JSON
     if (customConversions.length > 0) {

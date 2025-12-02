@@ -90,6 +90,8 @@ export default async function EditIngredientPage({ params }: Props) {
     notes: ing.notes || "",
     allergens: ing.allergens || [],
     customConversions: ing.customConversions || undefined,
+    servingsPerPack: ing.servingsPerPack ? Number(ing.servingsPerPack) : undefined,
+    servingUnit: ing.servingUnit || undefined,
   };
 
   return (
