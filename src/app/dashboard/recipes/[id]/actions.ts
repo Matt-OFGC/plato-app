@@ -135,6 +135,7 @@ export async function saveRecipe(data: {
             ...(data.yieldQuantity && { yieldQuantity: data.yieldQuantity }),
             ...(data.yieldUnit && { yieldUnit: data.yieldUnit }),
             category: data.category || null,
+            categoryId: categoryOption?.id || null,
             storage: data.storage || null,
             storageId: storageOption?.id || null,
             shelfLife: data.shelfLife || null,
@@ -256,8 +257,12 @@ export async function saveRecipeChanges(data: {
       throw new Error("Unauthorized");
     }
 
-    // Find the storage and shelf life option IDs by name
-    const [storageOption, shelfLifeOption] = await Promise.all([
+    // Find the category, storage and shelf life option IDs by name
+    const [categoryOption, storageOption, shelfLifeOption] = await Promise.all([
+      data.category ? prisma.category.findFirst({
+        where: { name: data.category, companyId },
+        select: { id: true }
+      }) : null,
       data.storage ? prisma.storageOption.findFirst({
         where: { name: data.storage, companyId },
         select: { id: true }
@@ -274,6 +279,7 @@ export async function saveRecipeChanges(data: {
       data: {
         ...(data.name !== undefined && { name: data.name.trim() }),
         category: data.category || null,
+        categoryId: categoryOption?.id || null,
         storage: data.storage || null,
         storageId: storageOption?.id || null,
         shelfLife: data.shelfLife || null,
