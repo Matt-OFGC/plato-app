@@ -329,6 +329,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         // Update existing recipe
         const result = await saveRecipeChanges({
           recipeId: recipeId!,
+          name: recipeTitle.trim(),
           category: categoryName,
           storage: storageName,
           shelfLife: shelfLifeName,

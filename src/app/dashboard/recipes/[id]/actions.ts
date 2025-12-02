@@ -220,6 +220,7 @@ export async function saveRecipe(data: {
 
 export async function saveRecipeChanges(data: {
   recipeId: number;
+  name?: string;
   category?: string;
   storage?: string;
   shelfLife?: string;
@@ -271,6 +272,7 @@ export async function saveRecipeChanges(data: {
     await prisma.recipe.update({
       where: { id: data.recipeId },
       data: {
+        ...(data.name !== undefined && { name: data.name.trim() }),
         category: data.category || null,
         storage: data.storage || null,
         storageId: storageOption?.id || null,
