@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
 import { InvoiceScanner } from "./InvoiceScanner";
@@ -77,7 +77,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   // Sync importType with type prop when type changes (e.g., user navigates between pages)
-  React.useEffect(() => {
+  useEffect(() => {
     if (type) {
       setImportType(type);
     }
