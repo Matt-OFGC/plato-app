@@ -248,8 +248,10 @@ function RecipePageInlineCompleteV2Component({
   const [description, setDescription] = useState(recipe.description || "");
   const [imageUrl, setImageUrl] = useState(recipe.imageUrl || "");
   const [method, setMethod] = useState(recipe.method || "");
-  const [yieldQuantity, setYieldQuantity] = useState(recipe.yieldQuantity);
-  const [yieldUnit, setYieldUnit] = useState(recipe.yieldUnit);
+  // For new recipes, default to 1 and 'each' to prevent scaling issues
+  const isNewRecipeCheck = recipe.sections.length === 0 && recipe.items.length === 0;
+  const [yieldQuantity, setYieldQuantity] = useState(isNewRecipeCheck ? 1 : recipe.yieldQuantity);
+  const [yieldUnit, setYieldUnit] = useState(isNewRecipeCheck ? 'each' : recipe.yieldUnit);
   const [categoryId, setCategoryId] = useState<number | "">(recipe.categoryId || "");
   const [shelfLifeId, setShelfLifeId] = useState<number | "">(recipe.shelfLifeId || "");
   const [storageId, setStorageId] = useState<number | "">(recipe.storageId || "");
@@ -276,10 +278,11 @@ function RecipePageInlineCompleteV2Component({
   const hasExistingIngredients = recipe.sections.some(s => s.items.length > 0) || recipe.items.length > 0;
   // Only default to batch if it's clearly a batch recipe with ingredients already scaled
   // For safety, default to single unless we're very confident it's batch
-  const shouldDefaultToBatch = recipe.yieldUnit === 'slices' && recipe.yieldQuantity > 1 && hasExistingIngredients && !isNewRecipe;
+  // For new recipes, ALWAYS default to single mode
+  const shouldDefaultToBatch = !isNewRecipe && recipe.yieldUnit === 'slices' && recipe.yieldQuantity > 1 && hasExistingIngredients;
   const [isBatchRecipe, setIsBatchRecipe] = useState(shouldDefaultToBatch);
   const [slicesPerBatch, setSlicesPerBatch] = useState(
-    shouldDefaultToBatch ? Number(recipe.yieldQuantity) || 8 : (recipe.yieldUnit === 'slices' ? Number(recipe.yieldQuantity) || 1 : 1)
+    isNewRecipe ? 1 : (shouldDefaultToBatch ? Number(recipe.yieldQuantity) || 8 : (recipe.yieldUnit === 'slices' ? Number(recipe.yieldQuantity) || 1 : 1))
   );
   
   // Store the original slices per batch when switching modes for scaling
