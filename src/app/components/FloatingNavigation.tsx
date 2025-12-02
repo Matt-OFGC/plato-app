@@ -375,20 +375,71 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                   </button>
                 )}
                 
-                {/* Back Button - Only show on recipe pages when sidebar is closed */}
+                {/* Back Button and Duplicate Button - Only show on recipe pages when sidebar is closed */}
                 {isRecipePage && !sidebarOpen && (
-                  <a
-                    href={pathname.startsWith('/bake') ? '/bake/recipes' : '/dashboard/recipes'}
-                    className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 will-change-transform
-                             max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
-                             md:px-4 md:py-2
-                             active:scale-95 max-md:active:scale-90"
-                  >
-                    <svg className="text-gray-700 max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    <span className="hidden sm:inline text-sm font-medium text-gray-700">Back</span>
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={pathname.startsWith('/bake') ? '/bake/recipes' : '/dashboard/recipes'}
+                      className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 will-change-transform
+                               max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
+                               md:px-4 md:py-2
+                               active:scale-95 max-md:active:scale-90"
+                    >
+                      <svg className="text-gray-700 max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                      </svg>
+                      <span className="hidden sm:inline text-sm font-medium text-gray-700">Back</span>
+                    </a>
+                    
+                    {/* Duplicate Button - Only show in edit mode */}
+                    {recipeView?.viewMode === "edit" && (() => {
+                      const recipeIdMatch = pathname.match(/\/recipes\/(\d+)/);
+                      const recipeId = recipeIdMatch ? parseInt(recipeIdMatch[1]) : null;
+                      
+                      if (!recipeId) return null;
+                      
+                      return (
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Duplicate this recipe? A new recipe will be created with "Copy of" added to the name.')) {
+                              return;
+                            }
+                            
+                            try {
+                              const response = await fetch(`/dashboard/recipes/${recipeId}/duplicate`, {
+                                method: 'POST',
+                              });
+                              
+                              if (response.ok) {
+                                const data = await response.json();
+                                if (data.success && data.recipeId) {
+                                  router.push(`/dashboard/recipes/${data.recipeId}`);
+                                } else {
+                                  alert(data.error || 'Failed to duplicate recipe');
+                                }
+                              } else {
+                                const errorData = await response.json();
+                                alert(errorData.error || 'Failed to duplicate recipe');
+                              }
+                            } catch (error) {
+                              console.error('Error duplicating recipe:', error);
+                              alert('Failed to duplicate recipe. Please try again.');
+                            }
+                          }}
+                          className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 will-change-transform
+                                   max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
+                                   md:px-4 md:py-2
+                                   active:scale-95 max-md:active:scale-90"
+                          title="Duplicate Recipe"
+                        >
+                          <svg className="text-gray-700 max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <span className="hidden sm:inline text-sm font-medium text-gray-700">Duplicate</span>
+                        </button>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
 
