@@ -21,7 +21,7 @@ interface IngredientsPanelProps {
   onIngredientsChange: (ingredients: Ingredient[]) => void;
   availableIngredients: Array<{ 
     id: number; 
-    name: string; 
+    name: string;
     unit: string; 
     costPerUnit: number; 
     packPrice: number;
@@ -30,6 +30,8 @@ interface IngredientsPanelProps {
     densityGPerMl: number | null;
     allergens: string[];
     batchPricing: Array<{ packQuantity: number; packPrice: number }> | null;
+    portionSize: number | null;
+    portionUnit: string | null;
   }>;
 }
 

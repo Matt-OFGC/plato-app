@@ -110,7 +110,9 @@ export default async function RecipePage({ params }: Props) {
             packQuantity: true,
             densityGPerMl: true,
             allergens: true,
-            batchPricing: true
+            batchPricing: true,
+            portionSize: true,
+            portionUnit: true
           }
         });
       },
@@ -124,6 +126,7 @@ export default async function RecipePage({ params }: Props) {
     packPrice: ing.packPrice.toNumber(),
     packQuantity: ing.packQuantity.toNumber(),
     densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+    portionSize: ing.portionSize?.toNumber() || null,
     batchPricing: ing.batchPricing ? (typeof ing.batchPricing === 'string' ? JSON.parse(ing.batchPricing) : ing.batchPricing) : null,
   }));
 
