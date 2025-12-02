@@ -407,3 +407,119 @@ export async function deleteRecipe(id: number) {
   }
 }
 
+export async function duplicateRecipe(recipeId: number) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+
+    if (!companyId) {
+      throw new Error("No company associated with your account");
+    }
+
+    // Fetch the recipe to duplicate with all its data
+    const recipe = await prisma.recipe.findUnique({
+      where: { id: recipeId },
+      include: {
+        sections: {
+          include: {
+            items: {
+              include: {
+                ingredient: true,
+              },
+            },
+          },
+          orderBy: { order: "asc" },
+        },
+        items: {
+          include: {
+            ingredient: true,
+          },
+        },
+      },
+    });
+
+    if (!recipe) {
+      throw new Error("Recipe not found");
+    }
+
+    // Security check: Verify recipe belongs to user's company
+    if (recipe.companyId !== companyId) {
+      throw new Error("Unauthorized");
+    }
+
+    // Create duplicate recipe with "Copy of" prefix
+    const duplicatedRecipe = await prisma.$transaction(async (tx) => {
+      // Create the new recipe
+      const newRecipe = await tx.recipe.create({
+        data: {
+          name: `Copy of ${recipe.name}`,
+          yieldQuantity: recipe.yieldQuantity,
+          yieldUnit: recipe.yieldUnit,
+          category: recipe.category,
+          storage: recipe.storage,
+          storageId: recipe.storageId,
+          shelfLife: recipe.shelfLife,
+          shelfLifeId: recipe.shelfLifeId,
+          sellingPrice: recipe.sellingPrice,
+          method: recipe.method,
+          description: recipe.description,
+          imageUrl: recipe.imageUrl,
+          companyId,
+        },
+      });
+
+      // Duplicate sections and their items
+      for (const section of recipe.sections) {
+        const newSection = await tx.recipeSection.create({
+          data: {
+            recipeId: newRecipe.id,
+            title: section.title,
+            description: section.description,
+            method: section.method,
+            order: section.order,
+            bakeTemp: section.bakeTemp,
+            bakeTime: section.bakeTime,
+            hasTimer: section.hasTimer,
+          },
+        });
+
+        // Duplicate items in this section
+        for (const item of section.items) {
+          await tx.recipeItem.create({
+            data: {
+              recipeId: newRecipe.id,
+              sectionId: newSection.id,
+              ingredientId: item.ingredientId,
+              quantity: item.quantity,
+              unit: item.unit,
+              note: item.note,
+            },
+          });
+        }
+      }
+
+      // Duplicate items not in sections
+      for (const item of recipe.items) {
+        await tx.recipeItem.create({
+          data: {
+            recipeId: newRecipe.id,
+            ingredientId: item.ingredientId,
+            quantity: item.quantity,
+            unit: item.unit,
+            note: item.note,
+          },
+        });
+      }
+
+      return newRecipe;
+    });
+
+    revalidatePath("/dashboard/recipes");
+    
+    return { success: true, recipeId: duplicatedRecipe.id };
+  } catch (error) {
+    console.error("Error duplicating recipe:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to duplicate recipe";
+    return { success: false, error: errorMessage };
+  }
+}
+
