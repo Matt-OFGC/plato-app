@@ -76,7 +76,15 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
+  // Sync importType with type prop when type changes (e.g., user navigates between pages)
+  React.useEffect(() => {
+    if (type) {
+      setImportType(type);
+    }
+  }, [type]);
+
   // Use importType if set, otherwise fall back to type prop
+  // But prioritize type prop for template downloads and imports to match page context
   const currentType = importType || type;
   const fields = currentType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
 
