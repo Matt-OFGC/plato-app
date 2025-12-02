@@ -73,8 +73,12 @@ export async function saveRecipe(data: {
       throw new Error("No company associated with your account");
     }
 
-    // Find the storage and shelf life option IDs by name
-    const [storageOption, shelfLifeOption] = await Promise.all([
+    // Find the category, storage and shelf life option IDs by name
+    const [categoryOption, storageOption, shelfLifeOption] = await Promise.all([
+      data.category ? prisma.category.findFirst({
+        where: { name: data.category, companyId },
+        select: { id: true }
+      }) : null,
       data.storage ? prisma.storageOption.findFirst({
         where: { name: data.storage, companyId },
         select: { id: true }
