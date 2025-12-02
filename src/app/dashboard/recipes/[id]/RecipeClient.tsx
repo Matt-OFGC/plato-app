@@ -515,6 +515,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
               onTitleChange={viewMode === "edit" ? setRecipeTitle : undefined}
               onDelete={!isNew ? handleDelete : undefined}
               recipeId={recipeId}
+              sellPrice={sellPrice}
             />
           </div>
         </div>
