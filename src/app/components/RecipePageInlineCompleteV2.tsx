@@ -728,8 +728,10 @@ function RecipePageInlineCompleteV2Component({
       formData.append('method', method);
       // Ensure yield reflects batch settings
       // IMPORTANT: In single mode, always save as 'each' with quantity 1 to prevent scaling issues
-      const effectiveYieldQuantity = isBatchRecipe ? slicesPerBatch : 1;
-      const effectiveYieldUnit = isBatchRecipe ? 'slices' : 'each';
+      // Double-check: if not explicitly batch, force to single
+      const effectiveIsBatch = isBatchRecipe && slicesPerBatch > 1;
+      const effectiveYieldQuantity = effectiveIsBatch ? slicesPerBatch : 1;
+      const effectiveYieldUnit = effectiveIsBatch ? 'slices' : 'each';
       formData.append('yieldQuantity', effectiveYieldQuantity.toString());
       formData.append('yieldUnit', effectiveYieldUnit);
       formData.append('portionsPerBatch', isBatchRecipe ? slicesPerBatch.toString() : '');
