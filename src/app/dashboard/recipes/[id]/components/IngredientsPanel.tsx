@@ -30,8 +30,6 @@ interface IngredientsPanelProps {
     densityGPerMl: number | null;
     allergens: string[];
     batchPricing: Array<{ packQuantity: number; packPrice: number }> | null;
-    portionSize: number | null;
-    portionUnit: string | null;
   }>;
 }
 
@@ -514,20 +512,12 @@ export default function IngredientsPanel({
                     ? fullIngredient.packPrice / fullIngredient.packQuantity 
                     : 0;
                   
-                  // Check if ingredient has portion size info
-                  const hasPortionSize = fullIngredient.portionSize && fullIngredient.portionUnit;
-                  
                   return (
-                    <div className="text-xs text-gray-500 ml-1 flex items-center gap-2 flex-wrap">
-                      <span>Cost: £{displayCost.toFixed(2)}</span>
-                      <span className="text-gray-400">
+                    <div className="text-xs text-gray-500 ml-1">
+                      Cost: £{displayCost.toFixed(2)}
+                      <span className="text-gray-400 ml-2">
                         (£{costPerUnit.toFixed(3)} per {fullIngredient.packUnit})
                       </span>
-                      {hasPortionSize && (
-                        <span className="text-blue-600 font-medium">
-                          • Serving: {fullIngredient.portionSize} {fullIngredient.portionUnit}
-                        </span>
-                      )}
                     </div>
                   );
                 } catch (error) {
