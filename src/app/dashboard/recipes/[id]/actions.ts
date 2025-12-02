@@ -373,18 +373,24 @@ export async function deleteRecipe(id: number) {
     
     await prisma.recipe.delete({ where: { id } });
     
-    // Audit deletion (non-blocking)
-    if (user && companyId) {
-      try {
-        await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
-      } catch (auditError) {
-        console.error("Audit log error (non-blocking):", auditError);
-        // Don't fail the deletion if audit logging fails
-      }
-    }
-    
+    // Revalidate paths first (before audit log)
     revalidatePath("/dashboard/recipes");
     revalidatePath(`/dashboard/recipes/${id}`);
+    
+    // Audit deletion (fire-and-forget, don't await to prevent blocking)
+    if (user && companyId) {
+      // Use setImmediate or Promise.resolve().then() to make it truly non-blocking
+      Promise.resolve().then(async () => {
+        try {
+          await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
+        } catch (auditError) {
+          console.error("Audit log error (non-blocking):", auditError);
+          // Silently fail - don't affect the deletion
+        }
+      }).catch(() => {
+        // Ignore any errors
+      });
+    }
     
     return { success: true };
   } catch (error) {
