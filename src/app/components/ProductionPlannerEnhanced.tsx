@@ -201,7 +201,7 @@ export function ProductionPlannerEnhanced({
           `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`
         ),
         fetch(
-          `/api/wholesale/orders?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}&status=pending,confirmed,in_production`
+          `/api/wholesale/orders?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}&status=confirmed`
         ),
       ]);
 

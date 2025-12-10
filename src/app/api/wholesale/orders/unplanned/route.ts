@@ -35,12 +35,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build the where clause
+    // Build the where clause - only show confirmed orders (not pending, not already in production)
     const where: any = {
       companyId: parsedCompanyId,
-      status: {
-        in: ["pending", "confirmed", "in_production"],
-      },
+      status: "confirmed",
     };
 
     // If date range provided, filter by delivery date

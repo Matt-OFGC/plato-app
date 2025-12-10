@@ -94,6 +94,61 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Update order status to "in_production" for any orders that have allocations in this plan
+    // Find all unique customer IDs from allocations
+    const customerIds = new Set<number>();
+    plan.items.forEach(item => {
+      item.allocations.forEach(alloc => {
+        if (alloc.customerId) {
+          customerIds.add(alloc.customerId);
+        }
+      });
+    });
+
+    // Find orders for these customers with delivery dates in the plan date range
+    if (customerIds.size > 0) {
+      const ordersToUpdate = await prisma.wholesaleOrder.findMany({
+        where: {
+          companyId: parsedCompanyId,
+          customerId: { in: Array.from(customerIds) },
+          status: "confirmed",
+          deliveryDate: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        },
+        include: {
+          items: {
+            select: {
+              recipeId: true,
+            },
+          },
+        },
+      });
+
+      // Check if order items match production items and update status
+      const recipeIdsInPlan = new Set(plan.items.map(item => item.recipeId));
+      
+      for (const order of ordersToUpdate) {
+        // Check if any order items match recipes in the production plan
+        const hasMatchingItems = order.items.some(item => recipeIdsInPlan.has(item.recipeId));
+        
+        if (hasMatchingItems) {
+          // Check if this order has allocations in the plan
+          const orderHasAllocations = plan.items.some(item =>
+            item.allocations.some(alloc => alloc.customerId === order.customerId)
+          );
+          
+          if (orderHasAllocations) {
+            await prisma.wholesaleOrder.update({
+              where: { id: order.id },
+              data: { status: "in_production" },
+            });
+          }
+        }
+      }
+    }
+
     return NextResponse.json(plan);
   } catch (error) {
     const { handleApiError } = await import("@/lib/api-error-handler");

@@ -63,6 +63,14 @@ export async function PATCH(
             recipeId: item.recipeId,
             quantity: item.quantity,
             priority: index,
+            allocations: item.allocations && item.allocations.length > 0 ? {
+              create: item.allocations.map((alloc: any) => ({
+                destination: alloc.destination,
+                customerId: alloc.customerId,
+                quantity: alloc.quantity,
+                notes: alloc.notes,
+              })),
+            } : undefined,
           })),
         },
       },
@@ -77,11 +85,68 @@ export async function PATCH(
                 yieldUnit: true,
               },
             },
+            allocations: {
+              include: {
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
         tasks: true,
       },
     });
+
+    // Update order status to "in_production" for any orders that have allocations in this plan
+    const customerIds = new Set<number>();
+    updatedPlan.items.forEach(item => {
+      item.allocations.forEach(alloc => {
+        if (alloc.customerId) {
+          customerIds.add(alloc.customerId);
+        }
+      });
+    });
+
+    if (customerIds.size > 0) {
+      const ordersToUpdate = await prisma.wholesaleOrder.findMany({
+        where: {
+          companyId: existingPlan.companyId,
+          customerId: { in: Array.from(customerIds) },
+          status: "confirmed",
+          deliveryDate: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        },
+        include: {
+          items: {
+            select: {
+              recipeId: true,
+            },
+          },
+        },
+      });
+
+      const recipeIdsInPlan = new Set(updatedPlan.items.map(item => item.recipeId));
+      
+      for (const order of ordersToUpdate) {
+        const hasMatchingItems = order.items.some(item => recipeIdsInPlan.has(item.recipeId));
+        const orderHasAllocations = updatedPlan.items.some(item =>
+          item.allocations.some(alloc => alloc.customerId === order.customerId)
+        );
+        
+        if (hasMatchingItems && orderHasAllocations) {
+          await prisma.wholesaleOrder.update({
+            where: { id: order.id },
+            data: { status: "in_production" },
+          });
+        }
+      }
+    }
 
     return NextResponse.json(updatedPlan);
   } catch (error) {
