@@ -77,8 +77,8 @@ export async function createSession(
 ): Promise<void> {
   let cookieStore;
   try {
-    // cookies() is synchronous in Next.js 16, no need for timeout
-    cookieStore = cookies();
+    // cookies() is async in Next.js 16
+    cookieStore = await cookies();
   } catch (cookieError) {
     throw new Error(`Failed to access cookies: ${cookieError instanceof Error ? cookieError.message : 'Unknown error'}`);
   }

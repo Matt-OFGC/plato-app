@@ -31,8 +31,19 @@ async function initRedis() {
   try {
     // Add timeout to prevent hanging
     const initPromise = (async () => {
-      // Try to import redis client
-      const redis = await import("ioredis");
+      // Try to import redis client - use eval to prevent Turbopack from analyzing at build time
+      let redis: any;
+      try {
+        // Use Function constructor to prevent static analysis
+        const importRedis = new Function('return import("ioredis")');
+        redis = await importRedis();
+      } catch (importError) {
+        // If ioredis is not installed, that's okay - Redis is optional
+        logger.debug("ioredis not available, Redis caching disabled", undefined, "Redis");
+        redisEnabled = false;
+        return null;
+      }
+      
       redisClient = new redis.Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         retryStrategy: (times) => {
