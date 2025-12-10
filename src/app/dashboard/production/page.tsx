@@ -55,6 +55,19 @@ export default async function ProductionPage() {
     yieldQuantity: recipe.yieldQuantity.toString(),
   }));
 
+  // Get wholesale customers for production allocations
+  const wholesaleCustomers = await prisma.wholesaleCustomer.findMany({
+    where: {
+      companyId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: { name: "asc" },
+  });
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -69,7 +82,7 @@ export default async function ProductionPage() {
           recipes={recipes}
           productionPlans={[]}
           teamMembers={[]}
-          wholesaleCustomers={[]}
+          wholesaleCustomers={wholesaleCustomers}
           companyId={companyId}
         />
       </div>
