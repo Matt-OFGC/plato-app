@@ -222,7 +222,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) {
-      where.status = status;
+      // Handle comma-separated status values
+      const statusArray = status.split(',').map(s => s.trim());
+      if (statusArray.length === 1) {
+        where.status = statusArray[0];
+      } else {
+        where.status = { in: statusArray };
+      }
     }
 
     // Filter by delivery date range
