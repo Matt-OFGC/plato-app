@@ -209,10 +209,16 @@ export function ProductionPlannerEnhanced({
         const unplanned = await unplannedRes.json();
         const allOrders = await allOrdersRes.json();
         
-        // Combine and deduplicate
+        // Filter out planned orders from allOrders
+        const unplannedFromAll = allOrders.filter((order: any) => !order.isPlanned);
+        
+        // Combine and deduplicate - prefer unplanned array (it has more accurate isPlanned flag)
         const orderMap = new Map();
-        [...unplanned, ...allOrders].forEach((order: any) => {
-          orderMap.set(order.id, order);
+        [...unplanned, ...unplannedFromAll].forEach((order: any) => {
+          // Only add if not already planned
+          if (!order.isPlanned) {
+            orderMap.set(order.id, order);
+          }
         });
         
         setUnplannedOrders(Array.from(orderMap.values()));

@@ -44,11 +44,24 @@ export async function GET(request: NextRequest) {
     };
 
     // If date range provided, filter by delivery date
+    // Include orders with deliveryDate in range OR orders without deliveryDate (null)
     if (startDate && endDate) {
-      where.deliveryDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      where.OR = [
+        {
+          deliveryDate: {
+            gte: start,
+            lte: end,
+          },
+        },
+        {
+          deliveryDate: null,
+        },
+      ];
     }
 
     // Get orders that are not linked to any production plans
@@ -119,7 +132,10 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return createOptimizedResponse(ordersWithCoverage, {
+    // Filter out orders that are already planned
+    const unplannedOrders = ordersWithCoverage.filter(order => !order.isPlanned);
+
+    return createOptimizedResponse(unplannedOrders, {
       cacheType: 'dynamic',
       compression: true,
     });

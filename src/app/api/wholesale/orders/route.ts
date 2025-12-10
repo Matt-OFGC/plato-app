@@ -232,13 +232,37 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by delivery date range
+    // Include orders with deliveryDate in range OR orders without deliveryDate (null)
     if (startDate || endDate) {
-      where.deliveryDate = {};
-      if (startDate) {
-        where.deliveryDate.gte = new Date(startDate);
-      }
-      if (endDate) {
-        where.deliveryDate.lte = new Date(endDate);
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        
+        where.OR = [
+          {
+            deliveryDate: {
+              gte: start,
+              lte: end,
+            },
+          },
+          {
+            deliveryDate: null,
+          },
+        ];
+      } else {
+        where.deliveryDate = {};
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          where.deliveryDate.gte = start;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          where.deliveryDate.lte = end;
+        }
       }
     }
 

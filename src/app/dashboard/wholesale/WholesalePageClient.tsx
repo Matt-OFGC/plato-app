@@ -79,12 +79,6 @@ export default function WholesalePageClient({
 
   return (
     <div className="space-y-6">
-      {/* Modern Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
-        <h1 className="text-3xl font-bold mb-2">Wholesale Management</h1>
-        <p className="text-green-100">Manage customers, orders, invoices, and payments</p>
-      </div>
-
       {/* Tab Navigation - Modern Style */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2">
         <nav className="flex space-x-2">
