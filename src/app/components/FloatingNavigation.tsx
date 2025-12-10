@@ -427,12 +427,11 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
       {/* Floating Navigation Tabs or Recipe View Switchers - Top Center */}
       {/* Mobile (iPhone): Scrollable tabs with smaller padding, positioned below menu button */}
       {/* iPad & Desktop: Centered tabs with standard padding */}
-      {isRecipePage && recipeView ? (
-        // Recipe View Switchers - fixed glassy header
+      {isRecipePage && recipeView && !sidebarOpen ? (
+        // Recipe View Switchers - fixed glassy header (hidden when sidebar is open)
         <div className={`fixed z-50
                         max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
-                        md:top-6 md:left-1/2 md:-translate-x-1/2
-                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+                        md:top-6 md:left-1/2 md:-translate-x-1/2`}>
           <div className="flex items-center gap-1.5 md:gap-2 bg-white/90 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
               <button
                 onClick={() => recipeView.setViewMode("whole")}
@@ -477,12 +476,11 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
               </button>
             </div>
           </div>
-      ) : tabs.length > 0 ? (
-        // Regular Navigation Tabs - fixed glassy header
+      ) : tabs.length > 0 && !sidebarOpen ? (
+        // Regular Navigation Tabs - fixed glassy header (hidden when sidebar is open)
         <div className={`fixed z-50
                         max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
-                        md:top-6 md:left-1/2 md:-translate-x-1/2
-                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+                        md:top-6 md:left-1/2 md:-translate-x-1/2`}>
           <div className="flex items-center gap-1.5 md:gap-2 bg-white/90 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
             {tabs.map((tab, index) => (
               <button
