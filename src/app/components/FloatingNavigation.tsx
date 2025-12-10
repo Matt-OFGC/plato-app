@@ -8,7 +8,6 @@ import { usePageActions } from "./PageActionContext";
 import { FloatingFilter } from "./FloatingFilter";
 import { SmartImportButton } from "./SmartImportButton";
 import { useRecipeView } from "./RecipeViewContext";
-import { ScrollHideNav } from "./ScrollHideNav";
 
 interface FloatingNavigationProps {
   onMenuClick: () => void;
@@ -429,13 +428,12 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
       {/* Mobile (iPhone): Scrollable tabs with smaller padding, positioned below menu button */}
       {/* iPad & Desktop: Centered tabs with standard padding */}
       {isRecipePage && recipeView ? (
-        // Recipe View Switchers - with scroll hiding
-        <ScrollHideNav hideOnScroll={true} threshold={50}>
-          <div className={`fixed z-50
-                          max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
-                          md:top-6 md:left-1/2 md:-translate-x-1/2
-                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
+        // Recipe View Switchers - fixed glassy header
+        <div className={`fixed z-50
+                        max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
+                        md:top-6 md:left-1/2 md:-translate-x-1/2
+                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+          <div className="flex items-center gap-1.5 md:gap-2 bg-white/90 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
               <button
                 onClick={() => recipeView.setViewMode("whole")}
                 className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
@@ -479,15 +477,13 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
               </button>
             </div>
           </div>
-        </ScrollHideNav>
       ) : tabs.length > 0 ? (
-        // Regular Navigation Tabs - with scroll hiding
-        <ScrollHideNav hideOnScroll={true} threshold={50}>
-          <div className={`fixed z-50
-                          max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
-                          md:top-6 md:left-1/2 md:-translate-x-1/2
-                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
+        // Regular Navigation Tabs - fixed glassy header
+        <div className={`fixed z-50
+                        max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
+                        md:top-6 md:left-1/2 md:-translate-x-1/2
+                        ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+          <div className="flex items-center gap-1.5 md:gap-2 bg-white/90 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
             {tabs.map((tab, index) => (
               <button
                 key={index}
@@ -506,7 +502,6 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
             ))}
             </div>
           </div>
-        </ScrollHideNav>
       ) : null}
 
       {/* Recipe Page Action Buttons - Edit & Print - Top Right when on recipe page */}

@@ -71,6 +71,7 @@ export default function WholesalePageClient({
     { id: "orders", label: "Orders", icon: "📋" },
     { id: "calendar", label: "Calendar", icon: "📅" },
     { id: "invoices", label: "Invoices", icon: "🧾" },
+    { id: "analytics", label: "Analytics", icon: "📊" },
   ];
 
   const activeCustomers = customers.filter(c => c.isActive);
@@ -288,6 +289,21 @@ export default function WholesalePageClient({
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === "analytics" && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics</h2>
+              <p className="text-gray-600">View sales trends, customer insights, and performance metrics</p>
+            </div>
+            <button
+              onClick={() => router.push("/dashboard/analytics")}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              Open Analytics Dashboard →
+            </button>
           </div>
         )}
       </div>
