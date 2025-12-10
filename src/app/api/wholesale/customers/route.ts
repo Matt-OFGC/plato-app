@@ -57,35 +57,41 @@ export async function POST(request: NextRequest) {
     // SECURITY: Verify user has access to this company
     const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
     if (!hasCompany) {
+      logger.error("User does not have access to company", { userId: session.id, companyId: parsedCompanyId }, "Wholesale/Customers");
       return NextResponse.json(
         { error: "No access to this company" },
         { status: 403 }
       );
     }
 
+    // Prepare data with proper defaults
+    const customerData: any = {
+      name,
+      contactName: contactName || null,
+      email: email || null,
+      phone: phone || null,
+      address: address || null,
+      city: city || null,
+      postcode: postcode || null,
+      country: country || null,
+      notes: notes || null,
+      isActive: isActive ?? true,
+      companyId: parsedCompanyId,
+      openingHours: openingHours && typeof openingHours === 'object' && Object.keys(openingHours).length > 0 ? openingHours : null,
+      deliveryDays: Array.isArray(deliveryDays) ? deliveryDays : [],
+      preferredDeliveryTime: preferredDeliveryTime || null,
+      paymentTerms: paymentTerms || null,
+      creditLimit: creditLimit && creditLimit !== '' ? parseFloat(String(creditLimit)) : null,
+      taxId: taxId || null,
+      accountManager: accountManager || null,
+      specialInstructions: specialInstructions || null,
+      orderFrequency: orderFrequency || null,
+    };
+
+    logger.debug("Creating customer with data", customerData, "Wholesale/Customers");
+
     const customer = await prisma.wholesaleCustomer.create({
-      data: {
-        name,
-        contactName,
-        email,
-        phone,
-        address,
-        city,
-        postcode,
-        country,
-        notes,
-        isActive: isActive ?? true,
-        companyId: parsedCompanyId,
-        openingHours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
-        deliveryDays: deliveryDays || [],
-        preferredDeliveryTime,
-        paymentTerms,
-        creditLimit: creditLimit ? parseFloat(creditLimit) : null,
-        taxId,
-        accountManager,
-        specialInstructions,
-        orderFrequency,
-      },
+      data: customerData,
       include: {
         _count: {
           select: {
@@ -97,10 +103,20 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(customer);
-  } catch (error) {
+  } catch (error: any) {
     logger.error("Failed to create wholesale customer", error, "Wholesale/Customers");
+    console.error("Customer creation error details:", {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+      stack: error?.stack,
+    });
     return NextResponse.json(
-      { error: "Failed to create customer" },
+      { 
+        error: "Failed to create customer",
+        details: error?.message || "Unknown error",
+        code: error?.code || "UNKNOWN_ERROR"
+      },
       { status: 500 }
     );
   }

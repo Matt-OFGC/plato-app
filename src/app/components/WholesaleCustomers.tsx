@@ -181,7 +181,8 @@ export function WholesaleCustomers({
         closeModal();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to save customer");
+        console.error("Customer save error:", data);
+        alert(data.details || data.error || "Failed to save customer");
       }
     } catch (error) {
       alert("Network error");
