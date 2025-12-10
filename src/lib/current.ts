@@ -63,6 +63,16 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     return cached;
   }
 
+  return await fetchUserAndCompany(user.id);
+}
+
+// Internal function to fetch user and company data
+async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
+  const user = await getUserFromSession();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
   try {
     // First, check if user has any memberships at all (including inactive)
     const userWithAllMemberships = await prisma.user.findUnique({
