@@ -50,18 +50,10 @@ interface PurchaseOrder {
   }>;
 }
 
-interface PurchaseOrdersPageProps {
-  suppliers: Supplier[];
-  ingredients: Ingredient[];
-  companyId: number;
-}
-
-export function PurchaseOrdersPage({
-  suppliers,
-  ingredients,
-  companyId
-}: PurchaseOrdersPageProps) {
+export default function PurchaseOrdersPage() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<PurchaseOrder | null>(null);
@@ -81,7 +73,30 @@ export function PurchaseOrdersPage({
     }
   };
 
+  // Fetch suppliers and ingredients
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [suppliersRes, ingredientsRes] = await Promise.all([
+          fetch('/api/suppliers'),
+          fetch('/api/ingredients'),
+        ]);
+        
+        const suppliersData = await suppliersRes.json();
+        const ingredientsData = await ingredientsRes.json();
+        
+        if (suppliersData.success) {
+          setSuppliers(suppliersData.suppliers || []);
+        }
+        if (ingredientsData.success) {
+          setIngredients(ingredientsData.ingredients || []);
+        }
+      } catch (error) {
+        console.error('Error fetching suppliers/ingredients:', error);
+      }
+    };
+    
+    fetchData();
     fetchOrders();
   }, []);
 
