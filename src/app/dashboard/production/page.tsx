@@ -34,46 +34,65 @@ export default async function ProductionPage() {
   // If no company, automatically create one for the user
   if (!companyId && userWithMemberships) {
     try {
-      // Generate a default company name from user's name or email
-      const defaultCompanyName = userWithMemberships.name 
-        ? `${userWithMemberships.name}'s Company`
-        : `${userWithMemberships.email.split('@')[0]}'s Company`;
-      
-      // Generate unique slug
-      const { generateUniqueSlug } = await import('@/lib/slug');
-      let slug = generateUniqueSlug(defaultCompanyName);
-      // Ensure slug is unique
-      let counter = 1;
-      while (await prisma.company.findUnique({ where: { slug } })) {
-        slug = generateUniqueSlug(`${defaultCompanyName} ${counter}`);
-        counter++;
+      // First check if user already has any company (including inactive memberships)
+      const existingMembership = await prisma.membership.findFirst({
+        where: { userId: userWithMemberships.id },
+        include: { company: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (existingMembership && existingMembership.company) {
+        // User has a company but membership might be inactive - activate it
+        if (!existingMembership.isActive) {
+          await prisma.membership.update({
+            where: { id: existingMembership.id },
+            data: { isActive: true },
+          });
+        }
+        companyId = existingMembership.company.id;
+        company = existingMembership.company;
+      } else {
+        // No company exists - create one
+        const defaultCompanyName = userWithMemberships.name 
+          ? `${userWithMemberships.name}'s Company`
+          : `${userWithMemberships.email.split('@')[0]}'s Company`;
+        
+        // Generate unique slug
+        const { generateUniqueSlug } = await import('@/lib/slug');
+        let slug = generateUniqueSlug(defaultCompanyName);
+        // Ensure slug is unique
+        let counter = 1;
+        while (await prisma.company.findUnique({ where: { slug } })) {
+          slug = generateUniqueSlug(`${defaultCompanyName} ${counter}`);
+          counter++;
+        }
+        
+        // Create company with default values
+        const newCompany = await prisma.company.create({
+          data: {
+            name: defaultCompanyName,
+            slug,
+            businessType: 'bakery', // Default business type
+            country: 'United Kingdom', // Default country
+          },
+        });
+
+        // Create membership for the user as ADMIN
+        await prisma.membership.create({
+          data: {
+            userId: userWithMemberships.id,
+            companyId: newCompany.id,
+            role: 'ADMIN',
+            isActive: true,
+          },
+        });
+
+        // Update companyId for this request
+        companyId = newCompany.id;
+        company = newCompany;
+        
+        console.log(`Auto-created company for user ${userWithMemberships.id}: ${newCompany.name} (ID: ${newCompany.id})`);
       }
-      
-      // Create company with default values
-      const newCompany = await prisma.company.create({
-        data: {
-          name: defaultCompanyName,
-          slug,
-          businessType: 'bakery', // Default business type
-          country: 'United Kingdom', // Default country
-        },
-      });
-
-      // Create membership for the user as ADMIN
-      await prisma.membership.create({
-        data: {
-          userId: userWithMemberships.id,
-          companyId: newCompany.id,
-          role: 'ADMIN',
-          isActive: true,
-        },
-      });
-
-      // Update companyId for this request
-      companyId = newCompany.id;
-      company = newCompany;
-      
-      console.log(`Auto-created company for user ${userWithMemberships.id}: ${newCompany.name} (ID: ${newCompany.id})`);
     } catch (error) {
       console.error("Error auto-creating company:", error);
       // If auto-creation fails, show error message
