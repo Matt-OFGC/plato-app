@@ -1056,7 +1056,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         onSellPriceChange={setSellPrice}
         wholesalePrice={wholesalePrice}
         onWholesalePriceChange={setWholesalePrice}
-        recipeId={recipeId || 0}
+        recipeId={recipeId}
         onSave={async (price: number) => {
           if (!recipeId) throw new Error("Recipe ID is required");
           await saveSellPrice(recipeId, price);

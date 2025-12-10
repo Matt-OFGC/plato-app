@@ -53,6 +53,10 @@ export default function CostInsightsModal({
   }, [wholesalePrice, isOpen]);
   
   const handleSave = async () => {
+    if (!recipeId) {
+      alert('Recipe ID is required');
+      return;
+    }
     setIsSaving(true);
     try {
       await onSave(localSellPrice);
@@ -67,7 +71,7 @@ export default function CostInsightsModal({
   };
 
   const handleSaveWholesale = async () => {
-    if (!onSaveWholesale || !onWholesalePriceChange) return;
+    if (!onSaveWholesale || !onWholesalePriceChange || !recipeId) return;
     setIsSavingWholesale(true);
     try {
       await onSaveWholesale(localWholesalePrice);

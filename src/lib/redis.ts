@@ -51,7 +51,7 @@ async function initRedis() {
       
       redisClient = new redis.Redis(redisUrl, {
         maxRetriesPerRequest: 3,
-        retryStrategy: (times) => {
+        retryStrategy: (times: number) => {
           const delay = Math.min(times * 50, 2000);
           return delay;
         },
