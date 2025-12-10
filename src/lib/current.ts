@@ -2,7 +2,7 @@ import { prisma } from './prisma';
 import { getUserFromSession } from './auth-simple';
 import type { Brand } from '@/lib/brands/types';
 import type { BrandConfig } from '@/lib/brands/types';
-import { getBrandConfig } from '@/lib/brands/registry';
+import { getBrandConfig, brandExists } from '@/lib/brands/registry';
 import type { App } from '@/lib/apps/types';
 import type { AppConfig } from '@/lib/apps/types';
 import { getAppConfig } from '@/lib/apps/registry';
@@ -112,7 +112,13 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     
     // For backward compatibility, use app as brand
     const brand = app as Brand | null;
-    const brandConfig = brand ? getBrandConfig(brand) : null;
+    let brandConfig: BrandConfig | null = null;
+    try {
+      brandConfig = brand && brandExists(brand) ? getBrandConfig(brand) : null;
+    } catch (error) {
+      // Brand config not available, continue without it
+      logger.debug('Brand config not available', error, 'Current');
+    }
 
     const result = {
       companyId,
