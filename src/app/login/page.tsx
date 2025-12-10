@@ -24,6 +24,8 @@ function LoginForm() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
+      console.log('[Login] Starting login request...', { email });
+      
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,15 +34,19 @@ function LoginForm() {
       });
 
       clearTimeout(timeoutId);
+      
+      console.log('[Login] Response received', { ok: response.ok, status: response.status });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Login failed" }));
+        console.error('[Login] Login failed', errorData);
         setError(errorData.error || "Login failed");
         setLoading(false);
         return;
       }
 
       const data = await response.json();
+      console.log('[Login] Login successful', { userId: data.user?.id });
 
       // Check if device mode should be offered
       if (data.canEnableDeviceMode && data.company) {
