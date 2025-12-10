@@ -87,7 +87,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
                 country: true,
                 phone: true,
                 logoUrl: true,
-                brand: true
+                app: true
               }
             }
           },
@@ -106,13 +106,13 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     const companyId = primaryMembership?.companyId || null;
     const company = primaryMembership?.company || null;
     
-    // Get brand config if company has a brand
-    const brand = company?.brand || null;
-    const brandConfig = brand ? getBrandConfig(brand) : null;
-    
-    // Convert brand to app for compatibility (they're the same type)
-    const app = brand as App | null;
+    // Get app config if company has an app
+    const app = company?.app || null;
     const appConfig = app ? getAppConfig(app) : null;
+    
+    // For backward compatibility, use app as brand
+    const brand = app as Brand | null;
+    const brandConfig = brand ? getBrandConfig(brand) : null;
 
     const result = {
       companyId,
