@@ -184,6 +184,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     };
 
     // Cache the result in Redis (silently fail if Redis unavailable)
+    const cacheKey = CacheKeys.userSession(userId);
     try {
       await setCache(cacheKey, result, CACHE_TTL.USER_SESSION);
     } catch (error) {
@@ -205,7 +206,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
           where: { userId: user.id },
           select: { id: true, companyId: true, isActive: true, role: true },
         });
-        console.error(`User ${user.id} has ${memberships.length} membership(s). Active: ${memberships.filter(m => m.isActive).length}`);
+        console.error(`User ${userId} has ${memberships.length} membership(s). Active: ${memberships.filter(m => m.isActive).length}`);
         if (memberships.length > 0 && memberships.filter(m => m.isActive).length === 0) {
           console.error('User has memberships but none are active. Activating first membership...');
           await prisma.membership.update({
@@ -213,7 +214,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             data: { isActive: true }
           });
           // Clear cache and retry
-          await deleteCache(CacheKeys.userSession(user.id));
+          await deleteCache(CacheKeys.userSession(userId));
           return await fetchUserAndCompany(userId);
         }
       } catch (retryError) {
