@@ -48,14 +48,43 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
 
   // Production section - show tabs for easy navigation between production pages
   if (pathname.startsWith('/dashboard/production') || pathname.startsWith('/dashboard/wholesale') || pathname.startsWith('/dashboard/analytics')) {
-    // If on wholesale orders page, show Orders tab
-    if (pathname.startsWith('/dashboard/wholesale/orders')) {
+    // Wholesale-specific pages - show detailed tabs
+    if (pathname.startsWith('/dashboard/wholesale')) {
+      // Orders page
+      if (pathname.startsWith('/dashboard/wholesale/orders')) {
+        return { 
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
+        };
+      }
+      // Calendar page
+      if (pathname.startsWith('/dashboard/wholesale/calendar')) {
+        return { 
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
+        };
+      }
+      // Invoices page
+      if (pathname.startsWith('/dashboard/wholesale/invoices')) {
+        return { 
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
+        };
+      }
+      // Main wholesale page (shows customers by default)
+      if (pathname === '/dashboard/wholesale' || pathname === '/dashboard/wholesale/') {
+        return { 
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
+        };
+      }
+      // Default for other wholesale pages
       return { 
-        tabs: ['Production', 'Wholesale', 'Orders', 'Analytics'],
-        links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/analytics']
+        tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+        links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
       };
     }
-    // Default tabs for production/wholesale/analytics
+    // Default tabs for production/analytics (not wholesale)
     return { 
       tabs: ['Production', 'Wholesale', 'Analytics'],
       links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/analytics']
@@ -277,15 +306,28 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           setActiveTab(-1);
         }
       } else {
-        // For wholesale orders, check exact match first
-        if (pathname.startsWith('/dashboard/wholesale/orders')) {
-          const ordersIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale/orders');
-          if (ordersIndex >= 0) {
-            setActiveTab(ordersIndex);
+        // For wholesale pages, check exact matches first
+        if (pathname.startsWith('/dashboard/wholesale')) {
+          // Check for exact matches first (more specific routes)
+          let activeIndex = -1;
+          
+          if (pathname.startsWith('/dashboard/wholesale/orders')) {
+            activeIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale/orders');
+          } else if (pathname.startsWith('/dashboard/wholesale/calendar')) {
+            activeIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale/calendar');
+          } else if (pathname.startsWith('/dashboard/wholesale/invoices')) {
+            activeIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale/invoices');
+          } else if (pathname === '/dashboard/wholesale' || pathname === '/dashboard/wholesale/') {
+            // Main wholesale page - highlight Customers tab (index 5)
+            activeIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale');
+          }
+          
+          if (activeIndex >= 0) {
+            setActiveTab(activeIndex);
           } else {
-            // Fallback to wholesale tab if orders link not found
-            const wholesaleIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale');
-            setActiveTab(wholesaleIndex >= 0 ? wholesaleIndex : 0);
+            // Fallback: find first matching link
+            const fallbackIndex = tabLinks.findIndex(link => pathname.startsWith(link));
+            setActiveTab(fallbackIndex >= 0 ? fallbackIndex : 0);
           }
         } else {
           const currentIndex = tabLinks.findIndex(link => pathname.startsWith(link));
