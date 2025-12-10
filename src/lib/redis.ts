@@ -29,34 +29,47 @@ async function initRedis() {
   }
 
   try {
-    // Try to import redis client
-    const redis = await import("ioredis");
-    redisClient = new redis.Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-      enableReadyCheck: true,
-      lazyConnect: true,
-    });
+    // Add timeout to prevent hanging
+    const initPromise = (async () => {
+      // Try to import redis client
+      const redis = await import("ioredis");
+      redisClient = new redis.Redis(redisUrl, {
+        maxRetriesPerRequest: 3,
+        retryStrategy: (times) => {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+        enableReadyCheck: true,
+        lazyConnect: true,
+        connectTimeout: 2000, // 2 second connection timeout
+        commandTimeout: 1000, // 1 second command timeout
+      });
 
-    redisClient.on("error", (error: Error) => {
-      logger.error("Redis connection error", error, "Redis");
-      redisEnabled = false;
-    });
+      redisClient.on("error", (error: Error) => {
+        logger.error("Redis connection error", error, "Redis");
+        redisEnabled = false;
+      });
 
-    redisClient.on("connect", () => {
-      logger.info("Redis connected", undefined, "Redis");
+      redisClient.on("connect", () => {
+        logger.info("Redis connected", undefined, "Redis");
+        redisEnabled = true;
+      });
+
+      await redisClient.connect();
       redisEnabled = true;
-    });
-
-    await redisClient.connect();
-    redisEnabled = true;
-    return redisClient;
+      return redisClient;
+    })();
+    
+    // 3 second timeout for Redis initialization
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Redis initialization timeout')), 3000)
+    );
+    
+    return await Promise.race([initPromise, timeoutPromise]);
   } catch (error) {
     logger.warn("Redis initialization failed, caching disabled", error, "Redis");
     redisEnabled = false;
+    redisClient = null; // Reset so we can try again
     return null;
   }
 }

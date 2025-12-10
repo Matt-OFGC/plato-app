@@ -127,14 +127,20 @@ export async function POST(request: NextRequest) {
     });
 
     // Create session with remember me option and request info for device tracking
+    // Add timeout to prevent hanging
     try {
-      await createSession({
+      const sessionPromise = createSession({
         id: user.id,
         email: user.email,
         name: user.name || undefined,
         isAdmin: user.isAdmin,
       }, rememberMe, { headers: request.headers });
-
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Session creation timeout')), 5000)
+      );
+      
+      await Promise.race([sessionPromise, timeoutPromise]);
       logger.info('[Auth/Login] Session created for user', { userId: user.id, email: user.email });
     } catch (sessionError) {
       logger.error('[Auth/Login] Failed to create session', sessionError);
