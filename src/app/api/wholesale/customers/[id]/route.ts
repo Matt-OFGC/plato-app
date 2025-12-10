@@ -28,6 +28,15 @@ export async function PATCH(
       country,
       notes,
       isActive,
+      openingHours,
+      deliveryDays,
+      preferredDeliveryTime,
+      paymentTerms,
+      creditLimit,
+      taxId,
+      accountManager,
+      specialInstructions,
+      orderFrequency,
     } = body;
 
     // Verify customer exists and user has access
@@ -49,20 +58,51 @@ export async function PATCH(
       );
     }
 
+    const updateData: any = {
+      name,
+      contactName,
+      email,
+      phone,
+      address,
+      city,
+      postcode,
+      country,
+      notes,
+      isActive,
+    };
+
+    // Add new fields if provided
+    if (openingHours !== undefined) {
+      updateData.openingHours = openingHours ? JSON.parse(JSON.stringify(openingHours)) : null;
+    }
+    if (deliveryDays !== undefined) {
+      updateData.deliveryDays = deliveryDays || [];
+    }
+    if (preferredDeliveryTime !== undefined) {
+      updateData.preferredDeliveryTime = preferredDeliveryTime;
+    }
+    if (paymentTerms !== undefined) {
+      updateData.paymentTerms = paymentTerms;
+    }
+    if (creditLimit !== undefined) {
+      updateData.creditLimit = creditLimit ? parseFloat(creditLimit) : null;
+    }
+    if (taxId !== undefined) {
+      updateData.taxId = taxId;
+    }
+    if (accountManager !== undefined) {
+      updateData.accountManager = accountManager;
+    }
+    if (specialInstructions !== undefined) {
+      updateData.specialInstructions = specialInstructions;
+    }
+    if (orderFrequency !== undefined) {
+      updateData.orderFrequency = orderFrequency;
+    }
+
     const customer = await prisma.wholesaleCustomer.update({
       where: { id: customerId },
-      data: {
-        name,
-        contactName,
-        email,
-        phone,
-        address,
-        city,
-        postcode,
-        country,
-        notes,
-        isActive,
-      },
+      data: updateData,
       include: {
         _count: {
           select: {
@@ -85,7 +125,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -93,7 +133,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const customerId = parseInt(params.id);
+    const { id } = await params;
+    const customerId = parseInt(id);
 
     // Verify customer exists and user has access
     const customer = await prisma.wholesaleCustomer.findUnique({

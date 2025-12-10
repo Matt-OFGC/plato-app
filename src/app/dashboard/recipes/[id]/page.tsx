@@ -3,7 +3,6 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { redirect } from "next/navigation";
 import RecipeClient from "./RecipeClient";
 import type { RecipeMock, Ingredient, RecipeStep } from "@/lib/mocks/recipe";
-import { getOrCompute, CacheKeys, CACHE_TTL } from "@/lib/redis";
 
 export const dynamic = 'force-dynamic';
 
@@ -60,64 +59,38 @@ export default async function RecipePage({ params }: Props) {
     }
   }
 
-  // Fetch categories, storage, shelf life options, and ingredients for dropdowns with Redis caching
+  // Fetch categories, storage, shelf life options, and ingredients for dropdowns
   const [categories, storageOptions, shelfLifeOptions, availableIngredientsRaw] = await Promise.all([
-    getOrCompute(
-      CacheKeys.categories(companyId),
-      async () => {
-        return await prisma.category.findMany({
-          where: { companyId },
-          orderBy: { order: "asc" },
-          select: { id: true, name: true, description: true, color: true }
-        });
-      },
-      CACHE_TTL.CATEGORIES
-    ),
-    getOrCompute(
-      `company:${companyId}:storage-options`,
-      async () => {
-        return await prisma.storageOption.findMany({
-          where: { companyId },
-          orderBy: { order: "asc" },
-          select: { id: true, name: true, description: true, icon: true }
-        });
-      },
-      CACHE_TTL.STATIC_DATA
-    ),
-    getOrCompute(
-      `company:${companyId}:shelf-life-options`,
-      async () => {
-        return await prisma.shelfLifeOption.findMany({
-          where: { companyId },
-          orderBy: { order: "asc" },
-          select: { id: true, name: true, description: true }
-        });
-      },
-      CACHE_TTL.STATIC_DATA
-    ),
-    getOrCompute(
-      CacheKeys.ingredients(companyId),
-      async () => {
-        return await prisma.ingredient.findMany({
-          where: { companyId },
-          orderBy: { name: "asc" },
-          select: { 
-            id: true, 
-            name: true, 
-            packUnit: true,
-            originalUnit: true,
-            packPrice: true,
-            packQuantity: true,
-            densityGPerMl: true,
-            allergens: true,
-            batchPricing: true,
-            servingsPerPack: true,
-            servingUnit: true
-          }
-        });
-      },
-      CACHE_TTL.INGREDIENTS
-    ),
+    prisma.category.findMany({
+      where: { companyId },
+      orderBy: { order: "asc" },
+      select: { id: true, name: true, description: true, color: true }
+    }),
+    prisma.storageOption.findMany({
+      where: { companyId },
+      orderBy: { order: "asc" },
+      select: { id: true, name: true, description: true, icon: true }
+    }),
+    prisma.shelfLifeOption.findMany({
+      where: { companyId },
+      orderBy: { order: "asc" },
+      select: { id: true, name: true, description: true }
+    }),
+    prisma.ingredient.findMany({
+      where: { companyId },
+      orderBy: { name: "asc" },
+      select: { 
+        id: true, 
+        name: true, 
+        packUnit: true,
+        originalUnit: true,
+        packPrice: true,
+        packQuantity: true,
+        densityGPerMl: true,
+        allergens: true,
+        batchPricing: true
+      }
+    }),
   ]);
 
   // Convert Prisma Decimal fields to numbers for client components

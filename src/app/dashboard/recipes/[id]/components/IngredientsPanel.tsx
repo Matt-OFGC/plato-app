@@ -21,7 +21,7 @@ interface IngredientsPanelProps {
   onIngredientsChange: (ingredients: Ingredient[]) => void;
   availableIngredients: Array<{ 
     id: number; 
-    name: string;
+    name: string; 
     unit: string; 
     costPerUnit: number; 
     packPrice: number;
@@ -30,8 +30,6 @@ interface IngredientsPanelProps {
     densityGPerMl: number | null;
     allergens: string[];
     batchPricing: Array<{ packQuantity: number; packPrice: number }> | null;
-    servingsPerPack: number | null;
-    servingUnit: string | null;
   }>;
 }
 
@@ -514,25 +512,12 @@ export default function IngredientsPanel({
                     ? fullIngredient.packPrice / fullIngredient.packQuantity 
                     : 0;
                   
-                  // Calculate and display serving size info if available
-                  let servingSizeInfo = null;
-                  if (fullIngredient.servingsPerPack && fullIngredient.servingsPerPack > 0 && fullIngredient.packQuantity > 0) {
-                    const servingSize = fullIngredient.packQuantity / fullIngredient.servingsPerPack;
-                    const servingUnit = fullIngredient.servingUnit || 'piece';
-                    servingSizeInfo = `${fullIngredient.servingsPerPack} ${servingUnit}${fullIngredient.servingsPerPack > 1 ? 's' : ''} per pack (${servingSize.toFixed(1)}${fullIngredient.packUnit} each)`;
-                  }
-                  
                   return (
-                    <div className="text-xs text-gray-500 ml-1 flex items-center gap-2 flex-wrap">
-                      <span>Cost: £{displayCost.toFixed(2)}</span>
-                      <span className="text-gray-400">
+                    <div className="text-xs text-gray-500 ml-1">
+                      Cost: £{displayCost.toFixed(2)}
+                      <span className="text-gray-400 ml-2">
                         (£{costPerUnit.toFixed(3)} per {fullIngredient.packUnit})
                       </span>
-                      {servingSizeInfo && (
-                        <span className="text-blue-600 font-medium">
-                          • {servingSizeInfo}
-                        </span>
-                      )}
                     </div>
                   );
                 } catch (error) {

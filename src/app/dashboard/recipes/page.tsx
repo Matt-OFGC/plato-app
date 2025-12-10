@@ -4,7 +4,6 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { RecipeCategoryFilter } from "@/components/RecipeCategoryFilter";
 import { RecipesViewWithBulkActions } from "@/components/RecipesViewWithBulkActions";
 import { RecipesPageClient } from "./RecipesPageClient";
-import { getOrCompute, CacheKeys, CACHE_TTL } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 
@@ -42,77 +41,50 @@ export default async function RecipesPage({ searchParams }: Props) {
   // Note: Cost filtering will be applied client-side after calculating costs
   // This is because costs are calculated from ingredients dynamically
     
-  // Build cache key based on filters
-  const cacheKey = `company:${companyId}:recipes:${category || 'all'}:${search || 'all'}`;
-  
   let recipesRaw: any[] = [];
   
   try {
-    recipesRaw = await getOrCompute(
-      cacheKey,
-      async () => {
-        return await prisma.recipe.findMany({ 
-          where: {
-            ...where,
-            // Filter out test recipes
-            NOT: {
-              OR: [
-                { name: { contains: "Test Category", mode: "insensitive" } },
-                { name: { startsWith: "Test ", mode: "insensitive" } },
-                // Also filter recipes in test categories
-                {
-                  categoryRef: {
-                    OR: [
-                      { name: { contains: "Test Category", mode: "insensitive" } },
-                      { name: { startsWith: "Test ", mode: "insensitive" } },
-                    ]
-                  }
-                }
-              ]
-            }
-          }, 
-          orderBy: { name: "asc" },
+    recipesRaw = await prisma.recipe.findMany({ 
+      where, 
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        yieldQuantity: true,
+        yieldUnit: true,
+        imageUrl: true,
+        bakeTime: true,
+        bakeTemp: true,
+        storage: true,
+        sellingPrice: true,
+        category: true,
+        categoryRef: {
+          select: {
+            name: true,
+            color: true,
+          }
+        },
+        items: {
           select: {
             id: true,
-            name: true,
-            description: true,
-            yieldQuantity: true,
-            yieldUnit: true,
-            imageUrl: true,
-            bakeTime: true,
-            bakeTemp: true,
-            storage: true,
-            sellingPrice: true,
-            category: true,
-            categoryRef: {
+            quantity: true,
+            ingredient: {
               select: {
-                name: true,
-                color: true,
-              }
-            },
-            items: {
-              select: {
-                id: true,
-                quantity: true,
-                ingredient: {
-                  select: {
-                    packPrice: true,
-                    packQuantity: true,
-                  }
-                }
-              }
-            },
-            sections: {
-              select: {
-                id: true,
-                bakeTime: true,
+                packPrice: true,
+                packQuantity: true,
               }
             }
           }
-        });
-      },
-      CACHE_TTL.RECIPES
-    );
+        },
+        sections: {
+          select: {
+            id: true,
+            bakeTime: true,
+          }
+        }
+      }
+    });
   } catch (error) {
     const { logger } = await import("@/lib/logger");
     logger.error('Database error in recipes page:', error);
@@ -120,8 +92,7 @@ export default async function RecipesPage({ searchParams }: Props) {
     recipesRaw = [];
   }
   
-  // Optimized cost calculation - batch process all recipes at once
-  // This is faster than individual map operations
+  // Serialize Decimal fields and calculate derived values for client component
   const recipes = recipesRaw.map(r => {
     // Serialize items with Decimal quantities
     const serializedItems = r.items.map(item => ({
@@ -134,18 +105,13 @@ export default async function RecipesPage({ searchParams }: Props) {
       }
     }));
 
-    // Optimized cost calculation - avoid repeated string conversions
-    let totalCost = 0;
-    for (const item of serializedItems) {
-      if (item.ingredient.packPrice && item.ingredient.packQuantity) {
-        const packPrice = Number(item.ingredient.packPrice);
-        const packQuantity = Number(item.ingredient.packQuantity);
-        const itemQuantity = Number(item.quantity);
-        if (packQuantity > 0 && itemQuantity > 0) {
-          totalCost += (packPrice / packQuantity) * itemQuantity;
-        }
-      }
-    }
+    // Calculate total cost
+    const totalCost = serializedItems.reduce((sum, item) => {
+      const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
+        ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
+        : 0;
+      return sum + (Number(item.quantity) * costPerUnit);
+    }, 0);
     
     // Calculate cost per serving (divide total cost by yield)
     const yieldQty = Number(r.yieldQuantity);
@@ -158,12 +124,9 @@ export default async function RecipesPage({ searchParams }: Props) {
       : null;
     
     // Calculate total time from all sections
-    let totalTime = 0;
-    for (const section of r.sections) {
-      if (section.bakeTime) {
-        totalTime += Number(section.bakeTime);
-      }
-    }
+    const totalTime = r.sections.reduce((sum, section) => {
+      return sum + (section.bakeTime ? Number(section.bakeTime) : 0);
+    }, 0);
     
     return {
       ...r,
@@ -190,31 +153,15 @@ export default async function RecipesPage({ searchParams }: Props) {
     });
   }
 
-  // Fetch categories with IDs for bulk edit with caching
-  const categoriesWithIds = await getOrCompute(
-    CacheKeys.categories(companyId),
-    async () => {
-      return await prisma.category.findMany({
-        where: { 
-          companyId,
-          // Filter out test categories
-          NOT: {
-            OR: [
-              { name: { contains: "Test Category", mode: "insensitive" } },
-              { name: { contains: "test category", mode: "insensitive" } },
-              { name: { startsWith: "Test ", mode: "insensitive" } },
-            ]
-          }
-        },
-        select: { id: true, name: true },
-        orderBy: { name: "asc" },
-      });
-    },
-    CACHE_TTL.CATEGORIES
-  );
+  // Get categories from the already fetched recipes (no extra query needed)
+  const categories = Array.from(new Set(recipes.map(r => r.categoryRef?.name).filter(Boolean) as string[])).sort();
 
-  // Extract category names for the filter (use all categories from database, not just those assigned to recipes)
-  const categories = categoriesWithIds.map(cat => cat.name).sort();
+  // Fetch categories with IDs for bulk edit
+  const categoriesWithIds = await prisma.category.findMany({
+    where: { companyId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <RecipesPageClient>
@@ -237,3 +184,5 @@ export default async function RecipesPage({ searchParams }: Props) {
     </RecipesPageClient>
   );
 }
+
+

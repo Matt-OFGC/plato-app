@@ -329,7 +329,6 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         // Update existing recipe
         const result = await saveRecipeChanges({
           recipeId: recipeId!,
-          name: recipeTitle.trim(),
           category: categoryName,
           storage: storageName,
           shelfLife: shelfLifeName,
@@ -501,7 +500,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         <div className="flex-shrink-0 px-6 pt-6 pb-4">
           <div className="max-w-[1600px] mx-auto">
             <RecipeHeader
-              title={recipeTitle || recipe.title || "New Recipe"}
+              title={isNew ? recipeTitle || "New Recipe" : recipe.title}
               category={categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}
               categoryId={categoryId}
               servings={servings}
@@ -512,10 +511,9 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
               imageUrl={imageUrl}
               onImageUpload={viewMode === "edit" ? handleImageUpload : undefined}
               isUploadingImage={isUploadingImage}
-              onTitleChange={viewMode === "edit" ? setRecipeTitle : undefined}
+              onTitleChange={isNew ? setRecipeTitle : undefined}
               onDelete={!isNew ? handleDelete : undefined}
               recipeId={recipeId}
-              sellPrice={sellPrice}
             />
           </div>
         </div>
@@ -550,11 +548,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                         fill
                         className="object-cover"
                         priority
-                        unoptimized={
-                          (imageUrl || recipe.imageUrl)?.startsWith('/uploads/') ||
-                          (imageUrl || recipe.imageUrl)?.startsWith('http://') ||
-                          (imageUrl || recipe.imageUrl)?.startsWith('https://')
-                        }
+                        unoptimized={(imageUrl || recipe.imageUrl)?.startsWith('/uploads/')}
                         onError={(e) => {
                           console.error('Photo view image failed to load:', imageUrl || recipe.imageUrl);
                           const target = e.target as HTMLImageElement;
@@ -1279,9 +1273,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
 export default function RecipeClient(props: Props) {
   const handlePrint = useCallback(() => {
-    // Use the recipe ID for the print route
-    window.open(`/dashboard/recipes/${props.recipe.id}/print`, '_blank');
-  }, [props.recipe.id]);
+    window.open(`/test-recipe-redesign/print/${props.recipe.title.toLowerCase().replace(/\s+/g, "-")}`, '_blank');
+  }, [props.recipe.title]);
 
   // Check if we're inside a RecipeViewProvider (from layout)
   const existingContext = useRecipeView();

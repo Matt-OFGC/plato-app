@@ -17,8 +17,7 @@ let redisEnabled = false;
 
 // Initialize Redis client
 async function initRedis() {
-  // If already initialized (even if failed), return the client or null
-  if (redisClient !== null || redisEnabled === false) {
+  if (redisClient !== null) {
     return redisClient;
   }
 
@@ -26,7 +25,6 @@ async function initRedis() {
   if (!redisUrl) {
     logger.debug("Redis not configured, caching disabled", undefined, "Redis");
     redisEnabled = false;
-    redisClient = null; // Mark as attempted
     return null;
   }
 
@@ -41,12 +39,10 @@ async function initRedis() {
       },
       enableReadyCheck: true,
       lazyConnect: true,
-      connectTimeout: 5000, // 5 second timeout
-      commandTimeout: 5000, // 5 second command timeout
     });
 
     redisClient.on("error", (error: Error) => {
-      logger.warn("Redis connection error", error, "Redis");
+      logger.error("Redis connection error", error, "Redis");
       redisEnabled = false;
     });
 
@@ -55,20 +51,12 @@ async function initRedis() {
       redisEnabled = true;
     });
 
-    // Try to connect with timeout
-    await Promise.race([
-      redisClient.connect(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Redis connection timeout")), 5000)
-      )
-    ]);
-    
+    await redisClient.connect();
     redisEnabled = true;
     return redisClient;
   } catch (error) {
     logger.warn("Redis initialization failed, caching disabled", error, "Redis");
     redisEnabled = false;
-    redisClient = null; // Mark as attempted
     return null;
   }
 }
@@ -107,21 +95,14 @@ export async function getCache<T>(key: string): Promise<T | null> {
       return null;
     }
 
-    // Add timeout to prevent hanging
-    const value = await Promise.race([
-      client.get(key),
-      new Promise<string | null>((_, reject) => 
-        setTimeout(() => reject(new Error("Redis get timeout")), 2000)
-      )
-    ]) as string | null;
-    
+    const value = await client.get(key);
     if (!value) {
       return null;
     }
 
     return JSON.parse(value) as T;
   } catch (error) {
-    // Silently fail - don't log warnings for expected failures
+    logger.warn("Cache get failed", error, "Redis");
     return null;
   }
 }
@@ -140,17 +121,10 @@ export async function setCache(
       return false;
     }
 
-    // Add timeout to prevent hanging
-    await Promise.race([
-      client.setex(key, ttl, JSON.stringify(value)),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Redis set timeout")), 2000)
-      )
-    ]);
-    
+    await client.setex(key, ttl, JSON.stringify(value));
     return true;
   } catch (error) {
-    // Silently fail - don't log warnings for expected failures
+    logger.warn("Cache set failed", error, "Redis");
     return false;
   }
 }
@@ -198,7 +172,6 @@ export async function deleteCachePattern(pattern: string): Promise<number> {
 
 /**
  * Invalidate cache for a company (useful when company data changes)
- * This is a full invalidation - use more targeted functions when possible
  */
 export async function invalidateCompanyCache(companyId: number): Promise<void> {
   const patterns = [
@@ -211,26 +184,8 @@ export async function invalidateCompanyCache(companyId: number): Promise<void> {
 
   await Promise.all(patterns.map(key => deleteCache(key)));
   
-  // Also invalidate recipe-specific cache keys (with filters)
-  await deleteCachePattern(`company:${companyId}:recipes:*`);
-  
   // Also invalidate user companies cache for all users (pattern match)
   await deleteCachePattern(`user:*:companies`);
-}
-
-/**
- * Invalidate only recipes cache (more targeted than full company cache)
- */
-export async function invalidateRecipesCache(companyId: number): Promise<void> {
-  await deleteCache(CacheKeys.recipes(companyId));
-  await deleteCachePattern(`company:${companyId}:recipes:*`);
-}
-
-/**
- * Invalidate only ingredients cache (more targeted than full company cache)
- */
-export async function invalidateIngredientsCache(companyId: number): Promise<void> {
-  await deleteCache(CacheKeys.ingredients(companyId));
 }
 
 /**

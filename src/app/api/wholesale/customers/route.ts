@@ -34,6 +34,15 @@ export async function POST(request: NextRequest) {
       notes,
       isActive,
       companyId,
+      openingHours,
+      deliveryDays,
+      preferredDeliveryTime,
+      paymentTerms,
+      creditLimit,
+      taxId,
+      accountManager,
+      specialInstructions,
+      orderFrequency,
     } = body;
 
     if (!name || !companyId) {
@@ -67,6 +76,15 @@ export async function POST(request: NextRequest) {
         notes,
         isActive: isActive ?? true,
         companyId: parsedCompanyId,
+        openingHours: openingHours ? JSON.parse(JSON.stringify(openingHours)) : null,
+        deliveryDays: deliveryDays || [],
+        preferredDeliveryTime,
+        paymentTerms,
+        creditLimit: creditLimit ? parseFloat(creditLimit) : null,
+        taxId,
+        accountManager,
+        specialInstructions,
+        orderFrequency,
       },
       include: {
         _count: {

@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
-import { logger } from './logger';
 
 export interface AuditLogEntry {
   id?: number;
@@ -40,7 +39,7 @@ export async function loginSuccess(userId: number, request: NextRequest): Promis
       }
     });
   } catch (error) {
-    logger.error('Failed to log login success', error, 'AuditLog');
+    console.error('Failed to log login success:', error);
   }
 }
 
@@ -61,7 +60,7 @@ export async function loginFailed(email: string, request: NextRequest, reason: s
       }
     });
   } catch (error) {
-    logger.error('Failed to log login failure', error, 'AuditLog');
+    console.error('Failed to log login failure:', error);
   }
 }
 
@@ -90,7 +89,7 @@ export async function logAction(
       }
     });
   } catch (error) {
-    logger.error('Failed to log action', error, 'AuditLog');
+    console.error('Failed to log action:', error);
   }
 }
 
@@ -112,7 +111,7 @@ export async function logSystemEvent(
       }
     });
   } catch (error) {
-    logger.error('Failed to log system event', error, 'AuditLog');
+    console.error('Failed to log system event:', error);
   }
 }
 
@@ -132,7 +131,7 @@ export async function getUserAuditLogs(
     
     return logs;
   } catch (error) {
-    logger.error('Failed to get user audit logs', error, 'AuditLog');
+    console.error('Failed to get user audit logs:', error);
     return [];
   }
 }
@@ -160,112 +159,7 @@ export async function getRecentAuditLogs(
     
     return logs;
   } catch (error) {
-    logger.error('Failed to get recent audit logs', error, 'AuditLog');
+    console.error('Failed to get recent audit logs:', error);
     return [];
   }
 }
-
-// Audit log object with specific action methods
-export const auditLog = {
-  async recipeDeleted(
-    userId: number,
-    recipeId: number,
-    recipeName: string,
-    companyId: number
-  ): Promise<void> {
-    try {
-      await prisma.auditLog.create({
-        data: {
-          userId,
-          action: 'RECIPE_DELETED',
-          resource: 'recipe',
-          resourceId: recipeId.toString(),
-          details: {
-            recipeName,
-            companyId,
-          },
-          timestamp: new Date()
-        }
-      });
-    } catch (error) {
-      logger.error('Failed to log recipe deletion', error, 'AuditLog');
-    }
-  },
-
-  async ingredientDeleted(
-    userId: number,
-    ingredientId: number,
-    ingredientName: string,
-    companyId: number
-  ): Promise<void> {
-    try {
-      await prisma.auditLog.create({
-        data: {
-          userId,
-          action: 'INGREDIENT_DELETED',
-          resource: 'ingredient',
-          resourceId: ingredientId.toString(),
-          details: {
-            ingredientName,
-            companyId,
-          },
-          timestamp: new Date()
-        }
-      });
-    } catch (error) {
-      logger.error('Failed to log ingredient deletion', error, 'AuditLog');
-    }
-  },
-
-  async memberRemoved(
-    userId: number,
-    removedUserId: number,
-    removedUserEmail: string,
-    companyId: number
-  ): Promise<void> {
-    try {
-      await prisma.auditLog.create({
-        data: {
-          userId,
-          action: 'MEMBER_REMOVED',
-          resource: 'team',
-          resourceId: removedUserId.toString(),
-          details: {
-            removedUserEmail,
-            companyId,
-          },
-          timestamp: new Date()
-        }
-      });
-    } catch (error) {
-      logger.error('Failed to log member removal', error, 'AuditLog');
-    }
-  },
-
-  async roleChanged(
-    userId: number,
-    targetUserId: number,
-    oldRole: string,
-    newRole: string,
-    companyId: number
-  ): Promise<void> {
-    try {
-      await prisma.auditLog.create({
-        data: {
-          userId,
-          action: 'ROLE_CHANGED',
-          resource: 'team',
-          resourceId: targetUserId.toString(),
-          details: {
-            oldRole,
-            newRole,
-            companyId,
-          },
-          timestamp: new Date()
-        }
-      });
-    } catch (error) {
-      logger.error('Failed to log role change', error, 'AuditLog');
-    }
-  },
-};

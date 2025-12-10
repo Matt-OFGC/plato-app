@@ -30,8 +30,6 @@ model Ingredient {
   supplierId          Int?
   customConversions   String?
   batchPricing        Json?
-  servingsPerPack     Int?
-  servingUnit         String?
   company             Company?                 @relation(fields: [companyId], references: [id])
   supplierRef         Supplier?                @relation(fields: [supplierId], references: [id])
   priceHistoryRecords IngredientPriceHistory[]
@@ -172,7 +170,7 @@ model User {
   subscriptionEndsAt         DateTime?
   subscriptionInterval       String                  @default("month")
   subscriptionStatus         String                  @default("free")
-  subscriptionTier           String                  @default("free") // Simplified: "free" or "paid"
+  subscriptionTier           String                  @default("starter")
   emailVerified              Boolean                 @default(false)
   verificationToken          String?                 @unique
   verificationTokenExpiresAt DateTime?
@@ -249,7 +247,6 @@ model Company {
   showTeam               Boolean                 @default(false)
   slug                   String?                 @unique
   website                String?
-  brand                  Brand                   @default(plato)
   safetyEnabled          Boolean?                @default(true) @map("safety_enabled")
   dataRetentionDays      Int?                    @default(730) @map("data_retention_days")
   activityLogs           ActivityLog[]
@@ -303,7 +300,6 @@ model Company {
   templateAppliances     TemplateAppliance[]     @relation("templateAppliances")
   temperatureRecords     TemperatureRecord[]     @relation("temperatureRecords")
   dailyTemperatureChecks DailyTemperatureCheck[] @relation("dailyTemperatureChecks")
-  @@index([brand])
 }
 
 model Membership {
@@ -318,7 +314,7 @@ model Membership {
   pin            String?
   pinHash        String?
   updatedAt      DateTime       @default(now()) @updatedAt
-  role           MemberRole     @default(EMPLOYEE)
+  role           MemberRole     @default(VIEWER)
   currency       String         @default("GBP")
   employmentType String?
   endDate        DateTime?
@@ -364,7 +360,7 @@ model Subscription {
   stripePriceId        String?
   stripeProductId      String?
   status               String    @default("active")
-  tier                 String    @default("paid") // Simplified: "free" or "paid"
+  tier                 String    @default("professional")
   price                Decimal   @default(19.00)
   currency             String    @default("GBP")
   interval             String    @default("month")
@@ -374,7 +370,6 @@ model Subscription {
   canceledAt           DateTime?
   maxIngredients       Int?
   maxRecipes           Int?
-  aiSubscriptionType   String?   // null, "unlimited", or "capped"
   metadata             Json?
   user                 User      @relation(fields: [userId], references: [id])
 }
@@ -487,7 +482,7 @@ model TeamInvitation {
   updatedAt  DateTime   @updatedAt
   companyId  Int
   email      String
-  role       MemberRole @default(EMPLOYEE)
+  role       MemberRole @default(VIEWER)
   invitedBy  Int
   token      String     @unique
   acceptedAt DateTime?
@@ -1876,15 +1871,11 @@ enum Unit {
   small
 }
 
-enum Brand {
-  plato
-  plato_bake
-}
-
 enum MemberRole {
-  ADMIN    // Full access including AI, can manage team and billing
-  MANAGER  // Can view and edit everything except AI
-  EMPLOYEE // View-only access
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
 }
 
 model OAuthAccount {

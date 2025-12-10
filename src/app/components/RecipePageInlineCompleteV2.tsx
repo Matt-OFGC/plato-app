@@ -6,7 +6,6 @@ import { Unit } from "@/generated/prisma";
 import { computeIngredientUsageCostWithDensity, BaseUnit } from "@/lib/units";
 import Link from "next/link";
 import { initPaneVars } from "@/lib/paneHeight";
-import { selectAllOnFocus } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -248,10 +247,8 @@ function RecipePageInlineCompleteV2Component({
   const [description, setDescription] = useState(recipe.description || "");
   const [imageUrl, setImageUrl] = useState(recipe.imageUrl || "");
   const [method, setMethod] = useState(recipe.method || "");
-  // For new recipes, default to 1 and 'each' to prevent scaling issues
-  const isNewRecipeCheck = recipe.sections.length === 0 && recipe.items.length === 0;
-  const [yieldQuantity, setYieldQuantity] = useState(isNewRecipeCheck ? 1 : recipe.yieldQuantity);
-  const [yieldUnit, setYieldUnit] = useState(isNewRecipeCheck ? 'each' : recipe.yieldUnit);
+  const [yieldQuantity, setYieldQuantity] = useState(recipe.yieldQuantity);
+  const [yieldUnit, setYieldUnit] = useState(recipe.yieldUnit);
   const [categoryId, setCategoryId] = useState<number | "">(recipe.categoryId || "");
   const [shelfLifeId, setShelfLifeId] = useState<number | "">(recipe.shelfLifeId || "");
   const [storageId, setStorageId] = useState<number | "">(recipe.storageId || "");
@@ -271,117 +268,18 @@ function RecipePageInlineCompleteV2Component({
   const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.price || "");
   
   // Batch recipe state
-  // IMPORTANT: Default to SINGLE mode to prevent incorrect scaling
-  // Only treat as batch if yieldUnit === 'slices' AND yieldQuantity > 1 AND there are existing ingredients
-  // This prevents recipes from being incorrectly scaled when loaded
-  const isNewRecipe = recipe.sections.length === 0 && recipe.items.length === 0;
-  const hasExistingIngredients = recipe.sections.some(s => s.items.length > 0) || recipe.items.length > 0;
-  // Only default to batch if it's clearly a batch recipe with ingredients already scaled
-  // For safety, default to single unless we're very confident it's batch
-  // For new recipes, ALWAYS default to single mode
-  const shouldDefaultToBatch = !isNewRecipe && recipe.yieldUnit === 'slices' && recipe.yieldQuantity > 1 && hasExistingIngredients;
-  const [isBatchRecipe, setIsBatchRecipe] = useState(shouldDefaultToBatch);
+  const [isBatchRecipe, setIsBatchRecipe] = useState(recipe.yieldUnit === 'slices');
   const [slicesPerBatch, setSlicesPerBatch] = useState(
-    isNewRecipe ? 1 : (shouldDefaultToBatch ? Number(recipe.yieldQuantity) || 8 : (recipe.yieldUnit === 'slices' ? Number(recipe.yieldQuantity) || 1 : 1))
+    recipe.yieldUnit === 'slices' ? Number(recipe.yieldQuantity) || 8 : 8
   );
-  
-  // Store the original slices per batch when switching modes for scaling
-  const previousSlicesPerBatchRef = useRef(slicesPerBatch);
-
-  // Handle batch/single toggle with ingredient scaling
-  const handleBatchToggle = useCallback((newIsBatch: boolean) => {
-    if (newIsBatch === isBatchRecipe) return; // No change
-    
-    const currentSlices = slicesPerBatch;
-    
-    if (newIsBatch) {
-      // Switching to batch: scale ingredients UP
-      // Use a default of 8 slices if current is 1 (single recipe)
-      const targetSlices = currentSlices === 1 ? 8 : currentSlices;
-      previousSlicesPerBatchRef.current = currentSlices;
-      
-      // Scale all ingredient quantities up
-      const scaleFactor = targetSlices / currentSlices;
-      const updatedSections = sections.map(section => ({
-        ...section,
-        items: section.items.map(item => {
-          const currentQty = parseFloat(item.quantity) || 0;
-          if (currentQty <= 0) return item; // Skip invalid quantities
-          const newQty = currentQty * scaleFactor;
-          return {
-            ...item,
-            quantity: newQty > 0.001 ? newQty.toFixed(3).replace(/\.?0+$/, '') : '0',
-          };
-        }),
-      }));
-      setSections(updatedSections);
-      setSlicesPerBatch(targetSlices);
-      setIsBatchRecipe(true);
-      setYieldUnit('slices');
-      setYieldQuantity(targetSlices);
-    } else {
-      // Switching to single: scale ingredients DOWN
-      previousSlicesPerBatchRef.current = currentSlices;
-      
-      // Scale all ingredient quantities down
-      const scaleFactor = 1 / currentSlices;
-      const updatedSections = sections.map(section => ({
-        ...section,
-        items: section.items.map(item => {
-          const currentQty = parseFloat(item.quantity) || 0;
-          if (currentQty <= 0) return item; // Skip invalid quantities
-          const newQty = currentQty * scaleFactor;
-          return {
-            ...item,
-            quantity: newQty > 0.001 ? newQty.toFixed(3).replace(/\.?0+$/, '') : '0',
-          };
-        }),
-      }));
-      setSections(updatedSections);
-      setSlicesPerBatch(1);
-      setIsBatchRecipe(false);
-      setYieldUnit('each');
-      setYieldQuantity(1);
-    }
-  }, [isBatchRecipe, slicesPerBatch, sections, setSections, setYieldUnit, setYieldQuantity]);
-
-  // Scale ingredients when slicesPerBatch changes in batch mode (but not on initial mount)
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      previousSlicesPerBatchRef.current = slicesPerBatch;
-      return;
-    }
-    
-    if (isBatchRecipe && previousSlicesPerBatchRef.current !== slicesPerBatch && previousSlicesPerBatchRef.current > 0) {
-      const scaleFactor = slicesPerBatch / previousSlicesPerBatchRef.current;
-      setSections(prevSections => prevSections.map(section => ({
-        ...section,
-        items: section.items.map(item => {
-          const currentQty = parseFloat(item.quantity) || 0;
-          if (currentQty <= 0) return item; // Skip invalid quantities
-          const newQty = currentQty * scaleFactor;
-          return {
-            ...item,
-            quantity: newQty > 0.001 ? newQty.toFixed(3).replace(/\.?0+$/, '') : '0',
-          };
-        }),
-      })));
-      previousSlicesPerBatchRef.current = slicesPerBatch;
-    }
-  }, [slicesPerBatch, isBatchRecipe, setSections]);
 
   // Keep yield in sync with batch mode for accurate saving and scaling
   useEffect(() => {
     if (isBatchRecipe) {
       if (yieldUnit !== 'slices') setYieldUnit('slices');
       if (yieldQuantity !== slicesPerBatch) setYieldQuantity(slicesPerBatch);
-    } else {
-      if (yieldUnit === 'slices') setYieldUnit('each');
-      if (yieldQuantity !== 1) setYieldQuantity(1);
     }
-  }, [isBatchRecipe, slicesPerBatch, yieldUnit, yieldQuantity]);
+  }, [isBatchRecipe, slicesPerBatch]);
   
   // Allergens popup state
   const [showAllergensPopup, setShowAllergensPopup] = useState(false);
@@ -493,12 +391,9 @@ function RecipePageInlineCompleteV2Component({
   }, [sections, ingredients]);
 
   const currentCostPerUnit = useMemo(() => {
-    // For single recipes, yieldQuantity is 1, so cost per unit = total cost
-    // For batch recipes, use slicesPerBatch for accurate per-slice cost
-    const effectiveYield = isBatchRecipe ? slicesPerBatch : yieldQuantity;
-    if (effectiveYield <= 0 || !currentRecipeCost) return 0;
-    return currentRecipeCost / effectiveYield;
-  }, [currentRecipeCost, isBatchRecipe, slicesPerBatch, yieldQuantity]);
+    if (recipe.yieldQuantity <= 0 || !currentRecipeCost) return 0;
+    return currentRecipeCost / recipe.yieldQuantity;
+  }, [currentRecipeCost, recipe.yieldQuantity]);
 
   // Get all ingredients for progress calculation
   const allIngredients = useMemo(() => {
@@ -727,11 +622,8 @@ function RecipePageInlineCompleteV2Component({
       formData.append('imageUrl', imageUrl);
       formData.append('method', method);
       // Ensure yield reflects batch settings
-      // IMPORTANT: In single mode, always save as 'each' with quantity 1 to prevent scaling issues
-      // Double-check: if not explicitly batch, force to single
-      const effectiveIsBatch = isBatchRecipe && slicesPerBatch > 1;
-      const effectiveYieldQuantity = effectiveIsBatch ? slicesPerBatch : 1;
-      const effectiveYieldUnit = effectiveIsBatch ? 'slices' : 'each';
+      const effectiveYieldQuantity = isBatchRecipe ? slicesPerBatch : yieldQuantity;
+      const effectiveYieldUnit = isBatchRecipe ? 'slices' : yieldUnit;
       formData.append('yieldQuantity', effectiveYieldQuantity.toString());
       formData.append('yieldUnit', effectiveYieldUnit);
       formData.append('portionsPerBatch', isBatchRecipe ? slicesPerBatch.toString() : '');
@@ -861,7 +753,6 @@ function RecipePageInlineCompleteV2Component({
               <input
                 type="number"
                 value={localQuantity}
-                onFocus={selectAllOnFocus}
                 onChange={(e) => {
                   // Only update local state during typing - no global state update
                   setLocalQuantity(e.target.value);
@@ -939,7 +830,6 @@ function RecipePageInlineCompleteV2Component({
                   step="0.01"
                   min="0"
                   value={item.price || ""}
-                  onFocus={selectAllOnFocus}
                   onChange={(e) => onUpdate('price', e.target.value)}
                   placeholder="0.00"
                   className="flex-1 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
@@ -954,7 +844,6 @@ function RecipePageInlineCompleteV2Component({
                 <input
                   type="text"
                   value={item.note}
-                  onFocus={selectAllOnFocus}
                   onChange={(e) => onUpdate('note', e.target.value)}
                   placeholder="Note"
                   className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500"
@@ -1052,7 +941,6 @@ function RecipePageInlineCompleteV2Component({
                   <input
                     type="text"
                     value={name}
-                    onFocus={selectAllOnFocus}
                     onChange={(e) => setName(e.target.value)}
                     className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-dashed border-gray-300 focus:border-emerald-500 focus:outline-none w-full"
                     placeholder="Recipe name..."
@@ -1125,49 +1013,20 @@ function RecipePageInlineCompleteV2Component({
               </button>
               
               {!isLocked && (
-                <>
-                  <button 
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 touch-manipulation min-h-11 sm:min-h-0"
-                  >
-                    {isSaving ? '...' : (
-                      <span className="flex items-center gap-1">
-                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="hidden sm:inline">Save</span>
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-                        return;
-                      }
-                      try {
-                        const response = await fetch(`/dashboard/recipes/${recipe.id}/delete`, {
-                          method: 'POST',
-                        });
-                        if (response.ok) {
-                          window.location.href = '/dashboard/recipes';
-                        } else {
-                          const data = await response.json();
-                          alert(data.error || 'Failed to delete recipe');
-                        }
-                      } catch (error) {
-                        console.error('Error deleting recipe:', error);
-                        alert('Failed to delete recipe. Please try again.');
-                      }
-                    }}
-                    className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-xs sm:text-sm font-medium touch-manipulation min-h-11 sm:min-h-0 flex items-center gap-1"
-                  >
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span className="hidden sm:inline">Delete</span>
-                  </button>
-                </>
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-2 sm:px-3 md:px-4 py-2 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 touch-manipulation min-h-11 sm:min-h-0"
+                >
+                  {isSaving ? '...' : (
+                    <span className="flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="hidden sm:inline">Save</span>
+                    </span>
+                  )}
+                </button>
               )}
               
               <Link 
@@ -1260,7 +1119,7 @@ function RecipePageInlineCompleteV2Component({
                 <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Recipe Type</div>
                 <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1">
                   <button
-                    onClick={() => handleBatchToggle(false)}
+                    onClick={() => setIsBatchRecipe(false)}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                       !isBatchRecipe 
                         ? 'bg-white text-gray-900 shadow-sm' 
@@ -1270,7 +1129,7 @@ function RecipePageInlineCompleteV2Component({
                     Single
                   </button>
                   <button
-                    onClick={() => handleBatchToggle(true)}
+                    onClick={() => setIsBatchRecipe(true)}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                       isBatchRecipe 
                         ? 'bg-white text-gray-900 shadow-sm' 
@@ -1396,7 +1255,6 @@ function RecipePageInlineCompleteV2Component({
                 <input
                   type="number"
                   value={sellPrice}
-                  onFocus={selectAllOnFocus}
                   onChange={(e) => setSellPrice(parseFloat(e.target.value) || 0)}
                   className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="0.00"

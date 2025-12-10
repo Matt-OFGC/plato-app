@@ -32,7 +32,7 @@ export default async function EditIngredientPage({ params }: Props) {
   if (ing.companyId !== companyId) {
     return <div className="p-6">Unauthorized</div>;
   }
-  
+
   // Get suppliers for the dropdown (company-scoped)
   const suppliersRaw = await prisma.supplier.findMany({
     where: companyId ? { companyId } : {},
@@ -52,47 +52,8 @@ export default async function EditIngredientPage({ params }: Props) {
     ? fromBase(Number(ing.packQuantity), ing.packUnit as BaseUnit, originalUnit as Unit)
     : Number(ing.packQuantity);
 
-  // Parse batchPricing - Prisma Json type returns JavaScript objects directly, not strings
-  let parsedBatchPricing: any = null;
-  if (ing.batchPricing !== null && ing.batchPricing !== undefined) {
-    try {
-      // If it's already an object/array (Prisma Json type), use it directly
-      // If it's a string (legacy), parse it
-      if (typeof ing.batchPricing === 'string') {
-        parsedBatchPricing = JSON.parse(ing.batchPricing);
-      } else {
-        parsedBatchPricing = ing.batchPricing;
-      }
-    } catch (e) {
-      console.error('EditIngredientPage: Error parsing batchPricing:', e);
-      parsedBatchPricing = null;
-    }
-  }
-
   // Create a bound function for the IngredientForm
   const handleSubmit = handleIngredientUpdate.bind(null, id);
-
-  // Prepare batchPricingJson - always pass as stringified JSON (never undefined)
-  // Use empty array if null/undefined to ensure prop is always present
-  const batchPricingForJson = (parsedBatchPricing !== null && parsedBatchPricing !== undefined && Array.isArray(parsedBatchPricing) && parsedBatchPricing.length > 0)
-    ? parsedBatchPricing
-    : [];
-  const batchPricingJson = JSON.stringify(batchPricingForJson);
-  
-  // Build initialData object (batchPricing will be stripped by RSC, so we rely on batchPricingJson)
-  const initialFormData = {
-    name: ing.name,
-    supplierId: ing.supplierId || undefined,
-    packQuantity: originalQuantity,
-    packUnit: ing.originalUnit || ing.packUnit,
-    packPrice: Number(ing.packPrice),
-    densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined,
-    notes: ing.notes || "",
-    allergens: ing.allergens || [],
-    customConversions: ing.customConversions || undefined,
-    servingsPerPack: ing.servingsPerPack ? Number(ing.servingsPerPack) : undefined,
-    servingUnit: ing.servingUnit || undefined,
-  };
 
   return (
     <div className="app-container">
@@ -110,8 +71,18 @@ export default async function EditIngredientPage({ params }: Props) {
         <IngredientForm
           companyId={companyId || undefined}
           suppliers={suppliers}
-          initialData={initialFormData}
-          batchPricingJson={batchPricingJson}
+          initialData={{
+            name: ing.name,
+            supplierId: ing.supplierId || undefined,
+            packQuantity: originalQuantity,
+            packUnit: ing.originalUnit || ing.packUnit,
+            packPrice: Number(ing.packPrice),
+            densityGPerMl: ing.densityGPerMl ? Number(ing.densityGPerMl) : undefined,
+            notes: ing.notes || "",
+            allergens: ing.allergens || [],
+            customConversions: ing.customConversions || undefined,
+            batchPricing: ing.batchPricing ? (typeof ing.batchPricing === 'string' ? JSON.parse(ing.batchPricing) : ing.batchPricing) : null,
+          }}
           onSubmit={handleSubmit}
         />
       </div>

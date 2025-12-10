@@ -20,7 +20,6 @@ interface RecipeHeaderProps {
   onTitleChange?: (title: string) => void;
   onDelete?: () => void;
   recipeId?: number | null;
-  sellPrice?: number | null;
 }
 
 export default function RecipeHeader({
@@ -38,7 +37,6 @@ export default function RecipeHeader({
   onTitleChange,
   onDelete,
   recipeId,
-  sellPrice,
 }: RecipeHeaderProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -75,11 +73,7 @@ export default function RecipeHeader({
                 width={80}
                 height={80}
                 className="w-full h-full object-cover"
-                unoptimized={
-                  imageUrl.startsWith('/uploads/') ||
-                  imageUrl.startsWith('http://') ||
-                  imageUrl.startsWith('https://')
-                }
+                unoptimized={imageUrl.startsWith('/uploads/')}
                 onError={() => {
                   console.error('Image failed to load:', imageUrl);
                   setImageError(true);
@@ -179,16 +173,6 @@ export default function RecipeHeader({
             </div>
           </div>
 
-          {/* Sell Price - Right side */}
-          {sellPrice !== null && sellPrice !== undefined && sellPrice > 0 && (
-            <div className="flex-shrink-0 ml-auto text-right">
-              <div className="text-xs text-gray-500 mb-0.5">Sell Price</div>
-              <div className="text-xl md:text-2xl font-bold text-emerald-600">
-                £{sellPrice.toFixed(2)}
-              </div>
-            </div>
-          )}
-
         </div>
       </div>
 
@@ -215,11 +199,7 @@ export default function RecipeHeader({
                 fill
                 className="object-contain"
                 sizes="(max-width: 896px) 100vw, 896px"
-                unoptimized={
-                  imageUrl?.startsWith('/uploads/') ||
-                  imageUrl?.startsWith('http://') ||
-                  imageUrl?.startsWith('https://')
-                }
+                unoptimized={imageUrl?.startsWith('/uploads/')}
                 onError={(e) => {
                   console.error('Modal image failed to load:', imageUrl);
                   const target = e.target as HTMLImageElement;

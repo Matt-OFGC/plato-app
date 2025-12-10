@@ -5,10 +5,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getFilteredNavigationItems } from "@/lib/navigation-config";
 import { useAppContext } from "./AppContextProvider";
 import { usePageActions } from "./PageActionContext";
+import { FloatingFilter } from "./FloatingFilter";
 import { SmartImportButton } from "./SmartImportButton";
 import { useRecipeView } from "./RecipeViewContext";
 import { ScrollHideNav } from "./ScrollHideNav";
-import { isNavigationItemVisible } from "@/lib/mvp-config";
 
 interface FloatingNavigationProps {
   onMenuClick: () => void;
@@ -17,82 +17,49 @@ interface FloatingNavigationProps {
 
 // Tab configurations based on page context
 const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: string[]; links?: string[]; isRecipePage?: boolean } => {
-  // Recipes section - Recipes, Ingredients, Recipe Mixer (support both /dashboard and /bake routes)
-  if (pathname.startsWith('/dashboard/recipes') || pathname.startsWith('/dashboard/ingredients') || pathname.startsWith('/dashboard/recipe-mixer') ||
-      pathname.startsWith('/bake/recipes') || pathname.startsWith('/bake/ingredients') || pathname.startsWith('/bake/recipe-mixer')) {
+  // Recipes section - Recipes, Ingredients, Recipe Mixer
+  if (pathname.startsWith('/dashboard/recipes') || pathname.startsWith('/dashboard/ingredients') || pathname.startsWith('/dashboard/recipe-mixer')) {
     // Individual recipe page (has ID in path) - return empty tabs, we'll show view switchers instead
-    if (pathname.match(/^\/(dashboard|bake)\/recipes\/[^/]+$/)) {
+    if (pathname.match(/^\/dashboard\/recipes\/[^/]+$/)) {
       return { tabs: [], isRecipePage: true };
     }
     // Recipes list pages - separate tabs for Recipes, Ingredients, and Recipe Mixer
-    // Determine base path from current route
-    const basePath = pathname.startsWith('/bake') ? '/bake' : '/dashboard';
     return { 
       tabs: ['Recipes', 'Ingredients', 'Recipe Mixer'],
-      links: [`${basePath}/recipes`, `${basePath}/ingredients`, `${basePath}/recipe-mixer`]
+      links: ['/dashboard/recipes', '/dashboard/ingredients', '/dashboard/recipe-mixer']
     };
   }
 
-  // Teams section - Team, Scheduling, Training (only for main Plato app, not Bake)
-  // Filter based on MVP mode
-  const basePath = pathname.startsWith('/bake') ? '/bake' : '/dashboard';
+  // Teams section - Team, Scheduling, Training
   if (pathname.startsWith('/dashboard/team') || pathname.startsWith('/dashboard/scheduling') || pathname.startsWith('/dashboard/training')) {
-    const allTabs = ['Team', 'Scheduling', 'Training'];
-    const allLinks = ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training'];
-    const visibleTabs = allTabs.filter((_, i) => 
-      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
-    );
-    const visibleLinks = allLinks.filter((_, i) => 
-      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
-    );
     return { 
-      tabs: visibleTabs,
-      links: visibleLinks
+      tabs: ['Team', 'Scheduling', 'Training'],
+      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
     };
   }
   
   // Legacy staff routes - redirect to team
   if (pathname.startsWith('/dashboard/staff')) {
-    const allTabs = ['Team', 'Scheduling', 'Training'];
-    const allLinks = ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training'];
-    const visibleTabs = allTabs.filter((_, i) => 
-      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
-    );
-    const visibleLinks = allLinks.filter((_, i) => 
-      isNavigationItemVisible(['team', 'scheduling', 'training'][i] || '')
-    );
     return { 
-      tabs: visibleTabs,
-      links: visibleLinks
+      tabs: ['Team', 'Scheduling', 'Training'],
+      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
     };
   }
 
   // Production section - show tabs for easy navigation between production pages
-  // Filter Analytics based on MVP mode
-  if (pathname.startsWith('/dashboard/production') || pathname.startsWith('/dashboard/wholesale') || pathname.startsWith('/dashboard/analytics') ||
-      pathname.startsWith('/bake/production') || pathname.startsWith('/bake/wholesale') || pathname.startsWith('/bake/analytics')) {
-    const allTabs = ['Production', 'Wholesale', 'Analytics'];
-    const allLinks = [`${basePath}/production`, `${basePath}/wholesale`, `${basePath}/analytics`];
-    const visibleTabs = allTabs.filter((_, i) => {
-      const values = ['production', 'wholesale', 'analytics'];
-      return isNavigationItemVisible(values[i] || '');
-    });
-    const visibleLinks = allLinks.filter((_, i) => {
-      const values = ['production', 'wholesale', 'analytics'];
-      return isNavigationItemVisible(values[i] || '');
-    });
+  if (pathname.startsWith('/dashboard/production') || pathname.startsWith('/dashboard/wholesale') || pathname.startsWith('/dashboard/analytics')) {
     return { 
-      tabs: visibleTabs,
-      links: visibleLinks
+      tabs: ['Production', 'Wholesale', 'Analytics'],
+      links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/analytics']
     };
   }
 
   // Settings section - Subscription, Pricing, Content, Suppliers, Timers, Preferences
   // Show tabs on all settings pages for consistent navigation
-  if (pathname.startsWith('/dashboard/account') || pathname.startsWith('/bake/account')) {
+  if (pathname.startsWith('/dashboard/account')) {
     return { 
       tabs: ['Subscription', 'Pricing', 'Content', 'Suppliers', 'Timers', 'Preferences'],
-      links: [`${basePath}/account/subscription`, `${basePath}/account/pricing`, `${basePath}/account/content`, `${basePath}/account/suppliers`, `${basePath}/account/timers`, `${basePath}/account/preferences`]
+      links: ['/dashboard/account/subscription', '/dashboard/account/pricing', '/dashboard/account/content', '/dashboard/account/suppliers', '/dashboard/account/timers', '/dashboard/account/preferences']
     };
   }
 
@@ -102,12 +69,7 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
   }
 
   // Safety section - Diary, Tasks, Compliance, Templates, Temperatures
-  // Filter based on MVP mode (Safety is hidden in MVP)
   if (pathname.startsWith('/dashboard/safety')) {
-    if (!isNavigationItemVisible('safety')) {
-      // If safety is hidden, return empty tabs
-      return { tabs: [], links: [] };
-    }
     return { 
       tabs: ['Diary', 'Tasks', 'Compliance', 'Templates', 'Temperatures'],
       links: ['/dashboard/safety?page=diary', '/dashboard/safety?page=tasks', '/dashboard/safety?page=compliance', '/dashboard/safety?page=templates', '/dashboard/safety?page=temperatures']
@@ -140,7 +102,7 @@ const shouldShowActionButtons = (pathname: string): boolean => {
     return true;
   }
   // Show on ingredients page
-  if (pathname === '/dashboard/ingredients' || pathname === '/dashboard/ingredients/' || pathname === '/bake/ingredients' || pathname === '/bake/ingredients/') {
+  if (pathname === '/dashboard/ingredients' || pathname === '/dashboard/ingredients/') {
     return true;
   }
   // Hide on individual recipe pages (e.g., /dashboard/recipes/[id]) and all other pages
@@ -157,6 +119,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
   const recipeView = useRecipeView();
   const [activeTab, setActiveTab] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const [localSearchTerm, setLocalSearchTerm] = useState(searchParams.get("search") || "");
   const showActionButtons = shouldShowActionButtons(pathname);
@@ -362,7 +325,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                       e.stopPropagation();
                       onMenuClick();
                     }}
-                    className="bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 cursor-pointer will-change-transform
+                    className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer
                                max-md:p-4 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
                                md:p-3
                                active:scale-95 max-md:active:scale-90"
@@ -375,71 +338,20 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                   </button>
                 )}
                 
-                {/* Back Button and Duplicate Button - Only show on recipe pages when sidebar is closed */}
+                {/* Back Button - Only show on recipe pages when sidebar is closed */}
                 {isRecipePage && !sidebarOpen && (
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={pathname.startsWith('/bake') ? '/bake/recipes' : '/dashboard/recipes'}
-                      className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 will-change-transform
-                               max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
-                               md:px-4 md:py-2
-                               active:scale-95 max-md:active:scale-90"
-                    >
-                      <svg className="text-gray-700 max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                      </svg>
-                      <span className="hidden sm:inline text-sm font-medium text-gray-700">Back</span>
-                    </a>
-                    
-                    {/* Duplicate Button - Only show in edit mode */}
-                    {recipeView?.viewMode === "edit" && (() => {
-                      const recipeIdMatch = pathname.match(/\/recipes\/(\d+)/);
-                      const recipeId = recipeIdMatch ? parseInt(recipeIdMatch[1]) : null;
-                      
-                      if (!recipeId) return null;
-                      
-                      return (
-                        <button
-                          onClick={async () => {
-                            if (!confirm('Duplicate this recipe? A new recipe will be created with "Copy of" added to the name.')) {
-                              return;
-                            }
-                            
-                            try {
-                              const response = await fetch(`/dashboard/recipes/${recipeId}/duplicate`, {
-                                method: 'POST',
-                              });
-                              
-                              if (response.ok) {
-                                const data = await response.json();
-                                if (data.success && data.recipeId) {
-                                  router.push(`/dashboard/recipes/${data.recipeId}`);
-                                } else {
-                                  alert(data.error || 'Failed to duplicate recipe');
-                                }
-                              } else {
-                                const errorData = await response.json();
-                                alert(errorData.error || 'Failed to duplicate recipe');
-                              }
-                            } catch (error) {
-                              console.error('Error duplicating recipe:', error);
-                              alert('Failed to duplicate recipe. Please try again.');
-                            }
-                          }}
-                          className="flex items-center gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 will-change-transform
-                                   max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
-                                   md:px-4 md:py-2
-                                   active:scale-95 max-md:active:scale-90"
-                          title="Duplicate Recipe"
-                        >
-                          <svg className="text-gray-700 max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                          <span className="hidden sm:inline text-sm font-medium text-gray-700">Duplicate</span>
-                        </button>
-                      );
-                    })()}
-                  </div>
+                  <a
+                    href="/dashboard/recipes"
+                    className="flex items-center gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all
+                             max-md:px-5 max-md:py-3 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
+                             md:px-4 md:py-2
+                             active:scale-95 max-md:active:scale-90"
+                  >
+                    <svg className="text-gray-700 max-md:w-5 max-md:h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="hidden sm:inline text-sm font-medium text-gray-700">Back</span>
+                  </a>
                 )}
               </div>
 
@@ -453,7 +365,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                           max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
                           md:top-6 md:left-1/2 md:-translate-x-1/2
                           ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide will-change-transform">
+            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
               <button
                 onClick={() => recipeView.setViewMode("whole")}
                 className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
@@ -504,17 +416,15 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           <div className={`fixed z-50
                           max-md:top-[calc(env(safe-area-inset-top,1rem)+4rem)] max-md:left-4 max-md:right-4 max-md:w-auto
                           md:top-6 md:left-1/2 md:-translate-x-1/2
-                          lg:left-1/2 lg:-translate-x-1/2
-                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0 lg:left-[340px] lg:translate-x-0' : ''}`}>
-            <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full px-1.5 md:px-2 lg:px-3 py-1.5 md:py-2 overflow-x-auto max-md:scrollbar-hide will-change-transform">
+                          ${sidebarOpen ? 'md:left-[340px] md:translate-x-0' : ''}`}>
+            <div className="flex items-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
             {tabs.map((tab, index) => (
               <button
                 key={index}
                 onClick={() => handleTabClick(index)}
                 className={`rounded-full font-medium transition-all duration-200 flex-shrink-0
                            max-md:px-3 max-md:py-1.5 max-md:text-xs
-                           md:px-3 md:py-1 md:text-xs
-                           lg:px-5 lg:py-1.5 lg:text-sm
+                           md:px-5 md:py-1.5 md:text-sm
                            ${
                   activeTab === index && activeTab >= 0
                     ? 'bg-white shadow-md text-gray-900'
@@ -545,7 +455,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
               }
             }}
             disabled={recipeView.isSaving}
-            className={`bg-white/90 backdrop-blur-sm shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-150 flex items-center gap-2 will-change-transform
+            className={`bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2
                        max-md:px-3 max-md:py-1.5 max-md:gap-1.5
                        md:px-4 md:py-2
                        ${recipeView.isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -574,50 +484,10 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
             )}
           </button>
 
-          {recipeView.viewMode === "edit" && recipeView.title && (
-            <button
-              onClick={async () => {
-                // Get recipe ID from URL
-                const pathParts = window.location.pathname.split('/');
-                const recipeId = pathParts[pathParts.length - 1];
-                
-                if (!recipeId || recipeId === 'new') return;
-                
-                if (!confirm(`Are you sure you want to delete "${recipeView.title}"? This action cannot be undone.`)) {
-                  return;
-                }
-                
-                try {
-                  const response = await fetch(`/dashboard/recipes/${recipeId}/delete`, {
-                    method: 'POST',
-                  });
-                  if (response.ok) {
-                    window.location.href = '/dashboard/recipes';
-                  } else {
-                    const data = await response.json();
-                    alert(data.error || 'Failed to delete recipe');
-                  }
-                } catch (error) {
-                  console.error('Error deleting recipe:', error);
-                  alert('Failed to delete recipe. Please try again.');
-                }
-              }}
-              className="bg-red-100/90 backdrop-blur-sm shadow-md border border-red-200/50 rounded-xl hover:bg-red-200 hover:shadow-lg transition-all duration-150 flex items-center gap-2 will-change-transform
-                       max-md:px-3 max-md:py-1.5 max-md:gap-1.5
-                       md:px-4 md:py-2"
-              title="Delete Recipe"
-            >
-              <svg className="text-red-700 max-md:w-3.5 max-md:h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              <span className="text-red-700 font-medium max-md:text-xs md:text-sm">Delete</span>
-            </button>
-          )}
-
           {recipeView.onPrint && (
             <button
               onClick={recipeView.onPrint}
-              className="bg-white/90 backdrop-blur-sm shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-150 flex items-center gap-2 will-change-transform
+              className="bg-white/80 backdrop-blur-xl shadow-md border border-gray-200/50 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2
                        max-md:px-3 max-md:py-1.5 max-md:gap-1.5
                        md:px-4 md:py-2"
               title="Print"
@@ -635,20 +505,20 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
       {/* Mobile (iPhone): Positioned with safe area, smaller buttons, stacked vertically if needed */}
       {/* iPad & Desktop: Standard positioning */}
       {showActionButtons && (
-        <div className="fixed z-30 flex items-center gap-1.5 md:gap-2 flex-wrap
+        <div className="fixed z-30 flex items-center gap-2 flex-wrap
                        max-md:top-[calc(env(safe-area-inset-top,1rem)+1rem)] max-md:right-4 max-md:gap-1.5
-                       md:top-6 md:right-4 lg:right-6">
+                       md:top-6 md:right-6">
           {/* Search Button with Dropdown */}
           <div className="relative">
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-150 flex-shrink-0 will-change-transform
+              className={`bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
                          max-md:p-2.5
-                         md:p-2.5 lg:p-3
+                         md:p-3
                          ${isSearchOpen ? 'bg-emerald-100 border-emerald-300' : ''}`}
               aria-label="Search"
             >
-              <svg className={`max-md:w-4 max-md:h-4 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5 ${isSearchOpen ? 'text-emerald-600' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5 ${isSearchOpen ? 'text-emerald-600' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
@@ -657,7 +527,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
             {isSearchOpen && (
               <div 
                 ref={searchContainerRef}
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex items-center bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-full px-4 py-2.5 w-64 animate-slide-down z-50 will-change-transform"
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-2 flex items-center bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-4 py-2.5 w-64 animate-slide-down z-50"
               >
                 <svg className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -669,7 +539,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                     const value = e.target.value;
                     setLocalSearchTerm(value);
                     // Dispatch custom event for instant filtering on ingredients page
-                    if (pathname.startsWith("/dashboard/ingredients") || pathname.startsWith("/bake/ingredients")) {
+                    if (pathname.startsWith("/dashboard/ingredients")) {
                       window.dispatchEvent(new CustomEvent('ingredient-search-change', { detail: value }));
                     }
                   }}
@@ -678,7 +548,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                       setIsSearchOpen(false);
                       setLocalSearchTerm("");
                       setSearchTerm("");
-                      if (pathname.startsWith("/dashboard/ingredients") || pathname.startsWith("/bake/ingredients")) {
+                      if (pathname.startsWith("/dashboard/ingredients")) {
                         window.dispatchEvent(new CustomEvent('ingredient-search-change', { detail: "" }));
                       }
                     }
@@ -698,9 +568,9 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
                   }}
                   className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-400"
                   placeholder={
-                    pathname.startsWith("/dashboard/recipes") || pathname.startsWith("/bake/recipes")
+                    pathname.startsWith("/dashboard/recipes")
                       ? "Search recipes..."
-                      : pathname.startsWith("/dashboard/ingredients") || pathname.startsWith("/bake/ingredients")
+                      : pathname.startsWith("/dashboard/ingredients")
                       ? "Search ingredients..."
                       : "Search..."
                   }
@@ -724,22 +594,36 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           </div>
 
           {/* Other Action Buttons */}
+          <button 
+            onClick={() => setIsFilterOpen(true)}
+            className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 flex-shrink-0
+                       max-md:p-2.5
+                       md:p-3"
+            aria-label="Filter"
+          >
+            <svg className="text-gray-700 max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+          </button>
           {showSmartImport && (
-            <SmartImportButton type={(pathname.startsWith('/dashboard/recipes') || pathname.startsWith('/bake/recipes')) ? 'recipes' : 'ingredients'} />
+            <SmartImportButton type={pathname.startsWith('/dashboard/recipes') ? 'recipes' : 'ingredients'} />
           )}
           <button 
             onClick={triggerNewAction}
-            className="bg-blue-500 shadow-lg rounded-full hover:bg-blue-600 hover:shadow-xl transition-all duration-200 flex items-center gap-1.5 md:gap-2 flex-shrink-0
+            className="bg-blue-500 shadow-lg rounded-full hover:bg-blue-600 hover:shadow-xl transition-all duration-200 flex items-center gap-2 flex-shrink-0
                        max-md:px-3 max-md:py-2 max-md:gap-1.5
-                       md:px-4 md:py-2 lg:px-5 lg:py-3"
+                       md:px-5 md:py-3"
           >
-            <svg className="text-white max-md:w-4 max-md:h-4 md:w-4 md:h-4 lg:w-4.5 lg:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="text-white max-md:w-4 max-md:h-4 md:w-4.5 md:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-white font-medium max-md:text-xs md:text-xs lg:text-sm">New</span>
+            <span className="text-white font-medium max-md:text-xs md:text-sm">New</span>
           </button>
         </div>
       )}
+      
+      {/* Floating Filter */}
+      <FloatingFilter isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
     </>
   );
 }

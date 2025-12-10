@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
 import { InvoiceScanner } from "./InvoiceScanner";
@@ -76,17 +76,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-  // Sync importType with type prop when type changes (e.g., user navigates between pages)
-  useEffect(() => {
-    if (type) {
-      setImportType(type);
-    }
-  }, [type]);
-
-  // Use importType if set, otherwise fall back to type prop
-  // But prioritize type prop for template downloads and imports to match page context
-  const currentType = importType || type;
-  const fields = currentType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
+  const fields = importType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
 
   const handleFileUpload = async (file: File) => {
     try {
@@ -173,22 +163,14 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   }, []);
 
   const handleImport = async () => {
-    // Always prioritize type prop (from page context) over importType state
-    // This ensures imports go to the correct endpoint based on the page
-    const importTypeToUse = type || importType;
-    if (!parsedData || !importTypeToUse) {
-      alert('Please select what you want to import (Ingredients or Recipes)');
-      return;
-    }
-
-    console.log('Importing:', { type, importType, importTypeToUse });
+    if (!parsedData || !importType) return;
 
     setStep('importing');
     setImporting(true);
     setProgress(0);
 
     try {
-      const endpoint = importTypeToUse === 'ingredients' 
+      const endpoint = importType === 'ingredients' 
         ? '/api/import/ingredients' 
         : '/api/import/recipes';
 
@@ -220,28 +202,18 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
   };
 
   const downloadTemplate = () => {
-    // Always prioritize type prop (from page context) over importType state
-    // This ensures the template matches the page the user is on
-    const templateType = type || importType;
-    if (!templateType) {
-      alert('Please select what you want to import first (Ingredients or Recipes)');
-      return;
-    }
-    
-    console.log('Downloading template:', { type, importType, templateType });
-    
-    const fields = templateType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
+    const fields = importType === 'ingredients' ? INGREDIENT_FIELDS : RECIPE_FIELDS;
     const headers = fields.map(f => f.label);
     
     // Create sample data
-    const sampleRow = templateType === 'ingredients'
+    const sampleRow = importType === 'ingredients'
       ? ['Flour', 'Acme Suppliers', '1000', 'g', '2.50', 'GBP', '', 'Gluten', 'Organic']
       : ['Sourdough Bread', 'Artisan bread with natural starter', '800', 'g', 'Mix, proof, bake', '45', '220', 'Bread', 'Room temperature', '3 days'];
 
     const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, templateType === 'ingredients' ? 'Ingredients' : 'Recipes');
-    XLSX.writeFile(wb, `${templateType}_template.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, importType === 'ingredients' ? 'Ingredients' : 'Recipes');
+    XLSX.writeFile(wb, `${importType}_template.xlsx`);
   };
 
   const reset = () => {
@@ -341,7 +313,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                           <button
                             onClick={() => setImportType('ingredients')}
                             className={`p-6 rounded-xl border-2 transition-all ${
-                              currentType === 'ingredients'
+                              importType === 'ingredients'
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-blue-300'
                             }`}
@@ -358,7 +330,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                           <button
                             onClick={() => setImportType('recipes')}
                             className={`p-6 rounded-xl border-2 transition-all ${
-                              currentType === 'recipes'
+                              importType === 'recipes'
                                 ? 'border-purple-500 bg-purple-50'
                                 : 'border-gray-200 hover:border-purple-300'
                             }`}
@@ -411,7 +383,7 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                             </div>
                             <h3 className="font-semibold text-gray-900">AI Scanner</h3>
                             <p className="text-sm text-gray-500 mt-1">
-                              {currentType === 'ingredients' ? 'Scan invoices' : 'Scan menus'}
+                              {importType === 'ingredients' ? 'Scan invoices' : 'Scan menus'}
                             </p>
                           </button>
                         </div>
@@ -421,9 +393,9 @@ export function SmartImporter({ type, onComplete }: SmartImporterProps) {
                 )}
 
                 {/* Step: AI Scanner */}
-                {step === 'scanner' && currentType && (
+                {step === 'scanner' && importType && (
                   <div className="relative">
-                    {currentType === 'ingredients' ? (
+                    {importType === 'ingredients' ? (
                       <InvoiceScanner
                         onIngredientsExtracted={async (ingredients) => {
                           // Handle the scanned ingredients

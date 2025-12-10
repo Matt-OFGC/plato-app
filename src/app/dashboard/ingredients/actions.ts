@@ -8,7 +8,6 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { toBase, BaseUnit, Unit } from "@/lib/units";
 import { canAddIngredient, updateIngredientCount } from "@/lib/subscription";
 import { getAppAwareRouteForServer } from "@/lib/server-app-context";
-import { invalidateIngredientsCache, invalidateRecipesCache } from "@/lib/redis";
 // Temporarily disabled to fix build error
 // import { isRecipesTrial } from "@/lib/features";
 
@@ -51,37 +50,21 @@ const ingredientSchema = z.object({
     if (!v || v === "" || v === "[]") return null;
     try {
       const parsed = JSON.parse(v);
-      // Ensure it's a valid array
+      // Ensure it's a valid array of {packQuantity, packPrice}
       if (!Array.isArray(parsed)) return null;
-      // For bulk purchases, we store {packQuantity, packPrice, purchaseUnit, unitSize}
-      // packPrice can be 0 for bulk purchases (price is stored at the purchase level)
-      // For regular batch pricing, packPrice must be > 0
-      const valid = parsed.every((tier: any) => {
-        if (!tier || typeof tier.packQuantity !== 'number' || tier.packQuantity <= 0) {
-          return false;
-        }
-        // If it has purchaseUnit, it's a bulk purchase - packPrice can be 0
-        if (tier.purchaseUnit) {
-          return typeof tier.packPrice === 'number' && tier.packPrice >= 0;
-        }
-        // Otherwise, it's regular batch pricing - packPrice must be > 0
-        return typeof tier.packPrice === 'number' && tier.packPrice > 0;
-      });
+      const valid = parsed.every((tier: any) => 
+        tier && 
+        typeof tier.packQuantity === 'number' && 
+        typeof tier.packPrice === 'number' &&
+        tier.packQuantity > 0 &&
+        tier.packPrice > 0
+      );
       return valid ? parsed : null;
     } catch {
       return null;
     }
   }),
   notes: z.string().optional().nullable(),
-  servingsPerPack: z.string().optional().transform((v) => {
-    if (!v || v === "") return null;
-    const num = parseFloat(v);
-    return isNaN(num) || num <= 0 ? null : num;
-  }),
-  servingUnit: z.string().optional().nullable().transform((v) => {
-    if (!v || v === "") return null;
-    return v;
-  }),
 });
 
 export async function createIngredient(formData: FormData) {
@@ -121,20 +104,9 @@ export async function createIngredient(formData: FormData) {
     );
     
     // Convert batch pricing quantities to base units if provided
-    // For bulk purchases, preserve purchaseUnit and unitSize
     let batchPricingInBase = null;
     if (data.batchPricing && Array.isArray(data.batchPricing)) {
       batchPricingInBase = data.batchPricing.map(tier => {
-        // If this is a bulk purchase (has purchaseUnit), preserve all fields
-        if (tier.purchaseUnit) {
-          return {
-            packQuantity: tier.packQuantity, // Already in correct units (number of packs)
-            packPrice: tier.packPrice,
-            purchaseUnit: tier.purchaseUnit,
-            unitSize: tier.unitSize, // Size per individual unit
-          };
-        }
-        // Otherwise, convert to base units for regular batch pricing
         const { amount: tierBaseQty } = toBase(
           tier.packQuantity,
           data.packUnit as Unit,
@@ -161,8 +133,6 @@ export async function createIngredient(formData: FormData) {
       batchPricing: batchPricingInBase,
       customConversions: data.customConversions ?? null,
       notes: data.notes ?? null,
-      servingsPerPack: data.servingsPerPack ?? null,
-      servingUnit: data.servingUnit ?? null,
       companyId: companyId ?? undefined,
     };
     
@@ -178,14 +148,6 @@ export async function createIngredient(formData: FormData) {
         // Revalidate both possible paths
         revalidatePath("/dashboard/ingredients");
         revalidatePath("/bake/ingredients");
-        
-        // Invalidate cache
-        if (companyId) {
-          await invalidateIngredientsCache(companyId);
-          // Also invalidate recipes cache since ingredient prices affect recipe costs
-          await invalidateRecipesCache(companyId);
-        }
-        
         return { success: true };
   } catch (error) {
     console.error("Error in createIngredient:", error);
@@ -198,9 +160,7 @@ export async function createIngredient(formData: FormData) {
 }
 
 export async function updateIngredient(id: number, formData: FormData) {
-  const rawData = Object.fromEntries(formData);
-  
-  const parsed = ingredientSchema.safeParse(rawData);
+  const parsed = ingredientSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     console.error("Ingredient validation error:", parsed.error);
     redirect("/dashboard/ingredients?error=validation");
@@ -237,21 +197,19 @@ export async function updateIngredient(id: number, formData: FormData) {
       data.densityGPerMl ?? undefined
     );
     
+    // Debug logging
+    console.log('updateIngredient - Saving:', {
+      packQuantity: data.packQuantity,
+      packUnit: data.packUnit,
+      baseQuantity,
+      baseUnit,
+      originalUnit: data.packUnit
+    });
+    
     // Convert batch pricing quantities to base units if provided
-    // For bulk purchases, preserve purchaseUnit and unitSize
-    let batchPricingInBase: any = null;
-    if (data.batchPricing && Array.isArray(data.batchPricing) && data.batchPricing.length > 0) {
+    let batchPricingInBase = null;
+    if (data.batchPricing && Array.isArray(data.batchPricing)) {
       batchPricingInBase = data.batchPricing.map(tier => {
-        // If this is a bulk purchase (has purchaseUnit), preserve all fields
-        if (tier.purchaseUnit) {
-          return {
-            packQuantity: tier.packQuantity, // Already in correct units (number of packs)
-            packPrice: tier.packPrice,
-            purchaseUnit: tier.purchaseUnit,
-            unitSize: tier.unitSize, // Size per individual unit
-          };
-        }
-        // Otherwise, convert to base units for regular batch pricing
         const { amount: tierBaseQty } = toBase(
           tier.packQuantity,
           data.packUnit as Unit,
@@ -270,45 +228,27 @@ export async function updateIngredient(id: number, formData: FormData) {
     // Check if pack quantity changed (for updating timestamp)
     const packQuantityChanged = existingIngredient && Number(existingIngredient.packQuantity) !== baseQuantity;
     
-    const updateData = {
-      name: data.name,
-      supplier: data.supplier ?? null,
-      supplierId: data.supplierId,
-      packQuantity: baseQuantity,
-      packUnit: baseUnit as BaseUnit,
-      originalUnit: data.packUnit as Unit,
-      packPrice: data.packPrice,
-      currency: data.currency,
-      densityGPerMl: (data.densityGPerMl as number | null) ?? null,
-      allergens: data.allergens,
-      batchPricing: batchPricingInBase,
-      customConversions: data.customConversions ?? null,
-      notes: data.notes ?? null,
-      servingsPerPack: data.servingsPerPack ?? null,
-      servingUnit: data.servingUnit ?? null,
-      // Update lastPriceUpdate timestamp if price or pack quantity changed
-      ...((priceChanged || packQuantityChanged) && { lastPriceUpdate: new Date() }),
-    };
-    
     await prisma.ingredient.update({
       where: { id },
-      data: updateData,
+      data: {
+        name: data.name,
+        supplier: data.supplier ?? null,
+        supplierId: data.supplierId,
+        packQuantity: baseQuantity,
+        packUnit: baseUnit as BaseUnit,
+        originalUnit: data.packUnit as Unit,
+        packPrice: data.packPrice,
+        currency: data.currency,
+        densityGPerMl: (data.densityGPerMl as number | null) ?? null,
+        allergens: data.allergens,
+        batchPricing: batchPricingInBase,
+        customConversions: data.customConversions ?? null,
+        notes: data.notes ?? null,
+        // Update lastPriceUpdate timestamp if price or pack quantity changed
+        ...((priceChanged || packQuantityChanged) && { lastPriceUpdate: new Date() }),
+      },
     });
-    
     revalidatePath("/dashboard/ingredients");
-    
-    // Invalidate cache (non-blocking - don't fail if cache invalidation fails)
-    if (companyId) {
-      try {
-        await invalidateIngredientsCache(companyId);
-        // Also invalidate recipes cache since ingredient prices affect recipe costs
-        await invalidateRecipesCache(companyId);
-      } catch (cacheError) {
-        // Log but don't fail the update if cache invalidation fails
-        console.error("Cache invalidation failed (non-blocking):", cacheError);
-      }
-    }
-    
     return { success: true };
   } catch (error) {
     console.error("Error updating ingredient:", error);
@@ -373,16 +313,6 @@ export async function deleteIngredient(id: number) {
   }
   
   revalidatePath("/dashboard/ingredients");
-  
-  // Invalidate cache
-  if (companyId) {
-      try {
-        await invalidateIngredientsCache(companyId);
-        await invalidateRecipesCache(companyId);
-      } catch (cacheError) {
-        console.error("Cache invalidation failed (non-blocking):", cacheError);
-      }
-  }
 }
 
 export async function getSuppliers() {

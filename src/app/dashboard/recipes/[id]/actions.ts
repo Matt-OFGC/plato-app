@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { revalidatePath } from "next/cache";
-import { auditLog } from "@/lib/audit-log";
 
 export async function saveSellPrice(recipeId: number, sellPrice: number) {
   try {
@@ -73,12 +72,8 @@ export async function saveRecipe(data: {
       throw new Error("No company associated with your account");
     }
 
-    // Find the category, storage and shelf life option IDs by name
-    const [categoryOption, storageOption, shelfLifeOption] = await Promise.all([
-      data.category ? prisma.category.findFirst({
-        where: { name: data.category, companyId },
-        select: { id: true }
-      }) : null,
+    // Find the storage and shelf life option IDs by name
+    const [storageOption, shelfLifeOption] = await Promise.all([
       data.storage ? prisma.storageOption.findFirst({
         where: { name: data.storage, companyId },
         select: { id: true }
@@ -108,7 +103,6 @@ export async function saveRecipe(data: {
             yieldQuantity: data.yieldQuantity,
             yieldUnit: data.yieldUnit || "each",
             category: data.category || null,
-            categoryId: categoryOption?.id || null,
             storage: data.storage || null,
             storageId: storageOption?.id || null,
             shelfLife: data.shelfLife || null,
@@ -140,7 +134,6 @@ export async function saveRecipe(data: {
             ...(data.yieldQuantity && { yieldQuantity: data.yieldQuantity }),
             ...(data.yieldUnit && { yieldUnit: data.yieldUnit }),
             category: data.category || null,
-            categoryId: categoryOption?.id || null,
             storage: data.storage || null,
             storageId: storageOption?.id || null,
             shelfLife: data.shelfLife || null,
@@ -226,7 +219,6 @@ export async function saveRecipe(data: {
 
 export async function saveRecipeChanges(data: {
   recipeId: number;
-  name?: string;
   category?: string;
   storage?: string;
   shelfLife?: string;
@@ -262,12 +254,8 @@ export async function saveRecipeChanges(data: {
       throw new Error("Unauthorized");
     }
 
-    // Find the category, storage and shelf life option IDs by name
-    const [categoryOption, storageOption, shelfLifeOption] = await Promise.all([
-      data.category ? prisma.category.findFirst({
-        where: { name: data.category, companyId },
-        select: { id: true }
-      }) : null,
+    // Find the storage and shelf life option IDs by name
+    const [storageOption, shelfLifeOption] = await Promise.all([
       data.storage ? prisma.storageOption.findFirst({
         where: { name: data.storage, companyId },
         select: { id: true }
@@ -282,9 +270,7 @@ export async function saveRecipeChanges(data: {
     await prisma.recipe.update({
       where: { id: data.recipeId },
       data: {
-        ...(data.name !== undefined && { name: data.name.trim() }),
         category: data.category || null,
-        categoryId: categoryOption?.id || null,
         storage: data.storage || null,
         storageId: storageOption?.id || null,
         shelfLife: data.shelfLife || null,
@@ -386,152 +372,20 @@ export async function deleteRecipe(id: number) {
     
     await prisma.recipe.delete({ where: { id } });
     
-    // Revalidate paths first (before audit log)
+    // Audit deletion
+    if (user && companyId) {
+      const { auditLog } = await import("@/lib/audit-log");
+      await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
+    }
+    
     revalidatePath("/dashboard/recipes");
     revalidatePath(`/dashboard/recipes/${id}`);
-    
-    // Audit deletion (fire-and-forget, don't await to prevent blocking)
-    if (user && companyId) {
-      // Use Promise.resolve().then() to make it truly non-blocking
-      Promise.resolve().then(async () => {
-        try {
-          // Check if auditLog exists and has the method before calling
-          if (auditLog && typeof auditLog.recipeDeleted === 'function') {
-            await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
-          } else {
-            console.warn('auditLog.recipeDeleted is not available, skipping audit log');
-          }
-        } catch (auditError) {
-          console.error("Audit log error (non-blocking):", auditError);
-          // Silently fail - don't affect the deletion
-        }
-      }).catch(() => {
-        // Ignore any errors
-      });
-    }
     
     return { success: true };
   } catch (error) {
     console.error("Error deleting recipe:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to delete recipe";
     throw new Error(errorMessage);
-  }
-}
-
-export async function duplicateRecipe(recipeId: number) {
-  try {
-    const { companyId } = await getCurrentUserAndCompany();
-
-    if (!companyId) {
-      throw new Error("No company associated with your account");
-    }
-
-    // Fetch the recipe to duplicate with all its data
-    const recipe = await prisma.recipe.findUnique({
-      where: { id: recipeId },
-      include: {
-        sections: {
-          include: {
-            items: {
-              include: {
-                ingredient: true,
-              },
-            },
-          },
-          orderBy: { order: "asc" },
-        },
-        items: {
-          include: {
-            ingredient: true,
-          },
-        },
-      },
-    });
-
-    if (!recipe) {
-      throw new Error("Recipe not found");
-    }
-
-    // Security check: Verify recipe belongs to user's company
-    if (recipe.companyId !== companyId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Create duplicate recipe with "Copy of" prefix
-    const duplicatedRecipe = await prisma.$transaction(async (tx) => {
-      // Create the new recipe
-      const newRecipe = await tx.recipe.create({
-        data: {
-          name: `Copy of ${recipe.name}`,
-          yieldQuantity: recipe.yieldQuantity,
-          yieldUnit: recipe.yieldUnit,
-          category: recipe.category,
-          categoryId: recipe.categoryId,
-          storage: recipe.storage,
-          storageId: recipe.storageId,
-          shelfLife: recipe.shelfLife,
-          shelfLifeId: recipe.shelfLifeId,
-          sellingPrice: recipe.sellingPrice,
-          method: recipe.method,
-          description: recipe.description,
-          imageUrl: recipe.imageUrl,
-          companyId,
-        },
-      });
-
-      // Duplicate sections and their items
-      for (const section of recipe.sections) {
-        const newSection = await tx.recipeSection.create({
-          data: {
-            recipeId: newRecipe.id,
-            title: section.title,
-            description: section.description,
-            method: section.method,
-            order: section.order,
-            bakeTemp: section.bakeTemp,
-            bakeTime: section.bakeTime,
-            hasTimer: section.hasTimer,
-          },
-        });
-
-        // Duplicate items in this section
-        for (const item of section.items) {
-          await tx.recipeItem.create({
-            data: {
-              recipeId: newRecipe.id,
-              sectionId: newSection.id,
-              ingredientId: item.ingredientId,
-              quantity: item.quantity,
-              unit: item.unit,
-              note: item.note,
-            },
-          });
-        }
-      }
-
-      // Duplicate items not in sections
-      for (const item of recipe.items) {
-        await tx.recipeItem.create({
-          data: {
-            recipeId: newRecipe.id,
-            ingredientId: item.ingredientId,
-            quantity: item.quantity,
-            unit: item.unit,
-            note: item.note,
-          },
-        });
-      }
-
-      return newRecipe;
-    });
-
-    revalidatePath("/dashboard/recipes");
-    
-    return { success: true, recipeId: duplicatedRecipe.id };
-  } catch (error) {
-    console.error("Error duplicating recipe:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to duplicate recipe";
-    return { success: false, error: errorMessage };
   }
 }
 
