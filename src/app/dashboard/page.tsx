@@ -69,6 +69,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           todayProduction={[]}
           weekProduction={[]}
           tasks={[]}
+          todayOrders={[]}
           staleIngredients={[]}
           userName={user.name || undefined}
           userRole={userRole}
@@ -92,6 +93,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   let todayProductionPlansRaw: any[] = [];
   let weekProductionPlansRaw: any[] = [];
   let tasksRaw: any[] = [];
+  let todayOrdersRaw: any[] = [];
   let ingredients: any[] = [];
   let recipeCount = 0;
   let staffCount = 0;
@@ -173,6 +175,44 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         take: 20,
       }),
 
+      // Wholesale orders due today
+      prisma.wholesaleOrder.findMany({
+        where: {
+          companyId,
+          deliveryDate: {
+            gte: today,
+            lt: tomorrow,
+          },
+          status: {
+            in: ["pending", "confirmed", "in_production"],
+          },
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          items: {
+            include: {
+              recipe: {
+                select: {
+                  id: true,
+                  name: true,
+                  yieldQuantity: true,
+                  yieldUnit: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { status: 'asc' },
+          { deliveryDate: 'asc' },
+        ],
+      }),
+
       // Get ingredients for stale price checking
       prisma.ingredient.findMany({
         where: { companyId },
@@ -215,10 +255,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     todayProductionPlansRaw = results[0].status === 'fulfilled' ? results[0].value : [];
     weekProductionPlansRaw = results[1].status === 'fulfilled' ? results[1].value : [];
     tasksRaw = results[2].status === 'fulfilled' ? results[2].value : [];
-    ingredients = results[3].status === 'fulfilled' ? results[3].value : [];
-    recipeCount = results[4].status === 'fulfilled' ? results[4].value : 0;
-    staffCount = results[5].status === 'fulfilled' ? results[5].value : 0;
-    shiftsThisWeek = results[6].status === 'fulfilled' ? results[6].value : 0;
+    todayOrdersRaw = results[3].status === 'fulfilled' ? results[3].value : [];
+    ingredients = results[4].status === 'fulfilled' ? results[4].value : [];
+    recipeCount = results[5].status === 'fulfilled' ? results[5].value : 0;
+    staffCount = results[6].status === 'fulfilled' ? results[6].value : 0;
+    shiftsThisWeek = results[7].status === 'fulfilled' ? results[7].value : 0;
+
+    // Log any rejected promises for debugging
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Query ${index} failed:`, result.reason);
+      }
+    });
 
   } catch (error) {
     console.error('Database error in dashboard page:', error);
@@ -271,6 +319,50 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       },
     })),
   }));
+
+  // Serialize wholesale orders for today - with extensive error handling
+  let todayOrders: any[] = [];
+  try {
+    if (todayOrdersRaw && Array.isArray(todayOrdersRaw)) {
+      todayOrders = todayOrdersRaw.map((order: any) => {
+        try {
+          return {
+            id: order?.id || 0,
+            orderNumber: order?.orderNumber || null,
+            deliveryDate: order?.deliveryDate ? (order.deliveryDate instanceof Date ? order.deliveryDate.toISOString() : new Date(order.deliveryDate).toISOString()) : null,
+            status: order?.status || 'pending',
+            customer: {
+              id: order?.customer?.id || 0,
+              name: order?.customer?.name || 'Unknown',
+            },
+            items: Array.isArray(order?.items) ? order.items.map((item: any) => {
+              try {
+                return {
+                  id: item?.id || 0,
+                  quantity: item?.quantity ? serializeDecimal(item.quantity) : 0,
+                  price: item?.price !== null && item?.price !== undefined ? serializeDecimal(item.price) : null,
+                  recipe: {
+                    id: item?.recipe?.id || 0,
+                    name: item?.recipe?.name || 'Unknown',
+                    yieldQuantity: item?.recipe?.yieldQuantity ? serializeDecimal(item.recipe.yieldQuantity) : '0',
+                  },
+                };
+              } catch (itemError) {
+                console.error('Error serializing order item:', itemError);
+                return null;
+              }
+            }).filter(Boolean) : [],
+          };
+        } catch (orderError) {
+          console.error('Error serializing order:', orderError);
+          return null;
+        }
+      }).filter(Boolean);
+    }
+  } catch (error) {
+    console.error('Error serializing today orders:', error);
+    todayOrders = [];
+  }
 
   // Get team member names for tasks
   const tasks = await Promise.all(
@@ -326,23 +418,41 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
              ing.daysSinceUpdate < 10000; // Sanity check for reasonable dates
     });
 
-  return (
-    <DashboardWithOnboarding
-      showOnboarding={!user.hasCompletedOnboarding}
-      userName={user.name || undefined}
-      companyName={company?.name || "Your Company"}
-    >
-      <OperationalDashboard
-        todayProduction={todayProduction}
-        weekProduction={weekProduction}
-        tasks={tasks}
-        staleIngredients={staleIngredients}
+  // Ensure all arrays are defined
+  const safeTodayProduction = Array.isArray(todayProduction) ? todayProduction : [];
+  const safeWeekProduction = Array.isArray(weekProduction) ? weekProduction : [];
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeTodayOrders = Array.isArray(todayOrders) ? todayOrders : [];
+  const safeStaleIngredients = Array.isArray(staleIngredients) ? staleIngredients : [];
+
+  try {
+    return (
+      <DashboardWithOnboarding
+        showOnboarding={!user.hasCompletedOnboarding}
         userName={user.name || undefined}
-        userRole={userRole}
-        companyName={company?.name || undefined}
-            appName={appConfig?.name}
-            appTagline={appConfig?.tagline}
-      />
-    </DashboardWithOnboarding>
-  );
+        companyName={company?.name || "Your Company"}
+      >
+        <OperationalDashboard
+          todayProduction={safeTodayProduction}
+          weekProduction={safeWeekProduction}
+          tasks={safeTasks}
+          todayOrders={safeTodayOrders}
+          staleIngredients={safeStaleIngredients}
+          userName={user.name || undefined}
+          userRole={userRole}
+          companyName={company?.name || undefined}
+          appName={appConfig?.name}
+          appTagline={appConfig?.tagline}
+        />
+      </DashboardWithOnboarding>
+    );
+  } catch (error) {
+    console.error('Error rendering dashboard:', error);
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Error Loading Dashboard</h1>
+        <p className="text-red-600">{error instanceof Error ? error.message : 'Unknown error occurred'}</p>
+      </div>
+    );
+  }
 }
