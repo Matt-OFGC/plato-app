@@ -170,7 +170,7 @@ export default function WholesalePageClient({
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
-                onClick={() => router.push("/dashboard/wholesale")}
+                onClick={() => router.push("/dashboard/wholesale/customers")}
                 className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:border-green-500 transition-colors text-left"
               >
                 <div className="text-2xl mb-2">👥</div>
