@@ -120,7 +120,11 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
           orderBy: { createdAt: 'asc' },
         }
       }
-    });
+      }),
+      new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 3000)
+      )
+    ]) as any;
 
     if (!userWithAllMemberships) {
       throw new Error('User not found');
