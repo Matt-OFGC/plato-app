@@ -28,11 +28,21 @@ export default async function WholesalePage() {
         ? `${userWithMemberships.name}'s Company`
         : `${userWithMemberships.email.split('@')[0]}'s Company`;
       
+      // Generate unique slug
+      const { generateUniqueSlug } = await import('@/lib/slug');
+      let slug = generateUniqueSlug(defaultCompanyName);
+      // Ensure slug is unique
+      let counter = 1;
+      while (await prisma.company.findUnique({ where: { slug } })) {
+        slug = generateUniqueSlug(`${defaultCompanyName} ${counter}`);
+        counter++;
+      }
+      
       // Create company with default values
       const newCompany = await prisma.company.create({
         data: {
           name: defaultCompanyName,
-          slug: defaultCompanyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+          slug,
           businessType: 'bakery', // Default business type
           country: 'United Kingdom', // Default country
         },

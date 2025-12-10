@@ -41,10 +41,13 @@ export default async function ProductionPage() {
       
       // Generate unique slug
       const { generateUniqueSlug } = await import('@/lib/slug');
-      const slug = await generateUniqueSlug(defaultCompanyName, async (slug) => {
-        const existing = await prisma.company.findUnique({ where: { slug } });
-        return !!existing;
-      });
+      let slug = generateUniqueSlug(defaultCompanyName);
+      // Ensure slug is unique
+      let counter = 1;
+      while (await prisma.company.findUnique({ where: { slug } })) {
+        slug = generateUniqueSlug(`${defaultCompanyName} ${counter}`);
+        counter++;
+      }
       
       // Create company with default values
       const newCompany = await prisma.company.create({
