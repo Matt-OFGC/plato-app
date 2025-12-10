@@ -94,13 +94,22 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     
     if (inactiveMemberships.length > 0 && activeMemberships.length === 0) {
       // User has memberships but none are active - activate the first one
-      logger.info(`Activating inactive membership for user ${user.id}`, { membershipId: inactiveMemberships[0].id }, 'Current');
-      await prisma.membership.update({
-        where: { id: inactiveMemberships[0].id },
-        data: { isActive: true }
-      });
-      // Clear cache so next call gets fresh data
-      await deleteCache(CacheKeys.userSession(user.id));
+      try {
+        logger.info(`Activating inactive membership for user ${user.id}`, { membershipId: inactiveMemberships[0].id }, 'Current');
+        await prisma.membership.update({
+          where: { id: inactiveMemberships[0].id },
+          data: { isActive: true }
+        });
+        // Clear cache so next call gets fresh data
+        try {
+          await deleteCache(CacheKeys.userSession(user.id));
+        } catch (cacheError) {
+          // Cache deletion failed, continue anyway
+        }
+      } catch (activationError) {
+        // If activation fails, log but continue - user might not have permission
+        logger.warn('Failed to activate membership', activationError, 'Current');
+      }
     }
 
     // Now get active memberships with company details
