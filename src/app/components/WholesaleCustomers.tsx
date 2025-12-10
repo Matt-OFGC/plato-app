@@ -157,7 +157,7 @@ export function WholesaleCustomers({
           notes: notes || null,
           isActive,
           companyId,
-          openingHours: Object.keys(openingHours).length > 0 ? openingHours : null,
+          openingHours: (openingHours && typeof openingHours === 'object' && !Array.isArray(openingHours) && Object.keys(openingHours).length > 0) ? openingHours : null,
           deliveryDays: deliveryDays,
           preferredDeliveryTime: preferredDeliveryTime || null,
           paymentTerms: paymentTerms || null,
