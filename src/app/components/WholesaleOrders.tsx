@@ -990,10 +990,12 @@ export function WholesaleOrders({
                           if (searchValue.length >= 2) {
                             setIsSearchingRecipes(true);
                             try {
-                              const response = await fetch(`/api/recipes?search=${encodeURIComponent(searchValue)}&companyId=${companyId}&limit=20`);
+                              const response = await fetch(`/api/recipes?search=${encodeURIComponent(searchValue)}&limit=20`);
                               if (response.ok) {
                                 const data = await response.json();
-                                setRecipeSearchResults(data.recipes || []);
+                                // API returns array directly or wrapped in data property
+                                const recipes = Array.isArray(data) ? data : (data.data || data.recipes || []);
+                                setRecipeSearchResults(recipes);
                               }
                             } catch (error) {
                               console.error('Failed to search recipes:', error);
