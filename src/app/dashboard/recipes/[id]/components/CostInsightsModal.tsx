@@ -11,8 +11,11 @@ interface CostInsightsModalProps {
   slicesPerBatch: number;
   sellPrice: number;
   onSellPriceChange: (price: number) => void;
+  wholesalePrice?: number;
+  onWholesalePriceChange?: (price: number) => void;
   recipeId: number;
   onSave: (price: number) => Promise<void>;
+  onSaveWholesale?: (price: number) => Promise<void>;
 }
 
 export default function CostInsightsModal({
@@ -24,18 +27,30 @@ export default function CostInsightsModal({
   slicesPerBatch,
   sellPrice,
   onSellPriceChange,
+  wholesalePrice = 0,
+  onWholesalePriceChange,
   recipeId,
   onSave,
+  onSaveWholesale,
 }: CostInsightsModalProps) {
   const [inputValue, setInputValue] = useState(sellPrice.toString());
   const [localSellPrice, setLocalSellPrice] = useState(sellPrice);
+  const [wholesaleInputValue, setWholesaleInputValue] = useState(wholesalePrice.toString());
+  const [localWholesalePrice, setLocalWholesalePrice] = useState(wholesalePrice);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingWholesale, setIsSavingWholesale] = useState(false);
   
   // Update input value and local sell price when modal opens or prop changes
   useEffect(() => {
     setInputValue(sellPrice.toFixed(2));
     setLocalSellPrice(sellPrice);
   }, [sellPrice, isOpen]);
+
+  // Update wholesale price input when prop changes
+  useEffect(() => {
+    setWholesaleInputValue(wholesalePrice.toFixed(2));
+    setLocalWholesalePrice(wholesalePrice);
+  }, [wholesalePrice, isOpen]);
   
   const handleSave = async () => {
     setIsSaving(true);
@@ -48,6 +63,20 @@ export default function CostInsightsModal({
       alert('Failed to save sell price');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveWholesale = async () => {
+    if (!onSaveWholesale || !onWholesalePriceChange) return;
+    setIsSavingWholesale(true);
+    try {
+      await onSaveWholesale(localWholesalePrice);
+      onWholesalePriceChange(localWholesalePrice);
+    } catch (error) {
+      console.error('Failed to save wholesale price:', error);
+      alert('Failed to save wholesale price');
+    } finally {
+      setIsSavingWholesale(false);
     }
   };
 
@@ -165,6 +194,81 @@ export default function CostInsightsModal({
                 </button>
               ))}
             </div>
+
+            {/* Wholesale Price Input */}
+            {onWholesalePriceChange && onSaveWholesale && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
+                  Wholesale Pricing
+                </h4>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Wholesale Price
+                    <span className="text-xs font-normal text-gray-500 ml-1">(Price for wholesale customers)</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">£</span>
+                    <input
+                      type="text"
+                      placeholder="0.00"
+                      value={wholesaleInputValue}
+                      onChange={(e) => {
+                        setWholesaleInputValue(e.target.value);
+                        const parsed = parseFloat(e.target.value);
+                        if (!isNaN(parsed) && parsed >= 0) {
+                          setLocalWholesalePrice(parsed);
+                        }
+                      }}
+                      onBlur={() => {
+                        const parsed = parseFloat(wholesaleInputValue);
+                        if (!isNaN(parsed) && parsed >= 0) {
+                          setWholesaleInputValue(parsed.toFixed(2));
+                          setLocalWholesalePrice(parsed);
+                        } else {
+                          setWholesaleInputValue(localWholesalePrice.toFixed(2));
+                        }
+                      }}
+                      className="w-full pl-9 pr-4 py-3 text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                {localWholesalePrice > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">Wholesale Profit per Item</p>
+                        <p className="text-2xl font-bold text-blue-700">£{(localWholesalePrice - costPerServing).toFixed(2)}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {localWholesalePrice > 0 ? ((costPerServing / localWholesalePrice) * 100).toFixed(1) : 0}% food cost
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleSaveWholesale}
+                        disabled={isSavingWholesale}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {isSavingWholesale ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Save
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Calculated Metrics */}
             <div className="grid grid-cols-2 gap-4">

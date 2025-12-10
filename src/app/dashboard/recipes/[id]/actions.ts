@@ -38,6 +38,40 @@ export async function saveSellPrice(recipeId: number, sellPrice: number) {
   }
 }
 
+export async function saveWholesalePrice(recipeId: number, wholesalePrice: number) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+
+    // Verify recipe belongs to user's company
+    const recipe = await prisma.recipe.findUnique({
+      where: { id: recipeId },
+      select: { companyId: true }
+    });
+
+    if (!recipe || recipe.companyId !== companyId) {
+      throw new Error("Unauthorized");
+    }
+
+    // Update just the wholesale price
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: {
+        wholesalePrice: wholesalePrice,
+        lastPriceUpdate: new Date(),
+      },
+    });
+
+    revalidatePath(`/dashboard/recipes/${recipeId}`);
+    revalidatePath('/dashboard/recipes');
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving wholesale price:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to save wholesale price";
+    return { success: false, error: errorMessage };
+  }
+}
+
 export async function saveRecipe(data: {
   recipeId: number | null;
   name?: string;

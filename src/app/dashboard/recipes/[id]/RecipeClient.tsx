@@ -3,7 +3,7 @@
 import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
-import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe } from "./actions";
+import { saveRecipeChanges, saveSellPrice, saveWholesalePrice, saveRecipe, deleteRecipe } from "./actions";
 import { computeIngredientUsageCostWithDensity, toBase, Unit, BaseUnit } from "@/lib/units";
 import { getIngredientDensityOrDefault } from "@/lib/ingredient-densities";
 import RecipeHeader from "./components/RecipeHeader";
@@ -160,6 +160,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
   }, [localIngredients, calculateIngredientCost]);
   
   const [sellPrice, setSellPrice] = useState(recipe.sellPrice || (totalCost * 3));
+  const [wholesalePrice, setWholesalePrice] = useState(recipe.wholesalePrice || 0);
 
   // Collect allergens from ingredients
   const allergens = useMemo(() => {
@@ -1052,9 +1053,14 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         slicesPerBatch={slicesPerBatch}
         sellPrice={sellPrice}
         onSellPriceChange={setSellPrice}
+        wholesalePrice={wholesalePrice}
+        onWholesalePriceChange={setWholesalePrice}
         recipeId={recipeId}
         onSave={async (price: number) => {
           await saveSellPrice(recipeId, price);
+        }}
+        onSaveWholesale={async (price: number) => {
+          await saveWholesalePrice(recipeId, price);
         }}
       />
 
