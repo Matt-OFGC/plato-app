@@ -15,10 +15,24 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const includeFullData = searchParams.get("full") === "true";
+    const search = searchParams.get("search");
+    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
+
+    const where: any = { companyId };
+    
+    // Add search filter if provided
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" as const } },
+        { description: { contains: search, mode: "insensitive" as const } },
+        { category: { contains: search, mode: "insensitive" as const } },
+      ];
+    }
 
     const recipesRaw = await prisma.recipe.findMany({
-      where: { companyId },
+      where,
       orderBy: { name: "asc" },
+      take: limit,
       include: includeFullData ? {
         items: {
           include: { ingredient: true }
@@ -43,6 +57,7 @@ export async function GET(request: NextRequest) {
       yieldQuantity: recipe.yieldQuantity.toString(),
       yieldUnit: recipe.yieldUnit || "each",
       sellingPrice: recipe.sellingPrice?.toString() || null,
+      wholesalePrice: recipe.wholesalePrice?.toString() || null,
       storage: recipe.storage || null,
       shelfLife: recipe.shelfLife || null,
       createdAt: recipe.createdAt.toISOString(),
