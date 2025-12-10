@@ -101,5 +101,8 @@
     "tsx": "^4.19.2",
     "typescript": "^5",
     "vercel": "^48.8.2"
+  },
+  "optionalDependencies": {
+    "ioredis": "^5.8.2"
   }
 }

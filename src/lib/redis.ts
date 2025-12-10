@@ -34,12 +34,17 @@ async function initRedis() {
       // Try to import redis client - use eval to prevent Turbopack from analyzing at build time
       let redis: any;
       try {
-        // Use Function constructor to prevent static analysis
-        const importRedis = new Function('return import("ioredis")');
-        redis = await importRedis();
-      } catch (importError) {
+        // Use eval to prevent static analysis by bundlers
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        const redisModule = eval('"ioredis"');
+        redis = await import(redisModule);
+      } catch (importError: any) {
         // If ioredis is not installed, that's okay - Redis is optional
-        logger.debug("ioredis not available, Redis caching disabled", undefined, "Redis");
+        if (importError?.code === 'MODULE_NOT_FOUND' || importError?.message?.includes('Cannot find module')) {
+          logger.debug("ioredis not installed, Redis caching disabled", undefined, "Redis");
+        } else {
+          logger.warn("Failed to import ioredis", importError, "Redis");
+        }
         redisEnabled = false;
         return null;
       }
