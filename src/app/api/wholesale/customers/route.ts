@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       notes: notes || null,
       isActive: isActive ?? true,
       companyId: parsedCompanyId,
-      openingHours: openingHours && typeof openingHours === 'object' && Object.keys(openingHours).length > 0 ? openingHours : null,
+      openingHours: (openingHours && typeof openingHours === 'object' && !Array.isArray(openingHours) && Object.keys(openingHours).length > 0) ? openingHours : null,
       deliveryDays: Array.isArray(deliveryDays) ? deliveryDays : [],
       preferredDeliveryTime: preferredDeliveryTime || null,
       paymentTerms: paymentTerms || null,
