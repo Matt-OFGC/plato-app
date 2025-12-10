@@ -450,6 +450,34 @@ export function WholesaleOrders({
     return total;
   }
 
+  async function generateInvoice(orderId: number) {
+    if (!confirm("Create an invoice for this order?")) return;
+
+    try {
+      const res = await fetch(`/api/wholesale/orders/${orderId}/create-invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      if (res.ok) {
+        const invoice = await res.json();
+        alert(`Invoice ${invoice.invoiceNumber} created successfully!`);
+        // Optionally redirect to invoice page
+        window.location.href = `/dashboard/wholesale/invoices`;
+      } else {
+        const data = await res.json();
+        if (data.error?.includes("already exists")) {
+          alert(data.error + ". Invoice ID: " + data.invoiceId);
+        } else {
+          alert(data.error || "Failed to create invoice");
+        }
+      }
+    } catch (error) {
+      alert("Network error");
+    }
+  }
+
   async function handleSave() {
     if (customerId === 0) {
       alert("Please select a customer");
@@ -465,12 +493,15 @@ export function WholesaleOrders({
 
     try {
       // Map product IDs to recipe IDs for the order
+      // Use wholesale price from product or recipe
       const items = Array.from(orderItems.entries()).map(([productId, data]) => {
         const product = products.find(p => p.id === productId);
+        // Use product price (which comes from WholesaleProduct or Recipe.wholesalePrice)
+        const price = product?.price || null;
         return {
           recipeId: product?.recipeId || productId,
           quantity: data.quantity,
-          price: product?.price || null,
+          price: price,
           notes: data.notes || null,
         };
       });
@@ -690,6 +721,15 @@ export function WholesaleOrders({
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => generateInvoice(order.id)}
+                    className="p-2 text-green-600 hover:text-green-700 transition-colors"
+                    title="Create Invoice"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </button>
                   <button

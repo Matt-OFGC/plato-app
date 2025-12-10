@@ -11,17 +11,26 @@ public class APIClient {
     private init() {
         // Get base URL from environment or use default
         // In production, this should be your deployed Next.js URL
-        self.baseURL = ProcessInfo.processInfo.environment["PLATO_API_URL"] ?? "http://localhost:3000"
+        // For iOS simulator, use 127.0.0.1 instead of localhost
+        let defaultURL = ProcessInfo.processInfo.environment["PLATO_API_URL"] ?? "http://127.0.0.1:3000"
+        // Replace localhost with 127.0.0.1 for simulator compatibility
+        self.baseURL = defaultURL.replacingOccurrences(of: "localhost", with: "127.0.0.1")
         
         // Configure cookie storage to persist sessions
         self.cookieStorage = HTTPCookieStorage.shared
         self.cookieStorage.cookieAcceptPolicy = .always
         
-        // Configure URL session with cookie support
+        // Configure URL session with cookie support and timeout
         let configuration = URLSessionConfiguration.default
         configuration.httpCookieStorage = cookieStorage
         configuration.httpShouldSetCookies = true
         configuration.httpCookieAcceptPolicy = .always
+        configuration.timeoutIntervalForRequest = 30 // 30 second timeout
+        configuration.timeoutIntervalForResource = 60 // 60 second resource timeout
+        // URLSession automatically handles gzip/deflate decompression and chunked encoding
+        configuration.requestCachePolicy = .useProtocolCachePolicy
+        // Ensure we can handle chunked transfer encoding
+        configuration.httpShouldUsePipelining = false
         
         self.session = URLSession(configuration: configuration)
     }
@@ -31,7 +40,7 @@ public class APIClient {
         endpoint: String,
         responseType: T.Type
     ) async throws -> T {
-        return try await request(method: "GET", endpoint: endpoint, body: nil, responseType: responseType)
+        return try await requestWithoutBody(method: "GET", endpoint: endpoint, responseType: responseType)
     }
     
     /// Make a POST request
@@ -57,7 +66,16 @@ public class APIClient {
         endpoint: String,
         responseType: T.Type
     ) async throws -> T {
-        return try await request(method: "DELETE", endpoint: endpoint, body: nil, responseType: responseType)
+        return try await requestWithoutBody(method: "DELETE", endpoint: endpoint, responseType: responseType)
+    }
+    
+    /// Generic request method without body
+    private func requestWithoutBody<T: Decodable>(
+        method: String,
+        endpoint: String,
+        responseType: T.Type
+    ) async throws -> T {
+        return try await performRequest(method: method, endpoint: endpoint, bodyData: nil, responseType: responseType)
     }
     
     /// Generic request method
@@ -65,6 +83,22 @@ public class APIClient {
         method: String,
         endpoint: String,
         body: B?,
+        responseType: T.Type
+    ) async throws -> T {
+        var bodyData: Data? = nil
+        if let body = body {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            bodyData = try encoder.encode(body)
+        }
+        return try await performRequest(method: method, endpoint: endpoint, bodyData: bodyData, responseType: responseType)
+    }
+    
+    /// Perform the actual HTTP request
+    private func performRequest<T: Decodable>(
+        method: String,
+        endpoint: String,
+        bodyData: Data?,
         responseType: T.Type
     ) async throws -> T {
         guard let url = URL(string: "\(baseURL)\(endpoint)") else {
@@ -75,6 +109,9 @@ public class APIClient {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        // Explicitly don't accept compression to avoid -1015 errors
+        // URLSession can have issues with mismatched Content-Encoding headers
+        request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
         
         // Add cookies from storage
         if let cookies = cookieStorage.cookies(for: url) {
@@ -83,40 +120,101 @@ public class APIClient {
         }
         
         // Add request body if provided
-        if let body = body {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            request.httpBody = try encoder.encode(body)
+        if let bodyData = bodyData {
+            request.httpBody = bodyData
         }
         
-        // Perform request
-        let (data, response) = try await session.data(for: request)
+        // Perform request with better error handling
+        let (data, response): (Data, URLResponse)
+        do {
+            print("📤 Making request to: \(url.absoluteString)")
+            print("📤 Request headers: \(request.allHTTPHeaderFields ?? [:])")
+            (data, response) = try await session.data(for: request)
+            print("✅ Received response, data size: \(data.count) bytes")
+        } catch let error as URLError {
+            print("❌ URLError for \(url.absoluteString):")
+            print("   Code: \(error.code.rawValue) (\(error.code))")
+            print("   Description: \(error.localizedDescription)")
+            print("   Failure URL: \(error.failureURLString ?? "none")")
+            throw APIError.decodingError(error)
+        } catch {
+            print("❌ Unknown error for \(url.absoluteString): \(error)")
+            print("   Type: \(type(of: error))")
+            print("   Description: \(error.localizedDescription)")
+            throw APIError.decodingError(error)
+        }
         
         // Check HTTP status
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         
+        // Debug: Print response info
+        print("=== API Response Debug ===")
+        print("URL: \(url.absoluteString)")
+        print("Response status: \(httpResponse.statusCode)")
+        print("Content-Type: \(httpResponse.value(forHTTPHeaderField: "Content-Type") ?? "unknown")")
+        print("Content-Encoding: \(httpResponse.value(forHTTPHeaderField: "Content-Encoding") ?? "none")")
+        print("Data length: \(data.count) bytes")
+        
         // Store cookies from response
-        if let cookies = HTTPCookie.cookies(withResponseHeaderFields: httpResponse.allHeaderFields as! [String: String], for: url) {
+        let cookieHeaders = httpResponse.allHeaderFields as? [String: String] ?? [:]
+        let cookies = HTTPCookie.cookies(withResponseHeaderFields: cookieHeaders, for: url)
+        if !cookies.isEmpty {
             cookieStorage.setCookies(cookies, for: url, mainDocumentURL: nil)
         }
         
         // Handle errors
         guard (200...299).contains(httpResponse.statusCode) else {
             let errorMessage = try? JSONDecoder().decode(APIErrorResponse.self, from: data)
+            let responseString = String(data: data, encoding: .utf8) ?? "Unable to decode response"
+            print("Error response: \(responseString)")
             throw APIError.httpError(statusCode: httpResponse.statusCode, message: errorMessage?.error ?? "Unknown error")
+        }
+        
+        // Try to decode response as string first for debugging
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("Response preview (first 500 chars): \(String(responseString.prefix(500)))")
+            print("Full URL: \(url.absoluteString)")
+            
+            // Check if response looks like an error or wrong format
+            if responseString.contains("\"error\"") {
+                print("⚠️ Response contains error field - might be an error response")
+            }
+            if responseString.contains("\"user\"") && responseString.contains("\"company\"") {
+                print("⚠️ Response looks like session data, not recipes!")
+            }
         }
         
         // Decode response
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         
+        // Check if data is empty
+        guard !data.isEmpty else {
+            print("⚠️ Empty response data received")
+            throw APIError.decodingError(NSError(domain: "APIClient", code: -1, userInfo: [NSLocalizedDescriptionKey: "Empty response"]))
+        }
+        
         do {
+            // Try to decode as generic JSON first to see structure
+            if let jsonObject = try? JSONSerialization.jsonObject(with: data) {
+                print("Response JSON structure: \(type(of: jsonObject))")
+                if let dict = jsonObject as? [String: Any] {
+                    print("Response keys: \(dict.keys.joined(separator: ", "))")
+                }
+            }
+            
             return try decoder.decode(responseType, from: data)
         } catch {
-            print("Decoding error: \(error)")
-            print("Response data: \(String(data: data, encoding: .utf8) ?? "nil")")
+            print("❌ Decoding error: \(error)")
+            print("Expected type: \(responseType)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Full response data: \(responseString)")
+            } else {
+                print("Response data is not valid UTF-8")
+                print("First 100 bytes: \(data.prefix(100).map { String(format: "%02x", $0) }.joined(separator: " "))")
+            }
             throw APIError.decodingError(error)
         }
     }

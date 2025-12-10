@@ -190,16 +190,32 @@ export function ProductionPlannerEnhanced({
       fetchUnplannedOrders();
     }
   }, [startDate, endDate]);
+
   
   async function fetchUnplannedOrders() {
     setLoadingUnplannedOrders(true);
     try {
-      const res = await fetch(
-        `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`
-      );
-      if (res.ok) {
-        const orders = await res.json();
-        setUnplannedOrders(orders);
+      // Fetch both unplanned orders and all orders for the week
+      const [unplannedRes, allOrdersRes] = await Promise.all([
+        fetch(
+          `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`
+        ),
+        fetch(
+          `/api/wholesale/orders?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}&status=pending,confirmed,in_production`
+        ),
+      ]);
+
+      if (unplannedRes.ok && allOrdersRes.ok) {
+        const unplanned = await unplannedRes.json();
+        const allOrders = await allOrdersRes.json();
+        
+        // Combine and deduplicate
+        const orderMap = new Map();
+        [...unplanned, ...allOrders].forEach((order: any) => {
+          orderMap.set(order.id, order);
+        });
+        
+        setUnplannedOrders(Array.from(orderMap.values()));
       }
     } catch (error) {
       console.error('Failed to fetch unplanned orders:', error);

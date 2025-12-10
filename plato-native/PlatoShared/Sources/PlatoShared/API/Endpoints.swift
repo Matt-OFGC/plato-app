@@ -97,7 +97,7 @@ public enum APIEndpoint {
     // Search
     case search
     
-    var path: String {
+    public var path: String {
         switch self {
         // Authentication
         case .login: return "/api/login"
@@ -115,10 +115,10 @@ public enum APIEndpoint {
         case .mfaEmailSendCode: return "/api/auth/mfa/email/send-code"
         
         // Recipes
-        case .recipes: return "/api/recipes_backup"
-        case .recipe(let id): return "/api/recipes_backup/\(id)"
-        case .recipeBulk: return "/api/recipes_backup/bulk"
-        case .recipeBulkDelete: return "/api/recipes_backup/bulk-delete"
+        case .recipes: return "/api/recipes"
+        case .recipe(let id): return "/api/recipes/\(id)"
+        case .recipeBulk: return "/api/recipes/bulk"
+        case .recipeBulkDelete: return "/api/recipes/bulk-delete"
         
         // Ingredients
         case .ingredients: return "/api/ingredients"

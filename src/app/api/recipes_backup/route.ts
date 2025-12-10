@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
 
     return createOptimizedResponse(recipes, {
       cacheType: includeFullData ? 'dynamic' : 'frequent',
-      compression: true,
+      compression: false, // Disable compression to avoid URLSession issues in native apps
     });
   } catch (error) {
     logger.error("Error fetching recipes", error, "Recipes");

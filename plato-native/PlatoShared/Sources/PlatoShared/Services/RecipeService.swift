@@ -8,37 +8,38 @@ public class RecipeService {
     
     private init() {}
     
-    /// Get all recipes
-    public func getRecipes() async throws -> [Recipe] {
+    /// Get all recipes (with optional full data)
+    public func getRecipes(full: Bool = false) async throws -> [APIRecipeResponse] {
+        let endpoint = full ? "\(APIEndpoint.recipes.path)?full=true" : APIEndpoint.recipes.path
         return try await apiClient.get(
-            endpoint: APIEndpoint.recipes.path,
-            responseType: [Recipe].self
+            endpoint: endpoint,
+            responseType: [APIRecipeResponse].self
         )
     }
     
     /// Get a single recipe by ID
-    public func getRecipe(id: String) async throws -> RecipeDetail {
+    public func getRecipe(id: String) async throws -> APIRecipeResponse {
         return try await apiClient.get(
             endpoint: APIEndpoint.recipe(id: id).path,
-            responseType: RecipeDetail.self
+            responseType: APIRecipeResponse.self
         )
     }
     
     /// Create a new recipe
-    public func createRecipe(_ recipe: CreateRecipeRequest) async throws -> Recipe {
+    public func createRecipe(_ recipe: CreateRecipeRequest) async throws -> CreateRecipeResponse {
         return try await apiClient.post(
             endpoint: APIEndpoint.recipes.path,
             body: recipe,
-            responseType: Recipe.self
+            responseType: CreateRecipeResponse.self
         )
     }
     
     /// Update an existing recipe
-    public func updateRecipe(id: String, _ recipe: UpdateRecipeRequest) async throws -> Recipe {
+    public func updateRecipe(id: String, _ recipe: UpdateRecipeRequest) async throws -> EmptyResponse {
         return try await apiClient.put(
             endpoint: APIEndpoint.recipe(id: id).path,
             body: recipe,
-            responseType: Recipe.self
+            responseType: EmptyResponse.self
         )
     }
     
@@ -66,69 +67,120 @@ public class RecipeService {
 public struct CreateRecipeRequest: Encodable {
     public let name: String
     public let description: String?
-    public let categoryId: String?
-    public let servings: Int?
-    public let prepTime: Int?
-    public let cookTime: Int?
-    public let recipeType: String?
-    public let batchSize: Int?
-    public let isProtected: Bool
+    public let category: String?
+    public let yieldQuantity: String
+    public let yieldUnit: String?
+    public let sellingPrice: String?
+    public let storage: String?
+    public let shelfLife: String?
+    public let imageUrl: String?
+    public let ingredients: [RecipeIngredientRequest]?
+    public let steps: [RecipeStepRequest]?
     
     public init(
         name: String,
         description: String? = nil,
-        categoryId: String? = nil,
-        servings: Int? = nil,
-        prepTime: Int? = nil,
-        cookTime: Int? = nil,
-        recipeType: String? = nil,
-        batchSize: Int? = nil,
-        isProtected: Bool = false
+        category: String? = nil,
+        yieldQuantity: String,
+        yieldUnit: String? = "each",
+        sellingPrice: String? = nil,
+        storage: String? = nil,
+        shelfLife: String? = nil,
+        imageUrl: String? = nil,
+        ingredients: [RecipeIngredientRequest]? = nil,
+        steps: [RecipeStepRequest]? = nil
     ) {
         self.name = name
         self.description = description
-        self.categoryId = categoryId
-        self.servings = servings
-        self.prepTime = prepTime
-        self.cookTime = cookTime
-        self.recipeType = recipeType
-        self.batchSize = batchSize
-        self.isProtected = isProtected
+        self.category = category
+        self.yieldQuantity = yieldQuantity
+        self.yieldUnit = yieldUnit
+        self.sellingPrice = sellingPrice
+        self.storage = storage
+        self.shelfLife = shelfLife
+        self.imageUrl = imageUrl
+        self.ingredients = ingredients
+        self.steps = steps
     }
 }
 
 public struct UpdateRecipeRequest: Encodable {
     public let name: String?
     public let description: String?
-    public let categoryId: String?
-    public let servings: Int?
-    public let prepTime: Int?
-    public let cookTime: Int?
-    public let recipeType: String?
-    public let batchSize: Int?
-    public let isProtected: Bool?
+    public let category: String?
+    public let yieldQuantity: String?
+    public let yieldUnit: String?
+    public let sellingPrice: String?
+    public let storage: String?
+    public let shelfLife: String?
+    public let imageUrl: String?
+    public let ingredients: [RecipeIngredientRequest]?
+    public let steps: [RecipeStepRequest]?
     
     public init(
         name: String? = nil,
         description: String? = nil,
-        categoryId: String? = nil,
-        servings: Int? = nil,
-        prepTime: Int? = nil,
-        cookTime: Int? = nil,
-        recipeType: String? = nil,
-        batchSize: Int? = nil,
-        isProtected: Bool? = nil
+        category: String? = nil,
+        yieldQuantity: String? = nil,
+        yieldUnit: String? = nil,
+        sellingPrice: String? = nil,
+        storage: String? = nil,
+        shelfLife: String? = nil,
+        imageUrl: String? = nil,
+        ingredients: [RecipeIngredientRequest]? = nil,
+        steps: [RecipeStepRequest]? = nil
     ) {
         self.name = name
         self.description = description
-        self.categoryId = categoryId
-        self.servings = servings
-        self.prepTime = prepTime
-        self.cookTime = cookTime
-        self.recipeType = recipeType
-        self.batchSize = batchSize
-        self.isProtected = isProtected
+        self.category = category
+        self.yieldQuantity = yieldQuantity
+        self.yieldUnit = yieldUnit
+        self.sellingPrice = sellingPrice
+        self.storage = storage
+        self.shelfLife = shelfLife
+        self.imageUrl = imageUrl
+        self.ingredients = ingredients
+        self.steps = steps
     }
+}
+
+public struct RecipeIngredientRequest: Encodable {
+    public var id: String
+    public var name: String
+    public var quantity: String
+    public var unit: String
+    public var stepId: String?
+    
+    public init(id: String, name: String, quantity: String, unit: String, stepId: String? = nil) {
+        self.id = id
+        self.name = name
+        self.quantity = quantity
+        self.unit = unit
+        self.stepId = stepId
+    }
+}
+
+public struct RecipeStepRequest: Encodable {
+    public var id: String
+    public var title: String
+    public var method: String?
+    public var instructions: [String]?
+    public var temperatureC: Int?
+    public var durationMin: Int?
+    
+    public init(id: String, title: String, method: String? = nil, instructions: [String]? = nil, temperatureC: Int? = nil, durationMin: Int? = nil) {
+        self.id = id
+        self.title = title
+        self.method = method
+        self.instructions = instructions
+        self.temperatureC = temperatureC
+        self.durationMin = durationMin
+    }
+}
+
+public struct CreateRecipeResponse: Decodable {
+    public let success: Bool
+    public let recipeId: Int
 }
 
 struct BulkDeleteRequest: Encodable {

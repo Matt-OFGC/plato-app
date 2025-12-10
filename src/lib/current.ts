@@ -178,8 +178,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
                 businessType: true,
                 country: true,
                 phone: true,
-                logoUrl: true,
-                app: true
+                logoUrl: true
               }
             }
           },

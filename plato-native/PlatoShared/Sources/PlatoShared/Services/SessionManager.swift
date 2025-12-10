@@ -22,7 +22,7 @@ public class SessionManager: ObservableObject {
     public func checkSession() async {
         do {
             let response = try await authService.getSession()
-            if response.authenticated, let user = response.user {
+            if response.isAuthenticated, let user = response.user {
                 self.currentUser = user
                 self.isAuthenticated = true
             } else {

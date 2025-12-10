@@ -1,6 +1,7 @@
 import SwiftUI
+import PlatoShared
 
-@main
+// This file is kept for reference but PlatoiOSApp.swift is the main entry point
 struct PlatoApp: App {
     @StateObject private var sessionManager = SessionManager.shared
     

@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C9936A582EE1B51000F71849 /* PlatoShared in Frameworks */ = {isa = PBXBuildFile; productRef = C9936A572EE1B51000F71849 /* PlatoShared */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C9936A242EE1B20400F71849 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9936A582EE1B51000F71849 /* PlatoShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 				C9936A182EE1B20100F71849 /* PlatoiOS */,
 				C9936A262EE1B20400F71849 /* PlatoiOSTests */,
 				C9936A302EE1B20400F71849 /* PlatoiOSUITests */,
+				C9936A562EE1B51000F71849 /* Frameworks */,
 				C9936A172EE1B20100F71849 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +96,13 @@
 				C9936A2D2EE1B20400F71849 /* PlatoiOSUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C9936A562EE1B51000F71849 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +125,7 @@
 			);
 			name = PlatoiOS;
 			packageProductDependencies = (
+				C9936A572EE1B51000F71849 /* PlatoShared */,
 			);
 			productName = PlatoiOS;
 			productReference = C9936A162EE1B20100F71849 /* PlatoiOS.app */;
@@ -195,6 +209,9 @@
 			);
 			mainGroup = C9936A0D2EE1B20100F71849;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C9936A552EE1B44600F71849 /* XCLocalSwiftPackageReference "../PlatoShared" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9936A172EE1B20100F71849 /* Products */;
 			projectDirPath = "";
@@ -578,6 +595,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C9936A552EE1B44600F71849 /* XCLocalSwiftPackageReference "../PlatoShared" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../PlatoShared;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C9936A572EE1B51000F71849 /* PlatoShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C9936A552EE1B44600F71849 /* XCLocalSwiftPackageReference "../PlatoShared" */;
+			productName = PlatoShared;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C9936A0E2EE1B20100F71849 /* Project object */;
 }

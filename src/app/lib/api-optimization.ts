@@ -170,10 +170,12 @@ export function createOptimizedResponse(
     options.etag
   );
   
-  // Add compression hint
-  if (options.compression) {
-    response.headers.set('Content-Encoding', 'gzip');
-  }
+  // Note: Don't set Content-Encoding header manually
+  // Next.js/Vercel will automatically compress responses if Accept-Encoding includes gzip
+  // Setting it manually without actually compressing causes URLSession errors in native apps
+  // if (options.compression) {
+  //   response.headers.set('Content-Encoding', 'gzip');
+  // }
   
   return response;
 }

@@ -66,34 +66,39 @@ export default async function WholesaleOrdersPage() {
       companyId: companyId!,
       isActive: true,
     },
-    include: {
-      recipe: {
-        select: {
-          id: true,
-          name: true,
-          yieldQuantity: true,
-          yieldUnit: true,
-          category: true,
+      include: {
+        recipe: {
+          select: {
+            id: true,
+            name: true,
+            yieldQuantity: true,
+            yieldUnit: true,
+            category: true,
+            wholesalePrice: true,
+          },
         },
       },
-    },
     orderBy: [
       { sortOrder: "asc" },
       { createdAt: "desc" },
     ],
   });
 
-  const products = productsRaw.map(product => ({
-    id: product.id,
-    recipeId: product.recipeId,
-    name: product.name || product.recipe?.name || "Product",
-    description: product.description || product.recipe?.description,
-    yieldQuantity: product.recipe?.yieldQuantity.toString() || "1",
-    yieldUnit: product.recipe?.yieldUnit || "unit",
-    unit: product.unit,
-    price: product.price.toString(),
-    category: product.category || product.recipe?.category,
-  }));
+  const products = productsRaw.map(product => {
+    // Use WholesaleProduct price, or Recipe wholesalePrice, or fallback to 0
+    const wholesalePrice = product.price || (product.recipe?.wholesalePrice ? Number(product.recipe.wholesalePrice) : 0);
+    return {
+      id: product.id,
+      recipeId: product.recipeId,
+      name: product.name || product.recipe?.name || "Product",
+      description: product.description || product.recipe?.description,
+      yieldQuantity: product.recipe?.yieldQuantity.toString() || "1",
+      yieldUnit: product.recipe?.yieldUnit || "unit",
+      unit: product.unit,
+      price: wholesalePrice.toString(),
+      category: product.category || product.recipe?.category,
+    };
+  });
 
   return (
     <div>

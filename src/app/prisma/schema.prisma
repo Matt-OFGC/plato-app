@@ -234,6 +234,9 @@ model Company {
   WholesaleCustomer     WholesaleCustomer[]
   WholesaleOrder        WholesaleOrder[]
   WholesaleProduct      WholesaleProduct[]
+  WholesaleInvoice      WholesaleInvoice[]
+  WholesaleDeliveryNote WholesaleDeliveryNote[]
+  WholesalePayment      WholesalePayment[]
   MentorSubscription    MentorSubscription[]
   MentorConversation    MentorConversation[]
   MentorKnowledgeIndex  MentorKnowledgeIndex[]
@@ -969,6 +972,7 @@ model Recipe {
   portionUnit                                            BaseUnit?
   portionsPerBatch                                       Int?
   sellingPrice                                           Decimal?
+  wholesalePrice                                         Decimal?
   shelfLife                                              String?
   shelfLifeId                                            Int?
   storage                                                String?
@@ -1746,6 +1750,7 @@ model User {
   TemperatureRecord                              TemperatureRecord[]
   UserPreference                                 UserPreference?
   UserAppSubscription                            UserAppSubscription[]
+  WholesalePayment                               WholesalePayment[]
   MentorSubscription                            MentorSubscription[]
   MentorConversation                            MentorConversation[]
   MentorGoal                                    MentorGoal[]
@@ -1810,11 +1815,28 @@ model WholesaleCustomer {
   portalToken              String?                    @unique
   portalShortCode          String?                    @unique
   portalEnabled            Boolean                    @default(false)
+  openingHours             Json?
+  deliveryDays             String[]
+  preferredDeliveryTime    String?
+  paymentTerms             String?
+  creditLimit              Decimal?
+  taxId                    String?
+  accountManager           String?
+  specialInstructions      String?
+  orderFrequency           String?
+  lastOrderDate            DateTime?
+  totalOrders              Int                        @default(0)
+  totalValue               Decimal                    @default(0)
+  totalPaid                Decimal                    @default(0)
+  outstandingBalance       Decimal                    @default(0)
   CustomerPricing          CustomerPricing[]
   ProductionItem           ProductionItem[]
   ProductionItemAllocation ProductionItemAllocation[]
   Company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   WholesaleOrder           WholesaleOrder[]
+  WholesaleInvoice         WholesaleInvoice[]
+  WholesaleDeliveryNote    WholesaleDeliveryNote[]
+  WholesalePayment         WholesalePayment[]
 
   @@index([companyId])
   @@index([isActive])
@@ -1843,6 +1865,8 @@ model WholesaleOrder {
   WholesaleOrder        WholesaleOrder?      @relation("WholesaleOrderToWholesaleOrder", fields: [parentOrderId], references: [id])
   other_WholesaleOrder  WholesaleOrder[]     @relation("WholesaleOrderToWholesaleOrder")
   WholesaleOrderItem    WholesaleOrderItem[]
+  WholesaleInvoice      WholesaleInvoice[]
+  WholesaleDeliveryNote WholesaleDeliveryNote[]
 
   @@index([companyId])
   @@index([customerId])
@@ -1892,6 +1916,88 @@ model WholesaleProduct {
   @@index([companyId, isActive])
   @@index([isActive])
   @@index([recipeId])
+}
+
+model WholesaleInvoice {
+  id            Int                  @id @default(autoincrement())
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime
+  invoiceNumber  String               @unique
+  orderId        Int?
+  customerId     Int
+  companyId      Int
+  issueDate      DateTime             @default(now())
+  dueDate        DateTime
+  subtotal       Decimal
+  taxRate        Decimal              @default(0)
+  taxAmount      Decimal              @default(0)
+  total          Decimal
+  status         String               @default("draft")
+  paidDate       DateTime?
+  paidAmount     Decimal?
+  notes          String?
+  pdfUrl         String?
+  emailSent      Boolean              @default(false)
+  emailSentAt    DateTime?
+  Company        Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  WholesaleCustomer WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  WholesaleOrder    WholesaleOrder?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  WholesalePayment  WholesalePayment[]
+
+  @@index([customerId])
+  @@index([companyId])
+  @@index([orderId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([invoiceNumber])
+}
+
+model WholesaleDeliveryNote {
+  id                 Int                  @id @default(autoincrement())
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime
+  deliveryNoteNumber  String               @unique
+  orderId             Int
+  customerId          Int
+  companyId           Int
+  deliveryDate        DateTime
+  deliveredBy         String?
+  signature           String?
+  notes               String?
+  pdfUrl              String?
+  emailSent           Boolean              @default(false)
+  emailSentAt         DateTime?
+  Company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  WholesaleCustomer   WholesaleCustomer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  WholesaleOrder      WholesaleOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([companyId])
+  @@index([orderId])
+}
+
+model WholesalePayment {
+  id            Int                  @id @default(autoincrement())
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime
+  invoiceId      Int
+  customerId     Int
+  companyId      Int
+  amount         Decimal
+  paymentDate    DateTime             @default(now())
+  paymentMethod  String
+  reference      String?
+  notes          String?
+  createdBy      Int
+  Company        Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  WholesaleCustomer WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  WholesaleInvoice  WholesaleInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  User              User               @relation(fields: [createdBy], references: [id])
+
+  @@index([invoiceId])
+  @@index([customerId])
+  @@index([companyId])
+  @@index([paymentDate])
 }
 
 enum BaseUnit {

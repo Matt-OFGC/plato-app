@@ -115,7 +115,22 @@ public struct RegisterResponse: Decodable {
 
 public struct SessionResponse: Decodable {
     public let user: User?
-    public let authenticated: Bool
+    public let company: Company?
+    
+    // Computed property - user exists means authenticated
+    public var isAuthenticated: Bool {
+        return user != nil
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.user = try container.decodeIfPresent(User.self, forKey: .user)
+        self.company = try container.decodeIfPresent(Company.self, forKey: .company)
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case user, company
+    }
 }
 
 struct ResetPasswordRequest: Encodable {
@@ -135,6 +150,17 @@ public struct PinLoginResponse: Decodable {
     public let success: Bool
     public let user: User?
     public let message: String?
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.success = try container.decode(Bool.self, forKey: .success)
+        self.user = try container.decodeIfPresent(User.self, forKey: .user)
+        self.message = try container.decodeIfPresent(String.self, forKey: .message)
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case success, user, message
+    }
 }
 
 struct EmptyBody: Encodable {}

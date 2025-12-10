@@ -620,3 +620,4 @@ The application can handle current scale well, but implementing the recommended 
 
 
 
+

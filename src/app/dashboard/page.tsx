@@ -24,7 +24,40 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   if (!user) redirect("/login?redirect=/dashboard");
 
   const resolvedSearchParams = await searchParams;
-  const { companyId, company, user: userWithMemberships, app: companyApp, appConfig: companyAppConfig } = await getCurrentUserAndCompany();
+  
+  let companyId: number | null = null;
+  let company: any = null;
+  let userWithMemberships: any = null;
+  let companyApp: any = null;
+  let companyAppConfig: any = null;
+  
+  try {
+    const result = await getCurrentUserAndCompany();
+    companyId = result.companyId;
+    company = result.company;
+    userWithMemberships = result.user;
+    companyApp = result.app;
+    companyAppConfig = result.appConfig;
+  } catch (error) {
+    console.error('Error fetching user and company:', error);
+    // Return a fallback structure to prevent page crashes
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-12 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Error Loading Dashboard</h2>
+          <p className="text-gray-600 mb-6">
+            There was an error loading your dashboard. Please try refreshing the page.
+          </p>
+          <a
+            href="/dashboard"
+            className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            Refresh Page
+          </a>
+        </div>
+      </div>
+    );
+  }
   
   // App detection from route is handled by the route itself (/bake/* routes)
   // For /dashboard routes, we check query params or use company default

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         notes,
         isActive: isActive ?? true,
         companyId: parsedCompanyId,
-        openingHours: openingHours ? JSON.parse(JSON.stringify(openingHours)) : null,
+        openingHours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
         deliveryDays: deliveryDays || [],
         preferredDeliveryTime,
         paymentTerms,

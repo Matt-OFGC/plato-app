@@ -582,6 +582,15 @@ model WholesaleCustomer {
   portalToken           String?                    @unique
   portalShortCode       String?                    @unique
   portalEnabled         Boolean                    @default(false)
+  openingHours          Json?
+  deliveryDays          String[]                   @default([])
+  preferredDeliveryTime String?
+  paymentTerms          String?
+  creditLimit           Decimal?
+  taxId                 String?
+  accountManager        String?
+  specialInstructions   String?
+  orderFrequency        String?
   customPricing         CustomerPricing[]
   productionItems       ProductionItem[]
   productionAllocations ProductionItemAllocation[]

@@ -27,7 +27,7 @@ struct PinLoginView: View {
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.numberPad)
                     .padding(.horizontal)
-                    .onChange(of: pin) { newValue in
+                    .onChange(of: pin) { oldValue, newValue in
                         // Limit to 4-6 digits
                         pin = String(newValue.prefix(6))
                     }

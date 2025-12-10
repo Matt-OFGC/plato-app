@@ -117,8 +117,14 @@ struct LoginView: View {
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = error.localizedDescription
+                    // Provide more helpful error messages
+                    if let apiError = error as? APIError {
+                        errorMessage = apiError.localizedDescription
+                    } else {
+                        errorMessage = "Login failed: \(error.localizedDescription)"
+                    }
                     isLoading = false
+                    print("Login error: \(error)")
                 }
             }
         }
