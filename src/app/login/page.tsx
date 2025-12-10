@@ -20,25 +20,38 @@ function LoginForm() {
     setLoading(true);
     
     try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, rememberMe }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Login failed" }));
+        setError(errorData.error || "Login failed");
+        setLoading(false);
+        return;
+      }
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Check if device mode should be offered
-        if (data.canEnableDeviceMode && data.company) {
-          const enableDevice = confirm(
-            `Enable PIN login for this device?\n\n` +
-            `This will allow your team members to access ${data.company.name} using their PINs on this device.\n\n` +
-            `Click OK to enable, or Cancel to continue normally.`
-          );
+      // Check if device mode should be offered
+      if (data.canEnableDeviceMode && data.company) {
+        const enableDevice = confirm(
+          `Enable PIN login for this device?\n\n` +
+          `This will allow your team members to access ${data.company.name} using their PINs on this device.\n\n` +
+          `Click OK to enable, or Cancel to continue normally.`
+        );
 
-          if (enableDevice) {
-            // Set up device mode
+        if (enableDevice) {
+          try {
             await fetch("/api/device-login", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -47,20 +60,24 @@ function LoginForm() {
                 companyName: data.company.name,
               }),
             });
+          } catch (deviceError) {
+            // Don't block login if device setup fails
+            console.warn("Device login setup failed:", deviceError);
           }
         }
-
-        // Wait a moment for the session cookie to be set
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Force a hard refresh to ensure session is loaded
-        window.location.href = sp.get("redirect") || "/dashboard";
-      } else {
-        setError(data.error || "Login failed");
       }
-    } catch (err) {
-      setError("Network error. Please try again.");
-    } finally {
+
+      // Wait a moment for the session cookie to be set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Force a hard refresh to ensure session is loaded
+      window.location.href = sp.get("redirect") || "/dashboard";
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setError("Request timed out. Please try again.");
+      } else {
+        setError(err.message || "Network error. Please try again.");
+      }
       setLoading(false);
     }
   }
