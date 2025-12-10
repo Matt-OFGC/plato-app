@@ -94,16 +94,36 @@ export async function GET(request: NextRequest) {
         // We need to find production items that match the recipes in this order
         // and check if they have allocations for this customer
         
+        // Build plan date filter - if order has deliveryDate, check plans that overlap
+        // If order has no deliveryDate, check plans in the requested date range
+        const planDateFilter: any = {
+          companyId: parsedCompanyId,
+        };
+        
+        if (order.deliveryDate) {
+          // Order has delivery date - find plans that overlap with that date
+          planDateFilter.startDate = { lte: order.deliveryDate };
+          planDateFilter.endDate = { gte: order.deliveryDate };
+        } else if (startDate && endDate) {
+          // Order has no delivery date - check plans in the requested date range
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          planDateFilter.OR = [
+            {
+              startDate: { lte: end },
+              endDate: { gte: start },
+            },
+          ];
+        }
+        
         const productionItems = await prisma.productionItem.findMany({
           where: {
             recipeId: {
               in: order.items.map(item => item.recipeId),
             },
-            plan: {
-              companyId: parsedCompanyId,
-              startDate: { lte: order.deliveryDate || new Date() },
-              endDate: { gte: order.deliveryDate || new Date() },
-            },
+            plan: planDateFilter,
             allocations: {
               some: {
                 customerId: order.customerId,
@@ -132,6 +152,16 @@ export async function GET(request: NextRequest) {
 
     // Filter out orders that are already planned
     const unplannedOrders = ordersWithCoverage.filter(order => !order.isPlanned);
+
+    // Log for debugging
+    logger.debug(`Unplanned orders query: Found ${orders.length} confirmed orders, ${unplannedOrders.length} unplanned`, {
+      companyId: parsedCompanyId,
+      startDate,
+      endDate,
+      totalOrders: orders.length,
+      unplannedCount: unplannedOrders.length,
+      plannedCount: ordersWithCoverage.filter(o => o.isPlanned).length,
+    }, "Wholesale/Orders/Unplanned");
 
     return createOptimizedResponse(unplannedOrders, {
       cacheType: 'dynamic',
