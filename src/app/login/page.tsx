@@ -79,8 +79,11 @@ function LoginForm() {
       // Force a hard refresh to ensure session is loaded
       window.location.href = sp.get("redirect") || "/dashboard";
     } catch (err: any) {
+      console.error('[Login] Error during login', err);
       if (err.name === 'AbortError') {
         setError("Request timed out. Please try again.");
+      } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+        setError("Cannot connect to server. Make sure the dev server is running on port 3001.");
       } else {
         setError(err.message || "Network error. Please try again.");
       }

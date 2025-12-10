@@ -48,6 +48,14 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
 
   // Production section - show tabs for easy navigation between production pages
   if (pathname.startsWith('/dashboard/production') || pathname.startsWith('/dashboard/wholesale') || pathname.startsWith('/dashboard/analytics')) {
+    // If on wholesale orders page, show Orders tab
+    if (pathname.startsWith('/dashboard/wholesale/orders')) {
+      return { 
+        tabs: ['Production', 'Wholesale', 'Orders', 'Analytics'],
+        links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/analytics']
+      };
+    }
+    // Default tabs for production/wholesale/analytics
     return { 
       tabs: ['Production', 'Wholesale', 'Analytics'],
       links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/analytics']
@@ -269,11 +277,23 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
           setActiveTab(-1);
         }
       } else {
-        const currentIndex = tabLinks.findIndex(link => pathname.startsWith(link));
-        if (currentIndex >= 0) {
-          setActiveTab(currentIndex);
+        // For wholesale orders, check exact match first
+        if (pathname.startsWith('/dashboard/wholesale/orders')) {
+          const ordersIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale/orders');
+          if (ordersIndex >= 0) {
+            setActiveTab(ordersIndex);
+          } else {
+            // Fallback to wholesale tab if orders link not found
+            const wholesaleIndex = tabLinks.findIndex(link => link === '/dashboard/wholesale');
+            setActiveTab(wholesaleIndex >= 0 ? wholesaleIndex : 0);
+          }
         } else {
-          setActiveTab(0);
+          const currentIndex = tabLinks.findIndex(link => pathname.startsWith(link));
+          if (currentIndex >= 0) {
+            setActiveTab(currentIndex);
+          } else {
+            setActiveTab(0);
+          }
         }
       }
     } else {
