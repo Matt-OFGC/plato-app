@@ -55,7 +55,11 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
   // Check Redis cache first (silently fail if Redis unavailable)
   let cached: CurrentUserAndCompany | null = null;
   try {
-    cached = await getCache<CurrentUserAndCompany>(cacheKey);
+    // Add timeout to prevent hanging
+    cached = await Promise.race([
+      getCache<CurrentUserAndCompany>(cacheKey),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)) // 1 second timeout
+    ]);
   } catch (error) {
     // Redis unavailable, continue without cache
   }
@@ -63,7 +67,31 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     return cached;
   }
 
-  return await fetchUserAndCompany(user.id);
+  // Add timeout to database fetch as well
+  return await Promise.race([
+    fetchUserAndCompany(user.id),
+    new Promise<CurrentUserAndCompany>((_, reject) => 
+      setTimeout(() => reject(new Error('Database query timeout')), 10000) // 10 second timeout
+    )
+  ]).catch((error) => {
+    // If timeout or error, return fallback
+    logger.error('Error or timeout in getCurrentUserAndCompany', error, 'Current');
+    return {
+      companyId: null,
+      company: null,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin,
+        memberships: []
+      },
+      brand: null,
+      brandConfig: null,
+      app: null,
+      appConfig: null
+    };
+  });
 }
 
 // Internal function to fetch user and company data
