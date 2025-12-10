@@ -10,12 +10,23 @@ export default async function WholesalePage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard/wholesale");
 
-  const result = await getCurrentUserAndCompany();
+  let result;
+  try {
+    result = await getCurrentUserAndCompany();
+  } catch (error) {
+    console.error("Error getting user and company:", error);
+    redirect("/dashboard");
+  }
+
   const { companyId, user: userWithMemberships } = result;
   
   if (!companyId) {
-    // Log for debugging
-    console.error("No companyId found for user:", user.id);
+    // Check if user has memberships but they're inactive
+    if (userWithMemberships?.memberships && userWithMemberships.memberships.length > 0) {
+      console.error("User has memberships but none are active:", userWithMemberships.memberships);
+    } else {
+      console.error("User has no company memberships");
+    }
     redirect("/dashboard");
   }
 
@@ -23,64 +34,83 @@ export default async function WholesalePage() {
   const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "MEMBER";
 
   // Get wholesale customers
-  const customers = await prisma.wholesaleCustomer.findMany({
-    where: { companyId },
-    include: {
-      _count: {
-        select: {
-          orders: true,
-          productionItems: true,
+  let customers = [];
+  let recentOrders = [];
+  let recentInvoices = [];
+  let totalOutstanding = { _sum: { outstandingBalance: null } };
+  let overdueInvoices = 0;
+
+  try {
+    customers = await prisma.wholesaleCustomer.findMany({
+      where: { companyId },
+      include: {
+        _count: {
+          select: {
+            orders: true,
+            productionItems: true,
+          },
         },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+    });
 
-  // Get recent orders
-  const recentOrders = await prisma.wholesaleOrder.findMany({
-    where: { companyId },
-    include: {
-      customer: {
-        select: {
-          id: true,
-          name: true,
+    // Get recent orders
+    recentOrders = await prisma.wholesaleOrder.findMany({
+      where: { companyId },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
 
-  // Get recent invoices
-  const recentInvoices = await prisma.wholesaleInvoice.findMany({
-    where: { companyId },
-    include: {
-      customer: {
-        select: {
-          id: true,
-          name: true,
+    // Get recent invoices (may fail if table doesn't exist yet)
+    try {
+      recentInvoices = await prisma.wholesaleInvoice.findMany({
+        where: { companyId },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
 
-  // Calculate summary stats
-  const totalOutstanding = await prisma.wholesaleCustomer.aggregate({
-    where: { companyId },
-    _sum: {
-      outstandingBalance: true,
-    },
-  });
+      // Calculate summary stats
+      totalOutstanding = await prisma.wholesaleCustomer.aggregate({
+        where: { companyId },
+        _sum: {
+          outstandingBalance: true,
+        },
+      });
 
-  const overdueInvoices = await prisma.wholesaleInvoice.count({
-    where: {
-      companyId,
-      status: { not: "paid" },
-      dueDate: { lt: new Date() },
-    },
-  });
+      overdueInvoices = await prisma.wholesaleInvoice.count({
+        where: {
+          companyId,
+          status: { not: "paid" },
+          dueDate: { lt: new Date() },
+        },
+      });
+    } catch (invoiceError) {
+      // Tables might not exist yet - migrations may not have run
+      console.warn("Invoice/delivery note tables may not exist yet:", invoiceError);
+      recentInvoices = [];
+      totalOutstanding = { _sum: { outstandingBalance: null } };
+      overdueInvoices = 0;
+    }
+  } catch (error) {
+    console.error("Error fetching wholesale data:", error);
+    // Continue with empty arrays - page will still render
+  }
 
   return (
     <WholesalePageClient

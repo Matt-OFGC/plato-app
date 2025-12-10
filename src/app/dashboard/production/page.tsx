@@ -21,8 +21,25 @@ export default async function ProductionPage() {
   //   redirect("/dashboard?locked=production");
   // }
 
-  const { companyId } = await getCurrentUserAndCompany();
-  if (!companyId) redirect("/dashboard");
+  let result;
+  try {
+    result = await getCurrentUserAndCompany();
+  } catch (error) {
+    console.error("Error getting user and company:", error);
+    redirect("/dashboard");
+  }
+
+  const { companyId, user: userWithMemberships } = result;
+  
+  if (!companyId) {
+    // Check if user has memberships but they're inactive
+    if (userWithMemberships?.memberships && userWithMemberships.memberships.length > 0) {
+      console.error("User has memberships but none are active:", userWithMemberships.memberships);
+    } else {
+      console.error("User has no company memberships");
+    }
+    redirect("/dashboard");
+  }
 
   // Get basic recipes data - much lighter query
   const recipesRaw = await prisma.recipe.findMany({
