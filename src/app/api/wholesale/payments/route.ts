@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
             name: true,
           },
         },
-        User: {
+        creator: {
           select: {
             id: true,
             name: true,
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
             name: true,
           },
         },
-        User: {
+        creator: {
           select: {
             id: true,
             name: true,

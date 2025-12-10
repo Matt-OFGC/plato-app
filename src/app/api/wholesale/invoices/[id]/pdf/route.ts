@@ -39,12 +39,12 @@ export async function GET(
             },
           },
         },
-        WholesalePayment: {
+        payments: {
           orderBy: {
             paymentDate: "desc",
           },
         },
-        Company: {
+        company: {
           select: {
             name: true,
             address: true,
@@ -101,13 +101,13 @@ export async function GET(
         taxId: invoice.customer.taxId,
       },
       company: {
-        name: invoice.Company.name,
-        address: invoice.Company.address,
-        city: invoice.Company.city,
-        postcode: invoice.Company.postcode,
-        country: invoice.Company.country,
-        email: invoice.Company.email,
-        phone: invoice.Company.phone,
+        name: invoice.company.name,
+        address: invoice.company.address,
+        city: invoice.company.city,
+        postcode: invoice.company.postcode,
+        country: invoice.company.country,
+        email: invoice.company.email,
+        phone: invoice.company.phone,
       },
       items,
       subtotal: Number(invoice.subtotal),

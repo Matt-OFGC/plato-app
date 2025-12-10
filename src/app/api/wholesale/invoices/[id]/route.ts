@@ -37,12 +37,12 @@ export async function GET(
             },
           },
         },
-        WholesalePayment: {
+        payments: {
           orderBy: {
             paymentDate: "desc",
           },
           include: {
-            User: {
+            creator: {
               select: {
                 id: true,
                 name: true,
@@ -80,7 +80,7 @@ export async function GET(
         totalPaid: invoice.customer.totalPaid.toString(),
         outstandingBalance: invoice.customer.outstandingBalance.toString(),
       },
-      WholesalePayment: invoice.WholesalePayment.map((payment) => ({
+      payments: invoice.payments.map((payment) => ({
         ...payment,
         amount: payment.amount.toString(),
       })),
