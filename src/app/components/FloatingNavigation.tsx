@@ -52,41 +52,41 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
       // Orders page
       if (pathname.startsWith('/dashboard/wholesale/orders')) {
         return { 
-          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers'],
-          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale']
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
         };
       }
       // Calendar page
       if (pathname.startsWith('/dashboard/wholesale/calendar')) {
         return { 
-          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers'],
-          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale']
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
         };
       }
       // Invoices page
       if (pathname.startsWith('/dashboard/wholesale/invoices')) {
         return { 
-          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers'],
-          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale']
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
         };
       }
       // Main wholesale page (shows customers by default)
       if (pathname === '/dashboard/wholesale' || pathname === '/dashboard/wholesale/') {
         return { 
-          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers'],
-          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale']
+          tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+          links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
         };
       }
       // Default for other wholesale pages
       return { 
-        tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers'],
-        links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale']
+        tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+        links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
       };
     }
     // Production pages - also show all wholesale tabs
     return { 
-      tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers'],
-      links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale']
+      tabs: ['Production', 'Wholesale', 'Orders', 'Calendar', 'Invoices', 'Customers', 'Analytics'],
+      links: ['/dashboard/production', '/dashboard/wholesale', '/dashboard/wholesale/orders', '/dashboard/wholesale/calendar', '/dashboard/wholesale/invoices', '/dashboard/wholesale', '/dashboard/analytics']
     };
   }
   

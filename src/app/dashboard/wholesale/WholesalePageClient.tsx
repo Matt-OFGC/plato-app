@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { WholesaleCustomers } from "@/components/WholesaleCustomers";
-import { InvoiceManager } from "@/components/InvoiceManager";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -61,51 +58,16 @@ export default function WholesalePageClient({
   overdueCount,
 }: WholesalePageClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("overview");
 
   const canManageAll = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
-
-  const tabs: Array<{ id: string; label: string; icon?: string }> = [
-    { id: "overview", label: "Overview" },
-    { id: "customers", label: "Customers", icon: "👥" },
-    { id: "orders", label: "Orders", icon: "📋" },
-    { id: "calendar", label: "Calendar", icon: "📅" },
-    { id: "invoices", label: "Invoices", icon: "🧾" },
-    { id: "analytics", label: "Analytics", icon: "📊" },
-  ];
 
   const activeCustomers = customers.filter(c => c.isActive);
   const pendingOrders = recentOrders.filter(o => o.status === "pending" || o.status === "confirmed");
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation - Modern Style */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2">
-        <nav className="flex space-x-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-all duration-200
-                ${
-                  activeTab === tab.id
-                    ? "bg-green-600 text-white shadow-md transform scale-105"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }
-              `}
-            >
-              {tab.icon && <span className="mr-1">{tab.icon}</span>}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      <div className="mt-6">
-        {activeTab === "overview" && (
-          <div className="space-y-6">
+      {/* Overview Content */}
+      <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
@@ -170,7 +132,7 @@ export default function WholesalePageClient({
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Recent Invoices</h2>
                 <button
-                  onClick={() => setActiveTab("invoices")}
+                  onClick={() => router.push("/dashboard/wholesale/invoices")}
                   className="text-sm text-green-600 hover:text-green-700 font-medium"
                 >
                   View All →
@@ -208,7 +170,7 @@ export default function WholesalePageClient({
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
-                onClick={() => setActiveTab("customers")}
+                onClick={() => router.push("/dashboard/wholesale")}
                 className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:border-green-500 transition-colors text-left"
               >
                 <div className="text-2xl mb-2">👥</div>
@@ -224,7 +186,7 @@ export default function WholesalePageClient({
                 <div className="text-sm text-gray-600">Add a new wholesale order</div>
               </button>
               <button
-                onClick={() => setActiveTab("invoices")}
+                onClick={() => router.push("/dashboard/wholesale/invoices")}
                 className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:border-green-500 transition-colors text-left"
               >
                 <div className="text-2xl mb-2">🧾</div>
@@ -233,74 +195,6 @@ export default function WholesalePageClient({
               </button>
             </div>
           </div>
-        )}
-
-        {activeTab === "customers" && (
-          <WholesaleCustomers customers={customers} companyId={companyId} />
-        )}
-
-        {activeTab === "orders" && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Orders</h2>
-              <p className="text-gray-600">Manage wholesale orders</p>
-            </div>
-            <button
-              onClick={() => router.push("/dashboard/wholesale/orders")}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              Go to Orders Page →
-            </button>
-          </div>
-        )}
-
-        {activeTab === "calendar" && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Calendar View</h2>
-              <p className="text-gray-600">View orders by delivery date and create custom orders</p>
-            </div>
-            <button
-              onClick={() => router.push("/dashboard/wholesale/calendar")}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              Open Calendar →
-            </button>
-          </div>
-        )}
-
-        {activeTab === "invoices" && (
-          <div className="space-y-6">
-            <InvoiceManager companyId={companyId} />
-            <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => router.push("/dashboard/wholesale/delivery-notes")}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Manage Delivery Notes
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "analytics" && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics</h2>
-              <p className="text-gray-600">View sales trends, customer insights, and performance metrics</p>
-            </div>
-            <button
-              onClick={() => router.push("/dashboard/analytics")}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              Open Analytics Dashboard →
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
