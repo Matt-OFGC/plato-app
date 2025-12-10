@@ -87,12 +87,36 @@ export async function GET(request: NextRequest) {
       ],
     });
 
+    // Log raw orders for debugging
+    logger.debug(`Raw orders query result: ${orders.length} orders found`, {
+      companyId: parsedCompanyId,
+      startDate,
+      endDate,
+      orderDetails: orders.map(o => ({
+        id: o.id,
+        status: o.status,
+        deliveryDate: o.deliveryDate,
+        itemCount: o.items.length,
+        recipeIds: o.items.map(i => i.recipeId).filter(Boolean),
+      })),
+    }, "Wholesale/Orders/Unplanned");
+
     // For each order, check if it has allocations in production plans
     const ordersWithCoverage = await Promise.all(
       orders.map(async (order) => {
-        // Check if any of this order's items have allocations
-        // We need to find production items that match the recipes in this order
-        // and check if they have allocations for this customer
+        // Skip orders without items or without recipeIds
+        const validRecipeIds = order.items
+          .map(item => item.recipeId)
+          .filter((id): id is number => id !== null && id !== undefined);
+        
+        if (validRecipeIds.length === 0) {
+          // Order has no valid recipe items - mark as unplanned
+          return {
+            ...order,
+            isPlanned: false,
+            linkedPlans: [],
+          };
+        }
         
         // Build plan date filter - if order has deliveryDate, check plans that overlap
         // If order has no deliveryDate, check plans in the requested date range
@@ -121,7 +145,7 @@ export async function GET(request: NextRequest) {
         const productionItems = await prisma.productionItem.findMany({
           where: {
             recipeId: {
-              in: order.items.map(item => item.recipeId),
+              in: validRecipeIds,
             },
             plan: planDateFilter,
             allocations: {
@@ -161,6 +185,8 @@ export async function GET(request: NextRequest) {
       totalOrders: orders.length,
       unplannedCount: unplannedOrders.length,
       plannedCount: ordersWithCoverage.filter(o => o.isPlanned).length,
+      unplannedOrderIds: unplannedOrders.map(o => o.id),
+      plannedOrderIds: ordersWithCoverage.filter(o => o.isPlanned).map(o => o.id),
     }, "Wholesale/Orders/Unplanned");
 
     return createOptimizedResponse(unplannedOrders, {

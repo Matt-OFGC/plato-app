@@ -195,36 +195,35 @@ export function ProductionPlannerEnhanced({
   async function fetchUnplannedOrders() {
     setLoadingUnplannedOrders(true);
     try {
-      // Fetch both unplanned orders and all orders for the week
-      const [unplannedRes, allOrdersRes] = await Promise.all([
-        fetch(
-          `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`
-        ),
-        fetch(
-          `/api/wholesale/orders?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}&status=confirmed`
-        ),
-      ]);
+      // Fetch unplanned orders - this endpoint handles all the filtering
+      const unplannedRes = await fetch(
+        `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`
+      );
 
-      if (unplannedRes.ok && allOrdersRes.ok) {
+      if (unplannedRes.ok) {
         const unplanned = await unplannedRes.json();
-        const allOrders = await allOrdersRes.json();
-        
-        // Filter out planned orders from allOrders
-        const unplannedFromAll = allOrders.filter((order: any) => !order.isPlanned);
-        
-        // Combine and deduplicate - prefer unplanned array (it has more accurate isPlanned flag)
-        const orderMap = new Map();
-        [...unplanned, ...unplannedFromAll].forEach((order: any) => {
-          // Only add if not already planned
-          if (!order.isPlanned) {
-            orderMap.set(order.id, order);
-          }
+        console.log(`[Production Planner] Found ${unplanned.length} unplanned orders for ${startDate} to ${endDate}`, {
+          orders: unplanned.map((o: any) => ({
+            id: o.id,
+            customer: o.customer?.name,
+            status: o.status,
+            deliveryDate: o.deliveryDate,
+            itemCount: o.items?.length || 0,
+          })),
         });
-        
-        setUnplannedOrders(Array.from(orderMap.values()));
+        setUnplannedOrders(unplanned);
+      } else {
+        const errorData = await unplannedRes.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[Production Planner] Failed to fetch unplanned orders:', {
+          status: unplannedRes.status,
+          error: errorData,
+          url: `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`,
+        });
+        setUnplannedOrders([]);
       }
     } catch (error) {
       console.error('Failed to fetch unplanned orders:', error);
+      setUnplannedOrders([]);
     } finally {
       setLoadingUnplannedOrders(false);
     }
@@ -1380,8 +1379,8 @@ export function ProductionPlannerEnhanced({
               <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-gray-700 font-semibold text-base mb-1">All orders are planned!</p>
-              <p className="text-sm text-gray-500">No pending orders in this date range</p>
+              <p className="text-gray-700 font-semibold text-base mb-1">No unplanned orders</p>
+              <p className="text-sm text-gray-500">No confirmed orders in this date range, or all orders are already in production plans</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
