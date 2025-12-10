@@ -64,7 +64,46 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
   }
 
   try {
-    // Optimized query - get only what we need
+    // First, check if user has any memberships at all (including inactive)
+    const userWithAllMemberships = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        memberships: {
+          select: {
+            id: true,
+            companyId: true,
+            role: true,
+            isActive: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        }
+      }
+    });
+
+    if (!userWithAllMemberships) {
+      throw new Error('User not found');
+    }
+
+    // If user has memberships but none are active, activate the first one
+    const inactiveMemberships = userWithAllMemberships.memberships.filter(m => !m.isActive);
+    const activeMemberships = userWithAllMemberships.memberships.filter(m => m.isActive);
+    
+    if (inactiveMemberships.length > 0 && activeMemberships.length === 0) {
+      // User has memberships but none are active - activate the first one
+      logger.info(`Activating inactive membership for user ${user.id}`, { membershipId: inactiveMemberships[0].id }, 'Current');
+      await prisma.membership.update({
+        where: { id: inactiveMemberships[0].id },
+        data: { isActive: true }
+      });
+      // Clear cache so next call gets fresh data
+      await deleteCache(CacheKeys.userSession(user.id));
+    }
+
+    // Now get active memberships with company details
     const userWithMemberships = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -144,6 +183,28 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     // In development, provide more detailed error information
     if (process.env.NODE_ENV === 'development') {
       logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', error, 'Current');
+      console.error('getCurrentUserAndCompany error details:', error);
+      
+      // Try to check if user has memberships even if main query failed
+      try {
+        const memberships = await prisma.membership.findMany({
+          where: { userId: user.id },
+          select: { id: true, companyId: true, isActive: true, role: true },
+        });
+        console.error(`User ${user.id} has ${memberships.length} membership(s). Active: ${memberships.filter(m => m.isActive).length}`);
+        if (memberships.length > 0 && memberships.filter(m => m.isActive).length === 0) {
+          console.error('User has memberships but none are active. Activating first membership...');
+          await prisma.membership.update({
+            where: { id: memberships[0].id },
+            data: { isActive: true }
+          });
+          // Clear cache and retry
+          await deleteCache(CacheKeys.userSession(user.id));
+          return await fetchUserAndCompany(userId);
+        }
+      } catch (retryError) {
+        console.error('Error checking/activating memberships:', retryError);
+      }
     }
     
     // Return a fallback structure to prevent page crashes

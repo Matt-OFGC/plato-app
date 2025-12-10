@@ -60,7 +60,42 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
 async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
 
   try {
-    // Optimized query - get only what we need
+    // First, check if user has any memberships at all (including inactive)
+    const userWithAllMemberships = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        memberships: {
+          select: {
+            id: true,
+            companyId: true,
+            role: true,
+            isActive: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        }
+      }
+    });
+
+    if (!userWithAllMemberships) {
+      throw new Error('User not found');
+    }
+
+    // If user has memberships but none are active, activate the first one
+    const inactiveMemberships = userWithAllMemberships.memberships.filter(m => !m.isActive);
+    if (inactiveMemberships.length > 0 && userWithAllMemberships.memberships.filter(m => m.isActive).length === 0) {
+      // User has memberships but none are active - activate the first one
+      logger.info(`Activating inactive membership for user ${userId}`, { membershipId: inactiveMemberships[0].id }, 'Current');
+      await prisma.membership.update({
+        where: { id: inactiveMemberships[0].id },
+        data: { isActive: true }
+      });
+    }
+
+    // Now get active memberships with company details
     const userWithMemberships = await prisma.user.findUnique({
       where: { id: userId },
       select: {
