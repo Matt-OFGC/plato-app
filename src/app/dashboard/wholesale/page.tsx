@@ -149,46 +149,43 @@ export default async function WholesalePage() {
 
     // Get recent invoices (may fail if table doesn't exist yet or Prisma client not updated)
     try {
-      // Check if wholesaleInvoice model exists in Prisma client
-      if (prisma.wholesaleInvoice) {
-        recentInvoices = await prisma.wholesaleInvoice.findMany({
-          where: { companyId },
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-              },
+      recentInvoices = await prisma.wholesaleInvoice.findMany({
+        where: { companyId },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        });
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
 
-        // Calculate summary stats
-        totalOutstanding = await prisma.wholesaleCustomer.aggregate({
-          where: { companyId },
-          _sum: {
-            outstandingBalance: true,
-          },
-        });
+      // Calculate summary stats
+      totalOutstanding = await prisma.wholesaleCustomer.aggregate({
+        where: { companyId },
+        _sum: {
+          outstandingBalance: true,
+        },
+      });
 
-        overdueInvoices = await prisma.wholesaleInvoice.count({
-          where: {
-            companyId,
-            status: { not: "paid" },
-            dueDate: { lt: new Date() },
-          },
-        });
-      } else {
-        // Prisma client doesn't have the model yet - skip invoice queries
-        recentInvoices = [];
-        totalOutstanding = { _sum: { outstandingBalance: null } };
-        overdueInvoices = 0;
-      }
+      overdueInvoices = await prisma.wholesaleInvoice.count({
+        where: {
+          companyId,
+          status: { not: "paid" },
+          dueDate: { lt: new Date() },
+        },
+      });
     } catch (invoiceError: any) {
       // Tables might not exist yet - migrations may not have run, or Prisma client needs regeneration
-      console.warn("Invoice/delivery note tables may not exist yet or Prisma client needs regeneration:", invoiceError?.message || invoiceError);
+      // This is expected if Prisma client hasn't been regenerated after migrations
+      if (invoiceError?.message?.includes('findMany') || invoiceError?.message?.includes('Unknown')) {
+        console.warn("Prisma client needs regeneration - invoice queries skipped:", invoiceError?.message);
+      } else {
+        console.warn("Invoice/delivery note tables may not exist yet:", invoiceError?.message || invoiceError);
+      }
       recentInvoices = [];
       totalOutstanding = { _sum: { outstandingBalance: null } };
       overdueInvoices = 0;
