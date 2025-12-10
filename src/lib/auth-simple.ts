@@ -77,7 +77,12 @@ export async function createSession(
 ): Promise<void> {
   let cookieStore;
   try {
-    cookieStore = await cookies();
+    // Add timeout to cookies() call to prevent hanging
+    const cookiesPromise = cookies();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Cookies access timeout')), 2000)
+    );
+    cookieStore = await Promise.race([cookiesPromise, timeoutPromise]);
   } catch (cookieError) {
     throw new Error(`Failed to access cookies: ${cookieError instanceof Error ? cookieError.message : 'Unknown error'}`);
   }

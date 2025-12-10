@@ -222,12 +222,11 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     };
 
     // Cache the result in Redis (silently fail if Redis unavailable)
+    // Don't await - run in background to avoid blocking
     const cacheKey = CacheKeys.userSession(userId);
-    try {
-      await setCache(cacheKey, result, CACHE_TTL.USER_SESSION);
-    } catch (error) {
-      // Redis unavailable, continue without caching
-    }
+    setCache(cacheKey, result, CACHE_TTL.USER_SESSION).catch(() => {
+      // Redis unavailable, continue without caching - silently fail
+    });
 
     return result;
   } catch (error) {

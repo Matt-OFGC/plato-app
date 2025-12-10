@@ -4,17 +4,27 @@ export async function sendEmail(to: string, subject: string, html: string) {
   // Check if Resend is configured
   if (process.env.RESEND_API_KEY) {
     try {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      // Add timeout to prevent hanging
+      const emailPromise = (async () => {
+        const { Resend } = await import('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        const result = await resend.emails.send({
+          from: process.env.RESEND_FROM_EMAIL || 'Plato <noreply@plato.app>',
+          to: [to],
+          subject,
+          html,
+        });
+        
+        return { success: true, messageId: result.data?.id };
+      })();
       
-      const result = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'Plato <noreply@plato.app>',
-        to: [to],
-        subject,
-        html,
-      });
+      // 5 second timeout for email sending
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email send timeout')), 5000)
+      );
       
-      return { success: true, messageId: result.data?.id };
+      return await Promise.race([emailPromise, timeoutPromise]);
     } catch (error) {
       console.error('Resend email error:', error);
       // Fall through to console log in development
