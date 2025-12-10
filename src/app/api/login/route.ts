@@ -59,8 +59,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user || !user.passwordHash) {
-      // Audit failed login
-      await auditLog.loginFailed(email, request, "User not found or no password");
+      // Audit failed login (non-blocking)
+      auditLog.loginFailed(email, request, "User not found or no password").catch(err => {
+        logger.warn('[Auth/Login] Failed to log failed login', err);
+      });
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -70,17 +72,31 @@ export async function POST(request: NextRequest) {
     const isValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValid) {
-      // Audit failed login
-      await auditLog.loginFailed(email, request, "Invalid password");
+      // Audit failed login (non-blocking)
+      auditLog.loginFailed(email, request, "Invalid password").catch(err => {
+        logger.warn('[Auth/Login] Failed to log failed login', err);
+      });
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    // Check if user has MFA enabled
-    const mfaDevice = await getPrimaryMfaDevice(user.id);
-    const requiresMfa = !!mfaDevice && mfaDevice.isVerified;
+    // Check if user has MFA enabled (with timeout)
+    let mfaDevice = null;
+    let requiresMfa = false;
+    try {
+      const mfaPromise = getPrimaryMfaDevice(user.id);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('MFA check timeout')), 3000)
+      );
+      mfaDevice = await Promise.race([mfaPromise, timeoutPromise]) as any;
+      requiresMfa = !!mfaDevice && mfaDevice.isVerified;
+    } catch (mfaError) {
+      // Don't block login if MFA check fails or times out
+      logger.warn('[Auth/Login] MFA check failed or timed out', mfaError);
+      requiresMfa = false;
+    }
 
     if (requiresMfa) {
       // Return MFA challenge instead of creating session
@@ -98,18 +114,17 @@ export async function POST(request: NextRequest) {
       data: { lastLoginAt: new Date() },
     });
 
-    // Check for suspicious activity
+    // Check for suspicious activity (non-blocking - don't wait for it)
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] || 
                       request.headers.get('x-real-ip') || 
                       'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
     
-    try {
-      await checkSuspiciousActivity(user.id, ipAddress, userAgent);
-    } catch (suspiciousError) {
+    // Run suspicious activity check in background - don't block login
+    checkSuspiciousActivity(user.id, ipAddress, userAgent).catch((suspiciousError) => {
       // Don't fail login if suspicious activity check fails
       logger.warn('[Auth/Login] Failed to check suspicious activity', suspiciousError);
-    }
+    });
 
     // Create session with remember me option and request info for device tracking
     try {
@@ -126,13 +141,11 @@ export async function POST(request: NextRequest) {
       throw sessionError; // Re-throw to be caught by outer catch
     }
 
-    // Audit successful login
-    try {
-      await auditLog.loginSuccess(user.id, request);
-    } catch (auditError) {
+    // Audit successful login (non-blocking)
+    auditLog.loginSuccess(user.id, request).catch((auditError) => {
       // Don't fail login if audit logging fails
       logger.warn('[Auth/Login] Failed to log successful login', auditError);
-    }
+    });
 
     // Check if user is an owner/admin to enable device mode
     let membership = null;
