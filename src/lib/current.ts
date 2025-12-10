@@ -203,7 +203,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       // Try to check if user has memberships even if main query failed
       try {
         const memberships = await prisma.membership.findMany({
-          where: { userId: user.id },
+          where: { userId: userId },
           select: { id: true, companyId: true, isActive: true, role: true },
         });
         console.error(`User ${userId} has ${memberships.length} membership(s). Active: ${memberships.filter(m => m.isActive).length}`);
