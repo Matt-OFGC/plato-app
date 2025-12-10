@@ -18,32 +18,65 @@ export default async function WholesalePage() {
     redirect("/dashboard");
   }
 
-  const { companyId, user: userWithMemberships, company } = result;
+  let { companyId, user: userWithMemberships, company } = result;
   
-  // If no company, show empty state instead of redirecting (like main dashboard does)
-  if (!companyId) {
-    return (
-      <div className="space-y-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Wholesale</h1>
-          <p className="text-gray-600 mt-1">Manage wholesale customers and orders</p>
+  // If no company, automatically create one for the user
+  if (!companyId && userWithMemberships) {
+    try {
+      // Generate a default company name from user's name or email
+      const defaultCompanyName = userWithMemberships.name 
+        ? `${userWithMemberships.name}'s Company`
+        : `${userWithMemberships.email.split('@')[0]}'s Company`;
+      
+      // Create company with default values
+      const newCompany = await prisma.company.create({
+        data: {
+          name: defaultCompanyName,
+          slug: defaultCompanyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+          businessType: 'bakery', // Default business type
+          country: 'United Kingdom', // Default country
+        },
+      });
+
+      // Create membership for the user as ADMIN
+      await prisma.membership.create({
+        data: {
+          userId: userWithMemberships.id,
+          companyId: newCompany.id,
+          role: 'ADMIN',
+          isActive: true,
+        },
+      });
+
+      // Update companyId for this request
+      companyId = newCompany.id;
+      company = newCompany;
+      
+      console.log(`Auto-created company for user ${userWithMemberships.id}: ${newCompany.name} (ID: ${newCompany.id})`);
+    } catch (error) {
+      console.error("Error auto-creating company:", error);
+      // If auto-creation fails, show error message
+      return (
+        <div className="space-y-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Wholesale</h1>
+            <p className="text-gray-600 mt-1">Manage wholesale customers and orders</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-12 text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Error Setting Up Company</h2>
+            <p className="text-gray-600 mb-6">
+              There was an error setting up your company. Please try refreshing the page.
+            </p>
+            <a
+              href="/dashboard"
+              className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              Go to Dashboard
+            </a>
+          </div>
         </div>
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-12 text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">No Company Found</h2>
-          <p className="text-gray-600 mb-6">
-            {userWithMemberships?.memberships && userWithMemberships.memberships.length > 0
-              ? "You don't have an active company membership. Please contact your administrator."
-              : "You need to create or join a company to use wholesale features."}
-          </p>
-          <a
-            href="/dashboard"
-            className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-          >
-            Go to Dashboard
-          </a>
-        </div>
-      </div>
-    );
+      );
+    }
   }
 
   // Get user's role in the company

@@ -29,32 +29,72 @@ export default async function ProductionPage() {
     redirect("/dashboard");
   }
 
-  const { companyId, user: userWithMemberships, company } = result;
+  let { companyId, user: userWithMemberships, company } = result;
   
-  // If no company, show empty state instead of redirecting (like main dashboard does)
-  if (!companyId) {
-    return (
-      <div className="space-y-6">
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Production Plan</h1>
-          <p className="text-gray-500 text-lg">Plan production schedules, manage tasks, and track progress</p>
+  // If no company, automatically create one for the user
+  if (!companyId && userWithMemberships) {
+    try {
+      // Generate a default company name from user's name or email
+      const defaultCompanyName = userWithMemberships.name 
+        ? `${userWithMemberships.name}'s Company`
+        : `${userWithMemberships.email.split('@')[0]}'s Company`;
+      
+      // Generate unique slug
+      const { generateUniqueSlug } = await import('@/lib/slug');
+      const slug = await generateUniqueSlug(defaultCompanyName, async (slug) => {
+        const existing = await prisma.company.findUnique({ where: { slug } });
+        return !!existing;
+      });
+      
+      // Create company with default values
+      const newCompany = await prisma.company.create({
+        data: {
+          name: defaultCompanyName,
+          slug,
+          businessType: 'bakery', // Default business type
+          country: 'United Kingdom', // Default country
+        },
+      });
+
+      // Create membership for the user as ADMIN
+      await prisma.membership.create({
+        data: {
+          userId: userWithMemberships.id,
+          companyId: newCompany.id,
+          role: 'ADMIN',
+          isActive: true,
+        },
+      });
+
+      // Update companyId for this request
+      companyId = newCompany.id;
+      company = newCompany;
+      
+      console.log(`Auto-created company for user ${userWithMemberships.id}: ${newCompany.name} (ID: ${newCompany.id})`);
+    } catch (error) {
+      console.error("Error auto-creating company:", error);
+      // If auto-creation fails, show error message
+      return (
+        <div className="space-y-6">
+          <div className="mb-8">
+            <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Production Plan</h1>
+            <p className="text-gray-500 text-lg">Plan production schedules, manage tasks, and track progress</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Error Setting Up Company</h2>
+            <p className="text-gray-600 mb-6">
+              There was an error setting up your company. Please try refreshing the page.
+            </p>
+            <a
+              href="/dashboard"
+              className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              Go to Dashboard
+            </a>
+          </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">No Company Found</h2>
-          <p className="text-gray-600 mb-6">
-            {userWithMemberships?.memberships && userWithMemberships.memberships.length > 0
-              ? "You don't have an active company membership. Please contact your administrator."
-              : "You need to create or join a company to use production planning features."}
-          </p>
-          <a
-            href="/dashboard"
-            className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-          >
-            Go to Dashboard
-          </a>
-        </div>
-      </div>
-    );
+      );
+    }
   }
 
   // Get basic recipes data - much lighter query
