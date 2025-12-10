@@ -10,11 +10,15 @@ import { getPrimaryMfaDevice } from "@/lib/mfa/totp";
 import { checkSuspiciousActivity } from "@/lib/security-alerts";
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  logger.info('[Auth/Login] Login request started', { timestamp: new Date().toISOString() });
+  
   try {
     const body = await request.json().catch(() => {
       throw new Error('Invalid request body');
     });
     const { email, password, rememberMe = true } = body;
+    logger.info('[Auth/Login] Request body parsed', { email, timestamp: Date.now() - startTime });
 
     // Apply rate limiting (both IP and email-based)
     const rateLimitResult = rateLimit(request, RATE_LIMITS.LOGIN, { 
@@ -41,6 +45,8 @@ export async function POST(request: NextRequest) {
 
     let user;
     try {
+      logger.info('[Auth/Login] Fetching user from database', { email, timestamp: Date.now() - startTime });
+      const dbStartTime = Date.now();
       user = await prisma.user.findUnique({
         where: { email },
         select: {
@@ -53,6 +59,7 @@ export async function POST(request: NextRequest) {
           lastLoginAt: true,
         },
       });
+      logger.info('[Auth/Login] User fetched', { userId: user?.id, dbTime: Date.now() - dbStartTime, timestamp: Date.now() - startTime });
     } catch (dbError) {
       logger.error('[Auth/Login] Database error fetching user', dbError);
       throw new Error('Database connection failed');
@@ -69,7 +76,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    logger.info('[Auth/Login] Comparing password', { timestamp: Date.now() - startTime });
     const isValid = await bcrypt.compare(password, user.passwordHash);
+    logger.info('[Auth/Login] Password comparison complete', { isValid, timestamp: Date.now() - startTime });
 
     if (!isValid) {
       // Audit failed login (non-blocking)
@@ -109,10 +118,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Update last login
+    logger.info('[Auth/Login] Updating last login timestamp', { userId: user.id, timestamp: Date.now() - startTime });
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
+    logger.info('[Auth/Login] Last login updated', { timestamp: Date.now() - startTime });
 
     // Check for suspicious activity (non-blocking - don't wait for it)
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0] || 
@@ -128,7 +139,9 @@ export async function POST(request: NextRequest) {
 
     // Create session with remember me option and request info for device tracking
     // Add timeout to prevent hanging
+    logger.info('[Auth/Login] Creating session', { userId: user.id, timestamp: Date.now() - startTime });
     try {
+      const sessionStartTime = Date.now();
       const sessionPromise = createSession({
         id: user.id,
         email: user.email,
@@ -141,7 +154,7 @@ export async function POST(request: NextRequest) {
       );
       
       await Promise.race([sessionPromise, timeoutPromise]);
-      logger.info('[Auth/Login] Session created for user', { userId: user.id, email: user.email });
+      logger.info('[Auth/Login] Session created for user', { userId: user.id, email: user.email, sessionTime: Date.now() - sessionStartTime, timestamp: Date.now() - startTime });
     } catch (sessionError) {
       logger.error('[Auth/Login] Failed to create session', sessionError);
       throw sessionError; // Re-throw to be caught by outer catch
@@ -188,9 +201,10 @@ export async function POST(request: NextRequest) {
       company: membership?.company || null,
     };
 
+    logger.info('[Auth/Login] Login successful', { userId: user.id, totalTime: Date.now() - startTime });
     return NextResponse.json(responseData);
   } catch (error) {
-    logger.error('[Auth/Login] Login route error', error);
+    logger.error('[Auth/Login] Login route error', { error, totalTime: Date.now() - startTime });
     return handleApiError(error, 'Auth/Login');
   }
 }
