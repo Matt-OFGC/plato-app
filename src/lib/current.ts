@@ -51,39 +51,44 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     throw new Error('User not authenticated');
   }
 
-  const cacheKey = CacheKeys.userSession(user.id);
-  // Check Redis cache first (silently fail if Redis unavailable)
-  let cached: CurrentUserAndCompany | null = null;
-  try {
-    // Add timeout to prevent hanging
-    cached = await Promise.race([
-      getCache<CurrentUserAndCompany>(cacheKey),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)) // 1 second timeout
-    ]);
-  } catch (error) {
-    // Redis unavailable, continue without cache
-  }
-  if (cached) {
-    return cached;
-  }
+  // Skip cache for now to avoid hanging - will re-enable once we fix the issue
+  // const cacheKey = CacheKeys.userSession(user.id);
+  // let cached: CurrentUserAndCompany | null = null;
+  // try {
+  //   cached = await Promise.race([
+  //     getCache<CurrentUserAndCompany>(cacheKey),
+  //     new Promise<null>((resolve) => setTimeout(() => resolve(null), 500))
+  //   ]);
+  // } catch (error) {
+  //   // Redis unavailable, continue without cache
+  // }
+  // if (cached) {
+  //   return cached;
+  // }
 
-  // Add timeout to database fetch as well
-  return await Promise.race([
-    fetchUserAndCompany(user.id),
-    new Promise<CurrentUserAndCompany>((_, reject) => 
-      setTimeout(() => reject(new Error('Database query timeout')), 10000) // 10 second timeout
-    )
-  ]).catch((error) => {
-    // If timeout or error, return fallback
+  // Add timeout wrapper for database fetch
+  try {
+    const result = await Promise.race([
+      fetchUserAndCompany(user.id),
+      new Promise<CurrentUserAndCompany>((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout after 5 seconds')), 5000)
+      )
+    ]);
+    return result;
+  } catch (error) {
+    // If timeout or error, return fallback immediately
     logger.error('Error or timeout in getCurrentUserAndCompany', error, 'Current');
+    console.error('getCurrentUserAndCompany error:', error);
+    
+    // Return a fallback structure immediately
     return {
       companyId: null,
       company: null,
       user: {
         id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: user.isAdmin,
+        email: user.email || '',
+        name: user.name || null,
+        isAdmin: user.isAdmin || false,
         memberships: []
       },
       brand: null,
@@ -91,7 +96,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
       app: null,
       appConfig: null
     };
-  });
+  }
 }
 
 // Internal function to fetch user and company data
