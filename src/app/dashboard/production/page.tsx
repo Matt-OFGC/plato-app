@@ -58,48 +58,56 @@ export default async function ProductionPage() {
   }
 
   // Get basic recipes data - much lighter query
-  const recipesRaw = await prisma.recipe.findMany({
-    where: { companyId },
-    select: {
-      id: true,
-      name: true,
-      yieldQuantity: true,
-      yieldUnit: true,
-      categoryId: true,
-      category: true,
-      imageUrl: true,
-      sections: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          order: true,
+  let recipesRaw = [];
+  let wholesaleCustomers = [];
+  
+  try {
+    recipesRaw = await prisma.recipe.findMany({
+      where: { companyId },
+      select: {
+        id: true,
+        name: true,
+        yieldQuantity: true,
+        yieldUnit: true,
+        categoryId: true,
+        category: true,
+        imageUrl: true,
+        sections: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            order: true,
+          },
+          orderBy: { order: 'asc' },
         },
-        orderBy: { order: 'asc' },
       },
-    },
-    orderBy: { name: "asc" },
-    take: 50, // Limit for performance
-  });
+      orderBy: { name: "asc" },
+      take: 50, // Limit for performance
+    });
+
+    // Get wholesale customers for production allocations
+    wholesaleCustomers = await prisma.wholesaleCustomer.findMany({
+      where: {
+        companyId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Error fetching production data:", error);
+    // Continue with empty arrays - page will still render
+  }
 
   // Serialize Decimal objects to strings for client components
   const recipes = recipesRaw.map(recipe => ({
     ...recipe,
     yieldQuantity: recipe.yieldQuantity.toString(),
   }));
-
-  // Get wholesale customers for production allocations
-  const wholesaleCustomers = await prisma.wholesaleCustomer.findMany({
-    where: {
-      companyId,
-      isActive: true,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: { name: "asc" },
-  });
 
   return (
     <div className="space-y-6">
