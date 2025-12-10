@@ -68,15 +68,10 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
 
 // Internal function to fetch user and company data
 async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
-  const user = await getUserFromSession();
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-
   try {
     // First, check if user has any memberships at all (including inactive)
     const userWithAllMemberships = await prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -105,14 +100,14 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     if (inactiveMemberships.length > 0 && activeMemberships.length === 0) {
       // User has memberships but none are active - activate the first one
       try {
-        logger.info(`Activating inactive membership for user ${user.id}`, { membershipId: inactiveMemberships[0].id }, 'Current');
+        logger.info(`Activating inactive membership for user ${userId}`, { membershipId: inactiveMemberships[0].id }, 'Current');
         await prisma.membership.update({
           where: { id: inactiveMemberships[0].id },
           data: { isActive: true }
         });
         // Clear cache so next call gets fresh data
         try {
-          await deleteCache(CacheKeys.userSession(user.id));
+          await deleteCache(CacheKeys.userSession(userId));
         } catch (cacheError) {
           // Cache deletion failed, continue anyway
         }
@@ -124,7 +119,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
 
     // Now get active memberships with company details
     const userWithMemberships = await prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -227,14 +222,15 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     }
     
     // Return a fallback structure to prevent page crashes
+    const user = await getUserFromSession();
     return {
       companyId: null,
       company: null,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: user.isAdmin,
+        id: user?.id || userId,
+        email: user?.email || '',
+        name: user?.name || null,
+        isAdmin: user?.isAdmin || false,
         memberships: []
       },
       brand: null,
