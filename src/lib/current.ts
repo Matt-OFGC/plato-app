@@ -103,23 +103,25 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
 async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
   try {
     // First, check if user has any memberships at all (including inactive)
-    const userWithAllMemberships = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        isAdmin: true,
-        memberships: {
-          select: {
-            id: true,
-            companyId: true,
-            role: true,
-            isActive: true,
-          },
-          orderBy: { createdAt: 'asc' },
+    // Add timeout wrapper for the entire database operation
+    const userWithAllMemberships = await Promise.race([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          isAdmin: true,
+          memberships: {
+            select: {
+              id: true,
+              companyId: true,
+              role: true,
+              isActive: true,
+            },
+            orderBy: { createdAt: 'asc' },
+          }
         }
-      }
       }),
       new Promise<any>((_, reject) => 
         setTimeout(() => reject(new Error('Database query timeout')), 3000)
