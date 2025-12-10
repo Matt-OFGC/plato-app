@@ -254,7 +254,7 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
     };
   }, [isSearchOpen, searchTerm]);
 
-  const tabConfig = getTabsForPath(pathname, activeApp?.id || null);
+  const tabConfig = getTabsForPath(pathname, activeApp || null);
   const tabs = tabConfig.tabs;
   const tabLinks = tabConfig.links || [];
   

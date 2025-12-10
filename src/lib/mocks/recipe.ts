@@ -30,6 +30,7 @@ export type RecipeMock = {
   storage?: string;
   shelfLife?: string;
   sellPrice?: number;
+  wholesalePrice?: number;
 };
 
 const DEFAULT_RECIPE: RecipeMock = {

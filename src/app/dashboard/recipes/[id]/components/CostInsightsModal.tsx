@@ -13,7 +13,7 @@ interface CostInsightsModalProps {
   onSellPriceChange: (price: number) => void;
   wholesalePrice?: number;
   onWholesalePriceChange?: (price: number) => void;
-  recipeId: number;
+  recipeId: number | null;
   onSave: (price: number) => Promise<void>;
   onSaveWholesale?: (price: number) => Promise<void>;
 }

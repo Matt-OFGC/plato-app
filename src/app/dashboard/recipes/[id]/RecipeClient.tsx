@@ -154,7 +154,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
   // Calculate total cost properly with unit conversion
   const totalCost = useMemo(() => {
-    return localIngredients.reduce((sum, ing) => {
+    return localIngredients.reduce((sum: number, ing: any) => {
       return sum + calculateIngredientCost(ing);
     }, 0);
   }, [localIngredients, calculateIngredientCost]);
@@ -165,7 +165,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
   // Collect allergens from ingredients
   const allergens = useMemo(() => {
     const allergenSet = new Set<string>();
-    localIngredients.forEach(ing => {
+    localIngredients.forEach((ing: any) => {
       // Find the ingredient in availableIngredients to get its allergens
       const fullIngredient = availableIngredients.find(ai => ai.name === ing.name);
       if (fullIngredient && fullIngredient.allergens) {
@@ -469,6 +469,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
   };
 
   const handleSaveSellPrice = async (price: number) => {
+    if (!recipeId) throw new Error("Recipe ID is required");
     const result = await saveSellPrice(recipeId, price);
     if (!result.success) {
       throw new Error(result.error || "Failed to save sell price");
@@ -586,8 +587,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Ingredients</h3>
                       <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                        {localSteps.map((step, stepIndex) => {
-                          const stepIngredients = localIngredients.filter(ing => ing.stepId === step.id);
+                        {localSteps.map((step: any, stepIndex: number) => {
+                          const stepIngredients = localIngredients.filter((ing: any) => ing.stepId === step.id);
                           if (stepIngredients.length === 0) return null;
                           
                           return (
@@ -599,7 +600,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                               </div>
                               {/* Section Ingredients */}
                               <div className="space-y-1.5 ml-3">
-                                {stepIngredients.map((ingredient, ingIndex) => (
+                                {stepIngredients.map((ingredient: any, ingIndex: number) => (
                                   <div key={ingIndex} className="flex items-center justify-between py-1">
                                     <span className="text-gray-700 text-sm">{ingredient.name}</span>
                                     <span className="text-xs text-gray-500">{ingredient.quantity} {ingredient.unit}</span>
@@ -620,7 +621,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Method</h3>
                       <div className="space-y-4 max-h-[300px] overflow-y-auto">
-                        {localSteps.map((step, index) => (
+                        {localSteps.map((step: any, index: number) => (
                           <div key={index}>
                             {/* Section Header */}
                             <div className="flex items-center gap-2 mb-2">
@@ -632,7 +633,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                               {typeof step.instructions === 'string' ? (
                                 <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{step.instructions}</p>
                               ) : Array.isArray(step.instructions) ? (
-                                step.instructions.map((instruction, instIndex) => (
+                                step.instructions.map((instruction: any, instIndex: number) => (
                                   instruction.trim() && (
                                     <div key={instIndex} className="flex items-start gap-2">
                                       <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
@@ -819,7 +820,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                   <div className="flex items-center gap-1">
                     <div className="w-32">
                       <StorageSelector
-                        storageOptions={storageOptions}
+                        storageOptions={storageOptions.map(s => ({ ...s, description: s.description ?? null }))}
                         value={storageId}
                         onChange={setStorageId}
                         placeholder="Storage..."
@@ -1055,11 +1056,13 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         onSellPriceChange={setSellPrice}
         wholesalePrice={wholesalePrice}
         onWholesalePriceChange={setWholesalePrice}
-        recipeId={recipeId}
+        recipeId={recipeId || 0}
         onSave={async (price: number) => {
+          if (!recipeId) throw new Error("Recipe ID is required");
           await saveSellPrice(recipeId, price);
         }}
         onSaveWholesale={async (price: number) => {
+          if (!recipeId) throw new Error("Recipe ID is required");
           await saveWholesalePrice(recipeId, price);
         }}
       />

@@ -94,7 +94,7 @@ export default async function RecipePage({ params }: Props) {
   ]);
 
   // Convert Prisma Decimal fields to numbers for client components
-  const availableIngredients = availableIngredientsRaw.map(ing => ({
+  const availableIngredients = availableIngredientsRaw.map((ing: any) => ({
     ...ing,
     packPrice: ing.packPrice.toNumber(),
     packQuantity: ing.packQuantity.toNumber(),
@@ -126,7 +126,7 @@ export default async function RecipePage({ params }: Props) {
     // Transform sections to steps
     // If no sections, create a single step from the recipe method
     steps: recipe.sections.length > 0
-      ? recipe.sections.map((section, index) => ({
+      ? recipe.sections.map((section: any, index: number) => ({
           id: section.id.toString(),
           title: section.title || section.description || `Step ${index + 1}`,
           // Use database values (bakeTemp, bakeTime, hasTimer)
@@ -151,9 +151,9 @@ export default async function RecipePage({ params }: Props) {
     // Transform items to ingredients
     // Only load ingredients that are associated with sections (steps)
     // Old flat items are ignored - user needs to re-add them through the new interface
-    ingredients: recipe.sections.length > 0 && recipe.sections.some(s => s.items.length > 0)
-      ? recipe.sections.flatMap((section) => 
-          section.items.map((item) => {
+    ingredients: recipe.sections.length > 0 && recipe.sections.some((s: any) => s.items.length > 0)
+      ? recipe.sections.flatMap((section: any) => 
+          section.items.map((item: any) => {
             // Calculate cost per unit
             const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
               ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
@@ -186,7 +186,7 @@ export default async function RecipePage({ params }: Props) {
 
   // Transform ingredients for dropdown
   // Note: availableIngredients are already converted from Decimal to number above
-  const ingredientsForDropdown = availableIngredients.map(ing => {
+  const ingredientsForDropdown = availableIngredients.map((ing: any) => {
     return {
       id: ing.id,
       name: ing.name,

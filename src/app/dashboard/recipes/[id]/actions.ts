@@ -119,7 +119,7 @@ export async function saveRecipe(data: {
     ]);
 
     // Wrap everything in a transaction for atomicity
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       let recipeId: number;
 
       if (data.recipeId === null) {
@@ -408,8 +408,8 @@ export async function deleteRecipe(id: number) {
     
     // Audit deletion
     if (user && companyId) {
-      const { auditLog } = await import("@/lib/audit-log");
-      await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
+      const { logAction } = await import("@/lib/audit-log");
+      await logAction(user.id, 'RECIPE_DELETED', 'recipe', id.toString(), { recipeName: existingRecipe.name });
     }
     
     revalidatePath("/dashboard/recipes");
