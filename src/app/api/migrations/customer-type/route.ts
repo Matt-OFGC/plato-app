@@ -4,15 +4,17 @@ import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
-    // Security: Only allow in production with a secret key, or in development
+    // Security: Check for secret or allow in development
     const authHeader = request.headers.get('authorization');
-    const secret = process.env.MIGRATION_SECRET || process.env.VERCEL_ENV === 'development' ? 'dev-secret' : null;
+    const secret = process.env.MIGRATION_SECRET;
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
     
-    if (!secret) {
-      return NextResponse.json({ error: 'Migration not configured' }, { status: 500 });
+    // In production, require secret. In development, allow without secret for easier testing
+    if (!isDevelopment && !secret) {
+      return NextResponse.json({ error: 'Migration not configured - MIGRATION_SECRET required in production' }, { status: 500 });
     }
     
-    if (authHeader !== `Bearer ${secret}`) {
+    if (!isDevelopment && authHeader !== `Bearer ${secret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
