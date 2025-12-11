@@ -30,11 +30,11 @@ async function initRedis() {
 
   try {
     // Try to import redis client (optional dependency)
-    // Use dynamic import with eval to prevent build-time resolution
-    let redis;
+    // Use dynamic import with string literal to prevent build-time resolution
+    let redis: any;
     try {
-      const redisModule = "ioredis";
-      redis = await import(/* @vite-ignore */ redisModule);
+      // Dynamic import that won't be resolved at build time
+      redis = await Function('return import("ioredis")')();
     } catch (importError) {
       // ioredis not installed - Redis is optional
       console.warn("ioredis not available - Redis caching disabled");
