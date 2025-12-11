@@ -164,12 +164,12 @@ export async function createRecipeUnified(formData: FormData) {
       }
       
       // Log for debugging
-      console.error('Recipe creation failed - no companyId', {
+      logger.error('Recipe creation failed - no companyId', {
         userId: user.id,
         totalMemberships: allMemberships.length,
         activeMemberships: allMemberships.filter(m => m.isActive).length,
         inactiveMemberships: inactiveMemberships.length
-      });
+      }, 'Recipes');
       
       throw new Error(errorMsg);
     }
