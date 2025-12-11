@@ -87,7 +87,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
                 country: true,
                 phone: true,
                 logoUrl: true,
-                brand: true
+                app: true
               }
             }
           },
@@ -106,13 +106,13 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     const companyId = primaryMembership?.companyId || null;
     const company = primaryMembership?.company || null;
     
-    // Get brand config if company has a brand
-    const brand = company?.brand || null;
-    const brandConfig = brand ? getBrandConfig(brand) : null;
-    
-    // Convert brand to app for compatibility (they're the same type)
-    const app = brand as App | null;
+    // Get app from company (Company model has 'app' field, not 'brand')
+    const app = (company as any)?.app as App | null;
     const appConfig = app ? getAppConfig(app) : null;
+    
+    // Convert app to brand for compatibility (they're the same type)
+    const brand = app as Brand | null;
+    const brandConfig = brand ? getBrandConfig(brand) : null;
 
     const result = {
       companyId,
@@ -132,12 +132,69 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     }
 
     return result;
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Database error in getCurrentUserAndCompany', error, 'Current');
     
-    // In development, provide more detailed error information
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', error, 'Current');
+    // Log the specific error for debugging
+    if (error?.message) {
+      logger.debug(`Error details: ${error.message}`, error, 'Current');
+    }
+    
+    // If it's a Prisma validation error about unknown fields, try without the problematic field
+    if (error?.message?.includes('Unknown field') || error?.message?.includes('Unknown argument')) {
+      logger.warn('Retrying query without app field due to schema mismatch', {}, 'Current');
+      
+      try {
+        // Retry with a simpler query without app field
+        const userWithMemberships = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            isAdmin: true,
+            memberships: {
+              where: { isActive: true },
+              select: {
+                id: true,
+                companyId: true,
+                role: true,
+                isActive: true,
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                    businessType: true,
+                    country: true,
+                    phone: true,
+                    logoUrl: true,
+                  }
+                }
+              },
+              orderBy: { createdAt: 'asc' },
+              take: 1
+            }
+          }
+        });
+
+        if (userWithMemberships) {
+          const primaryMembership = userWithMemberships.memberships[0];
+          const companyId = primaryMembership?.companyId || null;
+          const company = primaryMembership?.company || null;
+          
+          return {
+            companyId,
+            company,
+            user: userWithMemberships,
+            brand: null,
+            brandConfig: null,
+            app: null,
+            appConfig: null
+          };
+        }
+      } catch (retryError) {
+        logger.error('Retry also failed', retryError, 'Current');
+      }
     }
     
     // Return a fallback structure to prevent page crashes
