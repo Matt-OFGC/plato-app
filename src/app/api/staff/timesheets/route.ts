@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ timesheets });
   } catch (error) {
-    console.error("Get timesheets error:", error);
+    logger.error("Get timesheets error", error, "Staff/Timesheets");
     return NextResponse.json(
       { error: "Failed to get timesheets" },
       { status: 500 }
@@ -234,7 +235,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ timesheet }, { status: 201 });
     }
   } catch (error) {
-    console.error("Clock in/out error:", error);
+    logger.error("Clock in/out error", error, "Staff/Timesheets");
     return NextResponse.json(
       { error: "Failed to clock in/out" },
       { status: 500 }
@@ -333,7 +334,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ timesheet });
   } catch (error) {
-    console.error("Update timesheet error:", error);
+    logger.error("Update timesheet error", error, "Staff/Timesheets");
     return NextResponse.json(
       { error: "Failed to update timesheet" },
       { status: 500 }

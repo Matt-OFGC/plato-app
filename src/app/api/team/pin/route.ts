@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       membership: updated,
     });
   } catch (error) {
-    console.error("PIN assignment error:", error);
+    logger.error("PIN assignment error", error, "Team/PIN");
     return NextResponse.json(
       { error: "Failed to assign PIN" },
       { status: 500 }
@@ -190,7 +190,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("PIN removal error:", error);
+    logger.error("PIN removal error", error, "Team/PIN");
     return NextResponse.json(
       { error: "Failed to remove PIN" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ shifts });
   } catch (error) {
-    console.error("Get shifts error:", error);
+    logger.error("Get shifts error", error, "Staff/Shifts");
     return NextResponse.json(
       { error: "Failed to get shifts" },
       { status: 500 }
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ shift }, { status: 201 });
   } catch (error) {
-    console.error("Create shift error:", error);
+    logger.error("Create shift error", error, "Staff/Shifts");
     return NextResponse.json(
       { error: "Failed to create shift" },
       { status: 500 }
@@ -205,7 +206,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ shift });
   } catch (error) {
-    console.error("Update shift error:", error);
+    logger.error("Update shift error", error, "Staff/Shifts");
     return NextResponse.json(
       { error: "Failed to update shift" },
       { status: 500 }
@@ -250,7 +251,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete shift error:", error);
+    logger.error("Delete shift error", error, "Staff/Shifts");
     return NextResponse.json(
       { error: "Failed to delete shift" },
       { status: 500 }

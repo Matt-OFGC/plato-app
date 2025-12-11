@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, generateOrderConfirmationEmail } from "@/lib/email";
+import { logger } from "@/lib/logger";
 
 // Create order from customer portal (no authentication required, uses token)
 export async function POST(
@@ -119,7 +120,7 @@ export async function POST(
       }
     } catch (notificationError) {
       // Log error but don't fail the order
-      console.error("Failed to create notifications:", notificationError);
+      logger.error("Failed to create notifications", notificationError, "Wholesale/Portal");
     }
 
     // Auto-sync to production plan if delivery date is within the next 14 days
@@ -201,7 +202,7 @@ export async function POST(
         }
       } catch (productionError) {
         // Log error but don't fail the order
-        console.error("Failed to sync to production plan:", productionError);
+        logger.error("Failed to sync to production plan", productionError, "Wholesale/Portal");
       }
     }
 
@@ -235,7 +236,7 @@ export async function POST(
         });
       } catch (emailError) {
         // Log error but don't fail the order
-        console.error("Failed to send confirmation email:", emailError);
+        logger.error("Failed to send confirmation email", emailError, "Wholesale/Portal");
       }
     }
 
@@ -245,7 +246,7 @@ export async function POST(
       message: "Order submitted successfully",
     });
   } catch (error) {
-    console.error("Create portal order error:", error);
+    logger.error("Create portal order error", error, "Wholesale/Portal");
     return NextResponse.json(
       { error: "Failed to create order" },
       { status: 500 }

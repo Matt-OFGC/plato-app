@@ -7,6 +7,7 @@ import { updateSubscriptionSeats } from "@/lib/stripe";
 import { sendTeamInviteEmail } from "@/lib/email";
 import crypto from "crypto";
 import { canInviteTeamMembers, createFeatureGateError } from "@/lib/subscription";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -132,9 +133,9 @@ export async function POST(request: NextRequest) {
         companyName: company.name,
         inviteLink: inviteUrl,
       });
-      console.log(`✅ Invitation email sent to ${email}`);
+      logger.info(`Invitation email sent to ${email}`, { email, companyId }, "Team/Invite");
     } catch (emailError) {
-      console.error("❌ Failed to send invitation email:", emailError);
+      logger.error("Failed to send invitation email", emailError, "Team/Invite");
       // Don't fail the invitation if email fails - they still have the URL
     }
 
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
       // Note: inviteUrl is sent via email, not returned in API response for security
     });
   } catch (error) {
-    console.error("Invite error:", error);
+    logger.error("Invite error", error, "Team/Invite");
     return NextResponse.json(
       { error: "Failed to send invitation" },
       { status: 500 }

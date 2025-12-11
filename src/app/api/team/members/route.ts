@@ -217,7 +217,7 @@ export async function DELETE(request: NextRequest) {
             additionalSeatsNeeded
           );
         } catch (stripeError) {
-          console.error("Failed to update Stripe subscription:", stripeError);
+          logger.error("Failed to update Stripe subscription", stripeError, "Team/Members");
           // Continue with removal even if Stripe update fails
         }
       }
@@ -253,7 +253,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Remove member error:", error);
+    logger.error("Remove member error", error, "Team/Members");
     return NextResponse.json(
       { error: "Failed to remove team member" },
       { status: 500 }

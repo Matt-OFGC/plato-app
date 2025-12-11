@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get production assignments
 export async function GET(request: NextRequest) {
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ assignments });
   } catch (error) {
-    console.error("Get production assignments error:", error);
+    logger.error("Get production assignments error", error, "Production/Assignments");
     return NextResponse.json(
       { error: "Failed to fetch assignments" },
       { status: 500 }
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ assignment }, { status: 201 });
   } catch (error: any) {
-    console.error("Create production assignment error:", error);
+    logger.error("Create production assignment error", error, "Production/Assignments");
     if (error.code === "P2002") {
       return NextResponse.json(
         { error: "Assignment already exists for this item and date" },

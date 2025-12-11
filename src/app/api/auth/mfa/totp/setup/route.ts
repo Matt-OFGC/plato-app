@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { generateTotpSecret, createTotpDevice } from "@/lib/mfa/totp";
+import { logger } from "@/lib/logger";
 
 // Initiate TOTP setup
 export async function POST() {
@@ -22,7 +23,7 @@ export async function POST() {
       qrCode,
     });
   } catch (error) {
-    console.error("TOTP setup error:", error);
+    logger.error("TOTP setup error", error, "Auth/MFA/TOTP");
     return NextResponse.json(
       { error: "Failed to setup TOTP" },
       { status: 500 }

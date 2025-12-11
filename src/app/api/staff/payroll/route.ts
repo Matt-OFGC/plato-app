@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // UK Tax and NI calculation functions
 function calculateIncomeTax(grossPay: number, taxCode: string): number {
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ payrollRuns });
   } catch (error) {
-    console.error("Get payroll error:", error);
+    logger.error("Get payroll error", error, "Staff/Payroll");
     return NextResponse.json(
       { error: "Failed to get payroll data" },
       { status: 500 }
@@ -263,7 +264,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ payrollRun: updatedRun }, { status: 201 });
   } catch (error) {
-    console.error("Calculate payroll error:", error);
+    logger.error("Calculate payroll error", error, "Staff/Payroll");
     return NextResponse.json(
       { error: "Failed to calculate payroll" },
       { status: 500 }
@@ -327,7 +328,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ payrollRun });
   } catch (error) {
-    console.error("Update payroll error:", error);
+    logger.error("Update payroll error", error, "Staff/Payroll");
     return NextResponse.json(
       { error: "Failed to update payroll" },
       { status: 500 }

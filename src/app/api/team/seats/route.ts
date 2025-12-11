@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getSubscriptionSeatCount } from "@/lib/stripe";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
           additionalSeats = seatInfo.additionalSeats;
           basePrice = subscription.price.toNumber();
         } catch (error) {
-          console.error("Failed to get Stripe seat count:", error);
+          logger.error("Failed to get Stripe seat count", error, "Team/Seats");
           // Fall back to calculated values
           additionalSeats = Math.max(0, company.memberships.length - 1);
         }
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
       monthlyTotal,
     });
   } catch (error) {
-    console.error("Get seats error:", error);
+    logger.error("Get seats error", error, "Team/Seats");
     return NextResponse.json(
       { error: "Failed to get seat information" },
       { status: 500 }

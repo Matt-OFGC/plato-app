@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { verifyTotpDevice, setPrimaryMfaDevice } from "@/lib/mfa/totp";
+import { logger } from "@/lib/logger";
 
 // Verify and activate TOTP device
 export async function POST(request: NextRequest) {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       message: "TOTP device verified and activated",
     });
   } catch (error) {
-    console.error("TOTP verification error:", error);
+    logger.error("TOTP verification error", error, "Auth/MFA/TOTP");
     return NextResponse.json(
       { error: "Failed to verify TOTP device" },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Get company details with all team members
 export async function GET(
@@ -56,7 +57,7 @@ export async function GET(
         },
       });
     } catch (queryError: any) {
-      console.error("Company query error:", queryError);
+      logger.error("Company query error", queryError, 'Admin/Companies');
       // Try without subscription relation if it fails
       company = await prisma.company.findUnique({
         where: { id: companyId },
@@ -93,17 +94,16 @@ export async function GET(
     }
 
     if (!company) {
-      console.error(`[Admin API] Company ${companyId} not found`);
+      logger.error(`[Admin API] Company ${companyId} not found`, { companyId }, 'Admin/Companies');
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    console.log(`[Admin API] Fetched company ${companyId} with ${company.memberships?.length || 0} members`);
+    logger.info(`[Admin API] Fetched company ${companyId} with ${company.memberships?.length || 0} members`, { companyId, memberCount: company.memberships?.length || 0 }, 'Admin/Companies');
     return NextResponse.json({ company });
   } catch (error) {
-    console.error("Admin company details error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error("Error details:", { errorMessage, errorStack, companyId });
+    logger.error("Admin company details error", { error, errorMessage, errorStack, companyId }, 'Admin/Companies');
     
     return NextResponse.json(
       { 
@@ -151,7 +151,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, company });
   } catch (error) {
-    console.error("Admin company update error:", error);
+    logger.error("Admin company update error", error, 'Admin/Companies');
     return NextResponse.json(
       { error: "Failed to update company" },
       { status: 500 }

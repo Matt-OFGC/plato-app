@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const purchaseOrderSchema = z.object({
   supplierId: z.number().int().positive(),
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, purchaseOrder });
   } catch (error) {
-    console.error("Error creating purchase order:", error);
+    logger.error("Error creating purchase order", error, "Wholesale/PurchaseOrders");
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation error", details: error.errors }, { status: 400 });
     }
@@ -110,7 +111,7 @@ export async function GET() {
 
     return NextResponse.json({ purchaseOrders: serializedOrders });
   } catch (error) {
-    console.error("Error fetching purchase orders:", error);
+    logger.error("Error fetching purchase orders", error, "Wholesale/PurchaseOrders");
     return NextResponse.json({ error: "Failed to fetch purchase orders" }, { status: 500 });
   }
 }

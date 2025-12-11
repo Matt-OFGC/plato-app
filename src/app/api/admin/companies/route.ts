@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -39,7 +40,7 @@ export async function GET() {
       });
     } catch (selectError: any) {
       // If select fails, try without the potentially missing fields
-      console.warn("Select query failed, trying without optional fields:", selectError.message);
+      logger.warn("Select query failed, trying without optional fields", { message: selectError.message }, 'Admin/Companies');
       companies = await prisma.company.findMany({
         select: {
           id: true,
@@ -70,17 +71,16 @@ export async function GET() {
       }));
     }
 
-    console.log(`[Admin API] Fetched ${companies.length} companies from database`);
+    logger.info(`[Admin API] Fetched ${companies.length} companies from database`, { count: companies.length }, 'Admin/Companies');
     if (companies.length > 0) {
-      console.log(`[Admin API] Sample company:`, companies[0]);
+      logger.debug(`[Admin API] Sample company`, { company: companies[0] }, 'Admin/Companies');
     }
 
     return NextResponse.json({ companies });
   } catch (error) {
-    console.error("Admin companies error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error("Error details:", { errorMessage, errorStack });
+    logger.error("Admin companies error", { error, errorMessage, errorStack }, 'Admin/Companies');
     
     return NextResponse.json(
       { 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Get user notifications
 export async function GET(request: NextRequest) {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       unreadCount,
     });
   } catch (error) {
-    console.error("Get notifications error:", error);
+    logger.error("Get notifications error", error, "Notifications");
     return NextResponse.json(
       { error: "Failed to get notifications" },
       { status: 500 }
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(notification);
   } catch (error) {
-    console.error("Create notification error:", error);
+    logger.error("Create notification error", error, "Notifications");
     return NextResponse.json(
       { error: "Failed to create notification" },
       { status: 500 }
@@ -97,7 +98,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Mark all read error:", error);
+    logger.error("Mark all read error", error, "Notifications");
     return NextResponse.json(
       { error: "Failed to mark notifications as read" },
       { status: 500 }

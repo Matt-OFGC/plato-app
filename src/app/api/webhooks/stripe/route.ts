@@ -179,7 +179,7 @@ async function handleAICheckout(
   });
 
   if (!user || user.memberships.length === 0) {
-    console.error(`[handleAICheckout] User ${userId} has no company`);
+    logger.error(`[handleAICheckout] User ${userId} has no company`, { userId }, 'Webhooks/Stripe');
     return;
   }
 
@@ -216,7 +216,7 @@ async function handleMentorCheckout(
   });
 
   if (!user || user.memberships.length === 0) {
-    console.error(`[handleMentorCheckout] User ${userId} has no company`);
+    logger.error(`[handleMentorCheckout] User ${userId} has no company`, { userId }, 'Webhooks/Stripe');
     return;
   }
 

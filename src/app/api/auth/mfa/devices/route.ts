@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { setPrimaryMfaDevice } from "@/lib/mfa/totp";
+import { logger } from "@/lib/logger";
 
 // Get user's MFA devices
 export async function GET() {
@@ -29,7 +30,7 @@ export async function GET() {
 
     return NextResponse.json({ devices });
   } catch (error) {
-    console.error("Get MFA devices error:", error);
+    logger.error("Get MFA devices error", error, "Auth/MFA/Devices");
     return NextResponse.json(
       { error: "Failed to get MFA devices" },
       { status: 500 }
@@ -94,7 +95,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete MFA device error:", error);
+    logger.error("Delete MFA device error", error, "Auth/MFA/Devices");
     return NextResponse.json(
       { error: "Failed to delete MFA device" },
       { status: 500 }
@@ -124,7 +125,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Set primary MFA device error:", error);
+    logger.error("Set primary MFA device error", error, "Auth/MFA/Devices");
     return NextResponse.json(
       { error: "Failed to set primary MFA device" },
       { status: 500 }

@@ -101,7 +101,7 @@ export async function PATCH(
 
     return NextResponse.json(inventory);
   } catch (error) {
-    console.error("Update inventory error:", error);
+    logger.error("Update inventory error", error, "Inventory");
     return NextResponse.json(
       { error: "Failed to update inventory" },
       { status: 500 }

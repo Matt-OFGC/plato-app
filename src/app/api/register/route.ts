@@ -169,7 +169,9 @@ export async function POST(req: NextRequest) {
         });
         
         return { company: co, membership };
-      });
+        }),
+        { maxAttempts: 3 }
+      );
       
       // Clear user cache to ensure fresh data
       await clearUserCache(user.id);
@@ -330,10 +332,12 @@ export async function POST(req: NextRequest) {
       url: req.url,
     }, 'Registration');
     
-    console.error("[Register API] Error:", errorMessage);
-    console.error("[Register API] Stack:", errorStack);
-    console.error("[Register API] Full error:", error);
-    console.error("[Register API] Error ID:", errorId);
+    logger.error("[Register API] Error", {
+      errorMessage,
+      errorStack,
+      error,
+      errorId,
+    }, 'Registration');
     
     logAuthError(error, "registration", errorId, req);
     
@@ -364,7 +368,7 @@ export async function POST(req: NextRequest) {
       return response;
     } catch (responseError) {
       // Fallback if createAuthErrorResponse fails
-      console.error("[Register API] Failed to create error response:", responseError);
+      logger.error("[Register API] Failed to create error response", responseError, 'Registration');
       return NextResponse.json({
         error: userFriendlyMessage || errorMessage || "An unexpected error occurred during registration",
         code: "INTERNAL_ERROR",

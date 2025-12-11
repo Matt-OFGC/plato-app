@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { challengeMfa } from "@/lib/mfa/totp";
+import { logger } from "@/lib/logger";
 
 // Challenge user with MFA during login
 export async function POST(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       message: "MFA verified successfully",
     });
   } catch (error) {
-    console.error("MFA challenge error:", error);
+    logger.error("MFA challenge error", error, "Auth/MFA/Challenge");
     return NextResponse.json(
       { error: "Failed to verify MFA" },
       { status: 500 }

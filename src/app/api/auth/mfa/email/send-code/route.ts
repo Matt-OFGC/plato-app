@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { sendEmailMfaCode } from "@/lib/mfa/email";
+import { logger } from "@/lib/logger";
 
 // Send email 2FA code
 export async function POST() {
@@ -18,7 +19,7 @@ export async function POST() {
       message: "Verification code sent to your email",
     });
   } catch (error) {
-    console.error("Send email MFA code error:", error);
+    logger.error("Send email MFA code error", error, "Auth/MFA/Email");
     return NextResponse.json(
       { error: "Failed to send verification code" },
       { status: 500 }
