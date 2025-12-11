@@ -160,18 +160,20 @@ async function handlePasswordResetCompletion(
   
   if (!user) {
     return NextResponse.json({
-      error: "Invalid or expired reset token",
+      error: "This password reset link is invalid or has already been used. Please request a new password reset.",
       code: "INVALID_TOKEN",
       errorId,
+      details: "Reset links can only be used once. If you've already reset your password, try logging in. Otherwise, request a new reset link."
     }, { status: 400 });
   }
   
   // Check if token has expired
   if (!user.resetPasswordTokenExpiresAt || user.resetPasswordTokenExpiresAt < new Date()) {
     return NextResponse.json({
-      error: "Reset token has expired. Please request a new one.",
+      error: "This password reset link has expired. Reset links are only valid for 1 hour for security reasons. Please request a new password reset.",
       code: "TOKEN_EXPIRED",
       errorId,
+      details: "For your security, password reset links expire after 1 hour. Click the link below to request a new one."
     }, { status: 400 });
   }
   

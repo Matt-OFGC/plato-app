@@ -133,7 +133,15 @@ export function ResetPasswordForm() {
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-              {error.error}
+              <p className="font-medium">{error.error}</p>
+              {(error.error.includes("expired") || error.error.includes("invalid") || error.error.includes("already been used")) && (
+                <a
+                  href="/forgot-password"
+                  className="inline-block mt-2 text-red-700 hover:text-red-800 underline font-semibold"
+                >
+                  Request a new password reset →
+                </a>
+              )}
             </div>
           )}
 

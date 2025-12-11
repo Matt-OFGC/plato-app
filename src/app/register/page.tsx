@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
 interface RegisterError {
@@ -13,6 +13,9 @@ interface RegisterError {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
@@ -25,6 +28,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
   const [passwordStrength, setPasswordStrength] = useState<{ score: number; feedback: string }>({ score: 0, feedback: "" });
+  const [emailCheckLoading, setEmailCheckLoading] = useState(false);
+  const [emailExists, setEmailExists] = useState<boolean | null>(null);
+  const [lastSubmitData, setLastSubmitData] = useState<any>(null);
 
   // Auto-redirect countdown after successful registration
   useEffect(() => {
@@ -34,9 +40,10 @@ export default function RegisterPage() {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (redirectCountdown === 0) {
-      router.push('/login');
+      const loginUrl = redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : '/login';
+      router.push(loginUrl);
     }
-  }, [redirectCountdown, router]);
+  }, [redirectCountdown, router, redirectTo]);
 
   // Calculate password strength
   useEffect(() => {
@@ -67,23 +74,51 @@ export default function RegisterPage() {
     setPasswordStrength({ score: Math.min(score, 6), feedback });
   }, [password]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Real-time email validation with debounce
+  useEffect(() => {
+    if (!email || !email.includes('@')) {
+      setEmailExists(null);
+      return;
+    }
+
+    const checkEmail = setTimeout(async () => {
+      setEmailCheckLoading(true);
+      try {
+        // Note: You'd need to create this API endpoint
+        const response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+        setEmailExists(data.exists);
+      } catch (err) {
+        // Silently fail - don't block registration
+        setEmailExists(null);
+      } finally {
+        setEmailCheckLoading(false);
+      }
+    }, 800); // Debounce 800ms
+
+    return () => clearTimeout(checkEmail);
+  }, [email]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent, isRetry: boolean = false) => {
     e.preventDefault();
     setError(null);
     setStatus(null);
     setLoading(true);
 
-    try {
-      const formData = new URLSearchParams({
-        email,
-        password,
-        company,
-        name,
-        businessType,
-        country,
-        phone
-      });
+    const formData = new URLSearchParams({
+      email,
+      password,
+      company,
+      name,
+      businessType,
+      country,
+      phone
+    });
 
+    // Store for retry
+    setLastSubmitData({ email, password, company, name, businessType, country, phone });
+
+    try {
       const res = await fetch("/api/register", {
         method: "POST",
         body: formData,
@@ -96,7 +131,6 @@ export default function RegisterPage() {
 
       if (res.ok) {
         setStatus(result.message || "Account created successfully! You can now sign in.");
-        // Start countdown to redirect
         setRedirectCountdown(5);
         // Clear form on success
         setEmail("");
@@ -105,8 +139,8 @@ export default function RegisterPage() {
         setName("");
         setBusinessType("");
         setPhone("");
+        setLastSubmitData(null);
       } else {
-        // Show specific error message
         const errorMessage = result.error || "Sign up failed. Please check your information and try again.";
         setError({
           error: errorMessage,
@@ -114,11 +148,6 @@ export default function RegisterPage() {
           errorId: result.errorId
         });
         setStatus(null);
-
-        // If it's a retryable error, suggest retry
-        if (result.code === "INTERNAL_ERROR" || result.code === "NETWORK_ERROR") {
-          console.log("Retryable error detected. User can try again.");
-        }
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -130,7 +159,12 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [email, password, company, name, businessType, country, phone]);
+
+  const handleRetry = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleSubmit(e as any, true);
+  };
 
   // Get color for password strength bar
   const getPasswordStrengthColor = () => {
@@ -146,6 +180,8 @@ export default function RegisterPage() {
     if (passwordStrength.score <= 5) return "text-emerald-600";
     return "text-green-700";
   };
+
+  const loginUrl = redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : '/login';
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -233,11 +269,19 @@ export default function RegisterPage() {
                     <p className="text-sm text-red-700 font-medium">{error.error}</p>
                     {(error.code === "USER_EXISTS" || error.code === "EMAIL_ALREADY_EXISTS") && (
                       <a
-                        href="/login"
+                        href={loginUrl}
                         className="text-sm text-red-600 hover:text-red-700 underline mt-1 inline-block"
                       >
                         Sign in instead
                       </a>
+                    )}
+                    {error.code === "NETWORK_ERROR" && lastSubmitData && (
+                      <button
+                        onClick={handleRetry}
+                        className="mt-2 text-sm bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-semibold transition-colors"
+                      >
+                        Retry Registration
+                      </button>
                     )}
                     {error.errorId && (
                       <p className="mt-1 text-xs text-red-500">
@@ -268,7 +312,7 @@ export default function RegisterPage() {
                           Redirecting to login in {redirectCountdown} second{redirectCountdown !== 1 ? 's' : ''}...
                         </p>
                         <button
-                          onClick={() => router.push('/login')}
+                          onClick={() => router.push(loginUrl)}
                           className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
                         >
                           Go to Login Now
@@ -304,15 +348,44 @@ export default function RegisterPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
-                    <input
-                      type="email"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-base"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type="email"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-base pr-10"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        required
+                      />
+                      {emailCheckLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <svg className="animate-spin h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                      )}
+                      {!emailCheckLoading && emailExists === true && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                      {!emailCheckLoading && emailExists === false && email.includes('@') && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    {emailExists === true && (
+                      <p className="mt-1 text-xs text-red-600">
+                        This email is already registered. <a href={loginUrl} className="underline font-semibold">Sign in instead?</a>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -422,7 +495,7 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                disabled={loading || status !== null}
+                disabled={loading || status !== null || emailExists === true}
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold py-3.5 px-6 rounded-xl hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/30 mt-2"
               >
                 {loading ? (
@@ -451,7 +524,7 @@ export default function RegisterPage() {
 
               <div className="mt-6 text-center">
                 <a
-                  href="/login"
+                  href={loginUrl}
                   className="inline-flex items-center justify-center text-emerald-600 hover:text-emerald-700 font-semibold transition-colors group"
                 >
                   Sign in to your account
