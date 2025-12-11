@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Duplicate a template
 export async function POST(
@@ -81,7 +82,7 @@ export async function POST(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Duplicate template error:", error);
+    logger.error("Duplicate template error", error, "Safety/Templates");
     return NextResponse.json(
       { error: "Failed to duplicate template" },
       { status: 500 }

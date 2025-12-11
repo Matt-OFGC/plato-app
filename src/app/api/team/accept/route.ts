@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateSubscriptionSeats } from "@/lib/stripe";
 import { MemberRole } from "@/generated/prisma";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
           additionalSeatsNeeded
         );
       } catch (stripeError) {
-        console.error("Failed to update Stripe subscription:", stripeError);
+        logger.error("Failed to update Stripe subscription", stripeError, "Team/Accept");
         return NextResponse.json({ 
           error: "Failed to update billing. Please contact support." 
         }, { status: 500 });
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
       company: invitation.company,
     });
   } catch (error) {
-    console.error("Accept invitation error:", error);
+    logger.error("Accept invitation error", error, "Team/Accept");
     return NextResponse.json(
       { error: "Failed to accept invitation" },
       { status: 500 }

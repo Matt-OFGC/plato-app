@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { getStaffRelations } from "@/lib/services/relationService";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -29,7 +30,7 @@ export async function GET(
 
     return NextResponse.json({ relations });
   } catch (error) {
-    console.error("Get staff relations error:", error);
+    logger.error("Get staff relations error", error, "Staff/Profiles");
     return NextResponse.json(
       { error: "Failed to fetch relations" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get cleaning jobs
 export async function GET(request: NextRequest) {
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ jobs });
   } catch (error) {
-    console.error("Get cleaning jobs error:", error);
+    logger.error("Get cleaning jobs error", error, "Staff/CleaningJobs");
     return NextResponse.json(
       { error: "Failed to fetch cleaning jobs" },
       { status: 500 }
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ job }, { status: 201 });
   } catch (error) {
-    console.error("Create cleaning job error:", error);
+    logger.error("Create cleaning job error", error, "Staff/CleaningJobs");
     return NextResponse.json(
       { error: "Failed to create cleaning job" },
       { status: 500 }

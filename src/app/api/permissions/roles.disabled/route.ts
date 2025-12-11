@@ -10,6 +10,7 @@ import {
   RoleWithPermissions,
 } from "@/lib/services/permissionService";
 import { Permission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get all roles for a company
 export async function GET(request: NextRequest) {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     const roles = await getCompanyRoles(companyId);
     return NextResponse.json({ roles });
   } catch (error) {
-    console.error("Get roles error:", error);
+    logger.error("Get roles error", error, "Permissions/Roles");
     return NextResponse.json(
       { error: "Failed to fetch roles" },
       { status: 500 }
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ role }, { status: 201 });
   } catch (error) {
-    console.error("Create role error:", error);
+    logger.error("Create role error", error, "Permissions/Roles");
     return NextResponse.json(
       { error: "Failed to create role" },
       { status: 500 }

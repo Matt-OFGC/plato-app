@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(`[Admin API] Fetched ${users.length} users from database`);
+    logger.info(`[Admin API] Fetched ${users.length} users from database`, { count: users.length }, "Admin/Users");
 
     // Add account type logic based on email patterns
     const usersWithAccountType = users.map(user => ({
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ users: usersWithAccountType });
   } catch (error) {
-    console.error("❌ Admin users API error:", error);
+    logger.error("Admin users API error", error, "Admin/Users");
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       { 

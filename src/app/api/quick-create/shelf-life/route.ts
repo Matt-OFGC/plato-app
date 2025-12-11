@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const createShelfLifeSchema = z.object({
   name: z.string().min(1).max(50),
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, option });
   } catch (error) {
-    console.error("Error creating shelf life option:", error);
+    logger.error("Error creating shelf life option", error, "QuickCreate/ShelfLife");
     return NextResponse.json(
       { error: "Failed to create shelf life option" },
       { status: 500 }

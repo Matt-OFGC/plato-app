@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -24,7 +25,7 @@ export async function GET() {
       ingredients,
     });
   } catch (error) {
-    console.error("Admin stats error:", error);
+    logger.error("Admin stats error", error, "Admin/Stats");
     return NextResponse.json(
       { error: "Failed to fetch stats" },
       { status: 500 }

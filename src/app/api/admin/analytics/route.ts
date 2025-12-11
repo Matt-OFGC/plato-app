@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -187,7 +188,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Analytics error:", error);
+    logger.error("Analytics error", error, "Admin/Analytics");
     return NextResponse.json(
       { error: "Failed to fetch analytics" },
       { status: 500 }

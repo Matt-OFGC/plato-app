@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { integrationRegistry } from "@/lib/integrations/base/integration-provider";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
       healthy: statuses.filter(s => s.health === 'healthy').length,
     });
   } catch (error) {
-    console.error("Integration status error:", error);
+    logger.error("Integration status error", error, "Integrations/Status");
     return NextResponse.json(
       { error: "Failed to get integration status" },
       { status: 500 }

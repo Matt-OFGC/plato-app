@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Upload photo for a task completion
 export async function POST(
@@ -81,7 +82,7 @@ export async function POST(
       photo: photo[0],
     });
   } catch (error) {
-    console.error("Photo upload error:", error);
+    logger.error("Photo upload error", error, "Safety/Tasks");
     return NextResponse.json(
       { error: "Failed to upload photo" },
       { status: 500 }
@@ -111,7 +112,7 @@ export async function GET(
 
     return NextResponse.json(photos);
   } catch (error) {
-    console.error("Get photos error:", error);
+    logger.error("Get photos error", error, "Safety/Tasks");
     return NextResponse.json(
       { error: "Failed to fetch photos" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get training module by ID
 export async function GET(
@@ -68,7 +69,7 @@ export async function GET(
 
     return NextResponse.json({ module });
   } catch (error) {
-    console.error("Get training module error:", error);
+    logger.error("Get training module error", error, "Training/Modules");
     return NextResponse.json(
       { error: "Failed to fetch training module" },
       { status: 500 }
@@ -174,7 +175,7 @@ export async function PATCH(
 
     return NextResponse.json({ module: updatedModule });
   } catch (error) {
-    console.error("Update training module error:", error);
+    logger.error("Update training module error", error, "Training/Modules");
     return NextResponse.json(
       { error: "Failed to update training module" },
       { status: 500 }
@@ -224,7 +225,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete training module error:", error);
+    logger.error("Delete training module error", error, "Training/Modules");
     return NextResponse.json(
       { error: "Failed to delete training module" },
       { status: 500 }

@@ -3,12 +3,13 @@ import { getAdminSession } from "@/lib/admin-auth";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
     // Check if user is authenticated as admin
     const session = await getAdminSession();
-    console.log("Admin upload - Session:", session ? "✓ Valid" : "✗ None");
+    logger.debug("Admin upload - Session check", { hasSession: !!session }, "Admin/Upload");
     if (!session) {
       return NextResponse.json({ error: "Admin access required" }, { status: 401 });
     }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    console.log(`✓ File uploaded successfully: ${fileName} (${type})`);
+    logger.info(`File uploaded successfully`, { fileName, type }, "Admin/Upload");
 
     return NextResponse.json({ 
       success: true,
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("File upload error:", error);
+    logger.error("File upload error", error, "Admin/Upload");
     return NextResponse.json(
       { error: "Failed to upload file" },
       { status: 500 }

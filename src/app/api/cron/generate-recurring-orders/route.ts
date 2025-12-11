@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /**
  * Cron job endpoint to automatically generate recurring orders
@@ -174,7 +175,7 @@ export async function GET(request: NextRequest) {
               });
             }
           } catch (prodError) {
-            console.error("Failed to sync recurring order to production:", prodError);
+            logger.error("Failed to sync recurring order to production", prodError, "Cron/RecurringOrders");
           }
         }
 
@@ -189,7 +190,7 @@ export async function GET(request: NextRequest) {
             read: false,
           },
         }).catch((err) => {
-          console.error("Failed to create notification:", err);
+          logger.error("Failed to create notification", err, "Cron/RecurringOrders");
           // Don't fail the entire operation if notification fails
         });
 
@@ -202,7 +203,7 @@ export async function GET(request: NextRequest) {
         });
 
       } catch (error) {
-        console.error(`Error generating recurring order ${parentOrder.id}:`, error);
+        logger.error(`Error generating recurring order ${parentOrder.id}`, error, "Cron/RecurringOrders");
         errors.push({
           parentOrderId: parentOrder.id,
           customer: parentOrder.customer.name,
@@ -222,7 +223,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Cron job error:", error);
+    logger.error("Cron job error", error, "Cron/RecurringOrders");
     return NextResponse.json(
       { 
         error: "Failed to process recurring orders",

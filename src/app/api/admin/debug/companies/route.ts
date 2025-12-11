@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Debug endpoint to check what's in the database
 export async function GET(request: NextRequest) {
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       companiesWithSelectCount: companiesWithSelect.length,
     });
   } catch (error) {
-    console.error("Debug companies error:", error);
+    logger.error("Debug companies error", error, "Admin/Debug");
     return NextResponse.json(
       { 
         error: "Failed to fetch debug info",

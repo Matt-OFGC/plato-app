@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
 import { MemberRole } from "@/generated/prisma";
 import crypto from "crypto";
+import { logger } from "@/lib/logger";
 
 /**
  * Create a team member directly (for PIN-based authentication)
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
       message: "Team member added successfully. Now assign them a PIN.",
     });
   } catch (error) {
-    console.error("Create member error:", error);
+    logger.error("Create member error", error, "Team/CreateMember");
     return NextResponse.json(
       { error: "Failed to create team member" },
       { status: 500 }

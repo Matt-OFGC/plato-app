@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Update training content
 export async function PATCH(
@@ -72,7 +73,7 @@ export async function PATCH(
 
     return NextResponse.json({ content: contentItem });
   } catch (error) {
-    console.error("Update training content error:", error);
+    logger.error("Update training content error", error, "Training/Content");
     return NextResponse.json(
       { error: "Failed to update content" },
       { status: 500 }
@@ -139,7 +140,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete training content error:", error);
+    logger.error("Delete training content error", error, "Training/Content");
     return NextResponse.json(
       { error: "Failed to delete content" },
       { status: 500 }

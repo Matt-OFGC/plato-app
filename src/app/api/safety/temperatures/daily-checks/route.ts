@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get daily AM/PM checks
 export async function GET(request: NextRequest) {
@@ -39,13 +40,13 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
       // If table doesn't exist, return empty array
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('DailyTemperatureCheck table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        logger.warn('DailyTemperatureCheck table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts', null, "Safety/Temperatures");
         return NextResponse.json([]);
       }
       throw error;
     }
   } catch (error) {
-    console.error("Get daily checks error:", error);
+    logger.error("Get daily checks error", error, "Safety/Temperatures");
     return NextResponse.json(
       { error: "Failed to fetch daily checks" },
       { status: 500 }
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
       // If table doesn't exist, log warning but return empty checks
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('DailyTemperatureCheck table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        logger.warn('DailyTemperatureCheck table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts', null, "Safety/Temperatures");
         return NextResponse.json({ success: false, error: 'Database tables not migrated. Please run migration script.' });
       }
       throw error;
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, checks: savedChecks });
   } catch (error) {
-    console.error("Save daily checks error:", error);
+    logger.error("Save daily checks error", error, "Safety/Temperatures");
     return NextResponse.json(
       { error: "Failed to save daily checks" },
       { status: 500 }

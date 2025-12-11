@@ -139,7 +139,7 @@ export async function GET(
       shoppingList,
     });
   } catch (error) {
-    console.error("Shopping list error:", error);
+    logger.error("Shopping list error", error, "Production/ShoppingList");
     return NextResponse.json(
       { error: "Failed to generate shopping list" },
       { status: 500 }

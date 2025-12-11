@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { STRIPE_CONFIG } from "@/lib/stripe";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
       } : null,
     });
   } catch (error) {
-    console.error("Stripe status check error:", error);
+    logger.error("Stripe status check error", error, "Admin/StripeStatus");
     return NextResponse.json(
       { 
         error: "Failed to check Stripe status",

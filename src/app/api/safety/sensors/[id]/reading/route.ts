@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Record a temperature reading (can be called by IoT devices via webhook)
 export async function POST(
@@ -85,7 +86,7 @@ export async function POST(
       alertCreated: isOutOfRange,
     });
   } catch (error) {
-    console.error("Record reading error:", error);
+    logger.error("Record reading error", error, "Safety/Sensors");
     return NextResponse.json(
       { error: "Failed to record reading" },
       { status: 500 }

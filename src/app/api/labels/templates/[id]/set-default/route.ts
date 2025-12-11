@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
+import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -44,7 +45,7 @@ export async function POST(
 
     return NextResponse.json(updatedTemplate);
   } catch (error) {
-    console.error('Error setting default template:', error);
+    logger.error('Error setting default template', error, 'Labels/Templates');
     return NextResponse.json(
       { error: 'Failed to set default template' },
       { status: 500 }

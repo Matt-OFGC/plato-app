@@ -8,6 +8,7 @@ import {
   deleteRole,
 } from "@/lib/services/permissionService";
 import { Permission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get role by ID
 export async function GET(
@@ -50,7 +51,7 @@ export async function GET(
 
     return NextResponse.json({ role });
   } catch (error) {
-    console.error("Get role error:", error);
+    logger.error("Get role error", error, "Permissions/Roles");
     return NextResponse.json(
       { error: "Failed to fetch role" },
       { status: 500 }
@@ -137,7 +138,7 @@ export async function PATCH(
 
     return NextResponse.json({ role });
   } catch (error) {
-    console.error("Update role error:", error);
+    logger.error("Update role error", error, "Permissions/Roles");
     return NextResponse.json(
       { error: "Failed to update role" },
       { status: 500 }
@@ -192,7 +193,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Delete role error:", error);
+    logger.error("Delete role error", error, "Permissions/Roles");
     return NextResponse.json(
       { error: error.message || "Failed to delete role" },
       { status: 500 }

@@ -6,6 +6,7 @@ import { validatePasswordStrength } from "@/lib/password-policy";
 import { revokeAllUserSessions } from "@/lib/auth-simple";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { sendSecurityAlert } from "@/lib/security-alerts";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
       message: "Password changed successfully. Please log in again.",
     });
   } catch (error) {
-    console.error("Change password error:", error);
+    logger.error("Change password error", error, "Auth/ChangePassword");
     return NextResponse.json(
       { error: "Failed to change password" },
       { status: 500 }

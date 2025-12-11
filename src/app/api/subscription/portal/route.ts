@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { createBillingPortalSession } from "@/lib/stripe";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       url: portalSession.url 
     });
   } catch (error) {
-    console.error("Portal error:", error);
+    logger.error("Portal error", error, "Subscription/Portal");
     return NextResponse.json(
       { error: "Failed to create portal session" },
       { status: 500 }

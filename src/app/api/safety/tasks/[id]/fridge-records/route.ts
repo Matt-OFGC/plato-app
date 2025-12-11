@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get saved fridge/freezer appliances for a task template
 export async function GET(
@@ -49,13 +50,13 @@ export async function GET(
     } catch (error: any) {
       // If table doesn't exist, return empty array
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TemplateAppliance table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        logger.warn('TemplateAppliance table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts', null, "Safety/Tasks");
         return NextResponse.json([]);
       }
       throw error;
     }
   } catch (error) {
-    console.error("Get fridge appliances error:", error);
+    logger.error("Get fridge appliances error", error, "Safety/Tasks");
     return NextResponse.json(
       { error: "Failed to fetch appliances" },
       { status: 500 }
@@ -131,7 +132,7 @@ export async function POST(
       } catch (error: any) {
         // If table doesn't exist, log warning but continue
         if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-          console.warn('TemplateAppliance table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+          logger.warn('TemplateAppliance table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts', null, "Safety/Tasks");
         } else {
           throw error;
         }
@@ -165,7 +166,7 @@ export async function POST(
     } catch (error: any) {
       // If table doesn't exist, log warning but return empty records
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        logger.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts', null, "Safety/Tasks");
       } else {
         throw error;
       }
@@ -177,7 +178,7 @@ export async function POST(
       appliancesSaved: saveAppliances || false
     });
   } catch (error) {
-    console.error("Save fridge records error:", error);
+    logger.error("Save fridge records error", error, "Safety/Tasks");
     return NextResponse.json(
       { error: "Failed to save records" },
       { status: 500 }

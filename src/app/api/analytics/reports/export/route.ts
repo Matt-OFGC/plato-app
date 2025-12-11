@@ -3,6 +3,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { calculateRecipeProfitability } from "@/lib/analytics/profitability";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error("Export error:", error);
+    logger.error("Export error", error, "Analytics/Reports");
     return NextResponse.json(
       { error: "Failed to export data" },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Bulk recipe creation error:", error);
+    logger.error("Bulk recipe creation error", error, "RecipesBackup/Bulk");
     return NextResponse.json(
       { 
         error: "Failed to create recipes",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { getCompanyActivity } from "@/lib/services/activityService";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ activities });
   } catch (error) {
-    console.error("Get activity error:", error);
+    logger.error("Get activity error", error, "Activity");
     return NextResponse.json(
       { error: "Failed to fetch activity" },
       { status: 500 }

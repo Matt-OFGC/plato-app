@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Upload training media (images, videos)
 export async function POST(request: NextRequest) {
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
       type: file.type,
     });
   } catch (error) {
-    console.error("Upload training media error:", error);
+    logger.error("Upload training media error", error, "Upload/TrainingMedia");
     return NextResponse.json(
       { error: "Failed to upload file" },
       { status: 500 }

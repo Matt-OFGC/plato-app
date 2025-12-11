@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get all equipment
 export async function GET(request: NextRequest) {
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(equipment);
   } catch (error) {
-    console.error("Get equipment error:", error);
+    logger.error("Get equipment error", error, "Safety/Equipment");
     return NextResponse.json(
       { error: "Failed to fetch equipment" },
       { status: 500 }
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(equipment[0]);
   } catch (error) {
-    console.error("Create equipment error:", error);
+    logger.error("Create equipment error", error, "Safety/Equipment");
     return NextResponse.json(
       { error: "Failed to create equipment" },
       { status: 500 }

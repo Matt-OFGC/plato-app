@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get training content for a module
 export async function GET(request: NextRequest) {
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ content });
   } catch (error) {
-    console.error("Get training content error:", error);
+    logger.error("Get training content error", error, "Training/Content");
     return NextResponse.json(
       { error: "Failed to fetch content" },
       { status: 500 }
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ content: contentItem }, { status: 201 });
   } catch (error) {
-    console.error("Create training content error:", error);
+    logger.error("Create training content error", error, "Training/Content");
     return NextResponse.json(
       { error: "Failed to create content" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import bcrypt from "bcrypt";
+import { logger } from "@/lib/logger";
 
 // Complete task with sign-off
 export async function POST(
@@ -162,7 +163,7 @@ export async function POST(
       completionDate: new Date().toISOString().split("T")[0],
     });
   } catch (error) {
-    console.error("Sign-off error:", error);
+    logger.error("Sign-off error", error, "Safety/Tasks");
     return NextResponse.json(
       { error: "Failed to complete task" },
       { status: 500 }

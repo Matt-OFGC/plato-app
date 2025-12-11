@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { MemberRole } from "@/generated/prisma";
+import { logger } from "@/lib/logger";
 
 // Add user to company (admin function)
 export async function POST(
@@ -143,7 +144,7 @@ export async function POST(
       message: "User added to company successfully" 
     });
   } catch (error) {
-    console.error("Admin add member error:", error);
+    logger.error("Admin add member error", error, "Admin/Companies");
     return NextResponse.json(
       { error: "Failed to add user to company" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { getUnlockStatus } from "@/lib/features";
+import { logger } from "@/lib/logger";
 
 /**
  * Diagnostic endpoint to compare admin-granted feature access vs what frontend sees
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Diagnostic endpoint error:", error);
+    logger.error("Diagnostic endpoint error", error, "Admin/Debug");
     return NextResponse.json(
       {
         error: "Failed to get diagnostic information",

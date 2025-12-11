@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
+import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -60,7 +61,7 @@ export async function POST(
 
     return NextResponse.json(duplicate, { status: 201 });
   } catch (error) {
-    console.error('Error duplicating template:', error);
+    logger.error('Error duplicating template', error, 'Labels/Templates');
     return NextResponse.json(
       { error: 'Failed to duplicate template' },
       { status: 500 }

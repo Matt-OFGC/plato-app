@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 // Embedded migration SQL to avoid path resolution issues
 const MIGRATION_SQL = `
@@ -205,14 +206,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('🚀 Starting Staff Training System Migration...');
+    logger.info('🚀 Starting Staff Training System Migration', null, 'Migrate/StaffTraining');
     
     // Test database connection first
     try {
       await prisma.$queryRaw`SELECT 1`;
-      console.log('✅ Database connection OK');
+      logger.debug('✅ Database connection OK', null, 'Migrate/StaffTraining');
     } catch (dbError: any) {
-      console.error('❌ Database connection failed:', dbError);
+      logger.error('❌ Database connection failed', dbError, 'Migrate/StaffTraining');
       return NextResponse.json({ 
         error: 'Database connection failed', 
         details: dbError.message || 'Cannot connect to database',
@@ -265,7 +266,7 @@ export async function POST(request: NextRequest) {
     // Filter out empty statements
     const validStatements = statements.filter(s => s.length > 10);
 
-    console.log(`📊 Found ${validStatements.length} SQL statements`);
+    logger.debug(`📊 Found ${validStatements.length} SQL statements`, null, 'Migrate/StaffTraining');
 
     const results = {
       total: validStatements.length,
@@ -281,7 +282,7 @@ export async function POST(request: NextRequest) {
       try {
         await prisma.$executeRawUnsafe(statement);
         results.successful++;
-        console.log(`   ✅ Statement ${i + 1}/${validStatements.length} executed`);
+        logger.debug(`   ✅ Statement ${i + 1}/${validStatements.length} executed`, null, 'Migrate/StaffTraining');
       } catch (error: any) {
         const errorMsg = error.message || 'Unknown error';
         const errorCode = error.code;
@@ -297,16 +298,16 @@ export async function POST(request: NextRequest) {
           errorMsg.includes('relation') && errorMsg.includes('already exists')
         ) {
           results.skipped++;
-          console.log(`   ⚠️  Statement ${i + 1} skipped (already exists)`);
+          logger.debug(`   ⚠️  Statement ${i + 1} skipped (already exists)`, null, 'Migrate/StaffTraining');
           continue;
         }
         
         // Log full error details
-        console.error(`   ❌ Error in statement ${i + 1}:`, {
+        logger.error(`   ❌ Error in statement ${i + 1}`, {
           message: errorMsg,
           code: errorCode,
           sql: statement.substring(0, 150)
-        });
+        }, 'Migrate/StaffTraining');
         
         results.errors.push({
           statement: i + 1,
@@ -317,8 +318,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('✅ Migration completed');
-    console.log(`   Successful: ${results.successful}, Skipped: ${results.skipped}, Errors: ${results.errors.length}`);
+    logger.info('✅ Migration completed', { successful: results.successful, skipped: results.skipped, errors: results.errors.length }, 'Migrate/StaffTraining');
 
     if (results.errors.length === 0) {
       return NextResponse.json({ 
@@ -338,12 +338,7 @@ export async function POST(request: NextRequest) {
       }, { status: successRate > 0.8 ? 200 : 500 });
     }
   } catch (error: any) {
-    console.error('❌ Migration error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
+    logger.error('❌ Migration error', error, 'Migrate/StaffTraining');
     
     return NextResponse.json({ 
       error: 'Migration failed', 

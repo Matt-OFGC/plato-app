@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -52,7 +53,7 @@ export async function POST(
       message: "Password reset successfully" 
     });
   } catch (error) {
-    console.error("Admin password reset error:", error);
+    logger.error("Admin password reset error", error, "Admin/Users");
     return NextResponse.json(
       { error: "Failed to reset password" },
       { status: 500 }

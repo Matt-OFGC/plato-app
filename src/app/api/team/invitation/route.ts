@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       expiresAt: invitation.expiresAt,
     });
   } catch (error) {
-    console.error("Get invitation error:", error);
+    logger.error("Get invitation error", error, "Team/Invitation");
     return NextResponse.json(
       { error: "Failed to get invitation" },
       { status: 500 }

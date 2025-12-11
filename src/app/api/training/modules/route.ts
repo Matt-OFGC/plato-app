@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get all training modules for a company
 export async function GET(request: NextRequest) {
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ modules });
   } catch (error) {
-    console.error("Get training modules error:", error);
+    logger.error("Get training modules error", error, "Training/Modules");
     return NextResponse.json(
       { error: "Failed to fetch training modules" },
       { status: 500 }
@@ -160,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ module }, { status: 201 });
   } catch (error) {
-    console.error("Create training module error:", error);
+    logger.error("Create training module error", error, "Training/Modules");
     return NextResponse.json(
       { error: "Failed to create training module" },
       { status: 500 }

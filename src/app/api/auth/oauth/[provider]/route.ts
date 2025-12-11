@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOAuthProvider } from "@/lib/oauth";
 import { randomBytes } from "crypto";
 import { cookies } from "next/headers";
+import { logger } from "@/lib/logger";
 
 // Initiate OAuth flow
 export async function GET(
@@ -38,7 +39,7 @@ export async function GET(
     // Redirect to OAuth provider
     return NextResponse.redirect(authUrl);
   } catch (error) {
-    console.error(`OAuth initiation error for ${provider}:`, error);
+    logger.error(`OAuth initiation error for ${provider}`, error, "Auth/OAuth");
     return NextResponse.json(
       { error: "Failed to initiate OAuth flow" },
       { status: 500 }

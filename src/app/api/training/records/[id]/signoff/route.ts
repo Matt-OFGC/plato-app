@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Sign off on training completion
 export async function POST(
@@ -106,7 +107,7 @@ export async function POST(
 
     return NextResponse.json({ record: updatedRecord });
   } catch (error) {
-    console.error("Sign off training error:", error);
+    logger.error("Sign off training error", error, "Training/Records");
     return NextResponse.json(
       { error: "Failed to sign off on training" },
       { status: 500 }

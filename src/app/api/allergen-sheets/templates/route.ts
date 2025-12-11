@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUserAndCompany } from '@/lib/current';
+import { logger } from '@/lib/logger';
 
 // GET /api/allergen-sheets/templates - Get all allergen sheet templates
 export async function GET(request: NextRequest) {
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedTemplates);
   } catch (error) {
-    console.error('Error fetching allergen sheet templates:', error);
+    logger.error('Error fetching allergen sheet templates', error, 'AllergenSheets/Templates');
     return NextResponse.json(
       { error: 'Failed to fetch templates' },
       { status: 500 }
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(template, { status: 201 });
   } catch (error) {
-    console.error('Error creating template:', error);
+    logger.error('Error creating template', error, 'AllergenSheets/Templates');
     return NextResponse.json(
       { error: 'Failed to create template' },
       { status: 500 }

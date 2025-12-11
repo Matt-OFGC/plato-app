@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Endpoint to run migration (protected, requires authentication)
 export async function POST(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("🌡️ Starting Safety module migration...");
+    logger.info("🌡️ Starting Safety module migration", null, "Safety/Migrate");
 
     const results: string[] = [];
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
         results.push("ℹ️ TaskTemplate table already exists");
       } catch {
         // TaskTemplate doesn't exist, we need to create the full safety schema first
-        console.log("TaskTemplate doesn't exist, creating full safety schema...");
+        logger.debug("TaskTemplate doesn't exist, creating full safety schema...", null, "Safety/Migrate");
         
         // Add safety_enabled and data_retention_days to companies table
         try {
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
         } catch (e: any) {
           // Columns might already exist, ignore error
           if (e?.code !== '42701') {
-            console.warn("Could not add time window columns:", e.message);
+            logger.warn("Could not add time window columns", { message: e.message }, "Safety/Migrate");
           }
         }
         await prisma.$executeRaw`
@@ -351,7 +352,7 @@ export async function POST(request: NextRequest) {
 
       // Now create temperature storage tables
       // Create TemplateAppliance table
-      console.log("1. Creating TemplateAppliance table...");
+      logger.debug("1. Creating TemplateAppliance table...", null, "Safety/Migrate");
       await prisma.$executeRaw`
         CREATE TABLE IF NOT EXISTS "TemplateAppliance" (
           id SERIAL PRIMARY KEY,
@@ -374,7 +375,7 @@ export async function POST(request: NextRequest) {
       results.push("✅ TemplateAppliance table created");
 
       // Create TemperatureRecord table
-      console.log("2. Creating TemperatureRecord table...");
+      logger.debug("2. Creating TemperatureRecord table...", null, "Safety/Migrate");
       await prisma.$executeRaw`
         CREATE TABLE IF NOT EXISTS "TemperatureRecord" (
           id SERIAL PRIMARY KEY,
@@ -409,7 +410,7 @@ export async function POST(request: NextRequest) {
       results.push("✅ TemperatureRecord table created");
 
       // Create DailyTemperatureCheck table
-      console.log("3. Creating DailyTemperatureCheck table...");
+      logger.debug("3. Creating DailyTemperatureCheck table...", null, "Safety/Migrate");
       await prisma.$executeRaw`
         CREATE TABLE IF NOT EXISTS "DailyTemperatureCheck" (
           id SERIAL PRIMARY KEY,
@@ -440,7 +441,7 @@ export async function POST(request: NextRequest) {
         results,
       });
     } catch (error: any) {
-      console.error("Migration error:", error);
+      logger.error("Migration error", error, "Safety/Migrate");
       
       // Check if tables already exist
       if (error?.code === '42P07' || error?.message?.includes('already exists')) {
@@ -454,7 +455,7 @@ export async function POST(request: NextRequest) {
       throw error;
     }
   } catch (error: any) {
-    console.error("Migration failed:", error);
+    logger.error("Migration failed", error, "Safety/Migrate");
     return NextResponse.json(
       {
         success: false,

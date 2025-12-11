@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /**
  * Mark user's onboarding as complete
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       message: "Onboarding marked as complete",
     });
   } catch (error) {
-    console.error("Error completing onboarding:", error);
+    logger.error("Error completing onboarding", error, "User/Onboarding");
     return NextResponse.json(
       { error: "Failed to complete onboarding" },
       { status: 500 }

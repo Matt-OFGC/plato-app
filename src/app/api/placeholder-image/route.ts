@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Placeholder image error:', error);
+    logger.error('Placeholder image error', error, 'PlaceholderImage');
     return new NextResponse('Error generating placeholder', { status: 500 });
   }
 }

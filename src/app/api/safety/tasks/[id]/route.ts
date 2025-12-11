@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get single task detail
 export async function GET(
@@ -81,7 +82,7 @@ export async function GET(
       comments,
     });
   } catch (error) {
-    console.error("Get task error:", error);
+    logger.error("Get task error", error, "Safety/Tasks");
     return NextResponse.json(
       { error: "Failed to fetch task" },
       { status: 500 }

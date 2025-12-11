@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get month activity summary for calendar
 export async function GET(
@@ -47,7 +48,7 @@ export async function GET(
     } catch (error: any) {
       // If table doesn't exist, return empty activity
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TaskCompletion table does not exist yet');
+        logger.warn('TaskCompletion table does not exist yet', null, "Safety/Diary");
         return NextResponse.json({});
       }
       throw error;
@@ -69,7 +70,7 @@ export async function GET(
     } catch (error: any) {
       // If table doesn't exist, pending will be empty
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TaskInstance table does not exist yet');
+        logger.warn('TaskInstance table does not exist yet', null, "Safety/Diary");
         pending = [];
       } else {
         throw error;
@@ -101,7 +102,7 @@ export async function GET(
 
     return NextResponse.json(activity);
   } catch (error: any) {
-    console.error("Get month activity error:", error);
+    logger.error("Get month activity error", error, "Safety/Diary");
     return NextResponse.json(
       { 
         error: "Failed to fetch month activity",

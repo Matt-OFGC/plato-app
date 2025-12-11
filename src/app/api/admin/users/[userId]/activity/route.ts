@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -53,7 +54,7 @@ export async function GET(
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Admin user activity error:", error);
+    logger.error("Admin user activity error", error, "Admin/Users");
     return NextResponse.json(
       { error: "Failed to fetch user activity" },
       { status: 500 }

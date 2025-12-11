@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get diary entries for a specific date
 export async function GET(
@@ -41,7 +42,7 @@ export async function GET(
     } catch (error: any) {
       // If tables don't exist, return empty array
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('Safety tables do not exist yet');
+        logger.warn('Safety tables do not exist yet', null, "Safety/Diary");
         return NextResponse.json({
           date,
           completed: [],
@@ -98,7 +99,7 @@ export async function GET(
     } catch (error: any) {
       // If tables don't exist, pending will be empty array
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TaskInstance table does not exist yet');
+        logger.warn('TaskInstance table does not exist yet', null, "Safety/Diary");
         pending = [];
       } else {
         throw error;
@@ -126,7 +127,7 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error("Get diary error:", error);
+    logger.error("Get diary error", error, "Safety/Diary");
     return NextResponse.json(
       { 
         error: "Failed to fetch diary entries",

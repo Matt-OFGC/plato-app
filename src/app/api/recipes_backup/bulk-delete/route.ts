@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       message,
     });
   } catch (error) {
-    console.error("Bulk delete recipes error:", error);
+    logger.error("Bulk delete recipes error", error, "RecipesBackup/BulkDelete");
     return NextResponse.json(
       { error: "Failed to delete recipes. Some recipes may be in use." },
       { status: 500 }

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const createStorageSchema = z.object({
   name: z.string().min(1).max(50),
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, option });
   } catch (error) {
-    console.error("Error creating storage option:", error);
+    logger.error("Error creating storage option", error, "QuickCreate/Storage");
     return NextResponse.json(
       { error: "Failed to create storage option" },
       { status: 500 }

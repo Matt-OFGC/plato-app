@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import crypto from "crypto";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,7 +116,7 @@ If you didn't create an account with Plato, you can safely ignore this email.
       message: "Verification email sent successfully",
     });
   } catch (error) {
-    console.error("Resend verification error:", error);
+    logger.error("Resend verification error", error, "Auth/ResendVerification");
     return NextResponse.json(
       { error: "Failed to send verification email" },
       { status: 500 }

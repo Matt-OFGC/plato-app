@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const supplierSchema = z.object({
   name: z.string().min(1, "Supplier name is required"),
@@ -82,7 +83,7 @@ export async function PUT(
       }
     });
   } catch (error) {
-    console.error("Error updating supplier:", error);
+    logger.error("Error updating supplier", error, "Suppliers");
     return NextResponse.json({ error: "Failed to update supplier" }, { status: 500 });
   }
 }
@@ -120,7 +121,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting supplier:", error);
+    logger.error("Error deleting supplier", error, "Suppliers");
     return NextResponse.json({ error: "Failed to delete supplier" }, { status: 500 });
   }
 }

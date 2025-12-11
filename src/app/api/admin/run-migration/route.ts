@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Admin-only endpoint to run the temperature storage migration
 export async function POST(request: NextRequest) {
@@ -11,13 +12,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("🌡️ Starting temperature storage migration...");
+    logger.info("🌡️ Starting temperature storage migration", null, "Admin/Migration");
 
     const results: string[] = [];
 
     try {
       // Create TemplateAppliance table
-      console.log("1. Creating TemplateAppliance table...");
+      logger.debug("1. Creating TemplateAppliance table...", null, "Admin/Migration");
       await prisma.$executeRaw`
         CREATE TABLE IF NOT EXISTS "TemplateAppliance" (
           id SERIAL PRIMARY KEY,
@@ -38,10 +39,10 @@ export async function POST(request: NextRequest) {
         ON "TemplateAppliance"("templateId", "companyId", "isActive")
       `;
       results.push("✅ TemplateAppliance table created");
-      console.log("✅ TemplateAppliance table created");
+      logger.info("✅ TemplateAppliance table created", null, "Admin/Migration");
 
       // Create TemperatureRecord table
-      console.log("2. Creating TemperatureRecord table...");
+      logger.debug("2. Creating TemperatureRecord table...", null, "Admin/Migration");
       await prisma.$executeRaw`
         CREATE TABLE IF NOT EXISTS "TemperatureRecord" (
           id SERIAL PRIMARY KEY,
@@ -74,10 +75,10 @@ export async function POST(request: NextRequest) {
         ON "TemperatureRecord"("applianceName", "recordedAt" DESC)
       `;
       results.push("✅ TemperatureRecord table created");
-      console.log("✅ TemperatureRecord table created");
+      logger.info("✅ TemperatureRecord table created", null, "Admin/Migration");
 
       // Create DailyTemperatureCheck table
-      console.log("3. Creating DailyTemperatureCheck table...");
+      logger.debug("3. Creating DailyTemperatureCheck table...", null, "Admin/Migration");
       await prisma.$executeRaw`
         CREATE TABLE IF NOT EXISTS "DailyTemperatureCheck" (
           id SERIAL PRIMARY KEY,
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
         ON "DailyTemperatureCheck"("companyId", "checkDate" DESC, "checkPeriod")
       `;
       results.push("✅ DailyTemperatureCheck table created");
-      console.log("✅ DailyTemperatureCheck table created");
+      logger.info("✅ DailyTemperatureCheck table created", null, "Admin/Migration");
 
       return NextResponse.json({
         success: true,
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
         results,
       });
     } catch (error: any) {
-      console.error("Migration error:", error);
+      logger.error("Migration error", error, "Admin/Migration");
       
       // Check if tables already exist
       if (error?.code === '42P07' || error?.message?.includes('already exists')) {
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
       throw error;
     }
   } catch (error: any) {
-    console.error("Migration failed:", error);
+    logger.error("Migration failed", error, "Admin/Migration");
     return NextResponse.json(
       {
         success: false,

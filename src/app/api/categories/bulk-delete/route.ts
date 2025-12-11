@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully deleted ${result.count} categor${result.count === 1 ? 'y' : 'ies'}` 
     });
   } catch (error) {
-    console.error("Bulk delete categories error:", error);
+    logger.error("Bulk delete categories error", error, "Categories");
     return NextResponse.json(
       { error: "Failed to delete categories" },
       { status: 500 }

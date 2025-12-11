@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -248,7 +249,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ leaveRequest });
   } catch (error) {
-    console.error("Update leave request error:", error);
+    logger.error("Update leave request error", error, "Staff/Leave");
     return NextResponse.json(
       { error: "Failed to update leave request" },
       { status: 500 }

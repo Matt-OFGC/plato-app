@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -25,7 +26,7 @@ export async function GET() {
       success: true
     });
   } catch (error) {
-    console.error("Error fetching timer preferences:", error);
+    logger.error("Error fetching timer preferences", error, "User/TimerPreferences");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error saving timer preferences:", error);
+    logger.error("Error saving timer preferences", error, "User/TimerPreferences");
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

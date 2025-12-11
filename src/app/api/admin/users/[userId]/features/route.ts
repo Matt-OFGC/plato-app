@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { FeatureModuleName } from "@/lib/features";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -70,7 +71,7 @@ export async function POST(
         },
       });
 
-      console.log(`[Admin] Feature access granted:`, {
+      logger.info(`[Admin] Feature access granted`, {
         userId,
         userEmail: user.email,
         moduleName,
@@ -81,7 +82,7 @@ export async function POST(
           isTrial: result.isTrial,
           unlockedAt: result.unlockedAt,
         },
-      });
+      }, "Admin/Users");
 
       // Verify the record was created/updated correctly
       const verify = await prisma.featureModule.findUnique({
@@ -94,7 +95,7 @@ export async function POST(
       });
 
       if (!verify || (verify.status !== "active" && verify.status !== "trialing")) {
-        console.error(`[Admin] WARNING: FeatureModule record verification failed:`, verify);
+        logger.warn(`[Admin] WARNING: FeatureModule record verification failed`, { verify }, "Admin/Users");
         return NextResponse.json(
           {
             success: false,
@@ -105,11 +106,11 @@ export async function POST(
         );
       }
 
-      console.log(`[Admin] FeatureModule record verified successfully:`, {
+      logger.info(`[Admin] FeatureModule record verified successfully`, {
         moduleName: verify.moduleName,
         status: verify.status,
         isActive: verify.status === "active" || verify.status === "trialing",
-      });
+      }, "Admin/Users");
 
       // Note: Trial limits are handled by FeatureModule system, not User model fields
 
@@ -197,13 +198,13 @@ export async function POST(
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error: any) {
-    console.error("Admin feature management error:", error);
-    console.error("Error details:", {
+    logger.error("Admin feature management error", {
+      error,
       message: error?.message,
       code: error?.code,
       meta: error?.meta,
       stack: error?.stack,
-    });
+    }, "Admin/Users");
     return NextResponse.json(
       { 
         error: "Failed to manage feature access",
@@ -273,7 +274,7 @@ export async function PUT(
         results.push({ moduleName, status: "granted", module: result });
       }
 
-      console.log(`[Admin] Granted all modules to user ${userId} (${user.email})`);
+      logger.info(`[Admin] Granted all modules to user ${userId}`, { userId, email: user.email }, "Admin/Users");
 
       return NextResponse.json({
         success: true,
@@ -310,7 +311,7 @@ export async function PUT(
         }
       }
 
-      console.log(`[Admin] Revoked all modules from user ${userId} (${user.email})`);
+      logger.info(`[Admin] Revoked all modules from user ${userId}`, { userId, email: user.email }, "Admin/Users");
 
       return NextResponse.json({
         success: true,
@@ -324,7 +325,7 @@ export async function PUT(
       );
     }
   } catch (error: any) {
-    console.error("Admin bulk feature management error:", error);
+    logger.error("Admin bulk feature management error", error, "Admin/Users");
     return NextResponse.json(
       {
         error: "Failed to manage feature access",
@@ -359,13 +360,13 @@ export async function GET(
 
     return NextResponse.json({ modules });
   } catch (error: any) {
-    console.error("Admin get features error:", error);
-    console.error("Error details:", {
+    logger.error("Admin get features error", {
+      error,
       message: error?.message,
       code: error?.code,
       meta: error?.meta,
       stack: error?.stack,
-    });
+    }, "Admin/Users");
     return NextResponse.json(
       { 
         error: "Failed to fetch feature modules",

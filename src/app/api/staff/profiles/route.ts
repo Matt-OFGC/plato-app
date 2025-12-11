@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get all staff profiles for a company
 export async function GET(request: NextRequest) {
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ profiles });
   } catch (error) {
-    console.error("Get staff profiles error:", error);
+    logger.error("Get staff profiles error", error, "Staff/Profiles");
     return NextResponse.json(
       { error: "Failed to fetch staff profiles" },
       { status: 500 }
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ profile }, { status: 201 });
   } catch (error: any) {
-    console.error("Create staff profile error:", error);
+    logger.error("Create staff profile error", error, "Staff/Profiles");
     if (error.code === "P2002") {
       return NextResponse.json(
         { error: "Profile already exists for this member" },

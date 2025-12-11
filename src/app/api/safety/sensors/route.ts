@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get all temperature sensors
 export async function GET(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(sensorsWithReadings);
   } catch (error) {
-    console.error("Get sensors error:", error);
+    logger.error("Get sensors error", error, "Safety/Sensors");
     return NextResponse.json(
       { error: "Failed to fetch sensors" },
       { status: 500 }
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(sensor[0]);
   } catch (error) {
-    console.error("Create sensor error:", error);
+    logger.error("Create sensor error", error, "Safety/Sensors");
     return NextResponse.json(
       { error: "Failed to create sensor" },
       { status: 500 }

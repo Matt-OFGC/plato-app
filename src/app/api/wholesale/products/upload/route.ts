@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /**
  * Upload and parse Excel/CSV file for bulk product import
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Upload products error:", error);
+    logger.error("Upload products error", error, "Wholesale/Products");
     return NextResponse.json(
       { error: "Failed to upload products" },
       { status: 500 }

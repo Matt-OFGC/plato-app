@@ -4,6 +4,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { getRecipeRelations } from "@/lib/services/relationService";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -31,7 +32,7 @@ export async function GET(
 
     return NextResponse.json({ relations });
   } catch (error) {
-    console.error("Get recipe relations error:", error);
+    logger.error("Get recipe relations error", error, "RecipesBackup/Relations");
     return NextResponse.json(
       { error: "Failed to fetch relations" },
       { status: 500 }
@@ -122,7 +123,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Create recipe relation error:", error);
+    logger.error("Create recipe relation error", error, "RecipesBackup/Relations");
     return NextResponse.json(
       { error: "Failed to create relation" },
       { status: 500 }

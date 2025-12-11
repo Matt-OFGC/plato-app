@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { checkPermission, getUserPermissions, Permission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Check if user has a specific permission
 export async function POST(request: NextRequest) {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ hasPermission });
   } catch (error) {
-    console.error("Check permission error:", error);
+    logger.error("Check permission error", error, "Permissions");
     return NextResponse.json(
       { error: "Failed to check permission" },
       { status: 500 }
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ permissions });
   } catch (error) {
-    console.error("Get permissions error:", error);
+    logger.error("Get permissions error", error, "Permissions");
     return NextResponse.json(
       { error: "Failed to get permissions" },
       { status: 500 }

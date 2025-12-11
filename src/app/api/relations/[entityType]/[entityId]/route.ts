@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { getEntityRelations, EntityType } from "@/lib/services/relationService";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -44,7 +45,7 @@ export async function GET(
 
     return NextResponse.json({ relations });
   } catch (error) {
-    console.error("Get entity relations error:", error);
+    logger.error("Get entity relations error", error, "Relations");
     return NextResponse.json(
       { error: "Failed to fetch relations" },
       { status: 500 }

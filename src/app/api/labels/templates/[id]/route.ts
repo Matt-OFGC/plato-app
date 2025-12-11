@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
+import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -22,7 +23,7 @@ export async function GET(
 
     return NextResponse.json(template);
   } catch (error) {
-    console.error('Error fetching template:', error);
+    logger.error('Error fetching template', error, 'Labels/Templates');
     return NextResponse.json(
       { error: 'Failed to fetch template' },
       { status: 500 }
@@ -73,7 +74,7 @@ export async function PUT(
 
     return NextResponse.json(template);
   } catch (error) {
-    console.error('Error updating template:', error);
+    logger.error('Error updating template', error, 'Labels/Templates');
     return NextResponse.json(
       { error: 'Failed to update template' },
       { status: 500 }
@@ -93,7 +94,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting template:', error);
+    logger.error('Error deleting template', error, 'Labels/Templates');
     return NextResponse.json(
       { error: 'Failed to delete template' },
       { status: 500 }

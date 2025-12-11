@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
+import { logger } from "@/lib/logger";
 
 // Simple endpoint to check what Stripe env vars are set (without exposing values)
 export async function GET(request: NextRequest) {
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
         : "No Stripe configuration found. See STRIPE_SETUP_GUIDE.md",
     });
   } catch (error) {
-    console.error("Stripe check error:", error);
+    logger.error("Stripe check error", error, "Admin/StripeCheck");
     return NextResponse.json(
       { error: "Failed to check Stripe configuration" },
       { status: 500 }

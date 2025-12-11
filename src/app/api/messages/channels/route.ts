@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/messages/channels
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(channel);
   } catch (error) {
-    console.error("Failed to create channel:", error);
+    logger.error("Failed to create channel", error, "Messages/Channels");
     return NextResponse.json(
       { error: "Failed to create channel" },
       { status: 500 }

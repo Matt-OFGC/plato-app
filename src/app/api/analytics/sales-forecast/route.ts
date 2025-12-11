@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { forecastSales } from "@/lib/analytics/forecasting";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Sales forecast error:", error);
+    logger.error("Sales forecast error", error, "Analytics/SalesForecast");
     return NextResponse.json(
       { error: "Failed to generate sales forecast" },
       { status: 500 }

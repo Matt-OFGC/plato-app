@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Report an equipment issue
 export async function POST(
@@ -75,7 +76,7 @@ export async function POST(
 
     return NextResponse.json(issue[0]);
   } catch (error) {
-    console.error("Create issue error:", error);
+    logger.error("Create issue error", error, "Safety/Equipment");
     return NextResponse.json(
       { error: "Failed to report issue" },
       { status: 500 }

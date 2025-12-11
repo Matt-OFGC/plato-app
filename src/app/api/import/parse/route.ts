@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import * as XLSX from "xlsx";
 import * as Papa from "papaparse";
+import { logger } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -203,7 +204,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(response);
     
   } catch (error) {
-    console.error("Parse error:", error);
+    logger.error("Parse error", error, "Import/Parse");
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to parse file" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { emitEvent, EventTypes } from "@/lib/events/domain-events";
+import { logger } from "@/lib/logger";
 
 const updatePurchaseOrderSchema = z.object({
   status: z.enum(['DRAFT', 'ORDERED', 'RECEIVED', 'INVOICED', 'CANCELLED']).optional(),
@@ -115,7 +116,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, purchaseOrder: serializedOrder });
   } catch (error) {
-    console.error("Error updating purchase order:", error);
+    logger.error("Error updating purchase order", error, "Wholesale/PurchaseOrders");
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation error", details: error.errors }, { status: 400 });
     }
@@ -162,7 +163,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting purchase order:", error);
+    logger.error("Error deleting purchase order", error, "Wholesale/PurchaseOrders");
     return NextResponse.json({ error: "Failed to delete purchase order" }, { status: 500 });
   }
 }

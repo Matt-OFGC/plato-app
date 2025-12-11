@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get training records
 export async function GET(request: NextRequest) {
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ records });
   } catch (error) {
-    console.error("Get training records error:", error);
+    logger.error("Get training records error", error, "Training/Records");
     return NextResponse.json(
       { error: "Failed to fetch training records" },
       { status: 500 }
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ record });
   } catch (error) {
-    console.error("Create training record error:", error);
+    logger.error("Create training record error", error, "Training/Records");
     return NextResponse.json(
       { error: "Failed to create training record" },
       { status: 500 }

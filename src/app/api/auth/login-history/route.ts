@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Get user's login history from sessions
 export async function GET() {
@@ -45,7 +46,7 @@ export async function GET() {
 
     return NextResponse.json({ loginHistory });
   } catch (error) {
-    console.error("Get login history error:", error);
+    logger.error("Get login history error", error, "Auth/LoginHistory");
     return NextResponse.json(
       { error: "Failed to get login history" },
       { status: 500 }

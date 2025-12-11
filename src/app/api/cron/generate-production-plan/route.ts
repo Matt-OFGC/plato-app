@@ -204,9 +204,11 @@ export async function GET(request: NextRequest) {
           ordersProcessed: orders.length,
         });
       } catch (error) {
-        console.error(
-          `Error generating plan for company ${company.id}:`,
-          error
+        const { logger } = await import("@/lib/logger");
+        logger.error(
+          `Error generating plan for company ${company.id}`,
+          error,
+          "Cron/ProductionPlan"
         );
         results.push({
           companyId: company.id,

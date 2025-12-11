@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -359,7 +360,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Import error:", error);
+    logger.error("Import error", error, "Import/Recipes");
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Import failed" },
       { status: 500 }

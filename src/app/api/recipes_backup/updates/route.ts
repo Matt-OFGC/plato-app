@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@/generated/prisma';
+import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -150,7 +151,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching recipe updates:', error);
+    logger.error('Error fetching recipe updates', error, 'RecipesBackup/Updates');
     return NextResponse.json(
       {
         success: false,

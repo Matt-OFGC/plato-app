@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get smart alerts for company
 export async function GET(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(alerts);
   } catch (error) {
-    console.error("Get alerts error:", error);
+    logger.error("Get alerts error", error, "Safety/Alerts");
     return NextResponse.json(
       { error: "Failed to fetch alerts" },
       { status: 500 }
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(alert[0]);
   } catch (error) {
-    console.error("Create alert error:", error);
+    logger.error("Create alert error", error, "Safety/Alerts");
     return NextResponse.json(
       { error: "Failed to create alert" },
       { status: 500 }

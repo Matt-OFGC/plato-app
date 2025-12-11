@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /**
  * Export wholesale products as CSV
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Export products error:", error);
+    logger.error("Export products error", error, "Wholesale/Products");
     return NextResponse.json(
       { error: "Failed to export products" },
       { status: 500 }

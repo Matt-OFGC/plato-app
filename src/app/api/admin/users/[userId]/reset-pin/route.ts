@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -121,7 +122,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Admin PIN reset error:", error);
+    logger.error("Admin PIN reset error", error, "Admin/Users");
     return NextResponse.json(
       { error: "Failed to reset PIN" },
       { status: 500 }
@@ -171,7 +172,7 @@ export async function GET(
 
     return NextResponse.json({ pins });
   } catch (error) {
-    console.error("Admin get PINs error:", error);
+    logger.error("Admin get PINs error", error, "Admin/Users");
     return NextResponse.json(
       { error: "Failed to fetch PINs" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       customer,
     });
   } catch (error) {
-    console.error("Generate portal token error:", error);
+    logger.error("Generate portal token error", error, "Wholesale/Portal");
     return NextResponse.json(
       { error: "Failed to generate portal token" },
       { status: 500 }

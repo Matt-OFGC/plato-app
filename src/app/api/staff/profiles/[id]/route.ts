@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Get staff profile by ID
 export async function GET(
@@ -78,7 +79,7 @@ export async function GET(
 
     return NextResponse.json({ profile });
   } catch (error) {
-    console.error("Get staff profile error:", error);
+    logger.error("Get staff profile error", error, "Staff/Profiles");
     return NextResponse.json(
       { error: "Failed to fetch staff profile" },
       { status: 500 }
@@ -210,7 +211,7 @@ export async function PATCH(
 
     return NextResponse.json({ profile });
   } catch (error) {
-    console.error("Update staff profile error:", error);
+    logger.error("Update staff profile error", error, "Staff/Profiles");
     return NextResponse.json(
       { error: "Failed to update staff profile" },
       { status: 500 }

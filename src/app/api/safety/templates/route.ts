@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get all templates for a company
 export async function GET(request: NextRequest) {
@@ -50,10 +51,10 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
       // If TaskTemplate table doesn't exist, return empty array
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TaskTemplate table does not exist yet. Run migration: npx tsx src/app/scripts/migrate-safety-schema.ts');
+        logger.warn('TaskTemplate table does not exist yet. Run migration: npx tsx src/app/scripts/migrate-safety-schema.ts', null, "Safety/Templates");
         return NextResponse.json([]);
       }
-      console.error("Templates query error:", error);
+      logger.error("Templates query error", error, "Safety/Templates");
       throw error;
     }
 
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(templatesWithItems);
   } catch (error: any) {
-    console.error("Get templates error:", error);
+    logger.error("Get templates error", error, "Safety/Templates");
     return NextResponse.json(
       { 
         error: "Failed to fetch templates",
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Create template error:", error);
+    logger.error("Create template error", error, "Safety/Templates");
     return NextResponse.json(
       { error: "Failed to create template" },
       { status: 500 }

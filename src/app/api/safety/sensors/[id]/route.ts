@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get sensor details with readings
 export async function GET(
@@ -39,7 +40,7 @@ export async function GET(
       readings,
     });
   } catch (error) {
-    console.error("Get sensor error:", error);
+    logger.error("Get sensor error", error, "Safety/Sensors");
     return NextResponse.json(
       { error: "Failed to fetch sensor" },
       { status: 500 }
@@ -101,7 +102,7 @@ export async function PUT(
 
     return NextResponse.json(updated[0]);
   } catch (error) {
-    console.error("Update sensor error:", error);
+    logger.error("Update sensor error", error, "Safety/Sensors");
     return NextResponse.json(
       { error: "Failed to update sensor" },
       { status: 500 }
@@ -130,7 +131,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete sensor error:", error);
+    logger.error("Delete sensor error", error, "Safety/Sensors");
     return NextResponse.json(
       { error: "Failed to delete sensor" },
       { status: 500 }

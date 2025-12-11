@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Mark alert as read
 export async function PATCH(
@@ -58,7 +59,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Update alert error:", error);
+    logger.error("Update alert error", error, "Safety/Alerts");
     return NextResponse.json(
       { error: "Failed to update alert" },
       { status: 500 }

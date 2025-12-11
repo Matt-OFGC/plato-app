@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-simple";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 // Update cleaning job
 export async function PATCH(
@@ -104,7 +105,7 @@ export async function PATCH(
 
     return NextResponse.json({ job });
   } catch (error) {
-    console.error("Update cleaning job error:", error);
+    logger.error("Update cleaning job error", error, "Staff/CleaningJobs");
     return NextResponse.json(
       { error: "Failed to update cleaning job" },
       { status: 500 }

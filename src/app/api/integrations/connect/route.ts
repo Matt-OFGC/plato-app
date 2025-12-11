@@ -3,6 +3,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { integrationRegistry } from "@/lib/integrations/base/integration-provider";
 import { encryptCredentials, getEncryptionKey } from "@/lib/integrations/base/encryption";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       data: connectionResult.data,
     });
   } catch (error) {
-    console.error("Integration connection error:", error);
+    logger.error("Integration connection error", error, "Integrations/Connect");
     return NextResponse.json(
       { error: "Failed to connect integration" },
       { status: 500 }

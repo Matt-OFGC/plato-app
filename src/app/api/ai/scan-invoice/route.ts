@@ -101,7 +101,7 @@ CRITICAL: Your response must be valid JSON only. No other text.`;
           })
         });
       } catch (pdfError: any) {
-        console.error("PDF parsing error:", pdfError);
+        logger.error("PDF parsing error", pdfError, "AI/ScanInvoice");
         
         // Provide helpful error message
         let errorMessage = "This PDF could not be processed. ";
@@ -197,17 +197,16 @@ CRITICAL: Your response must be valid JSON only. No other text.`;
       // Extract JSON from the response (in case there's extra text)
       const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.error("No JSON found in response:", cleanedText);
+        logger.error("No JSON found in response", { cleanedText }, "AI/ScanInvoice");
         throw new Error("No JSON found in AI response. The AI may have returned an error message instead of ingredient data.");
       }
       
       const jsonString = jsonMatch[0];
-      console.log("Extracted JSON string:", jsonString);
+      logger.debug("Extracted JSON string", { jsonString }, "AI/ScanInvoice");
       
       parsedData = JSON.parse(jsonString);
     } catch (parseError) {
-      console.error("Failed to parse AI response:", extractedText);
-      console.error("Parse error:", parseError);
+      logger.error("Failed to parse AI response", { extractedText, parseError }, "AI/ScanInvoice");
       
       // Provide more helpful error message
       if (parseError instanceof SyntaxError) {
@@ -234,7 +233,7 @@ CRITICAL: Your response must be valid JSON only. No other text.`;
     });
 
   } catch (error) {
-    console.error("Invoice scan error:", error);
+    logger.error("Invoice scan error", error, "AI/ScanInvoice");
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : "Failed to scan invoice",

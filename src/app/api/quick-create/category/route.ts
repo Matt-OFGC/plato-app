@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const createCategorySchema = z.object({
   name: z.string().min(1).max(50),
@@ -11,15 +12,15 @@ const createCategorySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    console.log("Category creation API called");
+    logger.debug("Category creation API called", null, "QuickCreate/Category");
     const { companyId } = await getCurrentUserAndCompany();
-    console.log("Company ID:", companyId);
+    logger.debug("Company ID", { companyId }, "QuickCreate/Category");
     const body = await request.json();
-    console.log("Request body:", body);
+    logger.debug("Request body", body, "QuickCreate/Category");
     
     const parsed = createCategorySchema.safeParse(body);
     if (!parsed.success) {
-      console.error("Validation failed:", parsed.error);
+      logger.warn("Validation failed", { error: parsed.error }, "QuickCreate/Category");
       return NextResponse.json(
         { error: "Invalid data", details: parsed.error.errors },
         { status: 400 }
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const { name, description, color } = parsed.data;
-    console.log("Creating category:", { name, description, color, companyId });
+    logger.debug("Creating category", { name, description, color, companyId }, "QuickCreate/Category");
 
     // Check if category already exists
     const existing = await prisma.category.findFirst({
@@ -61,10 +62,10 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log("Category created successfully:", category);
+    logger.info("Category created successfully", { categoryId: category.id, name }, "QuickCreate/Category");
     return NextResponse.json({ success: true, category });
   } catch (error) {
-    console.error("Error creating category:", error);
+    logger.error("Error creating category", error, "QuickCreate/Category");
     return NextResponse.json(
       { error: "Failed to create category" },
       { status: 500 }

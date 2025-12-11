@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /**
  * GET /api/messages/channels/:channelId/messages
@@ -42,7 +43,7 @@ export async function GET(
 
     return NextResponse.json({ messages });
   } catch (error) {
-    console.error("Failed to load messages:", error);
+    logger.error("Failed to load messages", error, "Messages/Channels");
     return NextResponse.json(
       { error: "Failed to load messages" },
       { status: 500 }
@@ -116,7 +117,7 @@ export async function POST(
 
     return NextResponse.json(message);
   } catch (error) {
-    console.error("Failed to send message:", error);
+    logger.error("Failed to send message", error, "Messages/Channels");
     return NextResponse.json(
       { error: "Failed to send message" },
       { status: 500 }

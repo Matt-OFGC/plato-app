@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // Get user details
 export async function GET(
@@ -65,7 +66,7 @@ export async function GET(
     response.headers.set('Expires', '0');
     return response;
   } catch (error) {
-    console.error("Admin user details error:", error);
+    logger.error("Admin user details error", error, "Admin/Users");
     return NextResponse.json(
       { error: "Failed to fetch user details" },
       { status: 500 }
@@ -108,7 +109,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, user });
   } catch (error) {
-    console.error("Admin user update error:", error);
+    logger.error("Admin user update error", error, "Admin/Users");
     return NextResponse.json(
       { error: "Failed to update user" },
       { status: 500 }
@@ -156,7 +157,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: "User deleted successfully" });
   } catch (error) {
-    console.error("Admin user delete error:", error);
+    logger.error("Admin user delete error", error, "Admin/Users");
     return NextResponse.json(
       { error: "Failed to delete user" },
       { status: 500 }

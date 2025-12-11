@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get temperature records for a date range
 export async function GET(request: NextRequest) {
@@ -49,13 +50,13 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
       // If table doesn't exist, return empty array
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        logger.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts', null, "Safety/Temperatures");
         return NextResponse.json([]);
       }
       throw error;
     }
   } catch (error) {
-    console.error("Get temperature records error:", error);
+    logger.error("Get temperature records error", error, "Safety/Temperatures");
     return NextResponse.json(
       { error: "Failed to fetch temperature records" },
       { status: 500 }
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
       // If table doesn't exist, log warning but return empty records
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
-        console.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts');
+        logger.warn('TemperatureRecord table does not exist yet. Run migration: npx tsx src/app/scripts/add-temperature-storage.ts', null, "Safety/Temperatures");
         return NextResponse.json({ success: false, error: 'Database tables not migrated. Please run migration script.' });
       }
       throw error;
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, records: savedRecords });
   } catch (error) {
-    console.error("Save temperature records error:", error);
+    logger.error("Save temperature records error", error, "Safety/Temperatures");
     return NextResponse.json(
       { error: "Failed to save temperature records" },
       { status: 500 }

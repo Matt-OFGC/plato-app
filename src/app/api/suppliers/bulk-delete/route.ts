@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully deleted ${result.count} supplier(s)` 
     });
   } catch (error) {
-    console.error("Bulk delete suppliers error:", error);
+    logger.error("Bulk delete suppliers error", error, "Suppliers");
     return NextResponse.json(
       { error: "Failed to delete suppliers" },
       { status: 500 }

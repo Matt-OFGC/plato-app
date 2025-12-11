@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get single template
 export async function GET(
@@ -34,7 +35,7 @@ export async function GET(
 
     return NextResponse.json({ ...template[0], checklistItems: items });
   } catch (error) {
-    console.error("Get template error:", error);
+    logger.error("Get template error", error, "Safety/Templates");
     return NextResponse.json(
       { error: "Failed to fetch template" },
       { status: 500 }
@@ -120,7 +121,7 @@ export async function PUT(
 
     return NextResponse.json({ ...template[0], checklistItems: items });
   } catch (error) {
-    console.error("Update template error:", error);
+    logger.error("Update template error", error, "Safety/Templates");
     return NextResponse.json(
       { error: "Failed to update template" },
       { status: 500 }
@@ -168,7 +169,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete template error:", error);
+    logger.error("Delete template error", error, "Safety/Templates");
     return NextResponse.json(
       { error: "Failed to delete template" },
       { status: 500 }

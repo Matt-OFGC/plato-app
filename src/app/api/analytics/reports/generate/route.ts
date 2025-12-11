@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { calculateRecipeProfitability } from "@/lib/analytics/profitability";
 import { analyzeRevenueTrends } from "@/lib/analytics/trends";
 import { forecastIngredientUsage } from "@/lib/analytics/forecasting";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Report generation error:", error);
+    logger.error("Report generation error", error, "Analytics/Reports");
     return NextResponse.json(
       { error: "Failed to generate report" },
       { status: 500 }
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ report });
   } catch (error) {
-    console.error("Report creation error:", error);
+    logger.error("Report creation error", error, "Analytics/Reports");
     return NextResponse.json(
       { error: "Failed to create report" },
       { status: 500 }

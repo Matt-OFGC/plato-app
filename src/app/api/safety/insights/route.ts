@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 // Get AI insights for company
 export async function GET(request: NextRequest) {
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(insights);
   } catch (error) {
-    console.error("Get insights error:", error);
+    logger.error("Get insights error", error, "Safety/Insights");
     return NextResponse.json(
       { error: "Failed to fetch insights" },
       { status: 500 }
