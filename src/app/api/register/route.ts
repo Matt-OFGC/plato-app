@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import { generateUniqueSlug, getCurrencyFromCountry } from "@/lib/slug";
+import { getCurrencyFromCountry } from "@/lib/slug";
 import { sendWelcomeEmail, sendEmailVerificationEmail } from "@/lib/email";
 import crypto from "crypto";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -9,6 +9,10 @@ import { auditLog } from "@/lib/audit-log";
 import { registerSchema } from "@/lib/validation/auth";
 import { mapAuthError, createAuthErrorResponse, logAuthError, generateErrorId } from "@/lib/errors/auth-errors";
 import { logger } from "@/lib/logger";
+import { generateDefaultCompanyName, generateCompanySlug, getDefaultCompanyData } from "@/lib/company-defaults";
+import { clearUserCache } from "@/lib/current";
+import { retryPrisma } from "@/lib/retry";
+import { validateCompanyName, generateFallbackCompanyName } from "@/lib/validation/company";
 // Temporarily disabled to fix build error
 // import { initializeRecipesTrial } from "@/lib/features";
 
@@ -59,13 +63,57 @@ export async function POST(req: NextRequest) {
     }
     
     const { email, password, companyName, name, businessType, country, phone } = validationResult.data;
-    const company = companyName; // Use companyName from validated data
+    
+    // Validate and sanitize company name, or generate fallback
+    let company: string;
+    if (companyName?.trim()) {
+      const validation = validateCompanyName(companyName);
+      if (validation.valid && validation.sanitized) {
+        company = validation.sanitized;
+      } else {
+        // If validation fails, generate fallback but log warning
+        logger.warn(`Company name validation failed, using fallback`, {
+          email,
+          originalName: companyName,
+          error: validation.error,
+        }, 'Registration');
+        company = generateFallbackCompanyName(email);
+      }
+    } else {
+      company = generateDefaultCompanyName(email);
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ 
       where: { email },
       select: { id: true, passwordHash: true, name: true }
     });
+    
+    // Check if user already has an active membership (idempotency check)
+    // Multi-company support: users can have multiple companies
+    if (existingUser) {
+      const existingMemberships = await prisma.membership.findMany({
+        where: {
+          userId: existingUser.id,
+          isActive: true
+        },
+        include: {
+          company: {
+            select: { id: true, name: true }
+          }
+        },
+        orderBy: { createdAt: 'asc' }
+      });
+      
+      if (existingMemberships.length > 0) {
+        // User already has active company/companies - they can create another one
+        // This is allowed for multi-company support
+        logger.info(`Existing user creating additional company`, {
+          userId: existingUser.id,
+          existingCompanies: existingMemberships.map(m => m.company.name),
+        }, 'Registration');
+      }
+    }
 
     // Detect app from form parameter, referer header, or route path
     const appParam = params.get("app");
@@ -89,37 +137,60 @@ export async function POST(req: NextRequest) {
       user = existingUser;
       
       // Generate unique slug for company
-      const slug = await generateUniqueSlug(company, async (slug) => {
-        const existing = await prisma.company.findUnique({ where: { slug } });
-        return !!existing;
-      });
+      const slug = await generateCompanySlug(company);
       
       // Auto-detect currency from country
-      const currency = getCurrencyFromCountry(country);
+      const currency = getCurrencyFromCountry(country || 'United Kingdom');
       
-      // Create new company and membership
-      const co = await prisma.company.create({
-        data: {
-          name: company,
-          slug,
-          businessType,
-          country,
-          phone,
-          // app field removed - apps are now user-level subscriptions
-        },
-      });
+      // Create new company and membership in a transaction with retry logic
+      // This ensures both are created or neither is created
+      const result = await retryPrisma(
+        () => prisma.$transaction(async (tx) => {
+        // Create company
+        const co = await tx.company.create({
+          data: {
+            name: company,
+            slug,
+            businessType: businessType || null,
+            country: country || 'United Kingdom',
+            phone: phone || null,
+            // app field removed - apps are now user-level subscriptions
+          },
+        });
 
-      await prisma.membership.create({ data: { userId: user.id, companyId: co.id, role: "ADMIN" } });
+        // Create membership with explicit isActive: true
+        const membership = await tx.membership.create({ 
+          data: { 
+            userId: user.id, 
+            companyId: co.id, 
+            role: "ADMIN",
+            isActive: true // Explicitly set to true
+          } 
+        });
+        
+        return { company: co, membership };
+      });
       
-      logger.info(`New company created for existing user: ${email} (User ID: ${user.id}), Company: ${company} (ID: ${co.id}), App: ${app}`);
+      // Clear user cache to ensure fresh data
+      await clearUserCache(user.id);
       
-      // Audit company creation
-      await auditLog.register(user.id, co.id, req);
+      logger.info(`New company created for existing user: ${email} (User ID: ${user.id}), Company: ${company} (ID: ${result.company.id}), App: ${app}`);
+      
+      // Audit company and membership creation
+      await auditLog.companyCreated(user.id, result.company.id, company, req);
+      await auditLog.membershipCreated(
+        user.id,
+        result.company.id,
+        result.membership.id,
+        result.membership.role,
+        'registration_existing_user',
+        req
+      );
       
       return NextResponse.json({ 
         ok: true, 
         userId: user.id,
-        companyId: co.id,
+        companyId: result.company.id,
         message: `New ${app === 'plato_bake' ? 'Plato Bake' : 'Plato'} company created successfully! You can now sign in.`
       });
     } else {
@@ -132,29 +203,32 @@ export async function POST(req: NextRequest) {
       verificationTokenExpiresAt.setHours(verificationTokenExpiresAt.getHours() + 24); // 24 hours
       
       // Generate unique slug for company
-      const slug = await generateUniqueSlug(company, async (slug) => {
-        const existing = await prisma.company.findUnique({ where: { slug } });
-        return !!existing;
-      });
+      const slug = await generateCompanySlug(company);
       
       // Auto-detect currency from country
-      const currency = getCurrencyFromCountry(country);
+      const currency = getCurrencyFromCountry(country || 'United Kingdom');
       
-      const [co, newUser] = await prisma.$transaction([
-        prisma.company.create({
+      // Create user, company, and membership all in a single transaction with retry logic
+      // This ensures all are created or none are created
+      const result = await retryPrisma(
+        () => prisma.$transaction(async (tx) => {
+        // Create company
+        const co = await tx.company.create({
           data: {
             name: company,
             slug,
-            businessType,
-            country,
-            phone,
+            businessType: businessType || null,
+            country: country || 'United Kingdom',
+            phone: phone || null,
             // app field removed - apps are now user-level subscriptions
           },
-        }),
-        prisma.user.create({
+        });
+        
+        // Create user
+        const newUser = await tx.user.create({
           data: {
             email,
-            name,
+            name: name || null,
             passwordHash,
             verificationToken,
             verificationTokenExpiresAt,
@@ -162,17 +236,41 @@ export async function POST(req: NextRequest) {
               create: { currency }
             }
           }
-        })
-      ]);
-
-      await prisma.membership.create({ data: { userId: newUser.id, companyId: co.id, role: "OWNER" } });
+        });
+        
+        // Create membership with explicit isActive: true
+        const membership = await tx.membership.create({ 
+          data: { 
+            userId: newUser.id, 
+            companyId: co.id, 
+            role: "OWNER",
+            isActive: true // Explicitly set to true
+          } 
+        });
+        
+          return { company: co, user: newUser, membership };
+        }),
+        { maxAttempts: 3 }
+      );
       
-      user = newUser;
+      user = result.user;
       
-      logger.info(`User registered successfully: ${email} (ID: ${user.id}), Company: ${company} (ID: ${co.id}), App: ${app}`);
+      // Clear user cache to ensure fresh data
+      await clearUserCache(user.id);
       
-      // Audit successful registration
-      await auditLog.register(user.id, co.id, req);
+      logger.info(`User registered successfully: ${email} (ID: ${user.id}), Company: ${company} (ID: ${result.company.id}), App: ${app}`);
+      
+      // Audit successful registration, company and membership creation
+      await auditLog.register(user.id, result.company.id, req);
+      await auditLog.companyCreated(user.id, result.company.id, company, req);
+      await auditLog.membershipCreated(
+        user.id,
+        result.company.id,
+        result.membership.id,
+        result.membership.role,
+        'registration_new_user',
+        req
+      );
 
       // Send verification email
       try {
@@ -204,7 +302,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         ok: true, 
         userId: user.id,
-        companyId: co.id,
+        companyId: result.company.id,
         message: "Account created successfully! You can now sign in."
       });
     }
@@ -223,23 +321,52 @@ export async function POST(req: NextRequest) {
     // Log the full error for debugging
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Enhanced error logging with request ID
+    logger.error(`[Register API] Registration failed (Error ID: ${errorId})`, {
+      error: errorMessage,
+      stack: errorStack,
+      errorId,
+      url: req.url,
+    }, 'Registration');
+    
     console.error("[Register API] Error:", errorMessage);
     console.error("[Register API] Stack:", errorStack);
     console.error("[Register API] Full error:", error);
+    console.error("[Register API] Error ID:", errorId);
     
     logAuthError(error, "registration", errorId, req);
     
     // Map to user-friendly error
     const authError = mapAuthError(error, errorId);
     
+    // Provide more specific error messages
+    let userFriendlyMessage = authError.message;
+    if (errorMessage.includes('Unique constraint') || errorMessage.includes('duplicate')) {
+      if (errorMessage.includes('email')) {
+        userFriendlyMessage = "An account with this email already exists. Please sign in instead.";
+      } else if (errorMessage.includes('slug')) {
+        userFriendlyMessage = "This company name is already taken. Please try a different name.";
+      }
+    } else if (errorMessage.includes('transaction') || errorMessage.includes('rollback')) {
+      userFriendlyMessage = "Registration partially failed. Please try again. If this persists, contact support.";
+    }
+    
     // Ensure we always return JSON, even on error
     try {
-      return createAuthErrorResponse(authError);
+      const response = createAuthErrorResponse(authError);
+      // Override message if we have a better one
+      if (userFriendlyMessage !== authError.message) {
+        const json = await response.json();
+        json.error = userFriendlyMessage;
+        return NextResponse.json(json, { status: response.status });
+      }
+      return response;
     } catch (responseError) {
       // Fallback if createAuthErrorResponse fails
       console.error("[Register API] Failed to create error response:", responseError);
       return NextResponse.json({
-        error: errorMessage || "An unexpected error occurred during registration",
+        error: userFriendlyMessage || errorMessage || "An unexpected error occurred during registration",
         code: "INTERNAL_ERROR",
         errorId,
         details: process.env.NODE_ENV === 'development' ? errorStack : undefined

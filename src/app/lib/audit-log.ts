@@ -163,3 +163,205 @@ export async function getRecentAuditLogs(
     return [];
   }
 }
+
+// Audit log object with company/membership tracking methods
+export const auditLog = {
+  // Log registration (creates ActivityLog entry)
+  async register(userId: number, companyId: number, request: NextRequest): Promise<void> {
+    try {
+      const { ipAddress, userAgent } = getClientInfo(request);
+      
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: 'REGISTER',
+          entity: 'User',
+          entityId: userId,
+          details: {
+            ipAddress,
+            userAgent,
+            timestamp: new Date().toISOString(),
+          },
+          ipAddress,
+          userAgent,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log registration:', error);
+    }
+  },
+
+  // Log company creation
+  async companyCreated(
+    userId: number,
+    companyId: number,
+    companyName: string,
+    request?: NextRequest
+  ): Promise<void> {
+    try {
+      const clientInfo = request ? getClientInfo(request) : {};
+      
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: 'CREATE',
+          entity: 'Company',
+          entityId: companyId,
+          entityName: companyName,
+          details: {
+            ...clientInfo,
+            timestamp: new Date().toISOString(),
+          },
+          ipAddress: clientInfo.ipAddress,
+          userAgent: clientInfo.userAgent,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log company creation:', error);
+    }
+  },
+
+  // Log company update
+  async companyUpdated(
+    userId: number,
+    companyId: number,
+    changes: Record<string, any>,
+    request?: NextRequest
+  ): Promise<void> {
+    try {
+      const clientInfo = request ? getClientInfo(request) : {};
+      
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: 'UPDATE',
+          entity: 'Company',
+          entityId: companyId,
+          details: {
+            changes,
+            ...clientInfo,
+            timestamp: new Date().toISOString(),
+          },
+          ipAddress: clientInfo.ipAddress,
+          userAgent: clientInfo.userAgent,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log company update:', error);
+    }
+  },
+
+  // Log membership creation
+  async membershipCreated(
+    userId: number,
+    companyId: number,
+    membershipId: number,
+    role: string,
+    reason?: string,
+    request?: NextRequest
+  ): Promise<void> {
+    try {
+      const clientInfo = request ? getClientInfo(request) : {};
+      
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: 'CREATE',
+          entity: 'Membership',
+          entityId: membershipId,
+          details: {
+            role,
+            reason: reason || 'manual',
+            ...clientInfo,
+            timestamp: new Date().toISOString(),
+          },
+          ipAddress: clientInfo.ipAddress,
+          userAgent: clientInfo.userAgent,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log membership creation:', error);
+    }
+  },
+
+  // Log membership activation/deactivation
+  async membershipStatusChanged(
+    userId: number,
+    companyId: number,
+    membershipId: number,
+    oldStatus: boolean,
+    newStatus: boolean,
+    reason: string,
+    request?: NextRequest
+  ): Promise<void> {
+    try {
+      const clientInfo = request ? getClientInfo(request) : {};
+      
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: newStatus ? 'ACTIVATE' : 'DEACTIVATE',
+          entity: 'Membership',
+          entityId: membershipId,
+          details: {
+            oldStatus,
+            newStatus,
+            reason,
+            ...clientInfo,
+            timestamp: new Date().toISOString(),
+          },
+          ipAddress: clientInfo.ipAddress,
+          userAgent: clientInfo.userAgent,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log membership status change:', error);
+    }
+  },
+
+  // Log auto-repair actions
+  async autoRepair(
+    userId: number,
+    companyId: number | null,
+    repairType: 'orphaned_user' | 'inactive_membership',
+    details: Record<string, any>
+  ): Promise<void> {
+    try {
+      // Use system event logging if no companyId
+      if (!companyId) {
+        await logSystemEvent(
+          'AUTO_REPAIR',
+          'User',
+          userId.toString(),
+          {
+            repairType,
+            ...details,
+            timestamp: new Date().toISOString(),
+          }
+        );
+        return;
+      }
+
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: 'AUTO_REPAIR',
+          entity: 'Membership',
+          details: {
+            repairType,
+            ...details,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log auto-repair:', error);
+    }
+  },
+};

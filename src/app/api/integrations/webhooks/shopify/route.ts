@@ -3,6 +3,7 @@ import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
 import { processWebhook, updateWebhookLog } from "@/lib/integrations/base/webhook-handler";
 import { integrationRegistry } from "@/lib/integrations/base/integration-provider";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
         await updateWebhookLog(result.logId, 'success', 200);
         return NextResponse.json({ success: true });
       } catch (error) {
-        console.error("Webhook handling error:", error);
+        logger.error("Webhook handling error", error, "Integrations/Shopify");
         
         if (result.logId) {
           await updateWebhookLog(
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    logger.error("Webhook error", error, "Integrations/Shopify");
     return NextResponse.json(
       { error: "Failed to process webhook" },
       { status: 500 }

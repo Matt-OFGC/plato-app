@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function GET() {
         active: p.active,
       }));
     } catch (error) {
-      console.error("Stripe connection error:", error);
+      logger.error("Stripe connection error", error, "Stripe/Test");
     }
 
     return NextResponse.json({
@@ -37,7 +38,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Test error:", error);
+    logger.error("Test error", error, "Stripe/Test");
     return NextResponse.json(
       { 
         success: false,

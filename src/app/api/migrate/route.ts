@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,14 +45,14 @@ export async function POST(request: NextRequest) {
         message: 'Database migration completed successfully - added customConversions column'
       });
     } catch (error: any) {
-      console.error('Migration error:', error);
+      logger.error('Migration error', error, 'Migration');
       return NextResponse.json({ 
         error: 'Migration failed', 
         details: error.message || 'Unknown error'
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('API error:', error);
+    logger.error('API error', error, 'Migration');
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error' 

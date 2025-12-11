@@ -18,7 +18,23 @@ export interface Session {
 }
 
 // JWT configuration
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret-change-in-production';
+// Get JWT secret from environment variables
+// Prefer JWT_SECRET, fallback to SESSION_SECRET for backward compatibility
+const getJwtSecret = (): string => {
+  const secret = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+  if (!secret) {
+    // Only throw in production - allow fallback in development for easier setup
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET or SESSION_SECRET environment variable must be set in production');
+    }
+    // Development fallback with warning
+    console.warn('[WARNING] JWT_SECRET or SESSION_SECRET not set. Using fallback secret. Set JWT_SECRET in production!');
+    return 'fallback-secret-change-in-production';
+  }
+  return secret;
+};
+
+const JWT_SECRET = getJwtSecret();
 const ACCESS_TOKEN_EXPIRY = 15 * 60; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = 30 * 24 * 60 * 60; // 30 days
 const SESSION_COOKIE_NAME = 'session';

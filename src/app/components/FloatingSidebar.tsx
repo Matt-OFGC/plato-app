@@ -8,6 +8,7 @@ import { FeatureModuleName } from "@/lib/stripe-features";
 import { getAppConfig, appExists, getAllApps } from "@/lib/apps/registry";
 import { getAppAwareRoute, getAppFromRoute } from "@/lib/app-routes";
 import type { App } from "@/lib/apps/types";
+import { CompanySwitcher } from "./CompanySwitcher";
 
 interface FloatingSidebarProps {
   isOpen: boolean;
@@ -259,6 +260,10 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
       }`}>
         {/* Sidebar Header */}
         <div className="px-4 py-3 border-b border-gray-200 max-md:pt-[env(safe-area-inset-top,0.75rem)]">
+          {/* Company Switcher */}
+          <div className="mb-3">
+            <CompanySwitcher />
+          </div>
           {/* App Switcher - Clickable app name */}
           <div className="relative mb-3">
             <button 

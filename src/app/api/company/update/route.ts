@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, company: updatedCompany });
   } catch (error) {
-    console.error("Error updating company:", error);
+    logger.error("Error updating company", error, "Company/Update");
     return NextResponse.json({ error: "Failed to update company" }, { status: 500 });
   }
 }

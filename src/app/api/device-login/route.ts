@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { logger } from "@/lib/logger";
 
 /**
  * This route handles the device-based authentication flow:
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       message: "Device configured for company access",
     });
   } catch (error) {
-    console.error("Device login error:", error);
+    logger.error("Device login error", error, "DeviceLogin");
     return NextResponse.json(
       { error: "Failed to configure device" },
       { status: 500 }
@@ -56,7 +57,7 @@ export async function GET() {
     const data = JSON.parse(deviceCompany.value);
     return NextResponse.json({ deviceCompany: data });
   } catch (error) {
-    console.error("Get device session error:", error);
+    logger.error("Get device session error", error, "DeviceLogin");
     return NextResponse.json({ deviceCompany: null });
   }
 }
@@ -69,7 +70,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Clear device session error:", error);
+    logger.error("Clear device session error", error, "DeviceLogin");
     return NextResponse.json(
       { error: "Failed to clear device session" },
       { status: 500 }

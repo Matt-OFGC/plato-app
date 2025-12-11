@@ -1,26 +1,37 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth-simple";
+import { NextRequest, NextResponse } from "next/server";
+import { getUserFromSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 
-export async function POST() {
+/**
+ * Mark user's onboarding as complete
+ */
+export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getUserFromSession();
+    
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     await prisma.user.update({
       where: { id: session.id },
-      data: { hasCompletedOnboarding: true },
+      data: {
+        hasCompletedOnboarding: true,
+      },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: "Onboarding marked as complete",
+    });
   } catch (error) {
-    console.error("Complete onboarding error:", error);
+    console.error("Error completing onboarding:", error);
     return NextResponse.json(
       { error: "Failed to complete onboarding" },
       { status: 500 }
     );
   }
 }
-

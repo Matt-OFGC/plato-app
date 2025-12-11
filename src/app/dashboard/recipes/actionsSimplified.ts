@@ -144,34 +144,16 @@ export async function createRecipeUnified(formData: FormData) {
       throw new Error("Valid yield quantity is required");
     }
     
+    // With auto-repair, companyId should always exist, but handle edge case
     if (!companyId) {
-      // Get user info for better error message
+      // This should never happen with auto-repair, but log and provide helpful error
       const { user } = await getCurrentUserAndCompany();
-      const allMemberships = await prisma.membership.findMany({
-        where: { userId: user.id },
-        include: { company: { select: { id: true, name: true } } }
-      });
-      
-      const inactiveMemberships = allMemberships.filter(m => !m.isActive);
-      
-      let errorMsg = "No company associated with your account.";
-      if (allMemberships.length === 0) {
-        errorMsg += " Please create or join a company first. You can do this by registering a company or accepting a team invitation.";
-      } else if (inactiveMemberships.length > 0) {
-        errorMsg += ` You have ${inactiveMemberships.length} inactive membership(s). Please contact support to activate your company membership.`;
-      } else {
-        errorMsg += " Please ensure you have an active company membership.";
-      }
-      
-      // Log for debugging
-      logger.error('Recipe creation failed - no companyId', {
+      logger.error('Recipe creation failed - no companyId after auto-repair', {
         userId: user.id,
-        totalMemberships: allMemberships.length,
-        activeMemberships: allMemberships.filter(m => m.isActive).length,
-        inactiveMemberships: inactiveMemberships.length
+        email: user.email,
       }, 'Recipes');
       
-      throw new Error(errorMsg);
+      throw new Error("Unable to access your company. Please refresh the page and try again. If this persists, contact support.");
     }
 
     // Create the recipe data

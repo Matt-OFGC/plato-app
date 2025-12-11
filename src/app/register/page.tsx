@@ -59,13 +59,24 @@ export default function RegisterPage() {
         setBusinessType("");
         setPhone("");
       } else {
-        setError(result);
+        // Show specific error message
+        const errorMessage = result.error || "Sign up failed. Please check your information and try again.";
+        setError({
+          error: errorMessage,
+          code: result.code || "REGISTRATION_ERROR",
+          errorId: result.errorId
+        });
         setStatus(null);
+        
+        // If it's a retryable error, suggest retry
+        if (result.code === "INTERNAL_ERROR" || result.code === "NETWORK_ERROR") {
+          console.log("Retryable error detected. User can try again.");
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);
       setError({
-        error: "We couldn't complete sign-up. Please try again.",
+        error: "We couldn't complete sign-up. Please check your internet connection and try again.",
         code: "NETWORK_ERROR"
       });
       setStatus(null);
