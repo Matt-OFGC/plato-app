@@ -64,7 +64,6 @@ model Recipe {
   portionUnit            BaseUnit?
   portionsPerBatch       Int?
   sellingPrice           Decimal?
-  wholesalePrice         Decimal?
   shelfLife              String?
   shelfLifeId            Int?
   storage                String?
@@ -160,7 +159,6 @@ model User {
   updatedAt                  DateTime                @updatedAt
   email                      String                  @unique
   name                       String?
-  wholesalePaymentsCreated    WholesalePayment[]  @relation("WholesalePaymentCreator")
   passwordHash               String?
   hasCompletedOnboarding     Boolean                 @default(false)
   ingredientCount            Int                     @default(0)
@@ -284,9 +282,6 @@ model Company {
   wholesaleCustomers     WholesaleCustomer[]
   wholesaleOrders        WholesaleOrder[]
   wholesaleProducts      WholesaleProduct[]
-  wholesaleInvoices      WholesaleInvoice[]
-  wholesaleDeliveryNotes WholesaleDeliveryNote[]
-  wholesalePayments      WholesalePayment[]
   labelTemplates         LabelTemplate[]
   allergenSheetTemplates AllergenSheetTemplate[]
   generatedDocuments     GeneratedDocument[]
@@ -584,31 +579,15 @@ model WholesaleCustomer {
   country               String?
   notes                 String?
   isActive              Boolean                    @default(true)
+  customerType          String                     @default("wholesale")
   portalToken           String?                    @unique
   portalShortCode       String?                    @unique
   portalEnabled         Boolean                    @default(false)
-  openingHours          Json?
-  deliveryDays          String[]                   @default([])
-  preferredDeliveryTime String?
-  paymentTerms          String?
-  creditLimit           Decimal?
-  taxId                 String?
-  accountManager        String?
-  specialInstructions   String?
-  orderFrequency        String?
-  lastOrderDate         DateTime?
-  totalOrders           Int                        @default(0)
-  totalValue             Decimal                    @default(0)
-  totalPaid              Decimal                    @default(0)
-  outstandingBalance    Decimal                    @default(0)
   customPricing         CustomerPricing[]
   productionItems       ProductionItem[]
   productionAllocations ProductionItemAllocation[]
   company               Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   orders                WholesaleOrder[]
-  invoices              WholesaleInvoice[]
-  deliveryNotes         WholesaleDeliveryNote[]
-  payments              WholesalePayment[]
 
   @@index([companyId])
   @@index([isActive])
@@ -616,29 +595,27 @@ model WholesaleCustomer {
 }
 
 model WholesaleOrder {
-  id                    Int                    @id @default(autoincrement())
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                    Int                  @id @default(autoincrement())
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
   customerId            Int
   companyId             Int
   orderNumber           String?
   deliveryDate          DateTime?
-  status                String                 @default("pending")
+  status                String               @default("pending")
   notes                 String?
-  isRecurring           Boolean                @default(false)
+  isRecurring           Boolean              @default(false)
   recurringInterval     String?
   recurringIntervalDays Int?
   recurringEndDate      DateTime?
   nextRecurrenceDate    DateTime?
   recurringStatus       String?
   parentOrderId         Int?
-  company               Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer              WholesaleCustomer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  parentOrder           WholesaleOrder?        @relation("RecurringOrders", fields: [parentOrderId], references: [id])
-  recurringOrders       WholesaleOrder[]       @relation("RecurringOrders")
+  company               Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer              WholesaleCustomer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  parentOrder           WholesaleOrder?      @relation("RecurringOrders", fields: [parentOrderId], references: [id])
+  recurringOrders       WholesaleOrder[]     @relation("RecurringOrders")
   items                 WholesaleOrderItem[]
-  invoices              WholesaleInvoice[]
-  deliveryNotes         WholesaleDeliveryNote[]
 
   @@index([customerId])
   @@index([companyId])
@@ -705,88 +682,6 @@ model WholesaleProduct {
   @@index([isActive])
   @@index([category])
   @@index([companyId, isActive])
-}
-
-model WholesaleInvoice {
-  id            Int                    @id @default(autoincrement())
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  invoiceNumber String                 @unique
-  orderId       Int?
-  customerId    Int
-  companyId     Int
-  issueDate     DateTime               @default(now())
-  dueDate       DateTime
-  subtotal      Decimal
-  taxRate       Decimal                @default(0)
-  taxAmount     Decimal                @default(0)
-  total         Decimal
-  status        String                 @default("draft")
-  paidDate      DateTime?
-  paidAmount    Decimal?
-  notes         String?
-  pdfUrl        String?
-  emailSent     Boolean                @default(false)
-  emailSentAt   DateTime?
-  customer      WholesaleCustomer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  company       Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  order         WholesaleOrder?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  payments      WholesalePayment[]
-
-  @@index([customerId])
-  @@index([companyId])
-  @@index([orderId])
-  @@index([status])
-  @@index([dueDate])
-  @@index([invoiceNumber])
-}
-
-model WholesaleDeliveryNote {
-  id                Int               @id @default(autoincrement())
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  deliveryNoteNumber String           @unique
-  orderId           Int
-  customerId        Int
-  companyId         Int
-  deliveryDate      DateTime
-  deliveredBy       String?
-  signature         String?
-  notes             String?
-  pdfUrl            String?
-  emailSent         Boolean           @default(false)
-  emailSentAt       DateTime?
-  customer          WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  order             WholesaleOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([customerId])
-  @@index([companyId])
-  @@index([orderId])
-}
-
-model WholesalePayment {
-  id          Int               @id @default(autoincrement())
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  invoiceId   Int
-  customerId  Int
-  companyId  Int
-  amount      Decimal
-  paymentDate DateTime          @default(now())
-  paymentMethod String
-  reference   String?
-  notes       String?
-  createdBy   Int
-  invoice    WholesaleInvoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  customer   WholesaleCustomer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  creator    User               @relation("WholesalePaymentCreator", fields: [createdBy], references: [id])
-
-  @@index([invoiceId])
-  @@index([customerId])
-  @@index([companyId])
-  @@index([paymentDate])
 }
 
 model ShopifyOrder {

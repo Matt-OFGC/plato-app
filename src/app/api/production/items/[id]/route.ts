@@ -59,8 +59,16 @@ export async function PATCH(
         ...(completed !== undefined && { completed }),
         ...(quantity !== undefined && { quantity }),
         ...(notes !== undefined && { notes }),
-        // Note: ProductionItem doesn't have completedBy/completedAt fields
-        // Completion tracking is handled via the completed boolean field
+        // Track who completed the task and when
+        ...(wasJustCompleted && {
+          completedBy: session.id,
+          completedAt: new Date(),
+        }),
+        // Clear completion tracking if unchecking
+        ...(wasJustUncompleted && {
+          completedBy: null,
+          completedAt: null,
+        }),
       },
       include: {
         recipe: {
@@ -73,6 +81,13 @@ export async function PATCH(
         plan: {
           select: {
             companyId: true,
+          },
+        },
+        completedByUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
       },

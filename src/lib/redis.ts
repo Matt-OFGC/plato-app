@@ -29,63 +29,34 @@ async function initRedis() {
   }
 
   try {
-    // Add timeout to prevent hanging
-    const initPromise = (async () => {
-      // Try to import redis client - use eval to prevent Turbopack from analyzing at build time
-      let redis: any;
-      try {
-        // Use eval to prevent static analysis by bundlers
-        // eslint-disable-next-line @typescript-eslint/no-implied-eval
-        const redisModule = eval('"ioredis"');
-        redis = await import(redisModule);
-      } catch (importError: any) {
-        // If ioredis is not installed, that's okay - Redis is optional
-        if (importError?.code === 'MODULE_NOT_FOUND' || importError?.message?.includes('Cannot find module')) {
-          logger.debug("ioredis not installed, Redis caching disabled", undefined, "Redis");
-        } else {
-          logger.warn("Failed to import ioredis", importError, "Redis");
-        }
-        redisEnabled = false;
-        return null;
-      }
-      
-      redisClient = new redis.Redis(redisUrl, {
-        maxRetriesPerRequest: 3,
-        retryStrategy: (times: number) => {
-          const delay = Math.min(times * 50, 2000);
-          return delay;
-        },
-        enableReadyCheck: true,
-        lazyConnect: true,
-        connectTimeout: 2000, // 2 second connection timeout
-        commandTimeout: 1000, // 1 second command timeout
-      });
+    // Try to import redis client
+    const redis = await import("ioredis");
+    redisClient = new redis.Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      enableReadyCheck: true,
+      lazyConnect: true,
+    });
 
-      redisClient.on("error", (error: Error) => {
-        logger.error("Redis connection error", error, "Redis");
-        redisEnabled = false;
-      });
+    redisClient.on("error", (error: Error) => {
+      logger.error("Redis connection error", error, "Redis");
+      redisEnabled = false;
+    });
 
-      redisClient.on("connect", () => {
-        logger.info("Redis connected", undefined, "Redis");
-        redisEnabled = true;
-      });
-
-      await redisClient.connect();
+    redisClient.on("connect", () => {
+      logger.info("Redis connected", undefined, "Redis");
       redisEnabled = true;
-      return redisClient;
-    })();
-    
-    // 3 second timeout for Redis initialization
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Redis initialization timeout')), 3000)
-    );
-    
-    return await Promise.race([initPromise, timeoutPromise]);
+    });
+
+    await redisClient.connect();
+    redisEnabled = true;
+    return redisClient;
   } catch (error) {
     logger.warn("Redis initialization failed, caching disabled", error, "Redis");
     redisEnabled = false;
-    redisClient = null; // Reset so we can try again
     return null;
   }
 }
@@ -107,8 +78,6 @@ export const CacheKeys = {
   userSession: (userId: number) => `user:session:${userId}`,
   companyInfo: (companyId: number) => `company:info:${companyId}`,
   userCompanies: (userId: number) => `user:${userId}:companies`,
-  userRole: (userId: number, companyId: number) => `user:${userId}:role:${companyId}`,
-  companyAccess: (userId: number, companyId: number) => `user:${userId}:access:${companyId}`,
   ingredients: (companyId: number) => `company:${companyId}:ingredients`,
   recipes: (companyId: number) => `company:${companyId}:recipes`,
   categories: (companyId: number) => `company:${companyId}:categories`,

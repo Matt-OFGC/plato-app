@@ -44,60 +44,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parsedCompanyId = typeof companyId === 'string' ? parseInt(companyId) : companyId;
-    const parsedCustomerId = typeof customerId === 'string' ? parseInt(customerId) : customerId;
-
-    // SECURITY: Verify user has access to this company
-    const hasCompany = await hasCompanyAccess(session.id, parsedCompanyId);
-    if (!hasCompany) {
-      return NextResponse.json(
-        { error: "No access to this company" },
-        { status: 403 }
-      );
-    }
-
-    // Get customer to check credit limit
-    const customer = await prisma.wholesaleCustomer.findUnique({
-      where: { id: parsedCustomerId },
-      select: {
-        creditLimit: true,
-        outstandingBalance: true,
-      },
-    });
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "Customer not found" },
-        { status: 404 }
-      );
-    }
-
-    // Calculate order total
-    let orderTotal = 0;
-    for (const item of items) {
-      const itemPrice = item.price ? parseFloat(item.price) : 0;
-      orderTotal += itemPrice * item.quantity;
-    }
-
-    // Check credit limit if set
-    if (customer.creditLimit) {
-      const currentBalance = Number(customer.outstandingBalance || 0);
-      const newBalance = currentBalance + orderTotal;
-      
-      if (newBalance > Number(customer.creditLimit)) {
-        return NextResponse.json(
-          { 
-            error: "Credit limit exceeded",
-            currentBalance: currentBalance.toString(),
-            creditLimit: customer.creditLimit.toString(),
-            orderTotal: orderTotal.toString(),
-            newBalance: newBalance.toString(),
-          },
-          { status: 400 }
-        );
-      }
-    }
-
     // Calculate next recurrence date if this is a recurring order
     let nextRecurrenceDate = null;
     if (isRecurring && deliveryDate) {
@@ -119,8 +65,8 @@ export async function POST(request: NextRequest) {
 
     const order = await prisma.wholesaleOrder.create({
       data: {
-        customerId: parsedCustomerId,
-        companyId: parsedCompanyId,
+        customerId,
+        companyId,
         orderNumber,
         deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
         status: status || "pending",
@@ -135,7 +81,7 @@ export async function POST(request: NextRequest) {
           create: items.map((item: any) => ({
             recipeId: item.recipeId,
             quantity: item.quantity,
-            price: item.price ? parseFloat(item.price) : null,
+            price: item.price,
             notes: item.notes,
           })),
         },
@@ -153,23 +99,6 @@ export async function POST(request: NextRequest) {
               },
             },
           },
-        },
-      },
-    });
-
-    // Update customer statistics
-    await prisma.wholesaleCustomer.update({
-      where: { id: parsedCustomerId },
-      data: {
-        lastOrderDate: deliveryDate ? new Date(deliveryDate) : new Date(),
-        totalOrders: {
-          increment: 1,
-        },
-        totalValue: {
-          increment: orderTotal,
-        },
-        outstandingBalance: {
-          increment: orderTotal,
         },
       },
     });
@@ -192,8 +121,6 @@ export async function GET(request: NextRequest) {
     const companyId = searchParams.get("companyId");
     const customerId = searchParams.get("customerId");
     const status = searchParams.get("status");
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
 
     if (!companyId) {
       return NextResponse.json(
@@ -222,48 +149,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) {
-      // Handle comma-separated status values
-      const statusArray = status.split(',').map(s => s.trim());
-      if (statusArray.length === 1) {
-        where.status = statusArray[0];
-      } else {
-        where.status = { in: statusArray };
-      }
-    }
-
-    // Filter by delivery date range
-    // Include orders with deliveryDate in range OR orders without deliveryDate (null)
-    if (startDate || endDate) {
-      if (startDate && endDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        
-        where.OR = [
-          {
-            deliveryDate: {
-              gte: start,
-              lte: end,
-            },
-          },
-          {
-            deliveryDate: null,
-          },
-        ];
-      } else {
-        where.deliveryDate = {};
-        if (startDate) {
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          where.deliveryDate.gte = start;
-        }
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          where.deliveryDate.lte = end;
-        }
-      }
+      where.status = status;
     }
 
     const orders = await prisma.wholesaleOrder.findMany({

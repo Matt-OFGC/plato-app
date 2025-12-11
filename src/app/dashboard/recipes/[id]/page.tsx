@@ -94,7 +94,7 @@ export default async function RecipePage({ params }: Props) {
   ]);
 
   // Convert Prisma Decimal fields to numbers for client components
-  const availableIngredients = availableIngredientsRaw.map((ing: any) => ({
+  const availableIngredients = availableIngredientsRaw.map(ing => ({
     ...ing,
     packPrice: ing.packPrice.toNumber(),
     packQuantity: ing.packQuantity.toNumber(),
@@ -121,12 +121,11 @@ export default async function RecipePage({ params }: Props) {
     shelfLife: recipe.shelfLife || undefined,
     notes: (recipe as any).notes || undefined,
     sellPrice: (recipe as any).sellingPrice ? Number((recipe as any).sellingPrice) : undefined,
-    wholesalePrice: (recipe as any).wholesalePrice ? Number((recipe as any).wholesalePrice) : undefined,
     
     // Transform sections to steps
     // If no sections, create a single step from the recipe method
     steps: recipe.sections.length > 0
-      ? recipe.sections.map((section: any, index: number) => ({
+      ? recipe.sections.map((section, index) => ({
           id: section.id.toString(),
           title: section.title || section.description || `Step ${index + 1}`,
           // Use database values (bakeTemp, bakeTime, hasTimer)
@@ -151,9 +150,9 @@ export default async function RecipePage({ params }: Props) {
     // Transform items to ingredients
     // Only load ingredients that are associated with sections (steps)
     // Old flat items are ignored - user needs to re-add them through the new interface
-    ingredients: recipe.sections.length > 0 && recipe.sections.some((s: any) => s.items.length > 0)
-      ? recipe.sections.flatMap((section: any) => 
-          section.items.map((item: any) => {
+    ingredients: recipe.sections.length > 0 && recipe.sections.some(s => s.items.length > 0)
+      ? recipe.sections.flatMap((section) => 
+          section.items.map((item) => {
             // Calculate cost per unit
             const costPerUnit = item.ingredient.packPrice && item.ingredient.packQuantity
               ? Number(item.ingredient.packPrice) / Number(item.ingredient.packQuantity)
@@ -186,7 +185,7 @@ export default async function RecipePage({ params }: Props) {
 
   // Transform ingredients for dropdown
   // Note: availableIngredients are already converted from Decimal to number above
-  const ingredientsForDropdown = availableIngredients.map((ing: any) => {
+  const ingredientsForDropdown = availableIngredients.map(ing => {
     return {
       id: ing.id,
       name: ing.name,

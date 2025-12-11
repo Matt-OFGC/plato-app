@@ -230,25 +230,19 @@ export async function createRecipeUnified(formData: FormData) {
 
       // Check if should be added to wholesale catalogue
       const isWholesaleProduct = formData.get("isWholesaleProduct") === "on";
-      const wholesalePriceStr = formData.get("wholesalePrice") as string;
-      const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
-        ? parseFloat(wholesalePriceStr) 
-        : null;
-
-      // Update recipe with wholesale price
-      if (wholesalePrice !== null) {
-        await tx.recipe.update({
-          where: { id: createdRecipe.id },
-          data: { wholesalePrice },
-        });
-      }
-
       if (isWholesaleProduct) {
+        const wholesalePriceStr = formData.get("wholesalePrice") as string;
+        
+        // Calculate cost per unit (e.g., cost per slice if batch makes 24 slices)
+        const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
+          ? parseFloat(wholesalePriceStr) 
+          : 0;
+
         await tx.wholesaleProduct.create({
           data: {
             companyId: companyId!,
             recipeId: createdRecipe.id,
-            price: wholesalePrice || 0, // This should be price per unit (per slice)
+            price: wholesalePrice, // This should be price per unit (per slice)
             currency: "GBP",
             unit: `per ${yieldUnit}`, // e.g., "per each" or "per slice"
             category: recipeData.categoryId ? null : (categoryId ? null : null),
@@ -407,12 +401,6 @@ export async function updateRecipeUnified(formData: FormData) {
     const wholesalePrice = wholesalePriceStr && parseFloat(wholesalePriceStr) > 0 
       ? parseFloat(wholesalePriceStr) 
       : null;
-
-    // Update recipe with wholesale price
-    await prisma.recipe.update({
-      where: { id: recipeId },
-      data: { wholesalePrice },
-    });
 
     // Check if wholesale product already exists for this recipe
     const existingWholesaleProduct = await prisma.wholesaleProduct.findFirst({

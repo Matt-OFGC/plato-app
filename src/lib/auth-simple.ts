@@ -77,7 +77,6 @@ export async function createSession(
 ): Promise<void> {
   let cookieStore;
   try {
-    // cookies() is async in Next.js 16
     cookieStore = await cookies();
   } catch (cookieError) {
     throw new Error(`Failed to access cookies: ${cookieError instanceof Error ? cookieError.message : 'Unknown error'}`);

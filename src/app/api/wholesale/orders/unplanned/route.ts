@@ -35,31 +35,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build the where clause - only show confirmed orders (not pending, not already in production)
+    // Build the where clause
     const where: any = {
       companyId: parsedCompanyId,
-      status: "confirmed",
+      status: {
+        in: ["pending", "confirmed", "in_production"],
+      },
     };
 
     // If date range provided, filter by delivery date
-    // Include orders with deliveryDate in range OR orders without deliveryDate (null)
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      
-      where.OR = [
-        {
-          deliveryDate: {
-            gte: start,
-            lte: end,
-          },
-        },
-        {
-          deliveryDate: null,
-        },
-      ];
+      where.deliveryDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
     }
 
     // Get orders that are not linked to any production plans
@@ -87,67 +76,23 @@ export async function GET(request: NextRequest) {
       ],
     });
 
-    // Log raw orders for debugging
-    logger.debug(`Raw orders query result: ${orders.length} orders found`, {
-      companyId: parsedCompanyId,
-      startDate,
-      endDate,
-      orderDetails: orders.map(o => ({
-        id: o.id,
-        status: o.status,
-        deliveryDate: o.deliveryDate,
-        itemCount: o.items.length,
-        recipeIds: o.items.map(i => i.recipeId).filter(Boolean),
-      })),
-    }, "Wholesale/Orders/Unplanned");
-
     // For each order, check if it has allocations in production plans
     const ordersWithCoverage = await Promise.all(
       orders.map(async (order) => {
-        // Skip orders without items or without recipeIds
-        const validRecipeIds = order.items
-          .map(item => item.recipeId)
-          .filter((id): id is number => id !== null && id !== undefined);
-        
-        if (validRecipeIds.length === 0) {
-          // Order has no valid recipe items - mark as unplanned
-          return {
-            ...order,
-            isPlanned: false,
-            linkedPlans: [],
-          };
-        }
-        
-        // Build plan date filter - if order has deliveryDate, check plans that overlap
-        // If order has no deliveryDate, check plans in the requested date range
-        const planDateFilter: any = {
-          companyId: parsedCompanyId,
-        };
-        
-        if (order.deliveryDate) {
-          // Order has delivery date - find plans that overlap with that date
-          planDateFilter.startDate = { lte: order.deliveryDate };
-          planDateFilter.endDate = { gte: order.deliveryDate };
-        } else if (startDate && endDate) {
-          // Order has no delivery date - check plans in the requested date range
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          planDateFilter.OR = [
-            {
-              startDate: { lte: end },
-              endDate: { gte: start },
-            },
-          ];
-        }
+        // Check if any of this order's items have allocations
+        // We need to find production items that match the recipes in this order
+        // and check if they have allocations for this customer
         
         const productionItems = await prisma.productionItem.findMany({
           where: {
             recipeId: {
-              in: validRecipeIds,
+              in: order.items.map(item => item.recipeId),
             },
-            plan: planDateFilter,
+            plan: {
+              companyId: parsedCompanyId,
+              startDate: { lte: order.deliveryDate || new Date() },
+              endDate: { gte: order.deliveryDate || new Date() },
+            },
             allocations: {
               some: {
                 customerId: order.customerId,
@@ -174,22 +119,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Filter out orders that are already planned
-    const unplannedOrders = ordersWithCoverage.filter(order => !order.isPlanned);
-
-    // Log for debugging
-    logger.debug(`Unplanned orders query: Found ${orders.length} confirmed orders, ${unplannedOrders.length} unplanned`, {
-      companyId: parsedCompanyId,
-      startDate,
-      endDate,
-      totalOrders: orders.length,
-      unplannedCount: unplannedOrders.length,
-      plannedCount: ordersWithCoverage.filter(o => o.isPlanned).length,
-      unplannedOrderIds: unplannedOrders.map(o => o.id),
-      plannedOrderIds: ordersWithCoverage.filter(o => o.isPlanned).map(o => o.id),
-    }, "Wholesale/Orders/Unplanned");
-
-    return createOptimizedResponse(unplannedOrders, {
+    return createOptimizedResponse(ordersWithCoverage, {
       cacheType: 'dynamic',
       compression: true,
     });

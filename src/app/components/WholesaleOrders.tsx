@@ -71,6 +71,7 @@ interface Customer {
   name: string;
   contactName: string | null;
   email: string | null;
+  customerType?: string;
 }
 
 interface WholesaleOrdersProps {
@@ -249,8 +250,6 @@ export function WholesaleOrders({
   const [saving, setSaving] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [productSearch, setProductSearch] = useState("");
-  const [recipeSearchResults, setRecipeSearchResults] = useState<any[]>([]);
-  const [isSearchingRecipes, setIsSearchingRecipes] = useState(false);
 
   // Form state
   const [customerId, setCustomerId] = useState<number>(0);
@@ -452,34 +451,6 @@ export function WholesaleOrders({
     return total;
   }
 
-  async function generateInvoice(orderId: number) {
-    if (!confirm("Create an invoice for this order?")) return;
-
-    try {
-      const res = await fetch(`/api/wholesale/orders/${orderId}/create-invoice`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-
-      if (res.ok) {
-        const invoice = await res.json();
-        alert(`Invoice ${invoice.invoiceNumber} created successfully!`);
-        // Optionally redirect to invoice page
-        window.location.href = `/dashboard/wholesale/invoices`;
-      } else {
-        const data = await res.json();
-        if (data.error?.includes("already exists")) {
-          alert(data.error + ". Invoice ID: " + data.invoiceId);
-        } else {
-          alert(data.error || "Failed to create invoice");
-        }
-      }
-    } catch (error) {
-      alert("Network error");
-    }
-  }
-
   async function handleSave() {
     if (customerId === 0) {
       alert("Please select a customer");
@@ -495,32 +466,14 @@ export function WholesaleOrders({
 
     try {
       // Map product IDs to recipe IDs for the order
-      // Use wholesale price from product or recipe
       const items = Array.from(orderItems.entries()).map(([productId, data]) => {
-        // Handle recipes added directly (negative IDs) vs wholesale products (positive IDs)
-        if (productId < 0) {
-          // This is a recipe added directly from search
-          const recipeId = Math.abs(productId);
-          // Fetch recipe wholesale price if not already stored
-          const recipe = recipeSearchResults.find(r => r.id === recipeId);
-          return {
-            recipeId: data.recipeId || recipeId,
-            quantity: data.quantity,
-            price: recipe?.wholesalePrice ? Number(recipe.wholesalePrice) : null,
-            notes: data.notes || null,
-          };
-        } else {
-          // This is a wholesale product
-          const product = products.find(p => p.id === productId);
-          // Use product price (which comes from WholesaleProduct or Recipe.wholesalePrice)
-          const price = product?.price || null;
-          return {
-            recipeId: product?.recipeId || productId,
-            quantity: data.quantity,
-            price: price ? parseFloat(price) : null,
-            notes: data.notes || null,
-          };
-        }
+        const product = products.find(p => p.id === productId);
+        return {
+          recipeId: product?.recipeId || productId,
+          quantity: data.quantity,
+          price: product?.price || null,
+          notes: data.notes || null,
+        };
       });
 
       const url = editingOrder
@@ -738,15 +691,6 @@ export function WholesaleOrders({
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => generateInvoice(order.id)}
-                    className="p-2 text-green-600 hover:text-green-700 transition-colors"
-                    title="Create Invoice"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </button>
                   <button
@@ -982,179 +926,14 @@ export function WholesaleOrders({
                       <input
                         type="text"
                         value={productSearch}
-                        onChange={async (e) => {
-                          const searchValue = e.target.value;
-                          setProductSearch(searchValue);
-                          
-                          // Search recipes from database if search term is long enough
-                          if (searchValue.length >= 2) {
-                            setIsSearchingRecipes(true);
-                            try {
-                              const response = await fetch(`/api/recipes?search=${encodeURIComponent(searchValue)}&limit=20`);
-                              if (response.ok) {
-                                const data = await response.json();
-                                // API returns array directly or wrapped in data property
-                                const recipes = Array.isArray(data) ? data : (data.data || data.recipes || []);
-                                setRecipeSearchResults(recipes);
-                              }
-                            } catch (error) {
-                              console.error('Failed to search recipes:', error);
-                            } finally {
-                              setIsSearchingRecipes(false);
-                            }
-                          } else {
-                            setRecipeSearchResults([]);
-                          }
-                        }}
-                        placeholder="Quick search products or recipes..."
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        placeholder="Quick search products..."
                         className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                       />
-                      {isSearchingRecipes && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <svg className="animate-spin h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        </div>
-                      )}
                     </div>
-                    
-                    {/* Show recipe search results */}
-                    {recipeSearchResults.length > 0 && (
-                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-xs font-medium text-blue-900 mb-1">Recipes from your database:</p>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
-                          {recipeSearchResults.map((recipe) => {
-                            // Check if this recipe is already in products (as a wholesale product)
-                            const existingProduct = products.find(p => p.recipeId === recipe.id);
-                            if (existingProduct) {
-                              // If it exists as a wholesale product, use that product ID
-                              return (
-                                <button
-                                  key={recipe.id}
-                                  onClick={() => {
-                                    updateItemQuantity(existingProduct.id, 1);
-                                    setProductSearch("");
-                                    setRecipeSearchResults([]);
-                                  }}
-                                  className="w-full text-left px-2 py-1 text-xs bg-white hover:bg-blue-100 rounded border border-blue-200 transition-colors"
-                                >
-                                  <span className="font-medium text-gray-900">{recipe.name}</span>
-                                  {recipe.category && (
-                                    <span className="text-gray-500 ml-1">• {recipe.category}</span>
-                                  )}
-                                  <span className="text-blue-600 ml-1 text-xs">(Already in catalogue)</span>
-                                </button>
-                              );
-                            }
-                            
-                            // Recipe not in wholesale products - add directly using recipe ID
-                            // Use negative recipe ID to distinguish from product IDs
-                            const recipeOrderId = -recipe.id;
-                            const alreadyInOrder = orderItems.has(recipeOrderId);
-                            
-                            return (
-                              <button
-                                key={recipe.id}
-                                onClick={() => {
-                                  // Add recipe directly to order items using negative ID
-                                  const newItems = new Map(orderItems);
-                                  const existing = orderItems.get(recipeOrderId);
-                                  const quantity = existing ? existing.quantity + 1 : 1;
-                                  newItems.set(recipeOrderId, { 
-                                    quantity, 
-                                    notes: "",
-                                    recipeId: recipe.id, // Store actual recipe ID for saving
-                                  });
-                                  setOrderItems(newItems);
-                                  
-                                  // Clear search
-                                  setProductSearch("");
-                                  setRecipeSearchResults([]);
-                                }}
-                                disabled={alreadyInOrder}
-                                className={`w-full text-left px-2 py-1 text-xs rounded border transition-colors ${
-                                  alreadyInOrder 
-                                    ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed' 
-                                    : 'bg-white hover:bg-blue-100 border-blue-200'
-                                }`}
-                              >
-                                <span className="font-medium text-gray-900">{recipe.name}</span>
-                                {recipe.category && (
-                                  <span className="text-gray-500 ml-1">• {recipe.category}</span>
-                                )}
-                                {recipe.wholesalePrice ? (
-                                  <span className="text-green-700 ml-1 font-semibold">£{Number(recipe.wholesalePrice).toFixed(2)}</span>
-                                ) : (
-                                  <span className="text-orange-600 ml-1 text-xs">(No wholesale price set)</span>
-                                )}
-                                {alreadyInOrder && (
-                                  <span className="text-blue-600 ml-1 text-xs">(In order)</span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {/* Show recipes added directly from search (negative IDs) */}
-                    {Array.from(orderItems.entries())
-                      .filter(([productId]) => productId < 0)
-                      .map(([productId, item]) => {
-                        const recipeId = Math.abs(productId);
-                        const recipe = recipeSearchResults.find(r => r.id === recipeId);
-                        if (!recipe) return null;
-                        
-                        return (
-                          <div
-                            key={productId}
-                            className="flex items-center justify-between p-3 border border-blue-300 bg-blue-50 rounded-lg"
-                          >
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900">{recipe.name}</p>
-                              <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <span className="font-semibold text-green-700">
-                                  £{recipe.wholesalePrice ? Number(recipe.wholesalePrice).toFixed(2) : "0.00"} each
-                                </span>
-                                {recipe.category && (
-                                  <>
-                                    <span>•</span>
-                                    <span>{recipe.category}</span>
-                                  </>
-                                )}
-                                <span className="text-xs text-blue-600">(From recipe database)</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => updateItemQuantity(productId, item.quantity - 1)}
-                                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
-                              >
-                                -
-                              </button>
-                              <input
-                                type="number"
-                                min="0"
-                                value={item.quantity || ""}
-                                onChange={(e) => updateItemQuantity(productId, parseInt(e.target.value) || 0)}
-                                placeholder="0"
-                                className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
-                              />
-                              <button
-                                onClick={() => updateItemQuantity(productId, item.quantity + 1)}
-                                className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded hover:bg-gray-200"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    
-                    {/* Show wholesale products */}
                     {products
                       .filter(product => 
                         productSearch === "" ||

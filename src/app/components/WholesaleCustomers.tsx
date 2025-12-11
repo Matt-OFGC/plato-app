@@ -15,20 +15,9 @@ interface WholesaleCustomer {
   country: string | null;
   notes: string | null;
   isActive: boolean;
+  customerType?: string;
   portalToken: string | null;
   portalEnabled: boolean;
-  openingHours?: any;
-  deliveryDays?: string[];
-  preferredDeliveryTime?: string | null;
-  paymentTerms?: string | null;
-  creditLimit?: any;
-  taxId?: string | null;
-  accountManager?: string | null;
-  specialInstructions?: string | null;
-  orderFrequency?: string | null;
-  outstandingBalance?: any;
-  totalValue?: any;
-  totalPaid?: any;
   _count: {
     productionItems: number;
     orders: number;
@@ -65,15 +54,7 @@ export function WholesaleCustomers({
   const [country, setCountry] = useState("United Kingdom");
   const [notes, setNotes] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const [openingHours, setOpeningHours] = useState<Record<string, { open: string; close: string; closed?: boolean }>>({});
-  const [deliveryDays, setDeliveryDays] = useState<string[]>([]);
-  const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
-  const [paymentTerms, setPaymentTerms] = useState("");
-  const [creditLimit, setCreditLimit] = useState("");
-  const [taxId, setTaxId] = useState("");
-  const [accountManager, setAccountManager] = useState("");
-  const [specialInstructions, setSpecialInstructions] = useState("");
-  const [orderFrequency, setOrderFrequency] = useState("");
+  const [customerType, setCustomerType] = useState<"wholesale" | "general_public">("wholesale");
 
   function openModal(customer?: WholesaleCustomer) {
     if (customer) {
@@ -88,15 +69,7 @@ export function WholesaleCustomers({
       setCountry(customer.country || "United Kingdom");
       setNotes(customer.notes || "");
       setIsActive(customer.isActive);
-      setOpeningHours((customer as any).openingHours || {});
-      setDeliveryDays((customer as any).deliveryDays || []);
-      setPreferredDeliveryTime((customer as any).preferredDeliveryTime || "");
-      setPaymentTerms((customer as any).paymentTerms || "");
-      setCreditLimit((customer as any).creditLimit?.toString() || "");
-      setTaxId((customer as any).taxId || "");
-      setAccountManager((customer as any).accountManager || "");
-      setSpecialInstructions((customer as any).specialInstructions || "");
-      setOrderFrequency((customer as any).orderFrequency || "");
+      setCustomerType((customer.customerType as "wholesale" | "general_public") || "wholesale");
     } else {
       setEditingCustomer(null);
       setName("");
@@ -109,15 +82,7 @@ export function WholesaleCustomers({
       setCountry("United Kingdom");
       setNotes("");
       setIsActive(true);
-      setOpeningHours({});
-      setDeliveryDays([]);
-      setPreferredDeliveryTime("");
-      setPaymentTerms("");
-      setCreditLimit("");
-      setTaxId("");
-      setAccountManager("");
-      setSpecialInstructions("");
-      setOrderFrequency("");
+      setCustomerType("wholesale");
     }
     setShowModal(true);
   }
@@ -156,16 +121,8 @@ export function WholesaleCustomers({
           country: country || null,
           notes: notes || null,
           isActive,
+          customerType,
           companyId,
-          openingHours: (openingHours && typeof openingHours === 'object' && !Array.isArray(openingHours) && Object.keys(openingHours).length > 0) ? openingHours : null,
-          deliveryDays: deliveryDays,
-          preferredDeliveryTime: preferredDeliveryTime || null,
-          paymentTerms: paymentTerms || null,
-          creditLimit: creditLimit || null,
-          taxId: taxId || null,
-          accountManager: accountManager || null,
-          specialInstructions: specialInstructions || null,
-          orderFrequency: orderFrequency || null,
         }),
       });
 
@@ -181,8 +138,7 @@ export function WholesaleCustomers({
         closeModal();
       } else {
         const data = await res.json();
-        console.error("Customer save error:", data);
-        alert(data.details || data.error || "Failed to save customer");
+        alert(data.error || "Failed to save customer");
       }
     } catch (error) {
       alert("Network error");
@@ -336,40 +292,10 @@ export function WholesaleCustomers({
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  {(customer as any).outstandingBalance && Number((customer as any).outstandingBalance) > 0 && (
-                    <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                      <div className="font-semibold text-yellow-800">Outstanding Balance</div>
-                      <div className="text-yellow-700">£{Number((customer as any).outstandingBalance).toFixed(2)}</div>
-                    </div>
-                  )}
-                  {(customer as any).creditLimit && Number((customer as any).outstandingBalance) > 0 && (
-                    <div className="mb-3 text-xs">
-                      <div className="text-gray-600">Credit Limit: £{Number((customer as any).creditLimit).toFixed(2)}</div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                        <div 
-                          className={`h-1.5 rounded-full ${
-                            Number((customer as any).outstandingBalance) / Number((customer as any).creditLimit) > 0.9 
-                              ? 'bg-red-500' 
-                              : Number((customer as any).outstandingBalance) / Number((customer as any).creditLimit) > 0.7
-                              ? 'bg-yellow-500'
-                              : 'bg-green-500'
-                          }`}
-                          style={{ 
-                            width: `${Math.min(100, (Number((customer as any).outstandingBalance) / Number((customer as any).creditLimit)) * 100)}%` 
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                     <span>{customer._count.productionItems} production items</span>
                     <span>{customer._count.orders} orders</span>
                   </div>
-                  {(customer as any).paymentTerms && (
-                    <div className="text-xs text-gray-500 mb-2">
-                      Payment: {(customer as any).paymentTerms}
-                    </div>
-                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => viewOrders(customer.id)}
@@ -478,6 +404,34 @@ export function WholesaleCustomers({
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                   </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Customer Type</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="customerType"
+                          value="wholesale"
+                          checked={customerType === "wholesale"}
+                          onChange={(e) => setCustomerType(e.target.value as "wholesale" | "general_public")}
+                          className="w-4 h-4 text-green-600"
+                        />
+                        <span className="text-sm text-gray-700">Wholesale</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="customerType"
+                          value="general_public"
+                          checked={customerType === "general_public"}
+                          onChange={(e) => setCustomerType(e.target.value as "wholesale" | "general_public")}
+                          className="w-4 h-4 text-green-600"
+                        />
+                        <span className="text-sm text-gray-700">General Public</span>
+                      </label>
+                    </div>
+                  </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -578,133 +532,6 @@ export function WholesaleCustomers({
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Internal notes about this customer..."
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-
-                  {/* Delivery Days */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preferred Delivery Days
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                        <label key={day} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={deliveryDays.includes(day)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setDeliveryDays([...deliveryDays, day]);
-                              } else {
-                                setDeliveryDays(deliveryDays.filter(d => d !== day));
-                              }
-                            }}
-                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                          />
-                          <span className="text-sm text-gray-700">{day.slice(0, 3)}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Preferred Delivery Time
-                    </label>
-                    <select
-                      value={preferredDeliveryTime}
-                      onChange={(e) => setPreferredDeliveryTime(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">Select...</option>
-                      <option value="Morning">Morning (9am-12pm)</option>
-                      <option value="Afternoon">Afternoon (12pm-5pm)</option>
-                      <option value="Evening">Evening (5pm-8pm)</option>
-                      <option value="Anytime">Anytime</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Payment Terms
-                    </label>
-                    <input
-                      type="text"
-                      value={paymentTerms}
-                      onChange={(e) => setPaymentTerms(e.target.value)}
-                      placeholder="e.g., Net 30, COD, Weekly"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Credit Limit (£)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={creditLimit}
-                      onChange={(e) => setCreditLimit(e.target.value)}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tax/VAT ID
-                    </label>
-                    <input
-                      type="text"
-                      value={taxId}
-                      onChange={(e) => setTaxId(e.target.value)}
-                      placeholder="GB123456789"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Account Manager
-                    </label>
-                    <input
-                      type="text"
-                      value={accountManager}
-                      onChange={(e) => setAccountManager(e.target.value)}
-                      placeholder="Internal contact name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Order Frequency
-                    </label>
-                    <select
-                      value={orderFrequency}
-                      onChange={(e) => setOrderFrequency(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">Select...</option>
-                      <option value="Daily">Daily</option>
-                      <option value="Weekly">Weekly</option>
-                      <option value="Bi-weekly">Bi-weekly</option>
-                      <option value="Monthly">Monthly</option>
-                      <option value="As needed">As needed</option>
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Special Instructions
-                    </label>
-                    <textarea
-                      value={specialInstructions}
-                      onChange={(e) => setSpecialInstructions(e.target.value)}
-                      placeholder="Special delivery or order instructions..."
-                      rows={2}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                   </div>

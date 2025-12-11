@@ -54,6 +54,9 @@ interface SelectedRecipe {
   quantity: number;
   customYield?: number;
   allocations?: Allocation[];
+  deliveryDay?: string; // e.g., "Monday", "Tuesday", etc.
+  deliveryDate?: string; // ISO date string
+  sourceOrders?: number[]; // Track which orders this came from
 }
 
 interface DayScheduleItem {
@@ -113,6 +116,7 @@ interface WholesaleCustomer {
   name: string;
   contactName: string | null;
   email: string | null;
+  customerType?: string;
 }
 
 interface WholesaleOrderItem {
@@ -173,6 +177,9 @@ export function ProductionPlannerEnhanced({
   const [unplannedOrders, setUnplannedOrders] = useState<WholesaleOrder[]>([]);
   const [showOrdersSidebar, setShowOrdersSidebar] = useState(true);
   const [loadingUnplannedOrders, setLoadingUnplannedOrders] = useState(false);
+  const [showGeneralPublic, setShowGeneralPublic] = useState(false);
+  const [planMode, setPlanMode] = useState<'simple' | 'advanced'>('simple');
+  const [autoImportedCount, setAutoImportedCount] = useState(0);
   
   // Check if we should load orders from URL params
   useEffect(() => {
@@ -183,13 +190,35 @@ export function ProductionPlannerEnhanced({
       loadOrdersIntoProduction(orderIds);
     }
   }, [searchParams]);
+
+  // Auto-import orders when modal opens in Simple mode
+  useEffect(() => {
+    if (showCreatePlan && planMode === 'simple' && startDate && endDate) {
+      // Small delay to ensure modal is rendered
+      const timer = setTimeout(() => {
+        autoImportOrders();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showCreatePlan, planMode, startDate, endDate]);
   
   // Fetch unplanned orders when dates change
   useEffect(() => {
     if (startDate && endDate) {
       fetchUnplannedOrders();
+      // Auto-import orders in Simple mode
+      if (planMode === 'simple' && showCreatePlan) {
+        autoImportOrders();
+      }
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, planMode, showCreatePlan]);
+
+  // Auto-import orders when switching to Simple mode
+  useEffect(() => {
+    if (planMode === 'simple' && showCreatePlan && startDate && endDate) {
+      autoImportOrders();
+    }
+  }, [planMode]);
 
   
   async function fetchUnplannedOrders() {
@@ -226,6 +255,144 @@ export function ProductionPlannerEnhanced({
       setUnplannedOrders([]);
     } finally {
       setLoadingUnplannedOrders(false);
+    }
+  }
+
+  async function autoImportOrders() {
+    if (!startDate || !endDate) return;
+    
+    try {
+      // Fetch orders for the selected week
+      const ordersRes = await fetch(
+        `/api/wholesale/orders/unplanned?companyId=${companyId}&startDate=${startDate}&endDate=${endDate}`
+      );
+
+      if (!ordersRes.ok) {
+        console.error('Failed to fetch orders for auto-import');
+        return;
+      }
+
+      const orders = await ordersRes.json();
+      
+      if (orders.length === 0) {
+        setAutoImportedCount(0);
+        return;
+      }
+
+      // Aggregate items by recipe, grouping by delivery date
+      const recipeMap = new Map<number, {
+        quantity: number;
+        customerId: number;
+        customerName: string;
+        deliveryDate: string | null;
+        orderId: number;
+      }[]>();
+
+      orders.forEach((order: any) => {
+        order.items.forEach((item: any) => {
+          const existing = recipeMap.get(item.recipeId) || [];
+          existing.push({
+            quantity: item.quantity,
+            customerId: order.customer.id,
+            customerName: order.customer.name,
+            deliveryDate: order.deliveryDate,
+            orderId: order.id,
+          });
+          recipeMap.set(item.recipeId, existing);
+        });
+      });
+
+      // Pre-populate selected recipes with allocations and delivery dates
+      const newSelectedRecipes = new Map(selectedRecipes);
+      const importedOrderIds = new Set<number>();
+
+      recipeMap.forEach((orderItems, recipeId) => {
+        const recipe = recipes.find(r => r.id === recipeId);
+        if (!recipe) return;
+
+        const allocations: Allocation[] = [];
+        const sourceOrders: number[] = [];
+        
+        // Group by customer and delivery date
+        const customerGroups = new Map<string, { 
+          name: string; 
+          quantity: number; 
+          customerId: number;
+          deliveryDate: string | null;
+        }>();
+
+        orderItems.forEach(item => {
+          const key = `${item.customerId}-${item.deliveryDate || 'no-date'}`;
+          const current = customerGroups.get(key);
+          
+          if (current) {
+            current.quantity += item.quantity;
+          } else {
+            customerGroups.set(key, {
+              name: item.customerName,
+              quantity: item.quantity,
+              customerId: item.customerId,
+              deliveryDate: item.deliveryDate,
+            });
+          }
+          
+          if (!importedOrderIds.has(item.orderId)) {
+            importedOrderIds.add(item.orderId);
+            sourceOrders.push(item.orderId);
+          }
+        });
+
+        // Create allocation for each customer/delivery combination
+        customerGroups.forEach((data) => {
+          allocations.push({
+            destination: data.name,
+            customerId: data.customerId,
+            quantity: data.quantity,
+            notes: data.deliveryDate ? `Due: ${format(new Date(data.deliveryDate), "MMM d")}` : '',
+          });
+        });
+
+        // Calculate total quantity from allocations
+        const totalQuantity = allocations.reduce((sum, alloc) => sum + alloc.quantity, 0);
+
+        // Calculate how many batches we need
+        const recipeYield = parseFloat(recipe.yieldQuantity);
+        const batchesNeeded = Math.ceil(totalQuantity / recipeYield);
+
+        // Find earliest delivery date for this recipe
+        const deliveryDates = orderItems
+          .map(item => item.deliveryDate)
+          .filter((date): date is string => date !== null)
+          .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        
+        const earliestDeliveryDate = deliveryDates.length > 0 ? deliveryDates[0] : null;
+        const deliveryDay = earliestDeliveryDate 
+          ? format(new Date(earliestDeliveryDate), "EEEE") // Day name like "Monday"
+          : undefined;
+
+        // Only add if recipe doesn't already exist (don't overwrite user selections)
+        if (!newSelectedRecipes.has(recipeId)) {
+          newSelectedRecipes.set(recipeId, {
+            recipe,
+            quantity: batchesNeeded,
+            customYield: totalQuantity,
+            allocations,
+            deliveryDay,
+            deliveryDate: earliestDeliveryDate || undefined,
+            sourceOrders,
+          });
+        }
+      });
+
+      setSelectedRecipes(newSelectedRecipes);
+      setAutoImportedCount(orders.length);
+      
+      // Set plan name if not already set
+      if (!planName) {
+        setPlanName(`Production Week - ${format(new Date(startDate), "MMM d, yyyy")}`);
+      }
+    } catch (error) {
+      console.error('Failed to auto-import orders:', error);
     }
   }
   
@@ -410,6 +577,11 @@ export function ProductionPlannerEnhanced({
     recipe.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Filter customers by type - show only wholesale by default, include general public if toggle is on
+  const filteredCustomers = showGeneralPublic 
+    ? wholesaleCustomers 
+    : wholesaleCustomers.filter(c => c.customerType === 'wholesale' || !c.customerType);
+
   // Group selected recipes by category
   const selectedByCategory = Array.from(selectedRecipes.values()).reduce((acc, item) => {
     const category = item.recipe.category || "Uncategorized";
@@ -510,7 +682,13 @@ export function ProductionPlannerEnhanced({
       return;
     }
 
-    // Initialize day schedule with all recipes on the first day
+    // In Simple mode, skip scheduling step and go straight to creating the plan
+    if (planMode === 'simple') {
+      createProductionPlan();
+      return;
+    }
+
+    // Advanced mode: Initialize day schedule with all recipes on the first day
     const items: DayScheduleItem[] = [];
     selectedRecipes.forEach((selected) => {
       if (selected.recipe.sections && selected.recipe.sections.length > 0) {
@@ -574,21 +752,33 @@ export function ProductionPlannerEnhanced({
       return;
     }
 
-    // Convert day schedule to production items with allocations
-    const itemsMap = new Map<number, { quantity: number; allocations?: Allocation[] }>();
-    daySchedule.forEach(item => {
-      const current = itemsMap.get(item.recipeId) || { quantity: 0 };
-      itemsMap.set(item.recipeId, { 
-        quantity: current.quantity + item.quantity,
-        allocations: selectedRecipes.get(item.recipeId)?.allocations,
-      });
-    });
+    let items: Array<{ recipeId: number; quantity: number; allocations?: Allocation[]; deliveryDate?: string }> = [];
 
-    const items = Array.from(itemsMap.entries()).map(([recipeId, data]) => ({
-      recipeId,
-      quantity: data.quantity,
-      allocations: data.allocations || [],
-    }));
+    if (planMode === 'simple') {
+      // Simple mode: Create items directly from selected recipes with delivery dates
+      items = Array.from(selectedRecipes.entries()).map(([recipeId, selected]) => ({
+        recipeId,
+        quantity: selected.quantity,
+        allocations: selected.allocations || [],
+        deliveryDate: selected.deliveryDate,
+      }));
+    } else {
+      // Advanced mode: Convert day schedule to production items with allocations
+      const itemsMap = new Map<number, { quantity: number; allocations?: Allocation[] }>();
+      daySchedule.forEach(item => {
+        const current = itemsMap.get(item.recipeId) || { quantity: 0 };
+        itemsMap.set(item.recipeId, { 
+          quantity: current.quantity + item.quantity,
+          allocations: selectedRecipes.get(item.recipeId)?.allocations,
+        });
+      });
+
+      items = Array.from(itemsMap.entries()).map(([recipeId, data]) => ({
+        recipeId,
+        quantity: data.quantity,
+        allocations: data.allocations || [],
+      }));
+    }
 
     setCreating(true);
 
@@ -616,6 +806,7 @@ export function ProductionPlannerEnhanced({
         setSelectedRecipes(new Map());
         setDaySchedule([]);
         setSearchTerm("");
+        setAutoImportedCount(0);
       } else {
         const data = await res.json();
         alert(data.error || "Failed to create plan");
@@ -787,11 +978,15 @@ export function ProductionPlannerEnhanced({
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-white">
-                      {step === 'select' ? 'Select Recipes' : 'Schedule Production'}
+                      {step === 'select' 
+                        ? (planMode === 'simple' ? 'Create Production Plan' : 'Select Recipes')
+                        : 'Schedule Production'}
                     </h2>
                     <p className="text-green-100 mt-1">
                       {step === 'select' 
-                        ? 'Choose recipes and quantities for your production plan' 
+                        ? (planMode === 'simple' 
+                          ? 'Orders are auto-imported. Select recipes, set delivery days, and assign location splits.'
+                          : 'Choose recipes and quantities for your production plan')
                         : 'Drag recipes and sections to different days'}
                     </p>
                   </div>
@@ -801,6 +996,8 @@ export function ProductionPlannerEnhanced({
                       setStep('select');
                       setSelectedRecipes(new Map());
                       setDaySchedule([]);
+                      setPlanMode('simple'); // Reset to simple mode
+                      setAutoImportedCount(0);
                     }}
                     className="text-white/80 hover:text-white"
                   >
@@ -810,6 +1007,32 @@ export function ProductionPlannerEnhanced({
                   </button>
                 </div>
                 
+                {/* Mode Toggle */}
+                <div className="mt-4 flex items-center justify-center">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full p-1 flex items-center gap-1">
+                    <button
+                      onClick={() => setPlanMode('simple')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                        planMode === 'simple'
+                          ? 'bg-white text-green-600 shadow-md'
+                          : 'text-white/80 hover:text-white'
+                      }`}
+                    >
+                      Simple
+                    </button>
+                    <button
+                      onClick={() => setPlanMode('advanced')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                        planMode === 'advanced'
+                          ? 'bg-white text-green-600 shadow-md'
+                          : 'text-white/80 hover:text-white'
+                      }`}
+                    >
+                      Advanced
+                    </button>
+                  </div>
+                </div>
+
                 {/* Progress Indicator */}
                 <div className="flex items-center gap-2 mt-4">
                   <div className={`flex items-center gap-2 ${step === 'select' ? 'text-white' : 'text-green-200'}`}>
@@ -818,21 +1041,23 @@ export function ProductionPlannerEnhanced({
                     </div>
                     <span className="font-medium">Select</span>
                   </div>
-                  <div className="flex-1 h-1 bg-green-400 mx-2"></div>
-                  <div className={`flex items-center gap-2 ${step === 'schedule' ? 'text-white' : 'text-green-200'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'schedule' ? 'bg-white text-green-600' : 'bg-green-400/50'}`}>
-                      2
-                    </div>
-                    <span className="font-medium">Schedule</span>
-                  </div>
+                  {planMode === 'advanced' && (
+                    <>
+                      <div className="flex-1 h-1 bg-green-400 mx-2"></div>
+                      <div className={`flex items-center gap-2 ${step === 'schedule' ? 'text-white' : 'text-green-200'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'schedule' ? 'bg-white text-green-600' : 'bg-green-400/50'}`}>
+                          2
+                        </div>
+                        <span className="font-medium">Schedule</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
               <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 250px)' }}>
-                {step === 'select' ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 divide-x divide-gray-200 min-h-[600px]">
-                    {/* Left: Recipe Selection */}
-                    <div className="lg:col-span-2 p-6 space-y-6">
+                {step === 'select' && planMode === 'simple' && (
+                  <div className="p-6 space-y-6">
                       {/* Plan Details */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -870,6 +1095,298 @@ export function ProductionPlannerEnhanced({
                           />
                         </div>
                       </div>
+
+                      {/* Auto-imported Orders Summary */}
+                      {autoImportedCount > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-sm text-blue-800">
+                              Auto-imported <strong>{autoImportedCount}</strong> order{autoImportedCount !== 1 ? 's' : ''} for this week. 
+                              You can edit quantities, delivery days, and location splits below.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Selected Recipes List with Delivery Days */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">Recipes for Production</h3>
+                          <button
+                            onClick={() => {
+                              // Show recipe search modal or inline search
+                              const searchInput = document.getElementById('recipe-search-simple');
+                              if (searchInput) {
+                                (searchInput as HTMLInputElement).focus();
+                              }
+                            }}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                          >
+                            + Add Recipe
+                          </button>
+                        </div>
+
+                        {/* Recipe Search (collapsible) */}
+                        <div className="mb-4">
+                          <input
+                            id="recipe-search-simple"
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search recipes to add..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                          />
+                          {searchTerm && (
+                            <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                              {filteredRecipes
+                                .filter(r => !selectedRecipes.has(r.id))
+                                .map(recipe => (
+                                  <div
+                                    key={recipe.id}
+                                    className="flex items-center justify-between p-2 border border-gray-200 rounded hover:bg-gray-50"
+                                  >
+                                    <div>
+                                      <p className="font-medium text-sm text-gray-900">{recipe.name}</p>
+                                      <p className="text-xs text-gray-500">{recipe.yieldQuantity} {recipe.yieldUnit} per batch</p>
+                                    </div>
+                                    <button
+                                      onClick={() => addRecipe(recipe)}
+                                      className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                                    >
+                                      Add
+                                    </button>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Recipes List */}
+                        {selectedRecipes.size === 0 ? (
+                          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                            <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p className="text-gray-500 text-sm">No recipes selected yet. Orders will be auto-imported when you set dates.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {Array.from(selectedRecipes.values()).map((item) => (
+                              <div key={item.recipe.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-gray-900">{item.recipe.name}</h4>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      {item.recipe.yieldQuantity} {item.recipe.yieldUnit} per batch
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() => removeRecipe(item.recipe.id)}
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                                  {/* Quantity */}
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Batches</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      value={item.quantity || ""}
+                                      onChange={(e) => {
+                                        const batches = parseFloat(e.target.value) || 0;
+                                        updateQuantity(item.recipe.id, batches);
+                                        updateCustomYield(item.recipe.id, batches * parseFloat(item.recipe.yieldQuantity));
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      = {(item.quantity * parseFloat(item.recipe.yieldQuantity)).toFixed(1)} {item.recipe.yieldUnit}
+                                    </p>
+                                  </div>
+
+                                  {/* Delivery Day */}
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Delivery Day</label>
+                                    <select
+                                      value={item.deliveryDay || ""}
+                                      onChange={(e) => {
+                                        const day = e.target.value;
+                                        const current = selectedRecipes.get(item.recipe.id);
+                                        if (current) {
+                                          const newMap = new Map(selectedRecipes);
+                                          // Find date for selected day in the week
+                                          const days = eachDayOfInterval({
+                                            start: new Date(startDate),
+                                            end: new Date(endDate),
+                                          });
+                                          const selectedDate = days.find(d => format(d, "EEEE") === day);
+                                          newMap.set(item.recipe.id, {
+                                            ...current,
+                                            deliveryDay: day,
+                                            deliveryDate: selectedDate ? selectedDate.toISOString() : undefined,
+                                          });
+                                          setSelectedRecipes(newMap);
+                                        }
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500"
+                                    >
+                                      <option value="">Select day</option>
+                                      {eachDayOfInterval({
+                                        start: new Date(startDate),
+                                        end: new Date(endDate),
+                                      }).map((date, idx) => (
+                                        <option key={idx} value={format(date, "EEEE")}>
+                                          {format(date, "EEEE, MMM d")}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    {item.deliveryDay && (
+                                      <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+                                        {item.deliveryDay}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Total Needed */}
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Total Needed</label>
+                                    <p className="text-sm font-semibold text-gray-900">
+                                      {item.customYield?.toFixed(1) || (item.quantity * parseFloat(item.recipe.yieldQuantity)).toFixed(1)} {item.recipe.yieldUnit}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Location Splits */}
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <button
+                                      onClick={() => setShowAllocations(showAllocations === item.recipe.id ? null : item.recipe.id)}
+                                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                    >
+                                      <svg className={`w-3 h-3 transition-transform ${showAllocations === item.recipe.id ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                      </svg>
+                                      Location Splits {item.allocations && item.allocations.length > 0 && `(${item.allocations.length})`}
+                                    </button>
+                                  </div>
+                                  
+                                  {showAllocations === item.recipe.id && (
+                                    <div className="mt-2 space-y-2">
+                                      {(item.allocations || []).map((alloc, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                          <select
+                                            value={alloc.customerId ? String(alloc.customerId) : (alloc.destination === "internal" || alloc.destination === "wholesale" ? alloc.destination : "internal")}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              if (val === "internal" || val === "wholesale") {
+                                                updateAllocationField(item.recipe.id, idx, "destination", val);
+                                                updateAllocationField(item.recipe.id, idx, "customerId", null);
+                                              } else {
+                                                const custId = parseInt(val);
+                                                const customer = wholesaleCustomers.find(c => c.id === custId);
+                                                updateAllocationField(item.recipe.id, idx, "destination", customer?.name || "");
+                                                updateAllocationField(item.recipe.id, idx, "customerId", custId);
+                                              }
+                                            }}
+                                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                          >
+                                            <option value="internal">Internal</option>
+                                            <option value="wholesale">Wholesale (General)</option>
+                                            {wholesaleCustomers.map(cust => (
+                                              <option key={cust.id} value={cust.id}>{cust.name}</option>
+                                            ))}
+                                          </select>
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={alloc.quantity}
+                                            onChange={(e) => updateAllocationField(item.recipe.id, idx, "quantity", parseFloat(e.target.value) || 0)}
+                                            placeholder="Qty"
+                                            className="w-20 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                          />
+                                          {alloc.notes && (
+                                            <span className="text-xs text-gray-500">{alloc.notes}</span>
+                                          )}
+                                          {alloc.customerId && !alloc.notes && (
+                                            <span className="text-xs text-gray-500">From order</span>
+                                          )}
+                                          <button
+                                            onClick={() => removeAllocation(item.recipe.id, idx)}
+                                            className="p-1 text-red-500 hover:text-red-700"
+                                          >
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      ))}
+                                      <button
+                                        onClick={() => addAllocation(item.recipe.id)}
+                                        className="w-full px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors font-medium"
+                                      >
+                                        + Add Location Split
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                {step === 'select' && planMode === 'advanced' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 divide-x divide-gray-200 min-h-[600px]">
+                      {/* Left: Recipe Selection */}
+                      <div className="lg:col-span-2 p-6 space-y-6">
+                        {/* Plan Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Plan Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={planName}
+                              onChange={(e) => setPlanName(e.target.value)}
+                              placeholder="e.g., Week 42 Production"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Start Date
+                            </label>
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              End Date
+                            </label>
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                          </div>
+                        </div>
 
                       {/* Recipe Search */}
                       <div>
@@ -1008,22 +1525,35 @@ export function ProductionPlannerEnhanced({
                                     
                                     {/* Allocations Section */}
                                     <div className="mt-3 pt-3 border-t border-gray-200">
-                                      <button
-                                        onClick={() => setShowAllocations(showAllocations === item.recipe.id ? null : item.recipe.id)}
-                                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                                      >
-                                        <svg className={`w-3 h-3 transition-transform ${showAllocations === item.recipe.id ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                        Split by Destination {item.allocations && item.allocations.length > 0 && `(${item.allocations.length})`}
-                                      </button>
+                                      <div className="flex items-center justify-between mb-2">
+                                        <button
+                                          onClick={() => setShowAllocations(showAllocations === item.recipe.id ? null : item.recipe.id)}
+                                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                        >
+                                          <svg className={`w-3 h-3 transition-transform ${showAllocations === item.recipe.id ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                          </svg>
+                                          Split by Destination {item.allocations && item.allocations.length > 0 && `(${item.allocations.length})`}
+                                        </button>
+                                        {showAllocations === item.recipe.id && (
+                                          <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={showGeneralPublic}
+                                              onChange={(e) => setShowGeneralPublic(e.target.checked)}
+                                              className="w-3 h-3 text-green-600 focus:ring-green-500"
+                                            />
+                                            <span>Include General Public</span>
+                                          </label>
+                                        )}
+                                      </div>
                                       
                                       {showAllocations === item.recipe.id && (
                                         <div className="mt-2 space-y-2">
                                           {(item.allocations || []).map((alloc, idx) => (
                                             <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
                                               <select
-                                                value={alloc.customerId || alloc.destination}
+                                                value={alloc.customerId ? String(alloc.customerId) : (alloc.destination === "internal" || alloc.destination === "wholesale" ? alloc.destination : "internal")}
                                                 onChange={(e) => {
                                                   const val = e.target.value;
                                                   if (val === "internal" || val === "wholesale") {
@@ -1031,7 +1561,7 @@ export function ProductionPlannerEnhanced({
                                                     updateAllocationField(item.recipe.id, idx, "customerId", null);
                                                   } else {
                                                     const custId = parseInt(val);
-                                                    const customer = wholesaleCustomers.find(c => c.id === custId);
+                                                    const customer = filteredCustomers.find(c => c.id === custId);
                                                     updateAllocationField(item.recipe.id, idx, "destination", customer?.name || "");
                                                     updateAllocationField(item.recipe.id, idx, "customerId", custId);
                                                   }
@@ -1040,7 +1570,7 @@ export function ProductionPlannerEnhanced({
                                               >
                                                 <option value="internal">Internal</option>
                                                 <option value="wholesale">Wholesale (General)</option>
-                                                {wholesaleCustomers.map(cust => (
+                                                {filteredCustomers.filter(c => c.customerType === 'wholesale' || !c.customerType).map(cust => (
                                                   <option key={cust.id} value={cust.id}>{cust.name}</option>
                                                 ))}
                                               </select>
@@ -1080,8 +1610,8 @@ export function ProductionPlannerEnhanced({
                       )}
                     </div>
                   </div>
-                ) : (
-                  /* Schedule View */
+                  )}
+                {step === 'schedule' && (
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1121,18 +1651,29 @@ export function ProductionPlannerEnhanced({
                       onClick={() => {
                         setShowCreatePlan(false);
                         setSelectedRecipes(new Map());
+                        setAutoImportedCount(0);
                       }}
                       className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
                     >
                       Cancel
                     </button>
-                    <button
-                      onClick={proceedToSchedule}
-                      disabled={selectedRecipes.size === 0 || !planName}
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Continue to Schedule →
-                    </button>
+                    {planMode === 'simple' ? (
+                      <button
+                        onClick={createProductionPlan}
+                        disabled={selectedRecipes.size === 0 || !planName || creating}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {creating ? "Creating..." : "Create Production Plan"}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={proceedToSchedule}
+                        disabled={selectedRecipes.size === 0 || !planName}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Continue to Schedule →
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>

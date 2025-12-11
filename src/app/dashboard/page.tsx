@@ -103,6 +103,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           weekProduction={[]}
           tasks={[]}
           todayOrders={[]}
+          weekOrders={[]}
           staleIngredients={[]}
           userName={user.name || undefined}
           userRole={userRole}
@@ -127,6 +128,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   let weekProductionPlansRaw: any[] = [];
   let tasksRaw: any[] = [];
   let todayOrdersRaw: any[] = [];
+  let weekOrdersRaw: any[] = [];
   let ingredients: any[] = [];
   let recipeCount = 0;
   let staffCount = 0;
@@ -246,6 +248,44 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         ],
       }),
 
+      // Wholesale orders due this week
+      prisma.wholesaleOrder.findMany({
+        where: {
+          companyId,
+          deliveryDate: {
+            gte: today,
+            lt: weekEnd,
+          },
+          status: {
+            in: ["pending", "confirmed", "in_production"],
+          },
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          items: {
+            include: {
+              recipe: {
+                select: {
+                  id: true,
+                  name: true,
+                  yieldQuantity: true,
+                  yieldUnit: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { status: 'asc' },
+          { deliveryDate: 'asc' },
+        ],
+      }),
+
       // Get ingredients for stale price checking
       prisma.ingredient.findMany({
         where: { companyId },
@@ -289,10 +329,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     weekProductionPlansRaw = results[1].status === 'fulfilled' ? results[1].value : [];
     tasksRaw = results[2].status === 'fulfilled' ? results[2].value : [];
     todayOrdersRaw = results[3].status === 'fulfilled' ? results[3].value : [];
-    ingredients = results[4].status === 'fulfilled' ? results[4].value : [];
-    recipeCount = results[5].status === 'fulfilled' ? results[5].value : 0;
-    staffCount = results[6].status === 'fulfilled' ? results[6].value : 0;
-    shiftsThisWeek = results[7].status === 'fulfilled' ? results[7].value : 0;
+    weekOrdersRaw = results[4].status === 'fulfilled' ? results[4].value : [];
+    ingredients = results[5].status === 'fulfilled' ? results[5].value : [];
+    recipeCount = results[6].status === 'fulfilled' ? results[6].value : 0;
+    staffCount = results[7].status === 'fulfilled' ? results[7].value : 0;
+    shiftsThisWeek = results[8].status === 'fulfilled' ? results[8].value : 0;
 
     // Log any rejected promises for debugging
     results.forEach((result, index) => {
@@ -397,6 +438,50 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     todayOrders = [];
   }
 
+  // Serialize wholesale orders for this week - with extensive error handling
+  let weekOrders: any[] = [];
+  try {
+    if (weekOrdersRaw && Array.isArray(weekOrdersRaw)) {
+      weekOrders = weekOrdersRaw.map((order: any) => {
+        try {
+          return {
+            id: order?.id || 0,
+            orderNumber: order?.orderNumber || null,
+            deliveryDate: order?.deliveryDate ? (order.deliveryDate instanceof Date ? order.deliveryDate.toISOString() : new Date(order.deliveryDate).toISOString()) : null,
+            status: order?.status || 'pending',
+            customer: {
+              id: order?.customer?.id || 0,
+              name: order?.customer?.name || 'Unknown',
+            },
+            items: Array.isArray(order?.items) ? order.items.map((item: any) => {
+              try {
+                return {
+                  id: item?.id || 0,
+                  quantity: item?.quantity ? serializeDecimal(item.quantity) : 0,
+                  price: item?.price !== null && item?.price !== undefined ? serializeDecimal(item.price) : null,
+                  recipe: {
+                    id: item?.recipe?.id || 0,
+                    name: item?.recipe?.name || 'Unknown',
+                    yieldQuantity: item?.recipe?.yieldQuantity ? serializeDecimal(item.recipe.yieldQuantity) : '0',
+                  },
+                };
+              } catch (itemError) {
+                console.error('Error serializing order item:', itemError);
+                return null;
+              }
+            }).filter(Boolean) : [],
+          };
+        } catch (orderError) {
+          console.error('Error serializing order:', orderError);
+          return null;
+        }
+      }).filter(Boolean);
+    }
+  } catch (error) {
+    console.error('Error serializing week orders:', error);
+    weekOrders = [];
+  }
+
   // Get team member names for tasks
   const tasks = await Promise.all(
     tasksRaw.map(async (task) => {
@@ -456,6 +541,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const safeWeekProduction = Array.isArray(weekProduction) ? weekProduction : [];
   const safeTasks = Array.isArray(tasks) ? tasks : [];
   const safeTodayOrders = Array.isArray(todayOrders) ? todayOrders : [];
+  const safeWeekOrders = Array.isArray(weekOrders) ? weekOrders : [];
   const safeStaleIngredients = Array.isArray(staleIngredients) ? staleIngredients : [];
 
   try {
@@ -470,6 +556,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           weekProduction={safeWeekProduction}
           tasks={safeTasks}
           todayOrders={safeTodayOrders}
+          weekOrders={safeWeekOrders}
           staleIngredients={safeStaleIngredients}
           userName={user.name || undefined}
           userRole={userRole}

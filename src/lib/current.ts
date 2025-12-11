@@ -2,7 +2,7 @@ import { prisma } from './prisma';
 import { getUserFromSession } from './auth-simple';
 import type { Brand } from '@/lib/brands/types';
 import type { BrandConfig } from '@/lib/brands/types';
-import { getBrandConfig, brandExists } from '@/lib/brands/registry';
+import { getBrandConfig } from '@/lib/brands/registry';
 import type { App } from '@/lib/apps/types';
 import type { AppConfig } from '@/lib/apps/types';
 import { getAppConfig } from '@/lib/apps/registry';
@@ -51,114 +51,22 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     throw new Error('User not authenticated');
   }
 
-  // Skip cache for now to avoid hanging - will re-enable once we fix the issue
-  // const cacheKey = CacheKeys.userSession(user.id);
-  // let cached: CurrentUserAndCompany | null = null;
-  // try {
-  //   cached = await Promise.race([
-  //     getCache<CurrentUserAndCompany>(cacheKey),
-  //     new Promise<null>((resolve) => setTimeout(() => resolve(null), 500))
-  //   ]);
-  // } catch (error) {
-  //   // Redis unavailable, continue without cache
-  // }
-  // if (cached) {
-  //   return cached;
-  // }
-
-  // Add timeout wrapper for database fetch
+  const cacheKey = CacheKeys.userSession(user.id);
+  // Check Redis cache first (silently fail if Redis unavailable)
+  let cached: CurrentUserAndCompany | null = null;
   try {
-    const result = await Promise.race([
-      fetchUserAndCompany(user.id),
-      new Promise<CurrentUserAndCompany>((_, reject) => 
-        setTimeout(() => reject(new Error('Database query timeout after 5 seconds')), 5000)
-      )
-    ]);
-    return result;
+    cached = await getCache<CurrentUserAndCompany>(cacheKey);
   } catch (error) {
-    // If timeout or error, return fallback immediately
-    logger.error('Error or timeout in getCurrentUserAndCompany', error, 'Current');
-    console.error('getCurrentUserAndCompany error:', error);
-    
-    // Return a fallback structure immediately
-    return {
-      companyId: null,
-      company: null,
-      user: {
-        id: user.id,
-        email: user.email || '',
-        name: user.name || null,
-        isAdmin: user.isAdmin || false,
-        memberships: []
-      },
-      brand: null,
-      brandConfig: null,
-      app: null,
-      appConfig: null
-    };
+    // Redis unavailable, continue without cache
   }
-}
+  if (cached) {
+    return cached;
+  }
 
-// Internal function to fetch user and company data
-async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
   try {
-    // First, check if user has any memberships at all (including inactive)
-    // Add timeout wrapper for the entire database operation
-    const userWithAllMemberships = await Promise.race([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          isAdmin: true,
-          memberships: {
-            select: {
-              id: true,
-              companyId: true,
-              role: true,
-              isActive: true,
-            },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-      }),
-      new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error('Database query timeout')), 3000)
-      )
-    ]) as any;
-
-    if (!userWithAllMemberships) {
-      throw new Error('User not found');
-    }
-
-    // If user has memberships but none are active, activate the first one
-    const inactiveMemberships = userWithAllMemberships.memberships.filter(m => !m.isActive);
-    const activeMemberships = userWithAllMemberships.memberships.filter(m => m.isActive);
-    
-    if (inactiveMemberships.length > 0 && activeMemberships.length === 0) {
-      // User has memberships but none are active - activate the first one
-      try {
-        logger.info(`Activating inactive membership for user ${userId}`, { membershipId: inactiveMemberships[0].id }, 'Current');
-        await prisma.membership.update({
-          where: { id: inactiveMemberships[0].id },
-          data: { isActive: true }
-        });
-        // Clear cache so next call gets fresh data
-        try {
-          await deleteCache(CacheKeys.userSession(userId));
-        } catch (cacheError) {
-          // Cache deletion failed, continue anyway
-        }
-      } catch (activationError) {
-        // If activation fails, log but continue - user might not have permission
-        logger.warn('Failed to activate membership', activationError, 'Current');
-      }
-    }
-
-    // Now get active memberships with company details
+    // Optimized query - get only what we need
     const userWithMemberships = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: user.id },
       select: {
         id: true,
         email: true,
@@ -178,7 +86,8 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
                 businessType: true,
                 country: true,
                 phone: true,
-                logoUrl: true
+                logoUrl: true,
+                brand: true
               }
             }
           },
@@ -197,19 +106,13 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     const companyId = primaryMembership?.companyId || null;
     const company = primaryMembership?.company || null;
     
-    // Get app config if company has an app
-    const app = company?.app || null;
-    const appConfig = app ? getAppConfig(app) : null;
+    // Get brand config if company has a brand
+    const brand = company?.brand || null;
+    const brandConfig = brand ? getBrandConfig(brand) : null;
     
-    // For backward compatibility, use app as brand
-    const brand = app as Brand | null;
-    let brandConfig: BrandConfig | null = null;
-    try {
-      brandConfig = brand && brandExists(brand) ? getBrandConfig(brand) : null;
-    } catch (error) {
-      // Brand config not available, continue without it
-      logger.debug('Brand config not available', error, 'Current');
-    }
+    // Convert brand to app for compatibility (they're the same type)
+    const app = brand as App | null;
+    const appConfig = app ? getAppConfig(app) : null;
 
     const result = {
       companyId,
@@ -222,11 +125,11 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     };
 
     // Cache the result in Redis (silently fail if Redis unavailable)
-    // Don't await - run in background to avoid blocking
-    const cacheKey = CacheKeys.userSession(userId);
-    setCache(cacheKey, result, CACHE_TTL.USER_SESSION).catch(() => {
-      // Redis unavailable, continue without caching - silently fail
-    });
+    try {
+      await setCache(cacheKey, result, CACHE_TTL.USER_SESSION);
+    } catch (error) {
+      // Redis unavailable, continue without caching
+    }
 
     return result;
   } catch (error) {
@@ -235,40 +138,17 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     // In development, provide more detailed error information
     if (process.env.NODE_ENV === 'development') {
       logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', error, 'Current');
-      console.error('getCurrentUserAndCompany error details:', error);
-      
-      // Try to check if user has memberships even if main query failed
-      try {
-        const memberships = await prisma.membership.findMany({
-          where: { userId: userId },
-          select: { id: true, companyId: true, isActive: true, role: true },
-        });
-        console.error(`User ${userId} has ${memberships.length} membership(s). Active: ${memberships.filter(m => m.isActive).length}`);
-        if (memberships.length > 0 && memberships.filter(m => m.isActive).length === 0) {
-          console.error('User has memberships but none are active. Activating first membership...');
-          await prisma.membership.update({
-            where: { id: memberships[0].id },
-            data: { isActive: true }
-          });
-          // Clear cache and retry
-          await deleteCache(CacheKeys.userSession(userId));
-          return await fetchUserAndCompany(userId);
-        }
-      } catch (retryError) {
-        console.error('Error checking/activating memberships:', retryError);
-      }
     }
     
     // Return a fallback structure to prevent page crashes
-    const user = await getUserFromSession();
     return {
       companyId: null,
       company: null,
       user: {
-        id: user?.id || userId,
-        email: user?.email || '',
-        name: user?.name || null,
-        isAdmin: user?.isAdmin || false,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin,
         memberships: []
       },
       brand: null,

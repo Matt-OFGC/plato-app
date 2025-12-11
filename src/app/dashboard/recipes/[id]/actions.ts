@@ -38,40 +38,6 @@ export async function saveSellPrice(recipeId: number, sellPrice: number) {
   }
 }
 
-export async function saveWholesalePrice(recipeId: number, wholesalePrice: number) {
-  try {
-    const { companyId } = await getCurrentUserAndCompany();
-
-    // Verify recipe belongs to user's company
-    const recipe = await prisma.recipe.findUnique({
-      where: { id: recipeId },
-      select: { companyId: true }
-    });
-
-    if (!recipe || recipe.companyId !== companyId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Update just the wholesale price
-    await prisma.recipe.update({
-      where: { id: recipeId },
-      data: {
-        wholesalePrice: wholesalePrice,
-        lastPriceUpdate: new Date(),
-      },
-    });
-
-    revalidatePath(`/dashboard/recipes/${recipeId}`);
-    revalidatePath('/dashboard/recipes');
-    
-    return { success: true };
-  } catch (error) {
-    console.error("Error saving wholesale price:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to save wholesale price";
-    return { success: false, error: errorMessage };
-  }
-}
-
 export async function saveRecipe(data: {
   recipeId: number | null;
   name?: string;
@@ -119,7 +85,7 @@ export async function saveRecipe(data: {
     ]);
 
     // Wrap everything in a transaction for atomicity
-    const result = await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx) => {
       let recipeId: number;
 
       if (data.recipeId === null) {
@@ -408,8 +374,8 @@ export async function deleteRecipe(id: number) {
     
     // Audit deletion
     if (user && companyId) {
-      const { logAction } = await import("@/lib/audit-log");
-      await logAction(user.id, 'RECIPE_DELETED', 'recipe', id.toString(), { recipeName: existingRecipe.name });
+      const { auditLog } = await import("@/lib/audit-log");
+      await auditLog.recipeDeleted(user.id, id, existingRecipe.name, companyId);
     }
     
     revalidatePath("/dashboard/recipes");

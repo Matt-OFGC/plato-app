@@ -72,6 +72,7 @@ interface OperationalDashboardProps {
   weekProduction: ProductionPlan[];
   tasks: Task[];
   todayOrders: WholesaleOrder[];
+  weekOrders: WholesaleOrder[];
   staleIngredients: StaleIngredient[];
   userName?: string;
   userRole?: string;
@@ -85,6 +86,7 @@ export function OperationalDashboard({
   weekProduction = [],
   tasks = [],
   todayOrders = [],
+  weekOrders = [],
   staleIngredients = [],
   userName,
   userRole,
@@ -94,6 +96,8 @@ export function OperationalDashboard({
 }: OperationalDashboardProps) {
   const [selectedIngredient, setSelectedIngredient] = useState<StaleIngredient | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<WholesaleOrder | null>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const router = useRouter();
   const { toAppRoute } = useAppAwareRoute();
 
@@ -322,7 +326,11 @@ export function OperationalDashboard({
                 {todayOrders.map(order => (
                   <div
                     key={order.id}
-                    className="p-3 bg-white rounded-xl border border-gray-200 hover:border-[var(--brand-primary)]/50 transition-all duration-200"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setIsOrderModalOpen(true);
+                    }}
+                    className="p-3 bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-all duration-200 cursor-pointer"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0">
@@ -345,8 +353,70 @@ export function OperationalDashboard({
           </div>
         </div>
 
-        {/* Tile 4: What Needs to Be Done */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-xl transition-all duration-200 overflow-hidden md:col-span-2 lg:col-span-1">
+        {/* Tile 4: Orders This Week */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-xl transition-all duration-200 overflow-hidden">
+          <div className="p-4 sm:p-6 border-b border-gray-200/50">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Orders This Week</h2>
+              <Link
+                href={toAppRoute("/dashboard/wholesale/orders")}
+                className="text-xs sm:text-sm text-[var(--brand-primary)] hover:text-[var(--brand-accent)] font-medium"
+              >
+                View All →
+              </Link>
+            </div>
+            <p className="text-xs text-gray-600">{weekOrders.length} order{weekOrders.length !== 1 ? 's' : ''}</p>
+          </div>
+          <div className="p-4 sm:p-6">
+            {weekOrders.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 rounded-full bg-gray-100 mx-auto mb-3 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                </div>
+                <p className="text-gray-600 text-sm">No orders this week</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {weekOrders.slice(0, 4).map(order => (
+                  <div
+                    key={order.id}
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setIsOrderModalOpen(true);
+                    }}
+                    className="p-3 bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-all duration-200 cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm text-gray-900 truncate">{order.customer?.name || 'Unknown Customer'}</h3>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {order.orderNumber || `Order #${order.id}`}
+                          {order.deliveryDate && (
+                            <> • {new Date(order.deliveryDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}</>
+                          )}
+                        </p>
+                      </div>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-lg border ${getStatusColor(order.status || 'pending')}`}>
+                        {(order.status || 'pending').replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                ))}
+                {weekOrders.length > 4 && (
+                  <p className="text-xs text-gray-500 text-center">+{weekOrders.length - 4} more orders</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tile 5: What Needs to Be Done */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-xl transition-all duration-200 overflow-hidden">
           <div className="p-4 sm:p-6 border-b border-gray-200/50">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">What Needs to Be Done</h2>
@@ -419,11 +489,11 @@ export function OperationalDashboard({
           </div>
         </div>
 
-        {/* Tile 5: Quick Stats (Compact) */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-xl transition-all duration-200 overflow-hidden md:col-span-2 lg:col-span-2">
+        {/* Tile 6: Quick Stats (Compact) */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-xl transition-all duration-200 overflow-hidden">
           <div className="p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Quick Overview</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="text-center p-4 bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-accent)]/10 rounded-xl border border-[var(--brand-primary)]/20">
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{todayProgress}%</p>
                 <p className="text-xs text-gray-600 mt-1">Today's Progress</p>
@@ -458,6 +528,125 @@ export function OperationalDashboard({
             router.refresh();
           }}
         />
+      )}
+
+      {/* Order Detail Modal */}
+      {isOrderModalOpen && selectedOrder && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => {
+            setIsOrderModalOpen(false);
+            setSelectedOrder(null);
+          }}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white/95 backdrop-blur-xl border-b border-gray-200/50 p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Order Details</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedOrder.orderNumber || `Order #${selectedOrder.id}`}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsOrderModalOpen(false);
+                  setSelectedOrder(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Customer Info */}
+              <div className="bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-xl border border-purple-500/20 p-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Customer</h3>
+                <p className="text-gray-900">{selectedOrder.customer?.name || 'Unknown Customer'}</p>
+              </div>
+
+              {/* Order Status & Delivery Date */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-600 mb-1">Status</h3>
+                  <span className={`inline-block px-3 py-1.5 text-sm font-semibold rounded-lg border ${getStatusColor(selectedOrder.status || 'pending')}`}>
+                    {(selectedOrder.status || 'pending').replace('_', ' ')}
+                  </span>
+                </div>
+                {selectedOrder.deliveryDate && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">Delivery Date</h3>
+                    <p className="text-gray-900">
+                      {new Date(selectedOrder.deliveryDate).toLocaleDateString('en-GB', { 
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Items</h3>
+                {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedOrder.items.map((item, index) => (
+                      <div 
+                        key={item.id || index}
+                        className="bg-gray-50 rounded-xl border border-gray-200 p-4"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">{item.recipe?.name || 'Unknown Item'}</h4>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="font-semibold text-gray-900">Qty: {item.quantity}</p>
+                            {item.price !== null && item.price !== undefined && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                £{(item.price * item.quantity).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No items in this order</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    router.push(toAppRoute(`/dashboard/wholesale/orders`));
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-lg hover:opacity-90 transition-all duration-200"
+                >
+                  View Full Order
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOrderModalOpen(false);
+                    setSelectedOrder(null);
+                  }}
+                  className="px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       </div>
     );
