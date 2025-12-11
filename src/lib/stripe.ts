@@ -242,3 +242,65 @@ export async function updateSubscriptionSeats(
   }
 }
 
+// Create MVP subscription checkout
+export async function createMVPCheckout(
+  customerId: string,
+  successUrl: string,
+  cancelUrl: string
+): Promise<Stripe.Checkout.Session> {
+  const priceId = process.env.STRIPE_MVP_PRICE_ID;
+  
+  if (!priceId) {
+    throw new Error('MVP price ID not configured');
+  }
+
+  return await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      type: "mvp",
+    },
+  });
+}
+
+// Create AI subscription checkout
+export async function createAICheckout(
+  customerId: string,
+  subscriptionType: "unlimited" | "capped",
+  successUrl: string,
+  cancelUrl: string
+): Promise<Stripe.Checkout.Session> {
+  const priceId = subscriptionType === "unlimited" 
+    ? process.env.STRIPE_AI_UNLIMITED_PRICE_ID
+    : process.env.STRIPE_AI_CAPPED_PRICE_ID;
+  
+  if (!priceId) {
+    throw new Error(`AI ${subscriptionType} price ID not configured`);
+  }
+
+  return await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      type: "ai",
+      subscriptionType,
+    },
+  });
+}
+

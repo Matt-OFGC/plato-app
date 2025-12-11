@@ -29,8 +29,15 @@ async function initRedis() {
   }
 
   try {
-    // Try to import redis client
-    const redis = await import("ioredis");
+    // Try to import redis client (optional dependency)
+    let redis;
+    try {
+      redis = await import("ioredis");
+    } catch (importError) {
+      // ioredis not installed - Redis is optional
+      console.warn("ioredis not available - Redis caching disabled");
+      return;
+    }
     redisClient = new redis.Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => {
