@@ -175,6 +175,8 @@ function LoginForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  autoComplete="email"
+                  autoFocus
                   required
                 />
               </div>

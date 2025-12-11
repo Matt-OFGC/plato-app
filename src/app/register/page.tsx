@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
 interface RegisterError {
@@ -11,6 +12,7 @@ interface RegisterError {
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [company, setCompany] = useState("");
@@ -21,36 +23,81 @@ export default function RegisterPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<RegisterError | null>(null);
   const [loading, setLoading] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
+  const [passwordStrength, setPasswordStrength] = useState<{ score: number; feedback: string }>({ score: 0, feedback: "" });
+
+  // Auto-redirect countdown after successful registration
+  useEffect(() => {
+    if (redirectCountdown !== null && redirectCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRedirectCountdown(redirectCountdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (redirectCountdown === 0) {
+      router.push('/login');
+    }
+  }, [redirectCountdown, router]);
+
+  // Calculate password strength
+  useEffect(() => {
+    if (!password) {
+      setPasswordStrength({ score: 0, feedback: "" });
+      return;
+    }
+
+    let score = 0;
+    let feedback = "";
+
+    // Length check
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+
+    // Character variety
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+    // Provide feedback
+    if (score <= 2) feedback = "Weak password";
+    else if (score <= 4) feedback = "Fair password";
+    else if (score <= 5) feedback = "Good password";
+    else feedback = "Strong password";
+
+    setPasswordStrength({ score: Math.min(score, 6), feedback });
+  }, [password]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setStatus(null);
     setLoading(true);
-    
+
     try {
-      const formData = new URLSearchParams({ 
-        email, 
-        password, 
-        company, 
+      const formData = new URLSearchParams({
+        email,
+        password,
+        company,
         name,
         businessType,
         country,
         phone
       });
-      
-      const res = await fetch("/api/register", { 
-        method: "POST", 
+
+      const res = await fetch("/api/register", {
+        method: "POST",
         body: formData,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         }
       });
-      
+
       const result = await res.json();
-      
+
       if (res.ok) {
         setStatus(result.message || "Account created successfully! You can now sign in.");
+        // Start countdown to redirect
+        setRedirectCountdown(5);
         // Clear form on success
         setEmail("");
         setPassword("");
@@ -67,7 +114,7 @@ export default function RegisterPage() {
           errorId: result.errorId
         });
         setStatus(null);
-        
+
         // If it's a retryable error, suggest retry
         if (result.code === "INTERNAL_ERROR" || result.code === "NETWORK_ERROR") {
           console.log("Retryable error detected. User can try again.");
@@ -84,6 +131,21 @@ export default function RegisterPage() {
       setLoading(false);
     }
   }
+
+  // Get color for password strength bar
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength.score <= 2) return "bg-red-500";
+    if (passwordStrength.score <= 4) return "bg-yellow-500";
+    if (passwordStrength.score <= 5) return "bg-emerald-500";
+    return "bg-green-600";
+  };
+
+  const getPasswordStrengthTextColor = () => {
+    if (passwordStrength.score <= 2) return "text-red-600";
+    if (passwordStrength.score <= 4) return "text-yellow-600";
+    if (passwordStrength.score <= 5) return "text-emerald-600";
+    return "text-green-700";
+  };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -169,7 +231,7 @@ export default function RegisterPage() {
                   </svg>
                   <div className="flex-1">
                     <p className="text-sm text-red-700 font-medium">{error.error}</p>
-                    {error.code === "EMAIL_ALREADY_EXISTS" && (
+                    {(error.code === "USER_EXISTS" || error.code === "EMAIL_ALREADY_EXISTS") && (
                       <a
                         href="/login"
                         className="text-sm text-red-600 hover:text-red-700 underline mt-1 inline-block"
@@ -188,12 +250,35 @@ export default function RegisterPage() {
             )}
 
             {status && (
-              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+              <div className="mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-500 rounded-xl">
                 <div className="flex items-start">
-                  <svg className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <p className="text-sm text-green-700">{status}</p>
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-lg font-bold text-green-900 mb-2">Account created successfully!</h3>
+                    <p className="text-sm text-green-700 mb-4">{status}</p>
+                    {redirectCountdown !== null && (
+                      <div className="space-y-3">
+                        <p className="text-sm text-green-600">
+                          Redirecting to login in {redirectCountdown} second{redirectCountdown !== 1 ? 's' : ''}...
+                        </p>
+                        <button
+                          onClick={() => router.push('/login')}
+                          className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                        >
+                          Go to Login Now
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -204,13 +289,17 @@ export default function RegisterPage() {
                 <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-4">Personal Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Full Name <span className="text-gray-400 font-normal text-xs">(optional)</span>
+                    </label>
                     <input
                       type="text"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-base"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="John Smith"
+                      autoComplete="name"
+                      autoFocus
                     />
                   </div>
                   <div>
@@ -221,6 +310,7 @@ export default function RegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
+                      autoComplete="email"
                       required
                     />
                   </div>
@@ -236,7 +326,24 @@ export default function RegisterPage() {
                     minLength={8}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-base"
                   />
-                  <p className="mt-2 text-xs text-gray-500">Must be at least 8 characters long</p>
+                  {password && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-medium ${getPasswordStrengthTextColor()}`}>
+                          {passwordStrength.feedback}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
+                          style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  {!password && (
+                    <p className="mt-2 text-xs text-gray-500">Must be at least 8 characters long</p>
+                  )}
                 </div>
               </div>
 
@@ -244,13 +351,16 @@ export default function RegisterPage() {
               <div className="space-y-4 pt-6 border-t border-gray-200">
                 <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-4">Business Information</h3>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Business Name</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Business Name <span className="text-gray-400 font-normal text-xs">(optional)</span>
+                  </label>
                   <input
                     type="text"
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-base"
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     placeholder="The Golden Spoon Bakery"
+                    autoComplete="organization"
                   />
                 </div>
                 <div>
@@ -279,6 +389,7 @@ export default function RegisterPage() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white text-base"
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
+                      autoComplete="country-name"
                       required
                     >
                       <option value="United Kingdom">United Kingdom</option>
@@ -303,6 +414,7 @@ export default function RegisterPage() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+44 20 1234 5678"
+                      autoComplete="tel"
                     />
                   </div>
                 </div>
@@ -310,7 +422,7 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || status !== null}
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold py-3.5 px-6 rounded-xl hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/30 mt-2"
               >
                 {loading ? (
@@ -355,5 +467,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-
