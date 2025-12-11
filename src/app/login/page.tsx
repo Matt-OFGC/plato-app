@@ -8,6 +8,7 @@ import { OAuthButtons } from "@/components/OAuthButtons";
 function LoginForm() {
   const sp = useSearchParams();
   const router = useRouter();
+  const redirectTo = sp.get("redirect");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -244,7 +245,7 @@ function LoginForm() {
               </div>
 
               <a
-                href="/register"
+                href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"}
                 className="flex items-center justify-center w-full border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
               >
                 Create an account
