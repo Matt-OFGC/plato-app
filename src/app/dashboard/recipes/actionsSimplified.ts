@@ -144,12 +144,32 @@ export async function createRecipeUnified(formData: FormData) {
     }
     
     if (!companyId) {
-      // Try to get more info for debugging
+      // Get user info for better error message
       const { user } = await getCurrentUserAndCompany();
-      const memberships = user?.memberships || [];
-      const errorMsg = memberships.length === 0 
-        ? "No company associated with your account. Please ensure you have an active company membership."
-        : "No company associated with your account. Your memberships may be inactive.";
+      const allMemberships = await prisma.membership.findMany({
+        where: { userId: user.id },
+        include: { company: { select: { id: true, name: true } } }
+      });
+      
+      const inactiveMemberships = allMemberships.filter(m => !m.isActive);
+      
+      let errorMsg = "No company associated with your account.";
+      if (allMemberships.length === 0) {
+        errorMsg += " Please create or join a company first. You can do this by registering a company or accepting a team invitation.";
+      } else if (inactiveMemberships.length > 0) {
+        errorMsg += ` You have ${inactiveMemberships.length} inactive membership(s). Please contact support to activate your company membership.`;
+      } else {
+        errorMsg += " Please ensure you have an active company membership.";
+      }
+      
+      // Log for debugging
+      console.error('Recipe creation failed - no companyId', {
+        userId: user.id,
+        totalMemberships: allMemberships.length,
+        activeMemberships: allMemberships.filter(m => m.isActive).length,
+        inactiveMemberships: inactiveMemberships.length
+      });
+      
       throw new Error(errorMsg);
     }
 
