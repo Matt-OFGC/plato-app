@@ -104,14 +104,22 @@ export async function POST(req: NextRequest) {
         },
         orderBy: { createdAt: 'asc' }
       });
-      
+
       if (existingMemberships.length > 0) {
-        // User already has active company/companies - they can create another one
-        // This is allowed for multi-company support
-        logger.info(`Existing user creating additional company`, {
+        // User already has an account - don't allow duplicate registration
+        // They should use the login page instead
+        logger.warn(`User attempted to register with existing email`, {
+          email,
           userId: existingUser.id,
           existingCompanies: existingMemberships.map(m => m.company.name),
         }, 'Registration');
+
+        return NextResponse.json({
+          error: "An account with this email already exists. Please sign in instead.",
+          code: "USER_EXISTS",
+          errorId,
+          details: "If you forgot your password, use the password reset option on the login page."
+        }, { status: 409 }); // 409 Conflict
       }
     }
 
