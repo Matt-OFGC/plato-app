@@ -211,7 +211,6 @@ export default function RegisterPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="John Smith"
-                      required
                     />
                   </div>
                   <div>
@@ -252,7 +251,6 @@ export default function RegisterPage() {
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     placeholder="The Golden Spoon Bakery"
-                    required
                   />
                 </div>
                 <div>
