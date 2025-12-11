@@ -30,11 +30,12 @@ async function initRedis() {
 
   try {
     // Try to import redis client (optional dependency)
-    // Use dynamic import with string literal to prevent build-time resolution
+    // Use eval to prevent build-time module resolution
     let redis: any;
     try {
-      // Dynamic import that won't be resolved at build time
-      redis = await Function('return import("ioredis")')();
+      // Dynamic import using eval to prevent Turbopack from resolving at build time
+      const importRedis = new Function('return import("ioredis")');
+      redis = await importRedis();
     } catch (importError) {
       // ioredis not installed - Redis is optional
       console.warn("ioredis not available - Redis caching disabled");

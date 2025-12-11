@@ -15,9 +15,18 @@ export default async function RecipesPage({ searchParams }: Props) {
   const { category, search, minCost, maxCost } = await searchParams;
   const { companyId } = await getCurrentUserAndCompany();
   
+  // Filter out test recipes - exclude recipes with "test" in name (case-insensitive)
+  // and recipes from test companies
   const where = companyId 
     ? { 
         companyId, 
+        // Exclude test recipes
+        NOT: {
+          OR: [
+            { name: { contains: "test", mode: "insensitive" as const } },
+            { name: { contains: "Test Category" } },
+          ]
+        },
         ...(category && { categoryRef: { is: { name: category } } }),
         ...(search && {
           OR: [
@@ -28,6 +37,13 @@ export default async function RecipesPage({ searchParams }: Props) {
         })
       }
     : { 
+        // Exclude test recipes even if no companyId
+        NOT: {
+          OR: [
+            { name: { contains: "test", mode: "insensitive" as const } },
+            { name: { contains: "Test Category" } },
+          ]
+        },
         ...(category && { categoryRef: { is: { name: category } } }),
         ...(search && {
           OR: [

@@ -17,7 +17,16 @@ export async function GET(request: NextRequest) {
     const includeFullData = searchParams.get("full") === "true";
 
     const recipesRaw = await prisma.recipe.findMany({
-      where: { companyId },
+      where: { 
+        companyId,
+        // Exclude test recipes
+        NOT: {
+          OR: [
+            { name: { contains: "test", mode: "insensitive" } },
+            { name: { contains: "Test Category" } },
+          ]
+        }
+      },
       orderBy: { name: "asc" },
       include: includeFullData ? {
         items: {
