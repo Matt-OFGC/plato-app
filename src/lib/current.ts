@@ -103,11 +103,39 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
 
     // Get the primary company (first active membership)
     const primaryMembership = userWithMemberships.memberships[0];
-    const companyId = primaryMembership?.companyId || null;
-    const company = primaryMembership?.company || null;
+    
+    if (!primaryMembership) {
+      logger.warn('User has no active memberships', { userId: user.id }, 'Current');
+      return {
+        companyId: null,
+        company: null,
+        user: userWithMemberships,
+        brand: null,
+        brandConfig: null,
+        app: null,
+        appConfig: null
+      };
+    }
+    
+    const companyId = primaryMembership.companyId;
+    const company = primaryMembership.company;
+    
+    if (!companyId) {
+      logger.warn('Membership has no companyId', { membershipId: primaryMembership.id }, 'Current');
+      return {
+        companyId: null,
+        company: null,
+        user: userWithMemberships,
+        brand: null,
+        brandConfig: null,
+        app: null,
+        appConfig: null
+      };
+    }
     
     // Get app from company (Company model has 'app' field, not 'brand')
-    const app = (company as any)?.app as App | null;
+    // Use optional chaining and type assertion to safely access app
+    const app = company && 'app' in company ? (company as any).app as App | null : null;
     const appConfig = app ? getAppConfig(app) : null;
     
     // Convert app to brand for compatibility (they're the same type)
