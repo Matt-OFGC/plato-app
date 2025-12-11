@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-error-handler";
 import { getPrimaryMfaDevice } from "@/lib/mfa/totp";
 import { checkSuspiciousActivity } from "@/lib/security-alerts";
+import { handleLoginNotification } from "@/lib/login-notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -132,6 +133,19 @@ export async function POST(request: NextRequest) {
     } catch (auditError) {
       // Don't fail login if audit logging fails
       logger.warn('[Auth/Login] Failed to log successful login', auditError);
+    }
+
+    // Send new device notification (async, non-blocking)
+    try {
+      handleLoginNotification(user.id, user.email, {
+        userAgent,
+        ipAddress,
+      }).catch((notifError) => {
+        logger.warn('[Auth/Login] Background notification failed', notifError);
+      });
+    } catch (notifError) {
+      // Don't fail login if notification fails
+      logger.warn('[Auth/Login] Failed to initiate login notification', notifError);
     }
 
     // Check if user is an owner/admin to enable device mode
