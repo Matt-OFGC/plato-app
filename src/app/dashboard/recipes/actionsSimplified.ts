@@ -144,7 +144,13 @@ export async function createRecipeUnified(formData: FormData) {
     }
     
     if (!companyId) {
-      throw new Error("No company associated with your account");
+      // Try to get more info for debugging
+      const { user } = await getCurrentUserAndCompany();
+      const memberships = user?.memberships || [];
+      const errorMsg = memberships.length === 0 
+        ? "No company associated with your account. Please ensure you have an active company membership."
+        : "No company associated with your account. Your memberships may be inactive.";
+      throw new Error(errorMsg);
     }
 
     // Create the recipe data
