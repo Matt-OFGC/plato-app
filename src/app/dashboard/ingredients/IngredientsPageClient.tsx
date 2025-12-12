@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { IngredientModal } from "@/components/IngredientModal";
 import { IngredientsViewWithBulkActions } from "@/components/IngredientsViewWithBulkActions";
 import { StalePriceAlerts } from "@/components/StalePriceAlerts";
+import { BulkImportModal } from "@/components/ingredients/BulkImportModal";
 import { Unit } from "@/lib/units";
 import { usePageActions } from "@/components/PageActionContext";
 
@@ -28,6 +29,7 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
   const searchParams = useSearchParams();
   const { registerNewAction, unregisterNewAction } = usePageActions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [isPending, startTransition] = useTransition();
   
@@ -123,9 +125,20 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
   return (
     <div>
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Ingredients</h1>
-        <p className="text-gray-500 text-lg mb-6">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Ingredients</h1>
+          <p className="text-gray-500 text-lg mb-6">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
+        </div>
+        <button
+          onClick={() => setIsBulkImportOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          Import CSV
+        </button>
       </div>
 
       {/* Stale Price Alerts */}
@@ -147,7 +160,7 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
         suppliers={suppliers}
       />
 
-      {/* Modal */}
+      {/* Modals */}
       <IngredientModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
@@ -157,6 +170,15 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
           ...editingIngredient,
           originalUnit: editingIngredient.originalUnit as Unit | null
         } : null}
+      />
+
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        onSuccess={() => {
+          setIsBulkImportOpen(false);
+          router.refresh();
+        }}
       />
     </div>
   );

@@ -127,6 +127,55 @@ export async function PUT(
   }
 }
 
+// PATCH /api/ingredients/[id] - Quick price update
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+    const { id } = await params;
+    const ingredientId = parseInt(id);
+
+    if (!companyId) {
+      return NextResponse.json({ error: "No company found" }, { status: 404 });
+    }
+
+    // Verify ingredient belongs to company
+    const existing = await prisma.ingredient.findUnique({
+      where: { id: ingredientId },
+      select: { companyId: true }
+    });
+
+    if (!existing || existing.companyId !== companyId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { packPrice } = body;
+
+    if (packPrice === undefined) {
+      return NextResponse.json({ error: "Pack price is required" }, { status: 400 });
+    }
+
+    await prisma.ingredient.update({
+      where: { id: ingredientId },
+      data: {
+        packPrice: parseFloat(packPrice),
+        lastPriceUpdate: new Date(),
+      }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    logger.error("Error updating ingredient price", error, "Ingredients");
+    return NextResponse.json(
+      { error: "Failed to update price", details: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/ingredients/[id] - Delete an ingredient
 export async function DELETE(
   request: NextRequest,

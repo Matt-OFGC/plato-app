@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { checkPriceStatus, getPriceStatusColorClass, formatLastUpdate } from "@/lib/priceTracking";
 import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
+import { StalePriceBulkUpdate } from "@/components/ingredients/StalePriceBulkUpdate";
 
 interface Ingredient {
   id: number;
@@ -18,6 +20,9 @@ interface StalePriceAlertsProps {
 
 export function StalePriceAlerts({ ingredients }: StalePriceAlertsProps) {
   const { toAppRoute } = useAppAwareRoute();
+  const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   // Check all ingredients for stale prices
   const ingredientsWithStatus = ingredients.map(ing => ({
     ...ing,
@@ -27,27 +32,53 @@ export function StalePriceAlerts({ ingredients }: StalePriceAlertsProps) {
   const staleIngredients = ingredientsWithStatus.filter(i => i.priceStatus.status === 'stale');
   const warningIngredients = ingredientsWithStatus.filter(i => i.priceStatus.status === 'warning');
 
+  // Combine stale and warning for bulk update
+  const allStaleIngredients = [...staleIngredients, ...warningIngredients].map(ing => ({
+    id: ing.id,
+    name: ing.name,
+    packPrice: ing.packPrice,
+    currency: 'GBP', // Default, could be from ingredient data
+    daysSinceUpdate: ing.priceStatus.daysSinceUpdate,
+    supplier: ing.supplier,
+  }));
+
   if (staleIngredients.length === 0 && warningIngredients.length === 0) {
     return null; // Don't show anything if all prices are current
   }
 
   return (
-    <div className="space-y-4">
-      {/* Stale Prices (12+ months) */}
-      {staleIngredients.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="text-lg font-semibold text-red-900">
-              Outdated Prices ({staleIngredients.length})
-            </h3>
-            <span className="text-xs text-red-700">12+ months old</span>
+    <>
+      <div className="space-y-4">
+        {/* Bulk Update Button */}
+        {allStaleIngredients.length > 1 && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsBulkUpdateOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors text-sm shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Update All Stale Prices ({allStaleIngredients.length})
+            </button>
           </div>
-          <p className="text-sm text-red-800 mb-4">
-            These ingredient prices haven't been updated in over a year. Please review and update.
-          </p>
+        )}
+
+        {/* Stale Prices (12+ months) */}
+        {staleIngredients.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-red-900">
+                Outdated Prices ({staleIngredients.length})
+              </h3>
+              <span className="text-xs text-red-700">12+ months old</span>
+            </div>
+            <p className="text-sm text-red-800 mb-4">
+              These ingredient prices haven't been updated in over a year. Please review and update.
+            </p>
           <div className="space-y-2">
             {staleIngredients.slice(0, 5).map(ing => (
               <Link 
@@ -123,6 +154,20 @@ export function StalePriceAlerts({ ingredients }: StalePriceAlertsProps) {
         </div>
       )}
     </div>
+
+      {/* Bulk Update Modal */}
+      <StalePriceBulkUpdate
+        isOpen={isBulkUpdateOpen}
+        onClose={() => setIsBulkUpdateOpen(false)}
+        onSuccess={() => {
+          setIsBulkUpdateOpen(false);
+          setRefreshKey(prev => prev + 1);
+          // Force page refresh to show updated prices
+          window.location.reload();
+        }}
+        staleIngredients={allStaleIngredients}
+      />
+    </>
   );
 }
 
