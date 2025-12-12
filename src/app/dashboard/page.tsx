@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { DashboardWithOnboarding } from "@/components/DashboardWithOnboarding";
 import { OperationalDashboard } from "@/components/OperationalDashboard";
+import { FirstTimeUserDashboard } from "@/components/dashboard/FirstTimeUserDashboard";
 import { checkPriceStatus } from "@/lib/priceTracking";
 import { hasAppAccess } from "@/lib/user-app-subscriptions";
 import { getAppConfig } from "@/lib/apps/registry";
@@ -573,6 +574,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const safeWeekOrders = Array.isArray(weekOrders) ? weekOrders : [];
   const safeStaleIngredients = Array.isArray(staleIngredients) ? staleIngredients : [];
 
+  // Determine if user is new (show first-time dashboard)
+  const isNewUser = recipeCount === 0 && ingredients.length === 0;
+  const hasIngredients = ingredients.length > 0;
+  const hasRecipes = recipeCount > 0;
+  const hasTeam = staffCount > 1; // More than just the owner
+
   try {
     return (
       <DashboardWithOnboarding
@@ -580,19 +587,29 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         userName={user.name || undefined}
         companyName={company?.name || "Your Company"}
       >
-        <OperationalDashboard
-          todayProduction={safeTodayProduction}
-          weekProduction={safeWeekProduction}
-          tasks={safeTasks}
-          todayOrders={safeTodayOrders}
-          weekOrders={safeWeekOrders}
-          staleIngredients={safeStaleIngredients}
-          userName={user.name || undefined}
-          userRole={userRole}
-          companyName={company?.name || undefined}
-          appName={appConfig?.name}
-          appTagline={appConfig?.tagline}
-        />
+        {isNewUser ? (
+          <FirstTimeUserDashboard
+            userName={user.name || undefined}
+            companyName={company?.name || undefined}
+            hasIngredients={hasIngredients}
+            hasRecipes={hasRecipes}
+            hasTeam={hasTeam}
+          />
+        ) : (
+          <OperationalDashboard
+            todayProduction={safeTodayProduction}
+            weekProduction={safeWeekProduction}
+            tasks={safeTasks}
+            todayOrders={safeTodayOrders}
+            weekOrders={safeWeekOrders}
+            staleIngredients={safeStaleIngredients}
+            userName={user.name || undefined}
+            userRole={userRole}
+            companyName={company?.name || undefined}
+            appName={appConfig?.name}
+            appTagline={appConfig?.tagline}
+          />
+        )}
       </DashboardWithOnboarding>
     );
   } catch (error) {

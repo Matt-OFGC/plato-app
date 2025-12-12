@@ -115,6 +115,25 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
     setStatus(null);
+
+    // Wait for pending email validation to complete
+    if (emailCheckLoading) {
+      setError({
+        error: "Please wait while we verify your email address...",
+        code: "EMAIL_CHECKING"
+      });
+      return;
+    }
+
+    // Check if email already exists
+    if (emailExists) {
+      setError({
+        error: "This email is already registered. Please sign in instead or use a different email.",
+        code: "EMAIL_EXISTS"
+      });
+      return;
+    }
+
     setLoading(true);
 
     const formData = new URLSearchParams({
@@ -171,7 +190,7 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
-  }, [email, password, company, name, businessType, country, phone]);
+  }, [email, password, company, name, businessType, country, phone, emailCheckLoading, emailExists]);
 
   const handleRetry = (e: React.MouseEvent) => {
     e.preventDefault();

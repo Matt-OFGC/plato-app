@@ -160,6 +160,12 @@ const withPWA = require('next-pwa')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Remove console logs in production builds
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'], // Keep error and warn logs for debugging
+    } : false,
+  },
   turbopack: {
     rules: {
       "*.svg": {
