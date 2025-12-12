@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUserAndCompany } from "@/lib/auth/currentUser";
+import { getCurrentUserAndCompany } from "@/lib/current";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
