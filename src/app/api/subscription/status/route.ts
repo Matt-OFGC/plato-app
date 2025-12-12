@@ -63,7 +63,7 @@ export async function GET() {
     }
 
     return createOptimizedResponse({
-      subscription: subscriptionData,
+      subscription: subscription,
       aiSubscription,
       user: {
         id: user.id,
