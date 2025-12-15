@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-export type FeatureModuleName = "recipes" | "production" | "make" | "teams" | "safety";
+export type FeatureModuleName = "recipes" | "production" | "wholesale";
 
 /**
  * Unlock status for a single module
@@ -12,14 +12,12 @@ export type ModuleUnlockStatus = {
 };
 
 /**
- * Unlock status for all modules
+ * Unlock status for all MVP modules
  */
 export type UnlockStatus = {
   recipes: ModuleUnlockStatus;
   production: ModuleUnlockStatus;
-  make: ModuleUnlockStatus;
-  teams: ModuleUnlockStatus;
-  safety: ModuleUnlockStatus;
+  wholesale: ModuleUnlockStatus;
 };
 
 /**
@@ -82,8 +80,8 @@ export async function isPaidTier(userId: number): Promise<boolean> {
 
 /**
  * Check if a user has access to a specific section/module
- * Free tier: Only recipes (with limits)
- * Paid tier: Everything unlocked
+ * Free tier: Only recipes (with 10 ingredients, 2 recipes limit)
+ * Paid tier: All MVP features unlocked (recipes, production, wholesale)
  */
 export async function checkSectionAccess(
   userId: number,
@@ -92,7 +90,7 @@ export async function checkSectionAccess(
   try {
     const paid = await isPaidTier(userId);
 
-    // Paid tier: Everything unlocked
+    // Paid tier: All MVP features unlocked
     if (paid) {
       return true;
     }
@@ -102,7 +100,7 @@ export async function checkSectionAccess(
       return true;
     }
 
-    // Free tier: All other sections locked
+    // Free tier: Production and wholesale locked
     return false;
   } catch (error) {
     console.error(`[checkSectionAccess] Error checking access for user ${userId}, section ${sectionName}:`, error);
@@ -117,8 +115,8 @@ export async function getUnlockedSections(userId: number): Promise<FeatureModule
   const paid = await isPaidTier(userId);
 
   if (paid) {
-    // Paid tier: Everything unlocked
-    return ["recipes", "production", "make", "teams", "safety"];
+    // Paid tier: All MVP features unlocked
+    return ["recipes", "production", "wholesale"];
   }
 
   // Free tier: Only recipes
@@ -217,7 +215,7 @@ export async function requireSectionAccess(
 }
 
 /**
- * Get detailed unlock status for all sections based on subscription tier
+ * Get detailed unlock status for MVP modules based on subscription tier
  */
 export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
   try {
@@ -239,16 +237,14 @@ export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
       return {
         recipes: { unlocked: false, isTrial: false, status: null },
         production: { unlocked: false, isTrial: false, status: null },
-        make: { unlocked: false, isTrial: false, status: null },
-        teams: { unlocked: false, isTrial: false, status: null },
-        safety: { unlocked: false, isTrial: false, status: null },
+        wholesale: { unlocked: false, isTrial: false, status: null },
       };
     }
 
     // Check if paid tier
     const tierLower = user.subscriptionTier?.toLowerCase() || "";
     const isPaid = tierLower === "paid";
-    
+
     // Also check if subscription is still active (if there's an end date)
     let isActive = true;
     if (user.subscriptionEndsAt) {
@@ -271,9 +267,9 @@ export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
       finalPaid: paid,
     });
 
-    // Paid tier: Everything unlocked
+    // Paid tier: All MVP features unlocked (recipes, production, wholesale)
     if (paid) {
-      console.log(`[getUnlockStatus] User ${userId} is PAID - unlocking everything`);
+      console.log(`[getUnlockStatus] User ${userId} is PAID - unlocking MVP features`);
       return {
         recipes: {
           unlocked: true,
@@ -285,17 +281,7 @@ export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
           isTrial: false,
           status: "active",
         },
-        make: {
-          unlocked: true,
-          isTrial: false,
-          status: "active",
-        },
-        teams: {
-          unlocked: true,
-          isTrial: false,
-          status: "active",
-        },
-        safety: {
+        wholesale: {
           unlocked: true,
           isTrial: false,
           status: "active",
@@ -303,8 +289,8 @@ export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
       };
     }
 
-    console.log(`[getUnlockStatus] User ${userId} is FREE - only recipes unlocked`);
-    // Free tier: Only recipes unlocked (with limits)
+    console.log(`[getUnlockStatus] User ${userId} is FREE - only recipes unlocked with 10 ingredient / 2 recipe limit`);
+    // Free tier: Only recipes unlocked (with 10 ingredients, 2 recipes limit)
     return {
       recipes: {
         unlocked: true,
@@ -316,17 +302,7 @@ export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
         isTrial: false,
         status: null,
       },
-      make: {
-        unlocked: false,
-        isTrial: false,
-        status: null,
-      },
-      teams: {
-        unlocked: false,
-        isTrial: false,
-        status: null,
-      },
-      safety: {
+      wholesale: {
         unlocked: false,
         isTrial: false,
         status: null,
@@ -347,17 +323,7 @@ export async function getUnlockStatus(userId: number): Promise<UnlockStatus> {
         isTrial: false,
         status: "active",
       },
-      make: {
-        unlocked: true,
-        isTrial: false,
-        status: "active",
-      },
-      teams: {
-        unlocked: true,
-        isTrial: false,
-        status: "active",
-      },
-      safety: {
+      wholesale: {
         unlocked: true,
         isTrial: false,
         status: "active",

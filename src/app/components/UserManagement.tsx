@@ -886,17 +886,17 @@ export function UserManagement() {
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 mb-2">
-                      <strong>Free Tier:</strong> 5 ingredients, 5 recipes, only Recipes section unlocked
+                      <strong>Free Tier:</strong> 10 ingredients, 2 recipes, only Recipes section unlocked
                     </p>
                     <p className="text-sm text-gray-600">
-                      <strong>Paid Tier (MVP):</strong> Unlimited everything, all MVP features unlocked
+                      <strong>Paid Tier (MVP):</strong> Unlimited ingredients/recipes, unlocks Recipes + Production + Wholesale
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
                         if (!selectedUser) return;
-                        if (!confirm(`Set ${selectedUser.email} to FREE tier? This will limit them to 5 ingredients and 5 recipes.`)) return;
+                        if (!confirm(`Set ${selectedUser.email} to FREE tier? This will limit them to 10 ingredients and 2 recipes.`)) return;
                         handleUpgradeSubscription(selectedUser.email, "free");
                       }}
                       disabled={actionLoading || (selectedUser.subscriptionTier === "free" && selectedUser.subscriptionStatus === "free")}
@@ -911,7 +911,7 @@ export function UserManagement() {
                     <button
                       onClick={() => {
                         if (!selectedUser) return;
-                        if (!confirm(`Set ${selectedUser.email} to PAID tier? This will unlock all features.`)) return;
+                        if (!confirm(`Set ${selectedUser.email} to PAID tier? This will unlock all MVP features (recipes, production, wholesale).`)) return;
                         handleUpgradeSubscription(selectedUser.email, "paid");
                       }}
                       disabled={actionLoading || (selectedUser.subscriptionTier === "paid" && selectedUser.subscriptionStatus === "active")}
@@ -926,7 +926,7 @@ export function UserManagement() {
                     <button
                       onClick={() => {
                         if (!selectedUser) return;
-                        if (!confirm(`Set ${selectedUser.email} to PAID tier (LIFETIME)? This will unlock all features permanently.`)) return;
+                        if (!confirm(`Set ${selectedUser.email} to PAID tier (LIFETIME)? This will unlock all MVP features permanently.`)) return;
                         handleUpgradeSubscription(selectedUser.email, "paid", true);
                       }}
                       disabled={actionLoading}

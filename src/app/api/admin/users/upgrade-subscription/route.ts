@@ -131,8 +131,8 @@ export async function POST(request: NextRequest) {
         interval: isLifetime ? "lifetime" : "month",
         currentPeriodStart: new Date(),
         currentPeriodEnd: subscriptionEndsAt || new Date(),
-        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
-        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
+        maxIngredients: tier === "paid" ? null : 10, // Free tier: 10 ingredients
+        maxRecipes: tier === "paid" ? null : 2, // Free tier: 2 recipes
         aiSubscriptionType: null, // MVP subscription doesn't include AI
       },
       update: {
@@ -148,8 +148,8 @@ export async function POST(request: NextRequest) {
         interval: isLifetime ? "lifetime" : "month",
         currentPeriodStart: new Date(),
         currentPeriodEnd: subscriptionEndsAt || new Date(),
-        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
-        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
+        maxIngredients: tier === "paid" ? null : 10, // Free tier: 10 ingredients
+        maxRecipes: tier === "paid" ? null : 2, // Free tier: 2 recipes
       },
     });
     await prisma.subscription.upsert({
@@ -168,8 +168,8 @@ export async function POST(request: NextRequest) {
         interval: isLifetime ? "lifetime" : "month",
         currentPeriodStart: new Date(),
         currentPeriodEnd: subscriptionEndsAt || new Date(),
-        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
-        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
+        maxIngredients: tier === "paid" ? null : 10, // Free tier: 10 ingredients
+        maxRecipes: tier === "paid" ? null : 2, // Free tier: 2 recipes
         aiSubscriptionType: null, // MVP subscription doesn't include AI
       },
       update: {
@@ -185,8 +185,8 @@ export async function POST(request: NextRequest) {
         interval: isLifetime ? "lifetime" : "month",
         currentPeriodStart: new Date(),
         currentPeriodEnd: subscriptionEndsAt || new Date(),
-        maxIngredients: tier === "paid" ? null : 5, // Free tier: 5 ingredients
-        maxRecipes: tier === "paid" ? null : 5, // Free tier: 5 recipes
+        maxIngredients: tier === "paid" ? null : 10, // Free tier: 10 ingredients
+        maxRecipes: tier === "paid" ? null : 2, // Free tier: 2 recipes
       },
     });
 

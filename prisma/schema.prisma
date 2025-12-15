@@ -194,6 +194,7 @@ model User {
   sessions                   Session[]
   oauthAccounts              OAuthAccount[]
   mfaDevices                 MfaDevice[]
+  UserAppSubscription        UserAppSubscription[]
 }
 
 model Session {
@@ -1872,6 +1873,11 @@ enum Unit {
   small
 }
 
+enum App {
+  plato
+  plato_bake
+}
+
 enum MemberRole {
   OWNER
   ADMIN
@@ -1908,9 +1914,29 @@ model MfaDevice {
   isVerified  Boolean  @default(false)
   isPrimary   Boolean  @default(false)
   createdAt   DateTime @default(now())
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId])
   @@index([userId, type])
+}
+
+model UserAppSubscription {
+  id                   Int       @id @default(autoincrement())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  userId               Int
+  app                  App
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  status               String    @default("active") // active, canceled, expired
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  User                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, app])
+  @@index([userId])
+  @@index([userId, status])
+  @@index([app])
 }
