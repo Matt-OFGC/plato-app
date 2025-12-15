@@ -250,7 +250,7 @@ export default function IngredientsPanel({
             ? "border-2 border-dashed border-gray-300"
             : ""
         } ${
-          hasDropdownOpen ? "relative z-[100]" : ""
+          hasDropdownOpen ? "relative z-[999]" : ""
         }`}
       >
         {/* Checkbox */}
@@ -361,10 +361,10 @@ export default function IngredientsPanel({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  
+
                   {/* Searchable dropdown - shows all ingredients initially, filters as you type */}
                   {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0) || ingredientSearch[ingredient.id]?.length === 0 ? (
-                    <div className="absolute left-0 right-0 z-[110] mt-1 bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
+                    <div className="absolute left-0 right-0 z-[9999] mt-1 bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
                       <div className="py-1">
                         {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : availableIngredients).map((result, idx) => (
                           <button
