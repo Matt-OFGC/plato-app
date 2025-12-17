@@ -234,12 +234,12 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
                       >
                         Settings
                       </a>
-                      {membership.role === "OWNER" && (
+                      {(membership.role === "OWNER" || membership.role === "ADMIN") && (
                         <button
                           onClick={() => handleDeleteClick(membership.companyId, membership.company.name)}
                           disabled={deleting === membership.companyId}
                           className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium disabled:opacity-50"
-                          title="Delete company"
+                          title={membership.role === "OWNER" ? "Delete company" : "Only company owners can delete companies"}
                         >
                           {deleting === membership.companyId ? "Deleting..." : "Delete"}
                         </button>
@@ -284,3 +284,4 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
     </div>
   );
 }
+

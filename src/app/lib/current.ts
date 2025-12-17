@@ -56,7 +56,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         user: {
           id: 0,
           email: '',
-          name: null,
+          name: undefined,
           isAdmin: false,
           memberships: []
         },
@@ -106,7 +106,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         user: {
           id: user?.id || 0,
           email: user?.email || '',
-          name: user?.name || null,
+          name: user?.name || undefined,
           isAdmin: user?.isAdmin || false,
           memberships: []
         },
@@ -121,7 +121,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         user: {
           id: 0,
           email: '',
-          name: null,
+          name: undefined,
           isAdmin: false,
           memberships: []
         },
@@ -202,23 +202,18 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
         orderBy: { createdAt: 'asc' }
       });
       
-      // If user has inactive memberships, activate the first one
+      // If user has inactive memberships, use the first one (even if inactive)
+      // This ensures users can always access their companies
       if (allMemberships.length > 0) {
-        // Check feature flag
-        if (!isFeatureEnabled('AUTO_REPAIR_ACTIVATE_MEMBERSHIP', userId)) {
-          logger.debug(`Auto-repair disabled by feature flag for user ${userId}`, {}, 'Current');
-          // Fall through to return null
-        } else {
+        const inactiveMembership = allMemberships[0];
+        
+        // Try to activate if feature flag allows, otherwise just use it as-is
+        const shouldActivate = isFeatureEnabled('AUTO_REPAIR_ACTIVATE_MEMBERSHIP', userId);
+        
+        if (shouldActivate) {
           // Check rate limit
           const rateLimitCheck = await checkRepairRateLimit(userId);
-          if (!rateLimitCheck.allowed) {
-            logger.warn(`Auto-repair rate limit exceeded for user ${userId}`, {
-              userId,
-              resetAt: rateLimitCheck.resetAt,
-            }, 'Current');
-            // Fall through to return null
-          } else {
-            const inactiveMembership = allMemberships[0];
+          if (rateLimitCheck.allowed) {
             logger.warn(`Auto-repair: Activating inactive membership for user ${userId}`, {
               userId,
               membershipId: inactiveMembership.id,
@@ -245,11 +240,20 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             
             // Clear cache and refetch
             await deleteCache(CacheKeys.userSession(userId));
-            
-            // Return the activated membership
-            companyId = inactiveMembership.companyId;
-            company = inactiveMembership.company as Company;
           }
+        }
+        
+        // Use the membership even if we couldn't activate it
+        // This allows users to access their companies even if memberships are inactive
+        companyId = inactiveMembership.companyId;
+        company = inactiveMembership.company as Company;
+        
+        if (!shouldActivate || !inactiveMembership.isActive) {
+          logger.debug(`Using inactive membership for user ${userId}`, {
+            userId,
+            companyId: inactiveMembership.companyId,
+            membershipId: inactiveMembership.id,
+          }, 'Current');
         }
       } else {
         // AUTO-REPAIR: User has no memberships at all - create company and membership
@@ -276,7 +280,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             const defaultCompanyName = generateDefaultCompanyName(userWithMemberships.email);
             const slug = await generateCompanySlug(defaultCompanyName);
             
-            const repairResult = await prisma.$transaction(async (tx) => {
+            const repairResult = await prisma.$transaction(async (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) => {
           // Create company
           const newCompany = await tx.company.create({
             data: {
@@ -380,7 +384,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
         user: {
           id: user?.id || 0,
           email: user?.email || '',
-          name: user?.name || null,
+          name: user?.name || undefined,
           isAdmin: user?.isAdmin || false,
           memberships: []
         },
@@ -396,7 +400,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
         user: {
           id: 0,
           email: '',
-          name: null,
+          name: undefined,
           isAdmin: false,
           memberships: []
         },

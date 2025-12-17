@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!membership || membership.role !== "OWNER") {
+    if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
       return NextResponse.json(
-        { error: "Only the company owner can delete the company" },
+        { error: "Only company owners and admins can delete the company" },
         { status: 403 }
       );
     }
@@ -153,3 +153,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
