@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface Company {
@@ -36,6 +36,31 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
   const [switching, setSwitching] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ companyId: number; companyName: string } | null>(null);
+  const [duplicates, setDuplicates] = useState<Array<{ name: string; companies: Membership[] }>>([]);
+  const [loadingDuplicates, setLoadingDuplicates] = useState(false);
+  const [cleaningUp, setCleaningUp] = useState(false);
+
+  // Detect duplicates on mount
+  useEffect(() => {
+    const detectDuplicates = () => {
+      const companiesByName = new Map<string, Membership[]>();
+      memberships.forEach((membership) => {
+        const name = membership.company.name.toLowerCase().trim();
+        if (!companiesByName.has(name)) {
+          companiesByName.set(name, []);
+        }
+        companiesByName.get(name)!.push(membership);
+      });
+
+      const dups = Array.from(companiesByName.entries())
+        .filter(([_, companies]) => companies.length > 1)
+        .map(([name, companies]) => ({ name, companies }));
+      
+      setDuplicates(dups);
+    };
+
+    detectDuplicates();
+  }, [memberships]);
 
   const handleSwitchCompany = async (companyId: number) => {
     setSwitching(companyId);
@@ -109,8 +134,104 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
     setDeleteConfirm(null);
   };
 
+  const handleCleanupDuplicates = async (keepCompanyId: number, deleteCompanyIds: number[]) => {
+    if (!confirm(`Are you sure you want to archive ${deleteCompanyIds.length} duplicate company/companies? This will keep the company with ID ${keepCompanyId} and archive the others.`)) {
+      return;
+    }
+
+    setCleaningUp(true);
+    try {
+      const res = await fetch("/api/companies/cleanup-duplicates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keepCompanyId, deleteCompanyIds }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.refresh();
+        setDuplicates([]);
+        alert(`Successfully archived ${data.archived.length} duplicate company/companies`);
+      } else {
+        alert(data.error || "Failed to cleanup duplicates");
+      }
+    } catch (error) {
+      console.error("Failed to cleanup duplicates:", error);
+      alert("Failed to cleanup duplicates. Please try again.");
+    } finally {
+      setCleaningUp(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Duplicate Companies Warning */}
+      {duplicates.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-amber-900 mb-2">
+            ⚠️ Duplicate Companies Detected
+          </h3>
+          <p className="text-sm text-amber-800 mb-4">
+            You have {duplicates.reduce((sum, d) => sum + d.companies.length, 0)} companies with duplicate names. 
+            You can keep one and archive the rest.
+          </p>
+          {duplicates.map((dup, idx) => {
+            // Find the company with the most data to keep
+            const sortedByData = [...dup.companies].sort((a, b) => {
+              const aData = a.company._count.recipes + a.company._count.ingredients;
+              const bData = b.company._count.recipes + b.company._count.ingredients;
+              return bData - aData;
+            });
+            const keepCompany = sortedByData[0];
+            const deleteCompanies = sortedByData.slice(1);
+
+            return (
+              <div key={idx} className="mb-4 p-4 bg-white rounded-lg border border-amber-200">
+                <div className="font-medium text-amber-900 mb-2">"{dup.name}"</div>
+                <div className="space-y-2 text-sm">
+                  <div className="text-green-700">
+                    ✓ Keep: <strong>{keepCompany.company.name}</strong> 
+                    ({keepCompany.company._count.recipes} recipes, {keepCompany.company._count.ingredients} ingredients)
+                    {keepCompany.role === "OWNER" || keepCompany.role === "ADMIN" ? (
+                      <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Owner/Admin</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Role: {keepCompany.role}</span>
+                    )}
+                  </div>
+                  {deleteCompanies.map((c) => (
+                    <div key={c.companyId} className="text-red-700">
+                      ✗ Archive: <strong>{c.company.name}</strong>
+                      ({c.company._count.recipes} recipes, {c.company._count.ingredients} ingredients)
+                      {c.role === "OWNER" || c.role === "ADMIN" ? (
+                        <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Owner/Admin</span>
+                      ) : (
+                        <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Role: {c.role}</span>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => handleCleanupDuplicates(
+                      keepCompany.companyId,
+                      deleteCompanies.map(c => c.companyId)
+                    )}
+                    disabled={cleaningUp || (keepCompany.role !== "OWNER" && keepCompany.role !== "ADMIN")}
+                    className="mt-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  >
+                    {cleaningUp ? "Archiving..." : `Archive ${deleteCompanies.length} Duplicate${deleteCompanies.length > 1 ? 's' : ''}`}
+                  </button>
+                  {(keepCompany.role !== "OWNER" && keepCompany.role !== "ADMIN") && (
+                    <div className="text-xs text-amber-700 mt-1">
+                      You need to be OWNER or ADMIN to archive companies
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-6">

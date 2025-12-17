@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user is the owner
-    const membership = await prisma.membership.findUnique({
+    // Verify user is the owner - check both active and inactive memberships
+    const membership = await prisma.membership.findFirst({
       where: {
-        userId_companyId: {
-          userId: session.id,
-          companyId,
-        },
+        userId: session.id,
+        companyId,
+        // Check active first, but also allow inactive if user was owner
+        role: { in: ["OWNER", "ADMIN"] },
       },
       include: {
         company: {
@@ -56,11 +56,44 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+      orderBy: {
+        isActive: 'desc', // Prefer active memberships
+      },
     });
 
-    if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
+    if (!membership) {
+      // Check if user has any membership at all for better error message
+      const anyMembership = await prisma.membership.findFirst({
+        where: {
+          userId: session.id,
+          companyId,
+        },
+        select: { role: true, isActive: true },
+      });
+
+      if (anyMembership) {
+        return NextResponse.json(
+          { 
+            error: `You don't have permission to delete this company. Your role is ${anyMembership.role}${anyMembership.isActive ? '' : ' (inactive)'}. Only owners and admins can delete companies.`,
+            role: anyMembership.role,
+            isActive: anyMembership.isActive,
+          },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json(
-        { error: "Only company owners and admins can delete the company" },
+        { error: "You don't have access to this company" },
+        { status: 403 }
+      );
+    }
+
+    if (membership.role !== "OWNER" && membership.role !== "ADMIN") {
+      return NextResponse.json(
+        { 
+          error: `Only company owners and admins can delete the company. Your role is ${membership.role}.`,
+          role: membership.role,
+        },
         { status: 403 }
       );
     }
