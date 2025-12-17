@@ -115,9 +115,23 @@ If you didn't create an account with Plato, you can safely ignore this email.
       });
     } catch (emailError) {
       logger.error("Failed to send verification email", emailError, "Auth/ResendVerification");
+      
+      // Extract safe error message
+      let errorMessage = "Failed to send verification email. Please check your email configuration or try again later.";
+      if (emailError instanceof Error) {
+        const message = emailError.message.toLowerCase();
+        if (message.includes('api key') || message.includes('unauthorized')) {
+          errorMessage = "Email service configuration error. Please contact support.";
+        } else if (message.includes('domain') || message.includes('from')) {
+          errorMessage = "Email sender domain not verified. Please contact support.";
+        } else if (message.includes('not configured')) {
+          errorMessage = "Email service not configured. Please contact support.";
+        }
+      }
+      
       return NextResponse.json(
         { 
-          error: "Failed to send verification email. Please check your email configuration or try again later.",
+          error: errorMessage,
           details: process.env.NODE_ENV === 'development' ? (emailError instanceof Error ? emailError.message : String(emailError)) : undefined
         },
         { status: 500 }
