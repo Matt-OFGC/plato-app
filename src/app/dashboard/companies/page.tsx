@@ -15,7 +15,11 @@ export default async function CompaniesPage() {
       userId: user.id,
       isActive: true,
     },
-    include: {
+    select: {
+      id: true,
+      companyId: true,
+      role: true,
+      isActive: true,
       company: {
         select: {
           id: true,

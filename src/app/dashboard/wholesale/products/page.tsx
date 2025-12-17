@@ -2,6 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { CompanyLoadingErrorServer } from "@/components/CompanyLoadingErrorServer";
 import { WholesaleProducts } from "@/components/WholesaleProducts";
 
 export const dynamic = 'force-dynamic';
@@ -10,11 +11,17 @@ export default async function WholesaleProductsPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login");
 
-  const { companyId } = await getCurrentUserAndCompany();
+  const result = await getCurrentUserAndCompany();
+  const { companyId } = result;
+  
+  // Show error component if companyId is null
+  if (!companyId) {
+    return <CompanyLoadingErrorServer result={result} page="wholesale-products" />;
+  }
 
   // Get all wholesale products for the company
   const productsRaw = await prisma.wholesaleProduct.findMany({
-    where: { companyId: companyId! },
+    where: { companyId },
     include: {
       recipe: {
         select: {
@@ -49,7 +56,7 @@ export default async function WholesaleProductsPage() {
   // Get recipes for dropdown
   const recipesRaw = await prisma.recipe.findMany({
     where: {
-      companyId: companyId!,
+      companyId,
       isSubRecipe: false,
     },
     select: {
@@ -85,7 +92,7 @@ export default async function WholesaleProductsPage() {
       <WholesaleProducts
         products={products}
         recipes={recipes}
-        companyId={companyId!}
+        companyId={companyId}
       />
     </div>
   );

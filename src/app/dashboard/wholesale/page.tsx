@@ -1,7 +1,8 @@
 import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
-import { getCurrentUserAndCompany } from "@/lib/current";
+import { getCurrentUserAndCompany, getUserRoleInCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { CompanyLoadingErrorServer } from "@/components/CompanyLoadingErrorServer";
 import WholesalePageClient from "./WholesalePageClient";
 
 export const dynamic = 'force-dynamic';
@@ -10,8 +11,16 @@ export default async function WholesalePage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard/wholesale");
 
-  const { companyId, currentUserRole } = await getCurrentUserAndCompany();
-  if (!companyId) redirect("/dashboard");
+  const result = await getCurrentUserAndCompany();
+  const { companyId } = result;
+  
+  // Show error component if companyId is null
+  if (!companyId) {
+    return <CompanyLoadingErrorServer result={result} page="wholesale" />;
+  }
+  
+  // Get user's role in the company
+  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "VIEWER";
 
   // Get customers
   const customers = await prisma.wholesaleCustomer.findMany({

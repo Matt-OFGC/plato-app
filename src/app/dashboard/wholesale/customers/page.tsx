@@ -2,6 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany, getUserRoleInCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { CompanyLoadingErrorServer } from "@/components/CompanyLoadingErrorServer";
 import { WholesaleCustomers } from "@/components/WholesaleCustomers";
 
 export const dynamic = 'force-dynamic';
@@ -10,19 +11,12 @@ export default async function WholesaleCustomersPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login?redirect=/dashboard/wholesale/customers");
 
-  let result;
-  try {
-    result = await getCurrentUserAndCompany();
-  } catch (error) {
-    console.error("Error getting user and company:", error);
-    redirect("/dashboard");
-  }
-
-  let { companyId } = result;
+  const result = await getCurrentUserAndCompany();
+  const { companyId } = result;
   
-  // If no company, redirect to wholesale page which will handle company creation
+  // Show error component if companyId is null
   if (!companyId) {
-    redirect("/dashboard/wholesale");
+    return <CompanyLoadingErrorServer result={result} page="wholesale-customers" />;
   }
 
   // Get user's role in the company

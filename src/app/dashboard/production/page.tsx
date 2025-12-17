@@ -2,6 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { CompanyLoadingErrorServer } from "@/components/CompanyLoadingErrorServer";
 import { ProductionPlannerEnhanced } from "@/components/ProductionPlannerEnhanced";
 // Temporarily disabled to fix build error
 // import { checkSectionAccess } from "@/lib/features";
@@ -21,8 +22,13 @@ export default async function ProductionPage() {
   //   redirect("/dashboard?locked=production");
   // }
 
-  const { companyId } = await getCurrentUserAndCompany();
-  if (!companyId) redirect("/dashboard");
+  const result = await getCurrentUserAndCompany();
+  const { companyId } = result;
+  
+  // Show error component if companyId is null
+  if (!companyId) {
+    return <CompanyLoadingErrorServer result={result} page="production" />;
+  }
 
   // Get basic recipes data - much lighter query
   const recipesRaw = await prisma.recipe.findMany({
