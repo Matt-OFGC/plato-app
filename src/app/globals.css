@@ -2380,6 +2380,11 @@ body.recipe-page-active .recipe-safe-frame {
   animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Email verification banner animation */
+.animate-email-banner-slide-up {
+  animation: slideUpFromBottom 0.3s ease-out;
+}
+
 /* Hide scrollbar for mobile tabs */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */

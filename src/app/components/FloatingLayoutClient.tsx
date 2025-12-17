@@ -53,9 +53,6 @@ function FloatingLayoutContent({
       <PageActionProvider>
         <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif' }}>
 
-        {/* Email Verification Banner */}
-        {user && <EmailVerificationBanner userEmail={user.email} isVerified={user.emailVerified} />}
-
         <div className="flex flex-1 overflow-hidden">
           {/* Floating Sidebar */}
           <FloatingSidebar isOpen={sidebarOpen} onClose={handleClose} />
@@ -85,6 +82,9 @@ function FloatingLayoutContent({
 
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />
+
+        {/* Email Verification Banner - Fixed at bottom */}
+        {user && <EmailVerificationBanner userEmail={user.email} isVerified={user.emailVerified} />}
       </div>
     </PageActionProvider>
     </ToastProvider>

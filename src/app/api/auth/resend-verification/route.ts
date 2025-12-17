@@ -104,12 +104,7 @@ This verification link will expire in 24 hours.
 If you didn't create an account with Plato, you can safely ignore this email.
     `;
 
-    await sendEmail({
-      to: user.email,
-      subject: "Verify Your Plato Account",
-      html,
-      text,
-    });
+    await sendEmail(user.email, "Verify Your Plato Account", html);
 
     return NextResponse.json({
       success: true,

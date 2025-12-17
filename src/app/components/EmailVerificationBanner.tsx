@@ -45,11 +45,16 @@ export function EmailVerificationBanner({ userEmail, isVerified }: EmailVerifica
   };
 
   return (
-    <div className="bg-amber-50 border-b border-amber-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex-shrink-0">
+    <div 
+      className="fixed bottom-0 left-0 right-0 z-[45] flex justify-center px-4 pb-4 pointer-events-none
+                 max-md:pb-[calc(5rem+env(safe-area-inset-bottom,0px)+1rem)]
+                 md:pb-6 animate-email-banner-slide-up"
+    >
+      <div className="bg-white border border-amber-200 rounded-lg shadow-lg max-w-md w-full pointer-events-auto
+                      ring-1 ring-amber-100">
+        <div className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
               <svg
                 className="w-5 h-5 text-amber-600"
                 fill="none"
@@ -65,43 +70,41 @@ export function EmailVerificationBanner({ userEmail, isVerified }: EmailVerifica
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-900">
+              <p className="text-sm font-medium text-gray-900">
                 Please verify your email address
               </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                We sent a verification link to <span className="font-semibold">{userEmail}</span>
+              <p className="text-xs text-gray-600 mt-1">
+                We sent a verification link to <span className="font-semibold text-gray-900">{userEmail}</span>
               </p>
               {error && (
-                <p className="text-xs text-red-600 mt-1">{error}</p>
+                <p className="text-xs text-red-600 mt-2">{error}</p>
               )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {sent ? (
-              <div className="flex items-center gap-1.5 text-sm text-emerald-700 font-medium">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Email sent!
+              <div className="mt-3 flex items-center gap-3">
+                {sent ? (
+                  <div className="flex items-center gap-1.5 text-sm text-emerald-700 font-medium">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Email sent!
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleResend}
+                    disabled={sending}
+                    className="text-sm font-semibold text-amber-600 hover:text-amber-700 underline disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {sending ? "Sending..." : "Resend email"}
+                  </button>
+                )}
               </div>
-            ) : (
-              <button
-                onClick={handleResend}
-                disabled={sending}
-                className="text-sm font-semibold text-amber-900 hover:text-amber-700 underline disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {sending ? "Sending..." : "Resend email"}
-              </button>
-            )}
-
+            </div>
             <button
               onClick={() => setDismissed(true)}
-              className="text-amber-600 hover:text-amber-800 p-1"
+              className="flex-shrink-0 text-gray-400 hover:text-gray-600 p-1 transition-colors"
               aria-label="Dismiss"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
