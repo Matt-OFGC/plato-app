@@ -98,6 +98,34 @@ public struct LoginResponse: Decodable {
     public let requiresMfa: Bool?
     public let mfaType: String?
     public let message: String?
+    
+    // Additional fields that backend might return
+    public let user: User?
+    public let company: Company?
+    
+    // Custom decoder to handle different response formats
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Try to get success - if not present, assume true based on other fields
+        if let successValue = try? container.decode(Bool.self, forKey: .success) {
+            self.success = successValue
+        } else {
+            // If no success field, check if user exists to determine success
+            let userExists = try? container.decodeIfPresent(User.self, forKey: .user)
+            self.success = userExists != nil
+        }
+        
+        self.requiresMfa = try container.decodeIfPresent(Bool.self, forKey: .requiresMfa)
+        self.mfaType = try container.decodeIfPresent(String.self, forKey: .mfaType)
+        self.message = try container.decodeIfPresent(String.self, forKey: .message)
+        self.user = try container.decodeIfPresent(User.self, forKey: .user)
+        self.company = try container.decodeIfPresent(Company.self, forKey: .company)
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case success, requiresMfa, mfaType, message, user, company
+    }
 }
 
 struct RegisterRequest: Encodable {

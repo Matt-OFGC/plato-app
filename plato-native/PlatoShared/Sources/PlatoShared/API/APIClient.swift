@@ -152,10 +152,18 @@ public class APIClient {
         // Debug: Print response info
         print("=== API Response Debug ===")
         print("URL: \(url.absoluteString)")
+        print("Method: \(method)")
         print("Response status: \(httpResponse.statusCode)")
+        print("Response headers:")
+        for (key, value) in httpResponse.allHeaderFields {
+            print("  \(key): \(value)")
+        }
         print("Content-Type: \(httpResponse.value(forHTTPHeaderField: "Content-Type") ?? "unknown")")
         print("Content-Encoding: \(httpResponse.value(forHTTPHeaderField: "Content-Encoding") ?? "none")")
+        print("Transfer-Encoding: \(httpResponse.value(forHTTPHeaderField: "Transfer-Encoding") ?? "none")")
+        print("Content-Length: \(httpResponse.value(forHTTPHeaderField: "Content-Length") ?? "none")")
         print("Data length: \(data.count) bytes")
+        print("==========================")
         
         // Store cookies from response
         let cookieHeaders = httpResponse.allHeaderFields as? [String: String] ?? [:]
@@ -202,18 +210,59 @@ public class APIClient {
                 print("Response JSON structure: \(type(of: jsonObject))")
                 if let dict = jsonObject as? [String: Any] {
                     print("Response keys: \(dict.keys.joined(separator: ", "))")
+                    print("Response values preview:")
+                    for (key, value) in dict {
+                        print("  \(key): \(type(of: value)) = \(value)")
+                    }
                 }
             }
             
             return try decoder.decode(responseType, from: data)
+        } catch DecodingError.keyNotFound(let key, let context) {
+            print("❌ Decoding error: Missing key '\(key.stringValue)'")
+            print("   Expected type: \(responseType)")
+            print("   Context path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("   Debug description: \(context.debugDescription)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("   Full response data: \(responseString)")
+            }
+            throw APIError.decodingError(DecodingError.keyNotFound(key, context))
+        } catch DecodingError.typeMismatch(let type, let context) {
+            print("❌ Decoding error: Type mismatch for type '\(type)'")
+            print("   Expected type: \(responseType)")
+            print("   Context path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("   Debug description: \(context.debugDescription)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("   Full response data: \(responseString)")
+            }
+            throw APIError.decodingError(DecodingError.typeMismatch(type, context))
+        } catch DecodingError.valueNotFound(let type, let context) {
+            print("❌ Decoding error: Value not found for type '\(type)'")
+            print("   Expected type: \(responseType)")
+            print("   Context path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("   Debug description: \(context.debugDescription)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("   Full response data: \(responseString)")
+            }
+            throw APIError.decodingError(DecodingError.valueNotFound(type, context))
+        } catch DecodingError.dataCorrupted(let context) {
+            print("❌ Decoding error: Data corrupted")
+            print("   Expected type: \(responseType)")
+            print("   Context path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+            print("   Debug description: \(context.debugDescription)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("   Full response data: \(responseString)")
+            }
+            throw APIError.decodingError(DecodingError.dataCorrupted(context))
         } catch {
             print("❌ Decoding error: \(error)")
-            print("Expected type: \(responseType)")
+            print("   Error type: \(type(of: error))")
+            print("   Expected type: \(responseType)")
             if let responseString = String(data: data, encoding: .utf8) {
-                print("Full response data: \(responseString)")
+                print("   Full response data: \(responseString)")
             } else {
-                print("Response data is not valid UTF-8")
-                print("First 100 bytes: \(data.prefix(100).map { String(format: "%02x", $0) }.joined(separator: " "))")
+                print("   Response data is not valid UTF-8")
+                print("   First 100 bytes: \(data.prefix(100).map { String(format: "%02x", $0) }.joined(separator: " "))")
             }
             throw APIError.decodingError(error)
         }

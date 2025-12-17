@@ -34,6 +34,8 @@ interface Props {
 export function CompanyManagementDashboard({ memberships, currentCompanyId }: Props) {
   const router = useRouter();
   const [switching, setSwitching] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ companyId: number; companyName: string } | null>(null);
 
   const handleSwitchCompany = async (companyId: number) => {
     setSwitching(companyId);
@@ -61,6 +63,50 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
 
   const handleCreateCompany = () => {
     router.push("/register?action=create_company");
+  };
+
+  const handleDeleteClick = (companyId: number, companyName: string) => {
+    setDeleteConfirm({ companyId, companyName });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+
+    const { companyId } = deleteConfirm;
+    setDeleting(companyId);
+    
+    try {
+      const res = await fetch("/api/companies/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyId }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Refresh the page to show updated list
+        router.refresh();
+        setDeleteConfirm(null);
+        // If we deleted the current company, redirect to companies page
+        if (currentCompanyId === companyId) {
+          window.location.href = "/dashboard/companies";
+        }
+      } else {
+        alert(data.error || "Failed to delete company");
+        setDeleteConfirm(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete company:", error);
+      alert("Failed to delete company. Please try again.");
+      setDeleteConfirm(null);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm(null);
   };
 
   return (
@@ -188,6 +234,16 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
                       >
                         Settings
                       </a>
+                      {membership.role === "OWNER" && (
+                        <button
+                          onClick={() => handleDeleteClick(membership.companyId, membership.company.name)}
+                          disabled={deleting === membership.companyId}
+                          className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium disabled:opacity-50"
+                          title="Delete company"
+                        >
+                          {deleting === membership.companyId ? "Deleting..." : "Delete"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -196,6 +252,35 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Delete Company</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete <strong>{deleteConfirm.companyName}</strong>? 
+              This will archive the company and deactivate all memberships. All data will be preserved.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleDeleteCancel}
+                disabled={deleting !== null}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting !== null}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {deleting !== null ? "Deleting..." : "Delete Company"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

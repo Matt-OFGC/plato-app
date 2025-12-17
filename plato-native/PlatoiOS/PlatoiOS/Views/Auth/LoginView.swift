@@ -99,11 +99,22 @@ struct LoginView: View {
         errorMessage = nil
         
         Task {
+            // TEMPORARY DEBUG: Uncomment this to run detailed endpoint test
+            // await LoginResponseDebugger.testLoginEndpoint(email: email, password: password)
+            
             do {
+                print("🔐 Starting login for email: \(email)")
                 let response = try await AuthService.shared.login(
                     email: email,
                     password: password
                 )
+                
+                print("✅ Login response received:")
+                print("   - success: \(response.success)")
+                print("   - requiresMfa: \(response.requiresMfa ?? false)")
+                print("   - message: \(response.message ?? "none")")
+                print("   - has user: \(response.user != nil)")
+                print("   - has company: \(response.company != nil)")
                 
                 if response.requiresMfa == true {
                     // Handle MFA flow
@@ -124,7 +135,11 @@ struct LoginView: View {
                         errorMessage = "Login failed: \(error.localizedDescription)"
                     }
                     isLoading = false
-                    print("Login error: \(error)")
+                    print("❌ Login error: \(error)")
+                    print("   Error type: \(type(of: error))")
+                    if let apiError = error as? APIError {
+                        print("   API Error: \(apiError)")
+                    }
                 }
             }
         }

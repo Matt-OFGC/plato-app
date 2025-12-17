@@ -44,20 +44,92 @@ export interface CurrentUserAndCompany {
 
 // Get current user and their company information with caching
 export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany> {
-  const user = await getUserFromSession();
-  
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+  try {
+    const user = await getUserFromSession();
+    
+    if (!user) {
+      // Return fallback instead of throwing to prevent error boundaries
+      logger.warn('getCurrentUserAndCompany: User not authenticated', {}, 'Current');
+      return {
+        companyId: null,
+        company: null,
+        user: {
+          id: 0,
+          email: '',
+          name: null,
+          isAdmin: false,
+          memberships: []
+        },
+        app: null,
+        appConfig: null
+      };
+    }
 
-  // Use Redis cache with fallback
-  return getOrCompute(
-    CacheKeys.userSession(user.id),
-    async () => {
-      return await fetchUserAndCompany(user.id);
-    },
-    CACHE_TTL.USER_SESSION
-  );
+    // Use Redis cache with fallback
+    try {
+      return await getOrCompute(
+        CacheKeys.userSession(user.id),
+        async () => {
+          return await fetchUserAndCompany(user.id);
+        },
+        CACHE_TTL.USER_SESSION
+      );
+    } catch (cacheError) {
+      // If cache/compute fails, try direct fetch as fallback
+      logger.warn('Cache/compute failed, trying direct fetch', { 
+        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+        stack: cacheError instanceof Error ? cacheError.stack : undefined,
+        userId: user.id
+      }, 'Current');
+      try {
+        return await fetchUserAndCompany(user.id);
+      } catch (directFetchError) {
+        // If direct fetch also fails, log and return fallback
+        logger.error('Direct fetch also failed after cache error', {
+          cacheError: cacheError instanceof Error ? cacheError.message : String(cacheError),
+          directError: directFetchError instanceof Error ? directFetchError.message : String(directFetchError),
+          userId: user.id
+        }, 'Current');
+        throw directFetchError; // Will be caught by outer try/catch
+      }
+    }
+  } catch (error) {
+    // Log the error but don't throw - return fallback to prevent page crashes
+    logger.error('getCurrentUserAndCompany: Critical error', error, 'Current');
+    
+    // Try to get at least the user session
+    try {
+      const user = await getUserFromSession();
+      return {
+        companyId: null,
+        company: null,
+        user: {
+          id: user?.id || 0,
+          email: user?.email || '',
+          name: user?.name || null,
+          isAdmin: user?.isAdmin || false,
+          memberships: []
+        },
+        app: null,
+        appConfig: null
+      };
+    } catch {
+      // Last resort fallback
+      return {
+        companyId: null,
+        company: null,
+        user: {
+          id: 0,
+          email: '',
+          name: null,
+          isAdmin: false,
+          memberships: []
+        },
+        app: null,
+        appConfig: null
+      };
+    }
+  }
 }
 
 // Internal function to fetch user and company data
@@ -291,7 +363,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       appConfig
     };
   } catch (error) {
-    logger.error('Database error in getCurrentUserAndCompany', error, 'Current');
+    logger.error('Database error in fetchUserAndCompany', error, 'Current');
     
     // In development, provide more detailed error information
     if (process.env.NODE_ENV === 'development') {
@@ -299,20 +371,39 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     }
     
     // Return a fallback structure to prevent page crashes
-    const user = await getUserFromSession();
-    return {
-      companyId: null,
-      company: null,
-      user: {
-        id: user?.id || 0,
-        email: user?.email || '',
-        name: user?.name || null,
-        isAdmin: user?.isAdmin || false,
-        memberships: []
-      },
-      app: null,
-      appConfig: null
-    };
+    // Try to get user from session, but don't fail if that also errors
+    try {
+      const user = await getUserFromSession();
+      return {
+        companyId: null,
+        company: null,
+        user: {
+          id: user?.id || 0,
+          email: user?.email || '',
+          name: user?.name || null,
+          isAdmin: user?.isAdmin || false,
+          memberships: []
+        },
+        app: null,
+        appConfig: null
+      };
+    } catch (sessionError) {
+      // Last resort - return empty structure
+      logger.error('Failed to get user session in error handler', sessionError, 'Current');
+      return {
+        companyId: null,
+        company: null,
+        user: {
+          id: 0,
+          email: '',
+          name: null,
+          isAdmin: false,
+          memberships: []
+        },
+        app: null,
+        appConfig: null
+      };
+    }
   }
 }
 
@@ -364,4 +455,13 @@ export async function hasCompanyAccess(userId: number, companyId: number): Promi
   });
 
   return membership?.isActive || false;
+}
+
+/**
+ * Helper function to check if company data is available
+ * Returns true if companyId exists, false otherwise
+ * Useful for quick null checks in server components
+ */
+export function hasCompany(result: CurrentUserAndCompany): result is CurrentUserAndCompany & { companyId: number; company: Company } {
+  return result.companyId !== null && result.company !== null;
 }

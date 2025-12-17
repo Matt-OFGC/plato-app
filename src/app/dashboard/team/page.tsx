@@ -2,6 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { prisma } from "@/lib/prisma";
+import { CompanyLoadingErrorServer } from "@/components/CompanyLoadingErrorServer";
 // Temporarily disabled to fix build error
 // import { checkSectionAccess } from "@/lib/features";
 import TeamManagementClient from "./components/TeamManagementClient";
@@ -21,14 +22,20 @@ export default async function TeamPage() {
     //   redirect("/dashboard?locked=teams");
     // }
     
-    const { companyId } = await getCurrentUserAndCompany();
+    const result = await getCurrentUserAndCompany();
+    const { companyId } = result;
+    
+    // Show error component if companyId is null
+    if (!companyId) {
+      return <CompanyLoadingErrorServer result={result} page="team" />;
+    }
     
     // Get membership
     const membership = await prisma.membership.findUnique({
       where: {
         userId_companyId: {
           userId: user.id,
-          companyId: companyId || 0,
+          companyId,
         },
       },
     });
@@ -36,7 +43,7 @@ export default async function TeamPage() {
     // Get team members for selection
     const membersRaw = await prisma.membership.findMany({
       where: { 
-        companyId: companyId || 0,
+        companyId,
         isActive: true 
       },
       include: {
@@ -87,7 +94,7 @@ export default async function TeamPage() {
         </div>
 
         <TeamManagementClient 
-          companyId={companyId!}
+          companyId={companyId}
           currentUserRole={membership?.role || "VIEWER"}
           members={members}
         />

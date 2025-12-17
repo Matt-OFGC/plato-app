@@ -41,51 +41,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     companyAppConfig = result.appConfig;
   } catch (error) {
     console.error('Error fetching user and company:', error);
-    // Graceful degradation: show limited functionality instead of complete error
+    // Graceful degradation: show user-friendly error component
+    const { CompanyLoadingError } = await import("@/components/CompanyLoadingError");
     return (
-      <div className="space-y-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6">
-          <h2 className="text-xl font-semibold text-yellow-900 mb-2">Limited Access</h2>
-          <p className="text-yellow-800 mb-4">
-            We're having trouble loading your company information. Some features may be limited.
-          </p>
-          <div className="flex gap-3">
-            <a
-              href="/dashboard"
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
-            >
-              Refresh Page
-            </a>
-            <a
-              href="/dashboard/account"
-              className="px-4 py-2 border border-yellow-600 text-yellow-800 rounded-lg hover:bg-yellow-100 transition-colors"
-            >
-              Account Settings
-            </a>
-          </div>
-        </div>
-        
-        {/* Show basic dashboard with limited functionality */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a
-              href="/dashboard/account"
-              className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <h3 className="font-medium text-gray-900">Account Settings</h3>
-              <p className="text-sm text-gray-600">Manage your account</p>
-            </a>
-            <a
-              href="/login"
-              className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <h3 className="font-medium text-gray-900">Sign Out</h3>
-              <p className="text-sm text-gray-600">Sign out and try again</p>
-            </a>
-          </div>
-        </div>
-      </div>
+      <CompanyLoadingError
+        user={user}
+        title="Limited Access"
+        description="We're having trouble loading your company information. Some features may be limited. Please try refreshing the page."
+        errorMessage={error instanceof Error ? error.message : String(error)}
+        showRetry={true}
+        showReportIssue={true}
+        errorContext={{
+          page: "dashboard",
+          error: error instanceof Error ? error.message : "Unknown error in getCurrentUserAndCompany",
+        }}
+      />
     );
   }
   

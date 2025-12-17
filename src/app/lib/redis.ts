@@ -23,9 +23,18 @@ export async function getOrCompute<T>(
   computeFn: () => Promise<T>,
   ttl: number = CACHE_TTL.USER_SESSION
 ): Promise<T> {
-  // In production, this would check Redis cache
-  // For now, just compute directly
-  return await computeFn();
+  try {
+    // In production, this would check Redis cache
+    // For now, just compute directly
+    return await computeFn();
+  } catch (error) {
+    // Re-throw the error so callers can handle it
+    // But ensure it's a proper Error object
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Cache compute failed: ${String(error)}`);
+  }
 }
 
 /**
