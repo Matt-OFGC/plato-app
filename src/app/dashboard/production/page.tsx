@@ -12,26 +12,27 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 120;
 
 export default async function ProductionPage() {
-  const user = await getUserFromSession();
-  if (!user) redirect("/login");
+  try {
+    const user = await getUserFromSession();
+    if (!user) redirect("/login");
 
-  // Temporarily disabled to fix build error
-  // Check if user has Production module unlocked
-  // const hasAccess = await checkSectionAccess(user.id, "production");
-  // if (!hasAccess) {
-  //   redirect("/dashboard?locked=production");
-  // }
+    // Temporarily disabled to fix build error
+    // Check if user has Production module unlocked
+    // const hasAccess = await checkSectionAccess(user.id, "production");
+    // if (!hasAccess) {
+    //   redirect("/dashboard?locked=production");
+    // }
 
-  const result = await getCurrentUserAndCompany();
-  const { companyId } = result;
-  
-  // Show error component if companyId is null
-  if (!companyId) {
-    return <CompanyLoadingErrorServer result={result} page="production" />;
-  }
+    const result = await getCurrentUserAndCompany();
+    const { companyId } = result;
+    
+    // Show error component if companyId is null
+    if (!companyId) {
+      return <CompanyLoadingErrorServer result={result} page="production" />;
+    }
 
-  // Get basic recipes data - much lighter query
-  const recipesRaw = await prisma.recipe.findMany({
+    // Get basic recipes data - much lighter query
+    const recipesRaw = await prisma.recipe.findMany({
     where: { companyId },
     select: {
       id: true,
@@ -55,30 +56,65 @@ export default async function ProductionPage() {
     take: 50, // Limit for performance
   });
 
-  // Serialize Decimal objects to strings for client components
-  const recipes = recipesRaw.map(recipe => ({
-    ...recipe,
-    yieldQuantity: recipe.yieldQuantity.toString(),
-  }));
+    // Serialize Decimal objects to strings for client components
+    const recipes = recipesRaw.map((recipe: typeof recipesRaw[0]) => ({
+      ...recipe,
+      yieldQuantity: recipe.yieldQuantity.toString(),
+    }));
 
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Production Plan</h1>
-        <p className="text-gray-500 text-lg">Plan production schedules, manage tasks, and track progress</p>
-      </div>
+    return (
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Production Plan</h1>
+          <p className="text-gray-500 text-lg">Plan production schedules, manage tasks, and track progress</p>
+        </div>
 
-      {/* Main Content Container */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
-        <ProductionPlannerEnhanced
-          recipes={recipes}
-          productionPlans={[]}
-          teamMembers={[]}
-          wholesaleCustomers={[]}
-          companyId={companyId}
-        />
+        {/* Main Content Container */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+          <ProductionPlannerEnhanced
+            recipes={recipes}
+            productionPlans={[]}
+            teamMembers={[]}
+            wholesaleCustomers={[]}
+            companyId={companyId}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error('Production page error:', error);
+    const { CompanyLoadingErrorServer } = await import("@/components/CompanyLoadingErrorServer");
+    let result;
+    try {
+      result = await getCurrentUserAndCompany();
+    } catch {
+      const user = await getUserFromSession().catch(() => null);
+      result = {
+        companyId: null,
+        company: null,
+        user: user ? { 
+          id: user.id, 
+          email: user.email, 
+          name: user.name || undefined, 
+          isAdmin: false, 
+          memberships: [] 
+        } : {
+          id: 0,
+          email: '',
+          name: undefined,
+          isAdmin: false,
+          memberships: []
+        },
+        app: null,
+        appConfig: null,
+      };
+    }
+    return (
+      <CompanyLoadingErrorServer 
+        result={result} 
+        page="production"
+      />
+    );
+  }
 }

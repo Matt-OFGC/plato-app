@@ -8,22 +8,23 @@ import WholesalePageClient from "./WholesalePageClient";
 export const dynamic = 'force-dynamic';
 
 export default async function WholesalePage() {
-  const user = await getUserFromSession();
-  if (!user) redirect("/login?redirect=/dashboard/wholesale");
+  try {
+    const user = await getUserFromSession();
+    if (!user) redirect("/login?redirect=/dashboard/wholesale");
 
-  const result = await getCurrentUserAndCompany();
-  const { companyId } = result;
-  
-  // Show error component if companyId is null
-  if (!companyId) {
-    return <CompanyLoadingErrorServer result={result} page="wholesale" />;
-  }
-  
-  // Get user's role in the company
-  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "VIEWER";
+    const result = await getCurrentUserAndCompany();
+    const { companyId } = result;
+    
+    // Show error component if companyId is null
+    if (!companyId) {
+      return <CompanyLoadingErrorServer result={result} page="wholesale" />;
+    }
+    
+    // Get user's role in the company
+    const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "VIEWER";
 
-  // Get customers
-  const customers = await prisma.wholesaleCustomer.findMany({
+    // Get customers
+    const customers = await prisma.wholesaleCustomer.findMany({
     where: { companyId },
     select: {
       id: true,
@@ -88,31 +89,66 @@ export default async function WholesalePage() {
     },
   });
 
-  return (
-    <WholesalePageClient
-      companyId={companyId}
-      currentUserRole={currentUserRole}
-      customers={customers}
-      recentOrders={recentOrders.map(order => ({
-        ...order,
-        customer: {
-          id: order.customer.id,
-          name: order.customer.name,
+    return (
+      <WholesalePageClient
+        companyId={companyId}
+        currentUserRole={currentUserRole}
+        customers={customers}
+        recentOrders={recentOrders.map((order: typeof recentOrders[0]) => ({
+          ...order,
+          customer: {
+            id: order.customer.id,
+            name: order.customer.name,
+          },
+        }))}
+        recentInvoices={recentInvoices.map((invoice: typeof recentInvoices[0]) => ({
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          total: invoice.total.toString(),
+          status: invoice.status,
+          dueDate: invoice.dueDate,
+          customer: {
+            id: invoice.WholesaleCustomer.id,
+            name: invoice.WholesaleCustomer.name,
+          },
+        }))}
+        totalOutstanding={(totalOutstanding._sum.total || 0).toString()}
+        overdueCount={overdueCount}
+      />
+    );
+  } catch (error) {
+    console.error('Wholesale page error:', error);
+    const { CompanyLoadingErrorServer } = await import("@/components/CompanyLoadingErrorServer");
+    let result;
+    try {
+      result = await getCurrentUserAndCompany();
+    } catch {
+      const user = await getUserFromSession().catch(() => null);
+      result = {
+        companyId: null,
+        company: null,
+        user: user ? { 
+          id: user.id, 
+          email: user.email, 
+          name: user.name || undefined, 
+          isAdmin: false, 
+          memberships: [] 
+        } : {
+          id: 0,
+          email: '',
+          name: undefined,
+          isAdmin: false,
+          memberships: []
         },
-      }))}
-      recentInvoices={recentInvoices.map(invoice => ({
-        id: invoice.id,
-        invoiceNumber: invoice.invoiceNumber,
-        total: invoice.total.toString(),
-        status: invoice.status,
-        dueDate: invoice.dueDate,
-        customer: {
-          id: invoice.WholesaleCustomer.id,
-          name: invoice.WholesaleCustomer.name,
-        },
-      }))}
-      totalOutstanding={(totalOutstanding._sum.total || 0).toString()}
-      overdueCount={overdueCount}
-    />
-  );
+        app: null,
+        appConfig: null,
+      };
+    }
+    return (
+      <CompanyLoadingErrorServer 
+        result={result} 
+        page="wholesale"
+      />
+    );
+  }
 }

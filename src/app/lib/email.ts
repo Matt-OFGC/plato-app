@@ -1,32 +1,35 @@
 // Email utilities
 export async function sendEmail(to: string, subject: string, html: string) {
-  // In production, integrate with your email service (SendGrid, AWS SES, Resend, etc.)
   // Check if Resend is configured
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      
-      const result = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'Plato <noreply@plato.app>',
-        to: [to],
-        subject,
-        html,
-      });
-      
-      return { success: true, messageId: result.data?.id };
-    } catch (error) {
-      console.error('Resend email error:', error);
-      // Fall through to console log in development
+  if (!process.env.RESEND_API_KEY) {
+    const error = new Error('RESEND_API_KEY is not configured');
+    console.error('Email sending failed:', error.message);
+    throw error;
+  }
+
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Plato <noreply@plato.app>';
+    
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: [to],
+      subject,
+      html,
+    });
+    
+    if (!result.data?.id) {
+      throw new Error('Resend API did not return a message ID');
     }
+    
+    return { success: true, messageId: result.data.id };
+  } catch (error) {
+    console.error('Resend email error:', error);
+    // Re-throw the error so the caller can handle it
+    throw error instanceof Error ? error : new Error('Failed to send email');
   }
-  
-  // Development/fallback: log email
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Email would be sent:', { to, subject, html });
-  }
-  
-  return { success: true };
 }
 
 export async function sendWelcomeEmail(user: { name: string; email: string }) {

@@ -104,16 +104,29 @@ This verification link will expire in 24 hours.
 If you didn't create an account with Plato, you can safely ignore this email.
     `;
 
-    await sendEmail(user.email, "Verify Your Plato Account", html);
-
-    return NextResponse.json({
-      success: true,
-      message: "Verification email sent successfully",
-    });
+    try {
+      await sendEmail(user.email, "Verify Your Plato Account", html);
+      
+      logger.info(`Verification email sent successfully to ${user.email}`, {}, "Auth/ResendVerification");
+      
+      return NextResponse.json({
+        success: true,
+        message: "Verification email sent successfully",
+      });
+    } catch (emailError) {
+      logger.error("Failed to send verification email", emailError, "Auth/ResendVerification");
+      return NextResponse.json(
+        { 
+          error: "Failed to send verification email. Please check your email configuration or try again later.",
+          details: process.env.NODE_ENV === 'development' ? (emailError instanceof Error ? emailError.message : String(emailError)) : undefined
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     logger.error("Resend verification error", error, "Auth/ResendVerification");
     return NextResponse.json(
-      { error: "Failed to send verification email" },
+      { error: "Failed to process verification request" },
       { status: 500 }
     );
   }
