@@ -244,6 +244,7 @@ model Company {
   MentorGoal            MentorGoal[]
   MentorInsight         MentorInsight[]
   MentorReminder        MentorReminder[]
+  TrainingModule        TrainingModule[]
 
   @@index([app])
 }
@@ -692,6 +693,8 @@ model Membership {
   PayrollLine    PayrollLine[]
   Shift          Shift[]
   Timesheet      Timesheet[]
+  StaffProfile   StaffProfile?
+  TrainingRecord TrainingRecord[]
 
   @@unique([userId, companyId])
   @@index([companyId])
@@ -1755,6 +1758,8 @@ model User {
   MentorConversation                            MentorConversation[]
   MentorGoal                                    MentorGoal[]
   MentorReminder                                MentorReminder[]
+  TrainingModuleCreatedBy                       TrainingModule[] @relation("TrainingModuleCreatedBy")
+  TrainingRecordSignedOffBy                     TrainingRecord[] @relation("TrainingRecordSignedOffBy")
 }
 
 model UserPreference {
@@ -2229,4 +2234,77 @@ model MentorReminder {
   @@index([companyId, dueDate])
   @@index([companyId, isCompleted])
   @@index([userId])
+}
+
+model StaffProfile {
+  id                    Int            @id @default(autoincrement())
+  membershipId          Int            @unique
+  employmentStartDate   DateTime?
+  position              String?
+  status                String         @default("active")
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  notes                 String?
+  performanceNotes      String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  Membership            Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([membershipId])
+}
+
+model TrainingModule {
+  id                 Int              @id @default(autoincrement())
+  companyId           Int
+  title               String
+  description         String?
+  category            String?
+  isTemplate          Boolean          @default(false)
+  estimatedDuration   Int?             // in minutes
+  refreshFrequencyDays Int?            // how often training needs to be refreshed
+  createdBy           Int
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  Company             Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  CreatedBy           User             @relation("TrainingModuleCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  content             TrainingContent[]
+  records             TrainingRecord[]
+
+  @@index([companyId])
+}
+
+model TrainingContent {
+  id        Int            @id @default(autoincrement())
+  moduleId  Int
+  type      String         // 'text', 'image', 'video', 'animation'
+  content   String?        // text content or URL
+  order     Int            @default(0)
+  metadata  Json?          // additional metadata for videos, animations, etc.
+  createdAt DateTime       @default(now())
+  Module    TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([moduleId, order])
+}
+
+model TrainingRecord {
+  id             Int            @id @default(autoincrement())
+  membershipId   Int
+  moduleId       Int
+  status         String         @default("not_started") // 'not_started', 'in_progress', 'completed', 'expired'
+  startedAt      DateTime?
+  completedAt    DateTime?
+  signedOffBy    Int?           // manager userId
+  signedOffAt    DateTime?
+  nextRefreshDate DateTime?
+  completionNotes String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  Membership     Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  Module         TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  SignedOffBy    User?          @relation("TrainingRecordSignedOffBy", fields: [signedOffBy], references: [id], onDelete: SetNull)
+
+  @@unique([membershipId, moduleId])
+  @@index([membershipId])
+  @@index([moduleId])
+  @@index([status])
 }

@@ -415,7 +415,7 @@ export async function clearUserCache(userId?: number) {
     await deleteCache(CacheKeys.userSession(userId));
     // Note: userCompanies cache key may not exist, handle gracefully
     try {
-      await deleteCache(CacheKeys.userCompanies?.(userId));
+      await deleteCache(CacheKeys.userCompanies(userId));
     } catch {
       // Cache key doesn't exist, that's OK
     }

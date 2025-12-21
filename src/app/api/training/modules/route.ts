@@ -5,6 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 
+// Debug: Verify prisma has trainingModule
+if (!prisma.trainingModule) {
+  logger.error("Prisma client missing trainingModule!", {}, "Training/Modules");
+  console.error("Available prisma methods:", Object.keys(prisma).filter(k => !k.startsWith('$') && !k.startsWith('_')));
+}
+
 // Get all training modules for a company
 export async function GET(request: NextRequest) {
   try {
@@ -61,16 +67,6 @@ export async function GET(request: NextRequest) {
       include: {
         content: {
           orderBy: { order: "asc" },
-        },
-        recipes: {
-          include: {
-            recipe: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
         },
       },
       orderBy: {
@@ -151,6 +147,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create the module first
     const module = await prisma.trainingModule.create({
       data: {
         companyId,
@@ -161,17 +158,25 @@ export async function POST(request: NextRequest) {
         estimatedDuration: estimatedDuration || null,
         refreshFrequencyDays: refreshFrequencyDays || null,
         createdBy: session.id,
-        content: content && content.length > 0
-          ? {
-              create: content.map((item: any, index: number) => ({
-                type: item.type,
-                content: item.content || "",
-                order: item.order ?? index,
-                metadata: item.metadata || {},
-              })),
-            }
-          : undefined,
       },
+    });
+
+    // Create content items separately if provided
+    if (content && content.length > 0) {
+      await prisma.trainingContent.createMany({
+        data: content.map((item: any, index: number) => ({
+          moduleId: module.id,
+          type: item.type,
+          content: item.content || "",
+          order: item.order ?? index,
+          metadata: item.metadata || {},
+        })),
+      });
+    }
+
+    // Fetch the complete module with content
+    const moduleWithContent = await prisma.trainingModule.findUnique({
+      where: { id: module.id },
       include: {
         content: {
           orderBy: { order: "asc" },
@@ -179,7 +184,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ module }, { status: 201 });
+    return NextResponse.json({ module: moduleWithContent }, { status: 201 });
   } catch (error) {
     logger.error("Create training module error", error, "Training/Modules");
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

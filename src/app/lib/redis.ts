@@ -1,3 +1,5 @@
+"use server";
+
 /**
  * Redis cache utilities
  * Note: This is a placeholder implementation. In production, you would use a real Redis client.
