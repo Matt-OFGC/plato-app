@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Send verification email
-    const verificationUrl = `${request.nextUrl.origin}/api/auth/verify-email?token=${verificationToken}`;
+    // Use production URL if available, otherwise fall back to request origin
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${verificationToken}`;
     
     const html = `
       <!DOCTYPE html>
@@ -108,11 +110,11 @@ If you didn't create an account with Plato, you can safely ignore this email.
       await sendEmail(user.email, "Verify Your Plato Account", html);
       
       logger.info(`Verification email sent successfully to ${user.email}`, {}, "Auth/ResendVerification");
-      
-      return NextResponse.json({
-        success: true,
-        message: "Verification email sent successfully",
-      });
+
+    return NextResponse.json({
+      success: true,
+      message: "Verification email sent successfully",
+    });
     } catch (emailError) {
       logger.error("Failed to send verification email", emailError, "Auth/ResendVerification");
       

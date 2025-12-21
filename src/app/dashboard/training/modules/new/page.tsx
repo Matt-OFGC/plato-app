@@ -18,36 +18,33 @@ export default async function NewTrainingModulePage() {
     redirect("/dashboard");
   }
 
-  // Check permission
-  const canCreate = await checkPermission(
-    user.id,
-    companyId,
-    "training:create"
-  );
+  // Check permission - allow ADMIN and OWNER for MVP
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_companyId: {
+        userId: user.id,
+        companyId,
+      },
+    },
+  });
+
+  const canCreate = membership && membership.isActive && 
+    (membership.role === "ADMIN" || membership.role === "OWNER");
+  
   if (!canCreate) {
     redirect("/dashboard/training");
   }
 
-  // Get recipes for linking
-  const recipes = await prisma.recipe.findMany({
-    where: { companyId },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: { name: "asc" },
-  });
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Create Training Module</h1>
-        <p className="text-gray-600 mt-2">
-          Build a new training module with content, media, and recipe links
+    <div className="space-y-4 sm:space-y-6">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 p-4 sm:p-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create Training Module</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Build a new training module with content and media for your team
         </p>
       </div>
 
-      <TrainingModuleBuilder companyId={companyId} recipes={recipes} />
+      <TrainingModuleBuilder companyId={companyId} />
     </div>
   );
 }

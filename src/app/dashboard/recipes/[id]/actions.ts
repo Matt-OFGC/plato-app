@@ -38,6 +38,84 @@ export async function saveSellPrice(recipeId: number, sellPrice: number) {
   }
 }
 
+export async function saveWholesalePrice(
+  recipeId: number, 
+  wholesalePrice: number, 
+  isWholesaleProduct: boolean
+) {
+  try {
+    const { companyId } = await getCurrentUserAndCompany();
+
+    // Verify recipe belongs to user's company and get yieldUnit
+    const recipe = await prisma.recipe.findUnique({
+      where: { id: recipeId },
+      select: { 
+        companyId: true,
+        yieldUnit: true,
+      }
+    });
+
+    if (!recipe || recipe.companyId !== companyId) {
+      throw new Error("Unauthorized");
+    }
+
+    // Check if wholesale product already exists for this recipe
+    const existingWholesaleProduct = await prisma.wholesaleProduct.findFirst({
+      where: {
+        recipeId: recipeId,
+        companyId: companyId!,
+      },
+    });
+
+    if (isWholesaleProduct) {
+      // Use wholesale price if provided, otherwise default to 0
+      // This should be price per unit (per slice/piece)
+      const priceToUse = wholesalePrice || 0;
+      
+      if (existingWholesaleProduct) {
+        // Update existing wholesale product
+        await prisma.wholesaleProduct.update({
+          where: { id: existingWholesaleProduct.id },
+          data: {
+            price: priceToUse,
+            unit: `per ${recipe.yieldUnit || "each"}`, // e.g., "per slice", "per each"
+            isActive: true,
+          },
+        });
+      } else {
+        // Create new wholesale product
+        await prisma.wholesaleProduct.create({
+          data: {
+            companyId: companyId!,
+            recipeId: recipeId,
+            price: priceToUse,
+            currency: "GBP",
+            unit: `per ${recipe.yieldUnit || "each"}`, // e.g., "per slice", "per each"
+            isActive: true,
+            sortOrder: 0,
+          },
+        });
+      }
+    } else if (existingWholesaleProduct) {
+      // If unchecked and product exists, mark as inactive (don't delete to preserve history)
+      await prisma.wholesaleProduct.update({
+        where: { id: existingWholesaleProduct.id },
+        data: { isActive: false },
+      });
+    }
+
+    revalidatePath(`/dashboard/recipes/${recipeId}`);
+    revalidatePath('/dashboard/recipes');
+    revalidatePath('/dashboard/wholesale/products');
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving wholesale price:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to save wholesale price";
+    return { success: false, error: errorMessage };
+  }
+}
+
 export async function saveRecipe(data: {
   recipeId: number | null;
   name?: string;

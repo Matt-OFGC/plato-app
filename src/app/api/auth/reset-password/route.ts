@@ -103,7 +103,9 @@ async function handlePasswordResetRequest(
     
     // Send password reset email
     try {
-      const resetUrl = `${req.nextUrl.origin}/reset-password?token=${resetToken}`;
+      // Use production URL if available, otherwise fall back to request origin
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+      const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
       await sendPasswordResetEmail({
         to: email,
         name: user.name || 'there',

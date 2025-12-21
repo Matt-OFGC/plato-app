@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { updateSubscriptionSeats } from "@/lib/stripe";
 import { MemberRole } from "@/generated/prisma";
 import { logger } from "@/lib/logger";
+import { getInvitationMetadata, deleteInvitationMetadata } from "@/lib/invitation-metadata-store";
 
 export async function POST(request: NextRequest) {
   try {
@@ -125,6 +126,47 @@ export async function POST(request: NextRequest) {
         isActive: true,
       },
     });
+
+    // Retrieve and use profile data from metadata storage
+    const profileData = getInvitationMetadata(invitation.id);
+
+    // Update user name if provided
+    if (profileData?.name && !user.name) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { name: profileData.name },
+      });
+    }
+
+    // Create staff profile if profile data exists and staffProfile model is available
+    if (profileData && prisma.staffProfile) {
+      try {
+        await prisma.staffProfile.create({
+          data: {
+            membershipId: membership.id,
+            position: profileData.position || null,
+            status: "active",
+            employmentStartDate: profileData.employmentStartDate 
+              ? new Date(profileData.employmentStartDate) 
+              : null,
+            emergencyContactName: profileData.emergencyContactName || null,
+            emergencyContactPhone: profileData.emergencyContactPhone || null,
+            notes: profileData.notes || null,
+          },
+        });
+        logger.info(`Staff profile created for membership ${membership.id}`, { membershipId: membership.id }, "Team/Accept");
+      } catch (profileError: any) {
+        // If profile already exists or model doesn't exist, that's okay
+        if (profileError.code !== "P2002") {
+          logger.warn("Failed to create staff profile", profileError, "Team/Accept");
+        }
+      }
+    }
+
+    // Clean up metadata after use
+    if (profileData) {
+      deleteInvitationMetadata(invitation.id);
+    }
 
     // Mark invitation as accepted
     await prisma.teamInvitation.update({

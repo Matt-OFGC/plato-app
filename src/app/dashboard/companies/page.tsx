@@ -9,11 +9,11 @@ export default async function CompaniesPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login");
 
-  // Get all companies user belongs to
-  const memberships = await prisma.membership.findMany({
+  // Get all companies user belongs to (including inactive for duplicate detection)
+  // We'll filter to active only for display, but need inactive for duplicate detection
+  const allMemberships = await prisma.membership.findMany({
     where: {
       userId: user.id,
-      isActive: true,
     },
     select: {
       id: true,
@@ -44,6 +44,9 @@ export default async function CompaniesPage() {
     orderBy: { createdAt: 'asc' },
   });
 
+  // Filter to active memberships for display, but pass all for duplicate detection
+  const activeMemberships = allMemberships.filter(m => m.isActive);
+
   // Get current company
   const { companyId } = await import("@/lib/current").then(m => m.getCurrentUserAndCompany()).catch(() => ({ companyId: null }));
 
@@ -55,7 +58,8 @@ export default async function CompaniesPage() {
       </div>
 
       <CompanyManagementDashboard
-        memberships={memberships}
+        memberships={activeMemberships}
+        allMemberships={allMemberships}
         currentCompanyId={companyId}
       />
     </div>

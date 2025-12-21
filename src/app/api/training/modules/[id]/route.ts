@@ -54,17 +54,36 @@ export async function GET(
       );
     }
 
-    // Check permission
-    const canView = await checkPermission(
-      session.id,
-      companyId,
-      "training:view"
-    );
-    if (!canView) {
+    // Check permission - allow ADMIN and OWNER for MVP
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: session.id,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
       return NextResponse.json(
         { error: "No permission to view training" },
         { status: 403 }
       );
+    }
+
+    // ADMIN and OWNER can view, others need explicit permission check
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      const canView = await checkPermission(
+        session.id,
+        companyId,
+        "training:view"
+      );
+      if (!canView) {
+        return NextResponse.json(
+          { error: "No permission to view training" },
+          { status: 403 }
+        );
+      }
     }
 
     return NextResponse.json({ module });
@@ -100,17 +119,36 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid module ID" }, { status: 400 });
     }
 
-    // Check permission
-    const canEdit = await checkPermission(
-      session.id,
-      companyId,
-      "training:edit"
-    );
-    if (!canEdit) {
+    // Check permission - allow ADMIN and OWNER for MVP
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: session.id,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
       return NextResponse.json(
         { error: "No permission to edit training modules" },
         { status: 403 }
       );
+    }
+
+    // ADMIN and OWNER can edit, others need explicit permission check
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      const canEdit = await checkPermission(
+        session.id,
+        companyId,
+        "training:edit"
+      );
+      if (!canEdit) {
+        return NextResponse.json(
+          { error: "No permission to edit training modules" },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await request.json();
@@ -206,17 +244,36 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid module ID" }, { status: 400 });
     }
 
-    // Check permission
-    const canDelete = await checkPermission(
-      session.id,
-      companyId,
-      "training:delete"
-    );
-    if (!canDelete) {
+    // Check permission - allow ADMIN and OWNER for MVP
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: session.id,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
       return NextResponse.json(
         { error: "No permission to delete training modules" },
         { status: 403 }
       );
+    }
+
+    // ADMIN and OWNER can delete, others need explicit permission check
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      const canDelete = await checkPermission(
+        session.id,
+        companyId,
+        "training:delete"
+      );
+      if (!canDelete) {
+        return NextResponse.json(
+          { error: "No permission to delete training modules" },
+          { status: 403 }
+        );
+      }
     }
 
     await prisma.trainingModule.delete({

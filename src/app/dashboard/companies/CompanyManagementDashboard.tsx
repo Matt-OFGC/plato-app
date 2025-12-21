@@ -28,10 +28,13 @@ interface Membership {
 
 interface Props {
   memberships: Membership[];
+  allMemberships?: Membership[]; // Include inactive for duplicate detection
   currentCompanyId: number | null;
 }
 
-export function CompanyManagementDashboard({ memberships, currentCompanyId }: Props) {
+export function CompanyManagementDashboard({ memberships, allMemberships, currentCompanyId }: Props) {
+  // Use allMemberships for duplicate detection if provided, otherwise use active memberships
+  const membershipsForDuplicateDetection = allMemberships || memberships;
   const router = useRouter();
   const [switching, setSwitching] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -40,11 +43,14 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
   const [loadingDuplicates, setLoadingDuplicates] = useState(false);
   const [cleaningUp, setCleaningUp] = useState(false);
 
-  // Detect duplicates on mount
+  // Detect duplicates on mount - only check active memberships
   useEffect(() => {
     const detectDuplicates = () => {
+      // Only check active memberships for duplicates (archived companies shouldn't show as duplicates)
+      const activeMemberships = membershipsForDuplicateDetection.filter(m => m.isActive);
+      
       const companiesByName = new Map<string, Membership[]>();
-      memberships.forEach((membership) => {
+      activeMemberships.forEach((membership) => {
         const name = membership.company.name.toLowerCase().trim();
         if (!companiesByName.has(name)) {
           companiesByName.set(name, []);
@@ -60,7 +66,7 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
     };
 
     detectDuplicates();
-  }, [memberships]);
+  }, [membershipsForDuplicateDetection]);
 
   const handleSwitchCompany = async (companyId: number) => {
     setSwitching(companyId);
@@ -110,13 +116,15 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
       const data = await res.json();
 
       if (res.ok) {
+        // Clear duplicates state and refresh
+        setDuplicates([]);
+        setDeleteConfirm(null);
         // Refresh the page to show updated list
         router.refresh();
-        setDeleteConfirm(null);
-        // If we deleted the current company, redirect to companies page
-        if (currentCompanyId === companyId) {
-          window.location.href = "/dashboard/companies";
-        }
+        // Force reload to ensure fresh data
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
         alert(data.error || "Failed to delete company");
         setDeleteConfirm(null);
@@ -150,15 +158,21 @@ export function CompanyManagementDashboard({ memberships, currentCompanyId }: Pr
       const data = await res.json();
 
       if (res.ok) {
-        router.refresh();
+        // Clear duplicates state immediately
         setDuplicates([]);
-        alert(`Successfully archived ${data.archived.length} duplicate company/companies`);
+        // Refresh the page to show updated list
+        router.refresh();
+        // Also reload to ensure fresh data
+        window.location.reload();
       } else {
-        alert(data.error || "Failed to cleanup duplicates");
+        const errorMsg = data.error || "Failed to cleanup duplicates";
+        const details = data.details || data.reasons ? `\n\nDetails: ${data.details || JSON.stringify(data.reasons)}` : '';
+        console.error("Failed to cleanup duplicates:", data);
+        alert(`${errorMsg}${details}`);
       }
     } catch (error) {
       console.error("Failed to cleanup duplicates:", error);
-      alert("Failed to cleanup duplicates. Please try again.");
+      alert(`Failed to cleanup duplicates: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setCleaningUp(false);
     }

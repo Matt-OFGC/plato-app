@@ -160,6 +160,53 @@ export default function IngredientsPanel({
 
   const [ingredientSearch, setIngredientSearch] = React.useState<Record<string, string>>({});
   const [searchResults, setSearchResults] = React.useState<Record<string, typeof availableIngredients>>({});
+  const [dropdownPosition, setDropdownPosition] = React.useState<Record<string, 'above' | 'below'>>({});
+  const inputRefs = React.useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Function to calculate dropdown position
+  const calculateDropdownPosition = React.useCallback((ingredientId: string) => {
+    const input = inputRefs.current[ingredientId];
+    if (!input) return;
+    
+    const rect = input.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const dropdownHeight = 320; // max-h-80 = 320px
+    
+    // If not enough space below but enough above, position above
+    if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+      setDropdownPosition(prev => ({ ...prev, [ingredientId]: 'above' }));
+    } else {
+      setDropdownPosition(prev => ({ ...prev, [ingredientId]: 'below' }));
+    }
+  }, []);
+
+  // Recalculate position on scroll when dropdown is open
+  React.useEffect(() => {
+    const handleScroll = () => {
+      Object.keys(searchResults).forEach(id => {
+        if (searchResults[id] || ingredientSearch[id]?.length === 0) {
+          calculateDropdownPosition(id);
+        }
+      });
+    };
+
+    const handleResize = () => {
+      Object.keys(searchResults).forEach(id => {
+        if (searchResults[id] || ingredientSearch[id]?.length === 0) {
+          calculateDropdownPosition(id);
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, true); // Use capture phase to catch all scrolls
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [searchResults, ingredientSearch, calculateDropdownPosition]);
 
   const handleSearchChange = (id: string, searchTerm: string) => {
     setIngredientSearch({ ...ingredientSearch, [id]: searchTerm });
@@ -169,10 +216,14 @@ export default function IngredientsPanel({
         ing.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setSearchResults({ ...searchResults, [id]: filtered });
+      // Recalculate position when dropdown opens
+      setTimeout(() => calculateDropdownPosition(id), 0);
     } else {
       const newResults = { ...searchResults };
       delete newResults[id];
       setSearchResults(newResults);
+      // Recalculate position when showing all ingredients
+      setTimeout(() => calculateDropdownPosition(id), 0);
     }
   };
 
@@ -333,10 +384,17 @@ export default function IngredientsPanel({
                         handleSearchChange(ingredient.id, e.target.value);
                         handleIngredientChange(ingredient.id, "name", e.target.value);
                       }}
+                      ref={(el) => {
+                        inputRefs.current[ingredient.id] = el;
+                      }}
                       onFocus={() => {
                         if (!ingredientSearch[ingredient.id]) {
                           handleSearchChange(ingredient.id, ingredient.name);
                         }
+                        // Check available space and position dropdown accordingly
+                        setTimeout(() => {
+                          calculateDropdownPosition(ingredient.id);
+                        }, 0);
                       }}
                       onBlur={() => {
                         // Clear search after a short delay to allow clicks on dropdown items
@@ -364,7 +422,13 @@ export default function IngredientsPanel({
                   
                   {/* Searchable dropdown - shows all ingredients initially, filters as you type */}
                   {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0) || ingredientSearch[ingredient.id]?.length === 0 ? (
-                    <div className="absolute left-0 right-0 z-[110] mt-1 bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
+                    <div 
+                      className={`absolute left-0 right-0 z-[110] bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto ${
+                        dropdownPosition[ingredient.id] === 'above' 
+                          ? 'bottom-full mb-1' 
+                          : 'top-full mt-1'
+                      }`}
+                    >
                       <div className="py-1">
                         {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : availableIngredients).map((result, idx) => (
                           <button

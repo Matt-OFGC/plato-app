@@ -21,6 +21,12 @@ interface CostAnalysisProps {
   onSellPriceChange: (price: number) => void;
   recipeId: number;
   onSaveSellPrice: (price: number) => Promise<void>;
+  wholesalePrice?: number;
+  isWholesaleProduct?: boolean;
+  onWholesalePriceChange?: (price: number) => void;
+  onWholesaleToggle?: (checked: boolean) => void;
+  onSaveWholesale?: (price: number, isWholesaleProduct: boolean) => Promise<void>;
+  yieldUnit?: string;
 }
 
 export default function CostAnalysis({
@@ -33,6 +39,12 @@ export default function CostAnalysis({
   onSellPriceChange,
   recipeId,
   onSaveSellPrice,
+  wholesalePrice,
+  isWholesaleProduct,
+  onWholesalePriceChange,
+  onWholesaleToggle,
+  onSaveWholesale,
+  yieldUnit,
 }: CostAnalysisProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -153,6 +165,12 @@ export default function CostAnalysis({
         onSellPriceChange={onSellPriceChange}
         recipeId={recipeId}
         onSave={onSaveSellPrice}
+        wholesalePrice={wholesalePrice}
+        isWholesaleProduct={isWholesaleProduct}
+        onWholesalePriceChange={onWholesalePriceChange}
+        onWholesaleToggle={onWholesaleToggle}
+        onSaveWholesale={onSaveWholesale}
+        yieldUnit={yieldUnit}
       />
     </>
   );

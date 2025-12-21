@@ -21,17 +21,36 @@ export async function PATCH(
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Check permission
-    const canEdit = await checkPermission(
-      session.id,
-      companyId,
-      "training:edit"
-    );
-    if (!canEdit) {
+    // Check permission - allow ADMIN and OWNER for MVP
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: session.id,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
       return NextResponse.json(
         { error: "No permission to edit training" },
         { status: 403 }
       );
+    }
+
+    // ADMIN and OWNER can edit, others need explicit permission check
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      const canEdit = await checkPermission(
+        session.id,
+        companyId,
+        "training:edit"
+      );
+      if (!canEdit) {
+        return NextResponse.json(
+          { error: "No permission to edit training" },
+          { status: 403 }
+        );
+      }
     }
 
     const { id } = await params;
@@ -97,17 +116,36 @@ export async function DELETE(
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Check permission
-    const canEdit = await checkPermission(
-      session.id,
-      companyId,
-      "training:edit"
-    );
-    if (!canEdit) {
+    // Check permission - allow ADMIN and OWNER for MVP
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: session.id,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
       return NextResponse.json(
         { error: "No permission to edit training" },
         { status: 403 }
       );
+    }
+
+    // ADMIN and OWNER can edit, others need explicit permission check
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      const canEdit = await checkPermission(
+        session.id,
+        companyId,
+        "training:edit"
+      );
+      if (!canEdit) {
+        return NextResponse.json(
+          { error: "No permission to edit training" },
+          { status: 403 }
+        );
+      }
     }
 
     const { id } = await params;

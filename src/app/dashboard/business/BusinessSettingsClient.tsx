@@ -49,12 +49,35 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const normalizeWebsiteUrl = (url: string): string => {
+    if (!url || url.trim() === '') return '';
+    const trimmed = url.trim();
+    // If it already has a protocol, return as is
+    if (trimmed.match(/^https?:\/\//i)) {
+      return trimmed;
+    }
+    // Otherwise, prepend https://
+    return `https://${trimmed}`;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  const handleWebsiteBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value.trim();
+    if (value && !value.match(/^https?:\/\//i)) {
+      // Normalize the URL when user leaves the field
+      const normalized = normalizeWebsiteUrl(value);
+      setFormData(prev => ({
+        ...prev,
+        website: normalized
+      }));
+    }
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,15 +151,19 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
     setIsSaving(true);
 
     try {
+      // Normalize website URL before submitting
+      const normalizedFormData = {
+        ...formData,
+        website: formData.website ? normalizeWebsiteUrl(formData.website) : '',
+        logoUrl: logoPreview,
+      };
+
       const response = await fetch('/api/company/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          logoUrl: logoPreview,
-        }),
+        body: JSON.stringify(normalizedFormData),
       });
 
       if (response.ok) {
@@ -248,14 +275,18 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
                 Website
               </label>
               <input
-                type="url"
+                type="text"
                 id="website"
                 name="website"
                 value={formData.website}
                 onChange={handleInputChange}
-                placeholder="https://yourbusiness.com"
+                onBlur={handleWebsiteBlur}
+                placeholder="www.yourbusiness.com or https://yourbusiness.com"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter your website domain (we'll add https:// automatically)
+              </p>
             </div>
 
             <div>

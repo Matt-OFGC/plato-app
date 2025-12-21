@@ -67,6 +67,10 @@ export default async function TrainingPage() {
     }
   }
 
-  return <TrainingDashboardClient modules={modules} companyId={companyId} />;
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <TrainingDashboardClient modules={modules} companyId={companyId} />
+    </div>
+  );
 }
 

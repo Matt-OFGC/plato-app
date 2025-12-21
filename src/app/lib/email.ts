@@ -1,9 +1,11 @@
 // Email utilities
+import { logger } from './logger';
+
 export async function sendEmail(to: string, subject: string, html: string) {
   // Check if Resend is configured
   if (!process.env.RESEND_API_KEY) {
     const error = new Error('RESEND_API_KEY is not configured');
-    console.error('Email sending failed:', error.message);
+    logger.error('Email sending failed: RESEND_API_KEY is not configured', {}, 'Email');
     throw error;
   }
 
@@ -13,6 +15,8 @@ export async function sendEmail(to: string, subject: string, html: string) {
     
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Plato <noreply@plato.app>';
     
+    logger.debug(`Sending email to ${to}`, { subject, fromEmail }, 'Email');
+    
     const result = await resend.emails.send({
       from: fromEmail,
       to: [to],
@@ -21,12 +25,14 @@ export async function sendEmail(to: string, subject: string, html: string) {
     });
     
     if (!result.data?.id) {
+      logger.error('Resend API did not return a message ID', { result }, 'Email');
       throw new Error('Resend API did not return a message ID');
     }
     
+    logger.info(`Email sent successfully to ${to}`, { messageId: result.data.id }, 'Email');
     return { success: true, messageId: result.data.id };
   } catch (error) {
-    console.error('Resend email error:', error);
+    logger.error('Resend email error', error, 'Email');
     // Re-throw the error so the caller can handle it
     throw error instanceof Error ? error : new Error('Failed to send email');
   }

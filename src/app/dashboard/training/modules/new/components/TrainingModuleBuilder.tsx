@@ -1,12 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-
-interface Recipe {
-  id: number;
-  name: string;
-}
 
 interface TrainingContent {
   type: "text" | "image" | "video" | "video_embed";
@@ -17,16 +12,17 @@ interface TrainingContent {
 
 interface TrainingModuleBuilderProps {
   companyId: number;
-  recipes: Recipe[];
 }
 
 export default function TrainingModuleBuilder({
   companyId,
-  recipes,
 }: TrainingModuleBuilderProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [uploadErrors, setUploadErrors] = useState<Record<number, string>>({});
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   // Module fields
   const [title, setTitle] = useState("");
@@ -34,7 +30,6 @@ export default function TrainingModuleBuilder({
   const [estimatedDuration, setEstimatedDuration] = useState<number | null>(null);
   const [refreshFrequencyDays, setRefreshFrequencyDays] = useState<number | null>(null);
   const [isTemplate, setIsTemplate] = useState(false);
-  const [linkedRecipeIds, setLinkedRecipeIds] = useState<number[]>([]);
 
   // Content management
   const [contentItems, setContentItems] = useState<TrainingContent[]>([]);
@@ -49,7 +44,7 @@ export default function TrainingModuleBuilder({
     setError("");
 
     try {
-      // Create module
+      // Create module with content in one request
       const moduleRes = await fetch("/api/training/modules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,6 +55,12 @@ export default function TrainingModuleBuilder({
           refreshFrequencyDays: refreshFrequencyDays || null,
           isTemplate,
           companyId,
+          content: contentItems.length > 0 ? contentItems.map((item, index) => ({
+            type: item.type,
+            content: item.content,
+            order: index,
+            metadata: item.metadata || {},
+          })) : undefined,
         }),
       });
 
@@ -69,36 +70,6 @@ export default function TrainingModuleBuilder({
       }
 
       const { module } = await moduleRes.json();
-
-      // Link recipes
-      if (linkedRecipeIds.length > 0) {
-        for (const recipeId of linkedRecipeIds) {
-          await fetch(`/api/recipes/${recipeId}/relations`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "training",
-              relatedId: module.id,
-            }),
-          });
-        }
-      }
-
-      // Create content items
-      for (const [index, item] of contentItems.entries()) {
-        await fetch("/api/training/content", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            moduleId: module.id,
-            type: item.type,
-            content: item.content,
-            order: index,
-            metadata: item.metadata || {},
-          }),
-        });
-      }
-
       router.push(`/dashboard/training/modules/${module.id}`);
     } catch (err: any) {
       setError(err.message || "Failed to create training module");
@@ -145,10 +116,54 @@ export default function TrainingModuleBuilder({
     setContentItems(updated);
   }
 
+  async function handleFileUpload(index: number, file: File, type: "image" | "video") {
+    setUploadingIndex(index);
+    const newUploadErrors = { ...uploadErrors };
+    delete newUploadErrors[index];
+    setUploadErrors(newUploadErrors);
+
+    try {
+      // Validate file size (50MB max)
+      const maxSize = 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        throw new Error("File size exceeds 50MB limit");
+      }
+
+      // Validate file type
+      if (type === "image" && !file.type.startsWith("image/")) {
+        throw new Error("Please select an image file");
+      }
+      if (type === "video" && !file.type.startsWith("video/")) {
+        throw new Error("Please select a video file");
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload/training-media", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      // Update the content item with the uploaded URL
+      updateContentItem(index, { content: data.url });
+    } catch (err: any) {
+      setUploadErrors({ ...uploadErrors, [index]: err.message || "Upload failed" });
+    } finally {
+      setUploadingIndex(null);
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Basic Info */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 p-4 sm:p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Module Information
         </h2>
@@ -162,7 +177,7 @@ export default function TrainingModuleBuilder({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
               placeholder="e.g., Barista Training - Latte Art"
             />
           </div>
@@ -175,7 +190,7 @@ export default function TrainingModuleBuilder({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
               placeholder="Brief description of what this training covers..."
             />
           </div>
@@ -193,7 +208,7 @@ export default function TrainingModuleBuilder({
                     e.target.value ? parseInt(e.target.value) : null
                   )
                 }
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
                 placeholder="e.g., 30"
               />
             </div>
@@ -210,7 +225,7 @@ export default function TrainingModuleBuilder({
                     e.target.value ? parseInt(e.target.value) : null
                   )
                 }
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
                 placeholder="e.g., 365"
               />
             </div>
@@ -232,7 +247,7 @@ export default function TrainingModuleBuilder({
       </div>
 
       {/* Content Sections */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
             Training Content
@@ -240,19 +255,19 @@ export default function TrainingModuleBuilder({
           <div className="flex gap-2">
             <button
               onClick={() => addContentItem("text")}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               + Text
             </button>
             <button
               onClick={() => addContentItem("image")}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               + Image
             </button>
             <button
               onClick={() => addContentItem("video")}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               + Video
             </button>
@@ -306,84 +321,187 @@ export default function TrainingModuleBuilder({
                       updateContentItem(index, { content: e.target.value })
                     }
                     rows={4}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
                     placeholder="Enter training text content..."
                   />
                 )}
 
                 {item.type === "image" && (
-                  <div>
-                    <input
-                      type="text"
-                      value={item.content}
-                      onChange={(e) =>
-                        updateContentItem(index, { content: e.target.value })
-                      }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="Image URL or upload image..."
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter image URL or use upload button (coming soon)
-                    </p>
+                  <div className="space-y-3">
+                    {/* URL Input */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={item.content}
+                        onChange={(e) =>
+                          updateContentItem(index, { content: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
+                        placeholder="Enter image URL..."
+                      />
+                    </div>
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 border-t border-gray-200"></div>
+                      <span className="text-xs text-gray-500">OR</span>
+                      <div className="flex-1 border-t border-gray-200"></div>
+                    </div>
+
+                    {/* File Upload */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Upload from Computer
+                      </label>
+                      <input
+                        ref={(el) => (fileInputRefs.current[index] = el)}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(index, file, "image");
+                          }
+                        }}
+                        disabled={uploadingIndex === index}
+                        className="hidden"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRefs.current[index]?.click()}
+                          disabled={uploadingIndex === index}
+                          className="px-4 py-2 text-sm bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-accent)] text-white rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {uploadingIndex === index ? "Uploading..." : "Choose Image"}
+                        </button>
+                        {item.content && (
+                          <span className="text-xs text-gray-500">
+                            {item.content.startsWith("http") ? "URL set" : "File uploaded"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    {item.content && item.content.startsWith("http") && (
+                      <div className="mt-2">
+                        <img
+                          src={item.content}
+                          alt="Preview"
+                          className="max-w-full h-auto max-h-48 rounded-lg border border-gray-200"
+                          onError={() => {
+                            setUploadErrors({
+                              ...uploadErrors,
+                              [index]: "Failed to load image. Please check the URL.",
+                            });
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Upload Error */}
+                    {uploadErrors[index] && (
+                      <p className="text-xs text-red-600">{uploadErrors[index]}</p>
+                    )}
                   </div>
                 )}
 
                 {item.type === "video" && (
-                  <div>
-                    <input
-                      type="text"
-                      value={item.content}
-                      onChange={(e) =>
-                        updateContentItem(index, { content: e.target.value })
-                      }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      placeholder="Video URL or embed code..."
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter video URL or embed code
-                    </p>
+                  <div className="space-y-3">
+                    {/* URL Input */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Video URL or Embed Code
+                      </label>
+                      <input
+                        type="text"
+                        value={item.content}
+                        onChange={(e) =>
+                          updateContentItem(index, { content: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
+                        placeholder="Enter video URL or embed code..."
+                      />
+                    </div>
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 border-t border-gray-200"></div>
+                      <span className="text-xs text-gray-500">OR</span>
+                      <div className="flex-1 border-t border-gray-200"></div>
+                    </div>
+
+                    {/* File Upload */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Upload from Computer
+                      </label>
+                      <input
+                        ref={(el) => (fileInputRefs.current[index] = el)}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(index, file, "video");
+                          }
+                        }}
+                        disabled={uploadingIndex === index}
+                        className="hidden"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRefs.current[index]?.click()}
+                          disabled={uploadingIndex === index}
+                          className="px-4 py-2 text-sm bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-accent)] text-white rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {uploadingIndex === index ? "Uploading..." : "Choose Video"}
+                        </button>
+                        {item.content && (
+                          <span className="text-xs text-gray-500">
+                            {item.content.startsWith("http") ? "URL set" : "File uploaded"}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Maximum file size: 50MB. Supported formats: MP4, WebM, QuickTime
+                      </p>
+                    </div>
+
+                    {/* Preview */}
+                    {item.content && item.content.startsWith("http") && !item.content.includes("<iframe") && (
+                      <div className="mt-2">
+                        <video
+                          src={item.content}
+                          controls
+                          className="max-w-full h-auto max-h-64 rounded-lg border border-gray-200"
+                          onError={() => {
+                            setUploadErrors({
+                              ...uploadErrors,
+                              [index]: "Failed to load video. Please check the URL.",
+                            });
+                          }}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    )}
+
+                    {/* Upload Error */}
+                    {uploadErrors[index] && (
+                      <p className="text-xs text-red-600">{uploadErrors[index]}</p>
+                    )}
                   </div>
                 )}
               </div>
             ))}
           </div>
         )}
-      </div>
-
-      {/* Recipe Links */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Link to Recipes
-        </h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Link this training module to specific recipes. Staff viewing those
-          recipes will see a link to this training.
-        </p>
-
-        <div className="space-y-2">
-          {recipes.map((recipe) => (
-            <label
-              key={recipe.id}
-              className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
-            >
-              <input
-                type="checkbox"
-                checked={linkedRecipeIds.includes(recipe.id)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setLinkedRecipeIds([...linkedRecipeIds, recipe.id]);
-                  } else {
-                    setLinkedRecipeIds(
-                      linkedRecipeIds.filter((id) => id !== recipe.id)
-                    );
-                  }
-                }}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">{recipe.name}</span>
-            </label>
-          ))}
-        </div>
       </div>
 
       {/* Error Message */}
@@ -397,14 +515,14 @@ export default function TrainingModuleBuilder({
       <div className="flex items-center justify-end gap-4">
         <button
           onClick={() => router.back()}
-          className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+          className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
           disabled={isSaving || !title.trim()}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-accent)] text-white rounded-lg hover:opacity-90 transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? "Creating..." : "Create Module"}
         </button>

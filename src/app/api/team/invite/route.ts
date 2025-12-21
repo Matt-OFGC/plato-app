@@ -8,6 +8,7 @@ import { sendTeamInviteEmail } from "@/lib/email";
 import crypto from "crypto";
 import { canInviteTeamMembers, createFeatureGateError } from "@/lib/subscription";
 import { logger } from "@/lib/logger";
+import { storeInvitationMetadata } from "@/lib/invitation-metadata-store";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, role, companyId } = body;
+    const { 
+      email, 
+      name,
+      role, 
+      companyId,
+      // Staff profile fields
+      position,
+      phone,
+      employmentStartDate,
+      emergencyContactName,
+      emergencyContactPhone,
+      notes,
+    } = body;
 
     if (!email || !role || !companyId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -118,6 +131,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Store staff profile data - we'll create the profile when invitation is accepted
+    // For MVP, store this data temporarily. We'll create the staff profile in the accept endpoint
+    // If staffProfile model exists, create it after membership is created
+    // Store profile data in invitation metadata or handle in accept endpoint
+
     // Get inviter info for email
     const inviter = await prisma.user.findUnique({
       where: { id: session.id },
@@ -142,6 +160,20 @@ export async function POST(request: NextRequest) {
     // Note: We don't update Stripe subscription here because the user hasn't accepted yet
     // The subscription will be updated when they accept the invitation
 
+    // Store staff profile metadata for later use when invitation is accepted
+    const profileData = {
+      name: name || null,
+      position: position || null,
+      phone: phone || null,
+      employmentStartDate: employmentStartDate || null,
+      emergencyContactName: emergencyContactName || null,
+      emergencyContactPhone: emergencyContactPhone || null,
+      notes: notes || null,
+    };
+
+    // Store metadata in memory (will be used when invitation is accepted)
+    storeInvitationMetadata(invitation.id, profileData);
+    
     // Don't expose the full invitation object or token in response
     return NextResponse.json({ 
       success: true,

@@ -59,8 +59,8 @@ export default async function RecipePage({ params }: Props) {
     }
   }
 
-  // Fetch categories, storage, shelf life options, and ingredients for dropdowns
-  const [categories, storageOptions, shelfLifeOptions, availableIngredientsRaw] = await Promise.all([
+  // Fetch categories, storage, shelf life options, ingredients, and wholesale product for dropdowns
+  const [categories, storageOptions, shelfLifeOptions, availableIngredientsRaw, wholesaleProduct] = await Promise.all([
     prisma.category.findMany({
       where: { companyId },
       orderBy: { order: "asc" },
@@ -91,6 +91,19 @@ export default async function RecipePage({ params }: Props) {
         batchPricing: true
       }
     }),
+    // Fetch wholesale product if recipe exists
+    recipe ? prisma.wholesaleProduct.findFirst({
+      where: { 
+        recipeId: recipe.id,
+        companyId: companyId!
+      },
+      select: {
+        id: true,
+        price: true,
+        isActive: true,
+        unit: true,
+      }
+    }) : null,
   ]);
 
   // Convert Prisma Decimal fields to numbers for client components
@@ -203,6 +216,14 @@ export default async function RecipePage({ params }: Props) {
     };
   });
 
+  // Prepare wholesale product data for client
+  const wholesaleProductData = wholesaleProduct ? {
+    id: wholesaleProduct.id,
+    price: wholesaleProduct.price.toNumber(),
+    isActive: wholesaleProduct.isActive,
+    unit: wholesaleProduct.unit || null,
+  } : null;
+
   return (
     <RecipeClient 
       recipe={transformedRecipe} 
@@ -212,6 +233,8 @@ export default async function RecipePage({ params }: Props) {
       recipeId={recipeId}
       availableIngredients={ingredientsForDropdown}
       isNew={isNew}
+      wholesaleProduct={wholesaleProductData}
+      yieldUnit={recipe?.yieldUnit || "each"}
     />
   );
 }

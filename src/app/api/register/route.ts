@@ -167,11 +167,12 @@ export async function POST(req: NextRequest) {
         });
 
         // Create membership with explicit isActive: true
+        // Use OWNER role for consistency - user created this company
         const membership = await tx.membership.create({ 
           data: { 
             userId: user.id, 
             companyId: co.id, 
-            role: "ADMIN",
+            role: "OWNER", // Changed from ADMIN to OWNER - user created this company
             isActive: true // Explicitly set to true
           } 
         });
@@ -284,7 +285,9 @@ export async function POST(req: NextRequest) {
 
       // Send verification email
       try {
-        const verificationUrl = `${req.nextUrl.origin}/api/auth/verify-email?token=${verificationToken}`;
+        // Use production URL if available, otherwise fall back to request origin
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+        const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${verificationToken}`;
         await sendEmailVerificationEmail({
           to: email,
           name: name || "there",

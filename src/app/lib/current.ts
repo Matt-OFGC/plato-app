@@ -17,7 +17,7 @@ export interface Company {
   country?: string;
   phone?: string;
   logoUrl?: string;
-  app?: App;
+  // app field removed - apps are now user-level subscriptions, not company-level
 }
 
 export interface UserWithMemberships {
@@ -158,8 +158,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
                 businessType: true,
                 country: true,
                 phone: true,
-                logoUrl: true,
-                app: true
+                logoUrl: true
               }
             }
           },
@@ -194,8 +193,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
               businessType: true,
               country: true,
               phone: true,
-              logoUrl: true,
-              app: true
+              logoUrl: true
             }
           }
         },
@@ -242,11 +240,11 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             await deleteCache(CacheKeys.userSession(userId));
           }
         }
-        
+            
         // Use the membership even if we couldn't activate it
         // This allows users to access their companies even if memberships are inactive
-        companyId = inactiveMembership.companyId;
-        company = inactiveMembership.company as Company;
+            companyId = inactiveMembership.companyId;
+            company = inactiveMembership.company as Company;
         
         if (!shouldActivate || !inactiveMembership.isActive) {
           logger.debug(`Using inactive membership for user ${userId}`, {
@@ -329,8 +327,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             businessType: repairResult.company.businessType || undefined,
             country: repairResult.company.country || undefined,
             phone: repairResult.company.phone || undefined,
-            logoUrl: repairResult.company.logoUrl || undefined,
-              app: repairResult.company.app as App | undefined,
+            logoUrl: repairResult.company.logoUrl || undefined
             };
           }
         }
@@ -355,9 +352,10 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       };
     }
     
-    // Get app config if company has an app
-    const app = company.app || null;
-    const appConfig = app ? getAppConfig(app) : null;
+    // App is now user-level subscription, not company-level
+    // Get app from user's subscription if needed
+    const app = null;
+    const appConfig = null;
 
     return {
       companyId,

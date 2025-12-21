@@ -29,19 +29,19 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
     };
   }
 
-  // Teams section - Team, Scheduling, Training
-  if (pathname.startsWith('/dashboard/team') || pathname.startsWith('/dashboard/scheduling') || pathname.startsWith('/dashboard/training')) {
+  // Teams section - Team, Training
+  if (pathname.startsWith('/dashboard/team') || pathname.startsWith('/dashboard/training')) {
     return { 
-      tabs: ['Team', 'Scheduling', 'Training'],
-      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
+      tabs: ['Team', 'Training'],
+      links: ['/dashboard/team', '/dashboard/training']
     };
   }
   
   // Legacy staff routes - redirect to team
   if (pathname.startsWith('/dashboard/staff')) {
     return { 
-      tabs: ['Team', 'Scheduling', 'Training'],
-      links: ['/dashboard/team', '/dashboard/scheduling', '/dashboard/training']
+      tabs: ['Team', 'Training'],
+      links: ['/dashboard/team', '/dashboard/training']
     };
   }
 
@@ -116,7 +116,10 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
 
   // Business
   if (pathname.startsWith('/dashboard/business')) {
-    return { tabs: ['Settings', 'Billing', 'Team', 'Integrations'] };
+    return { 
+      tabs: ['Settings', 'Billing', 'Team', 'Integrations'],
+      links: ['/dashboard/business', '/dashboard/business/billing', '/dashboard/business/team', '/dashboard/business/integrations']
+    };
   }
 
   // Safety section - Diary, Tasks, Compliance, Templates, Temperatures
@@ -143,7 +146,7 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
   }
 
   // Default tabs for dashboard
-  return { tabs: ['Overview', 'Today', 'Week', 'Reports'] };
+  return { tabs: ['Overview'] };
 };
 
 // Check if action buttons should be shown
@@ -307,6 +310,30 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
         };
         setActiveTab(viewToIndex[viewParam] ?? 0);
       }
+      // For business pages, check exact match or starts with
+      else if (pathname.startsWith('/dashboard/business')) {
+        let activeIndex = -1;
+        
+        // Check for specific business sub-pages
+        if (pathname.startsWith('/dashboard/business/billing')) {
+          activeIndex = tabLinks.findIndex(link => link === '/dashboard/business/billing');
+        } else if (pathname.startsWith('/dashboard/business/team')) {
+          activeIndex = tabLinks.findIndex(link => link === '/dashboard/business/team');
+        } else if (pathname.startsWith('/dashboard/business/integrations')) {
+          activeIndex = tabLinks.findIndex(link => link === '/dashboard/business/integrations');
+        } else if (pathname === '/dashboard/business' || pathname === '/dashboard/business/') {
+          // Main business settings page - highlight Settings tab (index 0)
+          activeIndex = tabLinks.findIndex(link => link === '/dashboard/business');
+        }
+        
+        if (activeIndex >= 0) {
+          setActiveTab(activeIndex);
+        } else {
+          // Fallback: find first matching link
+          const fallbackIndex = tabLinks.findIndex(link => pathname.startsWith(link));
+          setActiveTab(fallbackIndex >= 0 ? fallbackIndex : 0);
+        }
+      }
       // For settings pages, check exact match or starts with
       else if (pathname.startsWith('/dashboard/account')) {
         const currentIndex = tabLinks.findIndex(link => {
@@ -390,30 +417,46 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
 
   return (
     <>
-              {/* Floating Menu Button - Top Left */}
+              {/* Floating Menu Button and Home Button - Top Left */}
               {/* Mobile (iPhone): Larger button with safe area padding, matches desktop style */}
               {/* iPad & Desktop: Standard size */}
               <div className="fixed z-50 flex items-center gap-2 
                               top-4 left-4 max-md:top-[env(safe-area-inset-top,1rem)] max-md:left-[env(safe-area-inset-left,1rem)]
                               md:top-6 md:left-6">
                 {!sidebarOpen && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onMenuClick();
-                    }}
-                    className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onMenuClick();
+                      }}
+                      className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200 cursor-pointer
+                                 max-md:p-4 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
+                                 md:p-3
+                                 active:scale-95 max-md:active:scale-90"
+                      aria-label="Toggle menu"
+                      type="button"
+                    >
+                      <svg className="text-gray-700 max-md:w-6 max-md:h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
+                    
+                    {/* Home Button - Always visible when sidebar is closed */}
+                    <a
+                      href="/dashboard"
+                      className="bg-white/80 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full hover:bg-white hover:shadow-xl transition-all duration-200
                                max-md:p-4 max-md:shadow-xl max-md:border-2 max-md:border-gray-300/60
                                md:p-3
                                active:scale-95 max-md:active:scale-90"
-                    aria-label="Toggle menu"
-                    type="button"
-                  >
-                    <svg className="text-gray-700 max-md:w-6 max-md:h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
+                      aria-label="Go to homepage"
+                    >
+                      <svg className="text-gray-700 max-md:w-6 max-md:h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                    </a>
+                  </>
                 )}
                 
                 {/* Back Button - Only show on recipe pages when sidebar is closed */}

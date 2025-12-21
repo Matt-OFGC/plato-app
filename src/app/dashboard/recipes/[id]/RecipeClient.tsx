@@ -3,7 +3,7 @@
 import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
-import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe } from "./actions";
+import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe, saveWholesalePrice } from "./actions";
 import { computeIngredientUsageCostWithDensity, toBase, Unit, BaseUnit } from "@/lib/units";
 import { getIngredientDensityOrDefault } from "@/lib/ingredient-densities";
 import RecipeHeader from "./components/RecipeHeader";
@@ -45,9 +45,11 @@ interface Props {
     batchPricing: Array<{ packQuantity: number; packPrice: number }> | null;
   }>;
   isNew?: boolean;
+  wholesaleProduct?: { id: number; price: number; isActive: boolean; unit: string | null } | null;
+  yieldUnit?: string;
 }
 
-function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients, isNew = false }: Props) {
+function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients, isNew = false, wholesaleProduct, yieldUnit = "each" }: Props) {
   const recipeView = useRecipeView();
   if (!recipeView) throw new Error("RecipeRedesignClientContent must be used within RecipeViewProvider");
   
@@ -160,6 +162,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
   }, [localIngredients, calculateIngredientCost]);
   
   const [sellPrice, setSellPrice] = useState(recipe.sellPrice || (totalCost * 3));
+  const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.isActive ? wholesaleProduct.price : 0);
+  const [isWholesaleProduct, setIsWholesaleProduct] = useState(wholesaleProduct?.isActive || false);
 
   // Collect allergens from ingredients
   const allergens = useMemo(() => {
@@ -471,6 +475,14 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
     const result = await saveSellPrice(recipeId, price);
     if (!result.success) {
       throw new Error(result.error || "Failed to save sell price");
+    }
+  };
+
+  const handleSaveWholesalePrice = async (price: number, isWholesaleProduct: boolean) => {
+    if (!recipeId) return;
+    const result = await saveWholesalePrice(recipeId, price, isWholesaleProduct);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to save wholesale price");
     }
   };
 
@@ -1053,9 +1065,13 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         sellPrice={sellPrice}
         onSellPriceChange={setSellPrice}
         recipeId={recipeId}
-        onSave={async (price: number) => {
-          await saveSellPrice(recipeId, price);
-        }}
+        onSave={handleSaveSellPrice}
+        wholesalePrice={wholesalePrice}
+        isWholesaleProduct={isWholesaleProduct}
+        onWholesalePriceChange={setWholesalePrice}
+        onWholesaleToggle={setIsWholesaleProduct}
+        onSaveWholesale={handleSaveWholesalePrice}
+        yieldUnit={yieldUnit}
       />
 
       {/* Description Modal */}

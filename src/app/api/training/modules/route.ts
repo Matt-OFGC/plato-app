@@ -18,17 +18,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Check permission
-    const canView = await checkPermission(
-      session.id,
-      companyId,
-      "training:view"
-    );
-    if (!canView) {
+    // Check permission - allow ADMIN and OWNER for MVP
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: session.id,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
       return NextResponse.json(
         { error: "No permission to view training" },
         { status: 403 }
       );
+    }
+
+    // ADMIN and OWNER can view, others need explicit permission check
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      const canView = await checkPermission(
+        session.id,
+        companyId,
+        "training:view"
+      );
+      if (!canView) {
+        return NextResponse.json(
+          { error: "No permission to view training" },
+          { status: 403 }
+        );
+      }
     }
 
     const { searchParams } = new URL(request.url);
@@ -82,17 +101,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
     }
 
-    // Check permission
-    const canCreate = await checkPermission(
-      session.id,
-      companyId,
-      "training:create"
-    );
-    if (!canCreate) {
+    // Check permission - allow ADMIN and OWNER for MVP
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: session.id,
+          companyId,
+        },
+      },
+    });
+
+    if (!membership || !membership.isActive) {
       return NextResponse.json(
         { error: "No permission to create training modules" },
         { status: 403 }
       );
+    }
+
+    // ADMIN and OWNER can create, others need explicit permission check
+    if (membership.role !== "ADMIN" && membership.role !== "OWNER") {
+      const canCreate = await checkPermission(
+        session.id,
+        companyId,
+        "training:create"
+      );
+      if (!canCreate) {
+        return NextResponse.json(
+          { error: "No permission to create training modules" },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await request.json();
@@ -103,7 +141,6 @@ export async function POST(request: NextRequest) {
       isTemplate,
       estimatedDuration,
       refreshFrequencyDays,
-      recipeIds,
       content,
     } = body;
 
@@ -118,24 +155,17 @@ export async function POST(request: NextRequest) {
       data: {
         companyId,
         title,
-        description,
-        category,
+        description: description || null,
+        category: category || null,
         isTemplate: isTemplate || false,
-        estimatedDuration,
-        refreshFrequencyDays,
+        estimatedDuration: estimatedDuration || null,
+        refreshFrequencyDays: refreshFrequencyDays || null,
         createdBy: session.id,
-        recipes: recipeIds
-          ? {
-              create: recipeIds.map((recipeId: number) => ({
-                recipeId,
-              })),
-            }
-          : undefined,
-        content: content
+        content: content && content.length > 0
           ? {
               create: content.map((item: any, index: number) => ({
                 type: item.type,
-                content: item.content,
+                content: item.content || "",
                 order: item.order ?? index,
                 metadata: item.metadata || {},
               })),
@@ -146,24 +176,15 @@ export async function POST(request: NextRequest) {
         content: {
           orderBy: { order: "asc" },
         },
-        recipes: {
-          include: {
-            recipe: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
       },
     });
 
     return NextResponse.json({ module }, { status: 201 });
   } catch (error) {
     logger.error("Create training module error", error, "Training/Modules");
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to create training module" },
+      { error: `Failed to create training module: ${errorMessage}` },
       { status: 500 }
     );
   }

@@ -13,6 +13,12 @@ interface CostInsightsModalProps {
   onSellPriceChange: (price: number) => void;
   recipeId: number;
   onSave: (price: number) => Promise<void>;
+  wholesalePrice?: number;
+  isWholesaleProduct?: boolean;
+  onWholesalePriceChange?: (price: number) => void;
+  onWholesaleToggle?: (checked: boolean) => void;
+  onSaveWholesale?: (price: number, isWholesaleProduct: boolean) => Promise<void>;
+  yieldUnit?: string;
 }
 
 export default function CostInsightsModal({
@@ -26,26 +32,51 @@ export default function CostInsightsModal({
   onSellPriceChange,
   recipeId,
   onSave,
+  wholesalePrice = 0,
+  isWholesaleProduct = false,
+  onWholesalePriceChange,
+  onWholesaleToggle,
+  onSaveWholesale,
+  yieldUnit = "each",
 }: CostInsightsModalProps) {
   const [inputValue, setInputValue] = useState(sellPrice.toString());
   const [localSellPrice, setLocalSellPrice] = useState(sellPrice);
+  const [wholesaleInputValue, setWholesaleInputValue] = useState(wholesalePrice.toString());
+  const [localWholesalePrice, setLocalWholesalePrice] = useState(wholesalePrice);
+  const [localIsWholesaleProduct, setLocalIsWholesaleProduct] = useState(isWholesaleProduct);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Update input value and local sell price when modal opens or prop changes
+  // Update input values when modal opens or props change
   useEffect(() => {
     setInputValue(sellPrice.toFixed(2));
     setLocalSellPrice(sellPrice);
-  }, [sellPrice, isOpen]);
+    setWholesaleInputValue(wholesalePrice.toFixed(2));
+    setLocalWholesalePrice(wholesalePrice);
+    setLocalIsWholesaleProduct(isWholesaleProduct);
+  }, [sellPrice, wholesalePrice, isWholesaleProduct, isOpen]);
   
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Save retail price
       await onSave(localSellPrice);
       onSellPriceChange(localSellPrice);
+      
+      // Save wholesale price if handler provided
+      if (onSaveWholesale) {
+        await onSaveWholesale(localWholesalePrice, localIsWholesaleProduct);
+        if (onWholesalePriceChange) {
+          onWholesalePriceChange(localWholesalePrice);
+        }
+        if (onWholesaleToggle) {
+          onWholesaleToggle(localIsWholesaleProduct);
+        }
+      }
+      
       onClose();
     } catch (error) {
-      console.error('Failed to save sell price:', error);
-      alert('Failed to save sell price');
+      console.error('Failed to save prices:', error);
+      alert('Failed to save prices');
     } finally {
       setIsSaving(false);
     }
@@ -111,10 +142,10 @@ export default function CostInsightsModal({
             </div>
           </div>
 
-          {/* Interactive Pricing Calculator */}
+          {/* Interactive Pricing Calculator - Retail */}
           <div className="bg-white rounded-xl p-5 border-2 border-emerald-200">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
-              Pricing Calculator
+              Retail Pricing Calculator
             </h3>
             
             {/* Sell Price Input */}
@@ -235,6 +266,110 @@ export default function CostInsightsModal({
               </div>
             </div>
           </div>
+
+          {/* Wholesale Pricing Section */}
+          {onSaveWholesale && (
+            <div className="bg-white rounded-xl p-5 border-2 border-green-200">
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="isWholesaleProduct"
+                  checked={localIsWholesaleProduct}
+                  onChange={(e) => setLocalIsWholesaleProduct(e.target.checked)}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <label htmlFor="isWholesaleProduct" className="text-sm font-semibold text-gray-700 flex items-center gap-2 cursor-pointer">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Available for Wholesale
+                </label>
+              </div>
+
+              {localIsWholesaleProduct && (
+                <>
+                  {/* Wholesale Price Input */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Wholesale Price Per Unit
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">£</span>
+                      <input
+                        type="text"
+                        placeholder="0.00"
+                        value={wholesaleInputValue}
+                        onChange={(e) => {
+                          setWholesaleInputValue(e.target.value);
+                          const parsed = parseFloat(e.target.value);
+                          if (!isNaN(parsed) && parsed >= 0) {
+                            setLocalWholesalePrice(parsed);
+                          }
+                        }}
+                        onBlur={() => {
+                          const parsed = parseFloat(wholesaleInputValue);
+                          if (!isNaN(parsed) && parsed >= 0) {
+                            setWholesaleInputValue(parsed.toFixed(2));
+                            setLocalWholesalePrice(parsed);
+                          } else {
+                            setWholesaleInputValue(localWholesalePrice.toFixed(2));
+                          }
+                        }}
+                        className="w-full pl-9 pr-4 py-3 text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Price per {yieldUnit}
+                    </p>
+                  </div>
+
+                  {/* Quick Markup Buttons for Wholesale */}
+                  <div className="grid grid-cols-4 gap-2 mb-6">
+                    {[2, 2.5, 3, 4].map((multiplier) => (
+                      <button
+                        key={multiplier}
+                        onClick={() => {
+                          const newPrice = costPerServing * multiplier;
+                          setLocalWholesalePrice(newPrice);
+                          setWholesaleInputValue(newPrice.toFixed(2));
+                        }}
+                        className="px-3 py-2 text-sm font-medium bg-gray-100 hover:bg-green-100 hover:text-green-700 rounded-lg transition-colors"
+                      >
+                        {multiplier}x
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Wholesale Metrics */}
+                  {(() => {
+                    const wholesaleProfit = localWholesalePrice - costPerServing;
+                    const wholesaleProfitMargin = localWholesalePrice > 0 ? (wholesaleProfit / localWholesalePrice) * 100 : 0;
+                    const wholesaleFoodCostPercentage = localWholesalePrice > 0 ? (costPerServing / localWholesalePrice) * 100 : 0;
+                    const wholesaleMarkup = costPerServing > 0 ? ((localWholesalePrice - costPerServing) / costPerServing) * 100 : 0;
+
+                    return (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                          <p className="text-xs text-gray-600 mb-1">Wholesale Profit</p>
+                          <p className="text-2xl font-bold text-green-700">£{wholesaleProfit.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {wholesaleProfitMargin.toFixed(1)}% margin
+                          </p>
+                        </div>
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                          <p className="text-xs text-gray-600 mb-1">Wholesale Markup</p>
+                          <p className="text-2xl font-bold text-green-700">{wholesaleMarkup.toFixed(0)}%</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Food Cost: {wholesaleFoodCostPercentage.toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Industry Recommendations */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">

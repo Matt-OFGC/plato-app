@@ -11,11 +11,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No company found" }, { status: 404 });
     }
 
-    // Check if user has permission to manage company settings
-    const { checkPermission } = await import("@/lib/permissions");
-    const canManage = await checkPermission(user.id, companyId, "manage:company");
-    
-    if (!canManage) {
+    // Check if user has ADMIN or OWNER role (required for company settings)
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId: user.id,
+          companyId,
+        },
+      },
+      select: {
+        role: true,
+        isActive: true,
+      },
+    });
+
+    if (!membership || !membership.isActive || (membership.role !== "ADMIN" && membership.role !== "OWNER")) {
       return NextResponse.json({ error: "No permission to manage company settings" }, { status: 403 });
     }
 

@@ -80,26 +80,26 @@ export function EmailVerificationBanner({ userEmail, isVerified }: EmailVerifica
                 <p className="text-xs text-red-600 mt-2">{error}</p>
               )}
               <div className="mt-3 flex items-center gap-3">
-                {sent ? (
-                  <div className="flex items-center gap-1.5 text-sm text-emerald-700 font-medium">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Email sent!
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleResend}
-                    disabled={sending}
+            {sent ? (
+              <div className="flex items-center gap-1.5 text-sm text-emerald-700 font-medium">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Email sent!
+              </div>
+            ) : (
+              <button
+                onClick={handleResend}
+                disabled={sending}
                     className="text-sm font-semibold text-amber-600 hover:text-amber-700 underline disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {sending ? "Sending..." : "Resend email"}
-                  </button>
-                )}
+              >
+                {sending ? "Sending..." : "Resend email"}
+              </button>
+            )}
               </div>
             </div>
             <button

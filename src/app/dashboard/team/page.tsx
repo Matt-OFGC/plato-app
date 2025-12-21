@@ -40,6 +40,11 @@ export default async function TeamPage() {
       },
     });
     
+    // Check if user has ADMIN or OWNER role (ADMIN-only access for team management)
+    if (!membership || !membership.isActive || (membership.role !== "ADMIN" && membership.role !== "OWNER")) {
+      redirect("/dashboard?error=access_denied");
+    }
+    
     // Get team members for selection
     const membersRaw = await prisma.membership.findMany({
       where: { 
@@ -59,7 +64,7 @@ export default async function TeamPage() {
     });
 
     // Get staff profiles separately to avoid Prisma relation issues
-    const membershipIds = membersRaw.map(m => m.id);
+    const membershipIds = membersRaw.map((m: any) => m.id);
     let profiles: any[] = [];
     
     // Check if staffProfile model exists (defensive check)
@@ -78,21 +83,16 @@ export default async function TeamPage() {
     }
 
     // Create a map of membershipId -> profile
-    const profileMap = new Map(profiles.map(p => [p.membershipId, p]));
+    const profileMap = new Map(profiles.map((p: any) => [p.membershipId, p]));
 
     // Merge profiles into members
-    const members = membersRaw.map(member => ({
+    const members = membersRaw.map((member: any) => ({
       ...member,
       staffProfile: profileMap.get(member.id) || null,
     }));
     
     return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
-          <p className="text-gray-600 mt-2">Manage your team members, profiles, training, and assignments</p>
-        </div>
-
+      <div className="space-y-4 sm:space-y-6">
         <TeamManagementClient 
           companyId={companyId}
           currentUserRole={membership?.role || "VIEWER"}
@@ -104,10 +104,12 @@ export default async function TeamPage() {
     const { logger } = await import("@/lib/logger");
     logger.error("Team page error:", error);
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Team Page</h1>
-          <p className="text-gray-600">{error instanceof Error ? error.message : "Unknown error"}</p>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200/50 p-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Team Page</h1>
+            <p className="text-gray-600">{error instanceof Error ? error.message : "Unknown error"}</p>
+          </div>
         </div>
       </div>
     );

@@ -31,19 +31,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user is the owner - check both active and inactive memberships
+    // Verify user has access - check both active and inactive memberships
+    // First get the membership, then check role (case-insensitive)
     const membership = await prisma.membership.findFirst({
       where: {
-        userId: session.id,
-        companyId,
-        // Check active first, but also allow inactive if user was owner
-        role: { in: ["OWNER", "ADMIN"] },
+          userId: session.id,
+          companyId,
       },
       include: {
         company: {
           select: {
             id: true,
             name: true,
+            createdAt: true,
             _count: {
               select: {
                 memberships: {
@@ -62,33 +62,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (!membership) {
-      // Check if user has any membership at all for better error message
-      const anyMembership = await prisma.membership.findFirst({
-        where: {
-          userId: session.id,
-          companyId,
-        },
-        select: { role: true, isActive: true },
-      });
-
-      if (anyMembership) {
-        return NextResponse.json(
-          { 
-            error: `You don't have permission to delete this company. Your role is ${anyMembership.role}${anyMembership.isActive ? '' : ' (inactive)'}. Only owners and admins can delete companies.`,
-            role: anyMembership.role,
-            isActive: anyMembership.isActive,
-          },
-          { status: 403 }
-        );
-      }
-
       return NextResponse.json(
         { error: "You don't have access to this company" },
         { status: 403 }
       );
     }
 
-    if (membership.role !== "OWNER" && membership.role !== "ADMIN") {
+    // Check role (case-insensitive) - allow ADMIN or OWNER
+    const roleUpper = membership.role.toUpperCase();
+    const hasAdminRole = roleUpper === "OWNER" || roleUpper === "ADMIN";
+    
+    // Also allow deletion if:
+    // 1. User is the only member (they created it)
+    // 2. Company was created recently (likely by this user during registration)
+    const isOnlyMember = membership.company._count.memberships <= 1;
+    const companyAge = Date.now() - new Date(membership.company.createdAt).getTime();
+    const isRecentCompany = companyAge < 7 * 24 * 60 * 60 * 1000; // Created within last 7 days
+    
+    if (!hasAdminRole && !isOnlyMember && !isRecentCompany) {
       return NextResponse.json(
         { 
           error: `Only company owners and admins can delete the company. Your role is ${membership.role}.`,
