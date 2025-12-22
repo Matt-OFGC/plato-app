@@ -17,8 +17,8 @@ export const RATE_LIMITS = {
     maxRequests: 5
   },
   REGISTER: {
-    windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 3
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 5
   },
   API: {
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -112,13 +112,12 @@ function checkRateLimit(
   
   // Check if limit exceeded
   if (record.count >= config.maxRequests) {
-    // Progressive delay: increase retry time based on attempts
-    const baseRetryAfter = Math.ceil((record.resetTime - now) / 1000);
-    const progressiveDelay = Math.min(record.attempts * 60, 3600); // Max 1 hour delay
+    // Return time until window resets (no progressive delay for better UX)
+    const retryAfter = Math.ceil((record.resetTime - now) / 1000);
     
     return {
       allowed: false,
-      retryAfter: baseRetryAfter + progressiveDelay,
+      retryAfter: retryAfter,
       remaining: 0,
     };
   }

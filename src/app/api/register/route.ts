@@ -23,11 +23,19 @@ export async function POST(req: NextRequest) {
     // Apply rate limiting
     const rateLimitResult = rateLimit(req, RATE_LIMITS.REGISTER);
     if (!rateLimitResult.allowed) {
+      // Format retry time nicely
+      const retryMinutes = Math.ceil(rateLimitResult.retryAfter! / 60);
+      const retrySeconds = rateLimitResult.retryAfter!;
+      const retryMessage = retryMinutes > 1 
+        ? `${retryMinutes} minutes`
+        : `${retrySeconds} seconds`;
+      
       return NextResponse.json(
         { 
-          error: `Too many registration attempts. Please try again in ${Math.ceil(rateLimitResult.retryAfter! / 60)} minutes.`,
+          error: `Too many registration attempts. Please try again in ${retryMessage}.`,
           code: "RATE_LIMITED",
-          errorId
+          errorId,
+          retryAfter: rateLimitResult.retryAfter
         },
         { 
           status: 429,
