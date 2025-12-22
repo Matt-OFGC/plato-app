@@ -13,7 +13,12 @@ export async function sendEmail(to: string, subject: string, html: string) {
     const { Resend } = await import('resend');
     const resend = new Resend(process.env.RESEND_API_KEY);
     
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Plato <noreply@plato.app>';
+    // Ensure from email is properly formatted
+    const fromEmailEnv = process.env.RESEND_FROM_EMAIL || 'noreply@getplato.uk';
+    // Format: "Name <email@domain.com>" or just "email@domain.com"
+    const fromEmail = fromEmailEnv.includes('@') 
+      ? (fromEmailEnv.includes('<') ? fromEmailEnv : `Plato <${fromEmailEnv}>`)
+      : `Plato <noreply@getplato.uk>`;
     
     logger.debug(`Sending email to ${to}`, { subject, fromEmail }, 'Email');
     

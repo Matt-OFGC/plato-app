@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import { useTimers } from "@/contexts/TimerContext";
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from "@/lib/navigation-config";
 import { useAppAwareRoute } from "@/lib/hooks/useAppAwareRoute";
-import { MentorModal } from "./mentor/MentorModal";
 
 interface FloatingNavBarProps {
   navigationItems?: string[]; // Array of hrefs for selected nav items
@@ -25,7 +24,6 @@ export function FloatingNavBar({
   const { timers } = useTimers();
   const { toAppRoute } = useAppAwareRoute();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [isMentorOpen, setIsMentorOpen] = useState(false);
   const [isMVP, setIsMVP] = useState(false);
   
   // Check MVP mode on mount
@@ -137,41 +135,6 @@ export function FloatingNavBar({
                 );
               })}
               
-              {/* Mentor AI Button - Hidden in MVP mode */}
-              {!isMVP && (
-                <button
-                  onClick={() => setIsMentorOpen(true)}
-                  onMouseEnter={() => setHoveredItem('mentor')}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className={`floating-nav-item flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 ease-out group relative w-11 h-11 ${
-                    hoveredItem === 'mentor' 
-                      ? 'text-gray-700 bg-gray-100/50 scale-105 shadow-md' 
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
-                  }`}
-                  style={{
-                    animationDelay: `${displayNavItems.length * 50}ms`,
-                    transform: hoveredItem === 'mentor' ? 'translateY(-2px) scale(1.05)' : undefined,
-                  }}
-                  title="Mentor AI Assistant"
-                >
-                  <div className={`transition-all duration-300 ${
-                    hoveredItem === 'mentor' ? 'scale-110 text-gray-700' : 'text-gray-500'
-                  }`}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                  </div>
-                  <span className={`text-[8px] font-medium mt-0.5 transition-all duration-300 ${
-                    hoveredItem === 'mentor' ? 'text-gray-800 font-semibold' : ''
-                  }`}>
-                    Mentor
-                  </span>
-                  <div className={`absolute inset-0 rounded-2xl transition-opacity duration-300 ${
-                    hoveredItem === 'mentor' ? 'bg-white/10 opacity-100' : 'opacity-0'
-                  }`} />
-                </button>
-              )}
-              
               {/* More Button */}
               <button
                 onClick={() => onMoreClick?.()}
@@ -245,8 +208,6 @@ export function FloatingNavBar({
         </div>
       </nav>
       
-      {/* Mentor Modal */}
-      <MentorModal isOpen={isMentorOpen} onClose={() => setIsMentorOpen(false)} />
     </>
   );
 }
