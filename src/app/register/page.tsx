@@ -158,9 +158,45 @@ export default function RegisterPage() {
         }
       });
 
-      const result = await res.json();
+      // Check if response is ok before trying to parse JSON
+      if (!res.ok) {
+        // Try to parse error response
+        let errorData;
+        try {
+          errorData = await res.json();
+        } catch (parseError) {
+          // If JSON parsing fails, use status text
+          errorData = {
+            error: `Registration failed: ${res.status} ${res.statusText}`,
+            code: "HTTP_ERROR"
+          };
+        }
+        
+        const errorMessage = errorData.error || `Sign up failed (${res.status}). Please check your information and try again.`;
+        setError({
+          error: errorMessage,
+          code: errorData.code || "REGISTRATION_ERROR",
+          errorId: errorData.errorId
+        });
+        setStatus(null);
+        return;
+      }
 
-      if (res.ok) {
+      // Parse successful response
+      let result;
+      try {
+        result = await res.json();
+      } catch (parseError) {
+        console.error("Failed to parse response:", parseError);
+        setError({
+          error: "Registration completed but received an invalid response. Please try logging in.",
+          code: "PARSE_ERROR"
+        });
+        setStatus(null);
+        return;
+      }
+
+      if (result.ok) {
         setStatus(result.message || "Account created successfully! You can now sign in.");
         setRedirectCountdown(5);
         // Clear form on success
@@ -182,8 +218,12 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error("Registration error:", error);
+      // Provide more specific error message
+      const errorMessage = error instanceof Error 
+        ? `Registration failed: ${error.message}` 
+        : "We couldn't complete sign-up. Please check your internet connection and try again.";
       setError({
-        error: "We couldn't complete sign-up. Please check your internet connection and try again.",
+        error: errorMessage,
         code: "NETWORK_ERROR"
       });
       setStatus(null);
