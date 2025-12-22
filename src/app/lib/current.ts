@@ -24,7 +24,6 @@ export interface UserWithMemberships {
   id: number;
   email: string;
   name?: string;
-  isAdmin: boolean;
   memberships: Array<{
     id: number;
     companyId: number;
@@ -57,7 +56,6 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
           id: 0,
           email: '',
           name: undefined,
-          isAdmin: false,
           memberships: []
         },
         app: null,
@@ -125,7 +123,6 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
           id: user?.id || 0,
           email: user?.email || '',
           name: user?.name || undefined,
-          isAdmin: user?.isAdmin || false,
           memberships: []
         },
         app: null,
@@ -140,7 +137,6 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
           id: 0,
           email: '',
           name: undefined,
-          isAdmin: false,
           memberships: []
         },
         app: null,
@@ -164,7 +160,6 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
           id: true,
           email: true,
           name: true,
-          isAdmin: true,
           memberships: {
             where: { isActive: true },
             select: {
@@ -199,7 +194,6 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             id: true,
             email: true,
             name: true,
-            isAdmin: true,
             memberships: {
               where: { isActive: true },
               select: {
@@ -353,7 +347,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             data: {
               userId,
               companyId: newCompany.id,
-              role: 'OWNER',
+              role: 'ADMIN',
               isActive: true, // Explicitly set to true
             },
           });
@@ -443,7 +437,6 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
           id: user?.id || 0,
           email: user?.email || '',
           name: user?.name || undefined,
-          isAdmin: user?.isAdmin || false,
           memberships: []
         },
         app: null,
@@ -459,7 +452,6 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
           id: 0,
           email: '',
           name: undefined,
-          isAdmin: false,
           memberships: []
         },
         app: null,

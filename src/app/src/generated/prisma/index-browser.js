@@ -166,27 +166,6 @@ exports.Prisma.AllergenSheetTemplateScalarFieldEnum = {
   createdBy: 'createdBy'
 };
 
-exports.Prisma.AnalyticsSnapshotScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  companyId: 'companyId',
-  period: 'period',
-  periodStart: 'periodStart',
-  periodEnd: 'periodEnd',
-  totalRevenue: 'totalRevenue',
-  totalCosts: 'totalCosts',
-  grossProfit: 'grossProfit',
-  grossMargin: 'grossMargin',
-  recipesProduced: 'recipesProduced',
-  totalBatches: 'totalBatches',
-  ingredientsUsed: 'ingredientsUsed',
-  avgIngredientCost: 'avgIngredientCost',
-  avgFoodCost: 'avgFoodCost',
-  topRecipe: 'topRecipe',
-  topCategory: 'topCategory',
-  metadata: 'metadata'
-};
-
 exports.Prisma.CategoryScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -196,34 +175,6 @@ exports.Prisma.CategoryScalarFieldEnum = {
   color: 'color',
   order: 'order',
   companyId: 'companyId'
-};
-
-exports.Prisma.ChecklistItemCompletionScalarFieldEnum = {
-  id: 'id',
-  taskCompletionId: 'taskCompletionId',
-  itemText: 'itemText',
-  itemOrder: 'itemOrder',
-  checked: 'checked',
-  temperatureValue: 'temperatureValue',
-  temperatureUnit: 'temperatureUnit',
-  notes: 'notes',
-  checkedAt: 'checkedAt',
-  createdAt: 'createdAt',
-  checklistItemId: 'checklistItemId',
-  isCompleted: 'isCompleted'
-};
-
-exports.Prisma.CollectionScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  name: 'name',
-  description: 'description',
-  color: 'color',
-  icon: 'icon',
-  companyId: 'companyId',
-  createdBy: 'createdBy',
-  isPublic: 'isPublic'
 };
 
 exports.Prisma.CompanyScalarFieldEnum = {
@@ -245,19 +196,10 @@ exports.Prisma.CompanyScalarFieldEnum = {
   pricePerSeat: 'pricePerSeat',
   profileBio: 'profileBio',
   seatsUsed: 'seatsUsed',
-  shopifyAccessToken: 'shopifyAccessToken',
-  shopifyApiKey: 'shopifyApiKey',
-  shopifyIsConnected: 'shopifyIsConnected',
-  shopifyLastSync: 'shopifyLastSync',
-  shopifyStoreUrl: 'shopifyStoreUrl',
-  shopifyWebhookSecret: 'shopifyWebhookSecret',
   showContact: 'showContact',
   showTeam: 'showTeam',
   slug: 'slug',
-  website: 'website',
-  safety_enabled: 'safety_enabled',
-  data_retention_days: 'data_retention_days',
-  app: 'app'
+  website: 'website'
 };
 
 exports.Prisma.CustomReportScalarFieldEnum = {
@@ -291,83 +233,6 @@ exports.Prisma.CustomerPricingScalarFieldEnum = {
   price: 'price',
   unit: 'unit',
   notes: 'notes'
-};
-
-exports.Prisma.DailyTemperatureCheckScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  checkDate: 'checkDate',
-  checkPeriod: 'checkPeriod',
-  checkType: 'checkType',
-  temperature: 'temperature',
-  unit: 'unit',
-  notes: 'notes',
-  completed: 'completed',
-  completedBy: 'completedBy',
-  completedAt: 'completedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.EquipmentIssueScalarFieldEnum = {
-  id: 'id',
-  equipmentId: 'equipmentId',
-  companyId: 'companyId',
-  issueDescription: 'issueDescription',
-  severity: 'severity',
-  status: 'status',
-  reportedBy: 'reportedBy',
-  reportedAt: 'reportedAt',
-  resolvedAt: 'resolvedAt',
-  resolvedBy: 'resolvedBy',
-  resolutionNotes: 'resolutionNotes'
-};
-
-exports.Prisma.EquipmentRegisterScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  siteId: 'siteId',
-  equipmentName: 'equipmentName',
-  equipmentCategory: 'equipmentCategory',
-  location: 'location',
-  qrCode: 'qrCode',
-  lastServiceDate: 'lastServiceDate',
-  nextServiceDate: 'nextServiceDate',
-  warrantyExpiry: 'warrantyExpiry',
-  status: 'status',
-  notes: 'notes',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.ExternalMappingScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  integrationId: 'integrationId',
-  entityType: 'entityType',
-  internalId: 'internalId',
-  externalId: 'externalId',
-  externalData: 'externalData',
-  lastSyncAt: 'lastSyncAt',
-  isActive: 'isActive'
-};
-
-exports.Prisma.FeatureModuleScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId',
-  moduleName: 'moduleName',
-  stripeSubscriptionItemId: 'stripeSubscriptionItemId',
-  stripePriceId: 'stripePriceId',
-  status: 'status',
-  isTrial: 'isTrial',
-  unlockedAt: 'unlockedAt',
-  currentPeriodEnd: 'currentPeriodEnd',
-  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
-  canceledAt: 'canceledAt'
 };
 
 exports.Prisma.GeneratedDocumentScalarFieldEnum = {
@@ -426,75 +291,6 @@ exports.Prisma.IngredientPriceHistoryScalarFieldEnum = {
   source: 'source'
 };
 
-exports.Prisma.IntegrationConfigScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  provider: 'provider',
-  name: 'name',
-  credentials: 'credentials',
-  authType: 'authType',
-  settings: 'settings',
-  mappings: 'mappings',
-  isActive: 'isActive',
-  isConnected: 'isConnected',
-  lastSyncAt: 'lastSyncAt',
-  lastErrorAt: 'lastErrorAt',
-  lastError: 'lastError',
-  accessToken: 'accessToken',
-  refreshToken: 'refreshToken',
-  tokenExpiresAt: 'tokenExpiresAt',
-  autoSync: 'autoSync',
-  syncFrequency: 'syncFrequency'
-};
-
-exports.Prisma.IntegrationSyncScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  companyId: 'companyId',
-  integrationId: 'integrationId',
-  syncType: 'syncType',
-  direction: 'direction',
-  status: 'status',
-  recordsProcessed: 'recordsProcessed',
-  recordsCreated: 'recordsCreated',
-  recordsUpdated: 'recordsUpdated',
-  recordsFailed: 'recordsFailed',
-  startedAt: 'startedAt',
-  completedAt: 'completedAt',
-  duration: 'duration',
-  errors: 'errors',
-  warnings: 'warnings',
-  trigger: 'trigger',
-  metadata: 'metadata'
-};
-
-exports.Prisma.InventoryScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  recipeId: 'recipeId',
-  quantity: 'quantity',
-  unit: 'unit',
-  lowStockThreshold: 'lowStockThreshold',
-  lastRestocked: 'lastRestocked'
-};
-
-exports.Prisma.InventoryMovementScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  inventoryId: 'inventoryId',
-  type: 'type',
-  quantity: 'quantity',
-  productionItemId: 'productionItemId',
-  orderId: 'orderId',
-  reason: 'reason',
-  notes: 'notes',
-  createdBy: 'createdBy'
-};
-
 exports.Prisma.LabelTemplateScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -533,41 +329,6 @@ exports.Prisma.LabelTemplateScalarFieldEnum = {
   createdBy: 'createdBy'
 };
 
-exports.Prisma.LeaveBalanceScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  membershipId: 'membershipId',
-  companyId: 'companyId',
-  leaveType: 'leaveType',
-  balance: 'balance',
-  accrualRate: 'accrualRate',
-  accrualPeriod: 'accrualPeriod',
-  year: 'year',
-  totalAccrued: 'totalAccrued',
-  totalTaken: 'totalTaken'
-};
-
-exports.Prisma.LeaveRequestScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  membershipId: 'membershipId',
-  companyId: 'companyId',
-  leaveType: 'leaveType',
-  startDate: 'startDate',
-  endDate: 'endDate',
-  isFullDay: 'isFullDay',
-  startTime: 'startTime',
-  endTime: 'endTime',
-  reason: 'reason',
-  notes: 'notes',
-  status: 'status',
-  reviewedBy: 'reviewedBy',
-  reviewedAt: 'reviewedAt',
-  reviewNotes: 'reviewNotes'
-};
-
 exports.Prisma.MembershipScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -581,132 +342,7 @@ exports.Prisma.MembershipScalarFieldEnum = {
   pinHash: 'pinHash',
   updatedAt: 'updatedAt',
   role: 'role',
-  currency: 'currency',
-  employmentType: 'employmentType',
-  endDate: 'endDate',
-  hourlyRate: 'hourlyRate',
-  niCategory: 'niCategory',
-  payFrequency: 'payFrequency',
-  pensionOptIn: 'pensionOptIn',
-  pensionRate: 'pensionRate',
-  salary: 'salary',
-  startDate: 'startDate',
-  taxCode: 'taxCode'
-};
-
-exports.Prisma.MfaDeviceScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  type: 'type',
-  name: 'name',
-  secret: 'secret',
-  credentialId: 'credentialId',
-  publicKey: 'publicKey',
-  phoneNumber: 'phoneNumber',
-  isVerified: 'isVerified',
-  isPrimary: 'isPrimary',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.NotificationScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId',
-  type: 'type',
-  title: 'title',
-  message: 'message',
-  link: 'link',
-  read: 'read',
-  readAt: 'readAt',
-  metadata: 'metadata'
-};
-
-exports.Prisma.OAuthAccountScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  provider: 'provider',
-  providerId: 'providerId',
-  accessToken: 'accessToken',
-  refreshToken: 'refreshToken',
-  expiresAt: 'expiresAt',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.PayrollIntegrationScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  provider: 'provider',
-  name: 'name',
-  apiKey: 'apiKey',
-  apiSecret: 'apiSecret',
-  accessToken: 'accessToken',
-  refreshToken: 'refreshToken',
-  config: 'config',
-  isActive: 'isActive',
-  autoSync: 'autoSync',
-  lastSyncAt: 'lastSyncAt',
-  nextSyncAt: 'nextSyncAt',
-  lastError: 'lastError',
-  errorCount: 'errorCount',
-  oauthState: 'oauthState',
-  redirectUri: 'redirectUri'
-};
-
-exports.Prisma.PayrollLineScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  payrollRunId: 'payrollRunId',
-  membershipId: 'membershipId',
-  hoursWorked: 'hoursWorked',
-  overtimeHours: 'overtimeHours',
-  hourlyRate: 'hourlyRate',
-  grossPay: 'grossPay',
-  taxDeduction: 'taxDeduction',
-  niDeduction: 'niDeduction',
-  pensionAmount: 'pensionAmount',
-  otherDeductions: 'otherDeductions',
-  netPay: 'netPay',
-  breakdown: 'breakdown'
-};
-
-exports.Prisma.PayrollRunScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  periodStart: 'periodStart',
-  periodEnd: 'periodEnd',
-  payDate: 'payDate',
-  status: 'status',
-  approvedBy: 'approvedBy',
-  approvedAt: 'approvedAt',
-  totalGross: 'totalGross',
-  totalTax: 'totalTax',
-  totalNI: 'totalNI',
-  totalPension: 'totalPension',
-  totalNet: 'totalNet',
-  notes: 'notes',
-  paymentMethod: 'paymentMethod',
-  externalId: 'externalId',
-  syncedToExternal: 'syncedToExternal'
-};
-
-exports.Prisma.PayrollSyncLogScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  integrationId: 'integrationId',
-  payrollRunId: 'payrollRunId',
-  status: 'status',
-  direction: 'direction',
-  recordsExported: 'recordsExported',
-  recordsImported: 'recordsImported',
-  recordsFailed: 'recordsFailed',
-  errorMessage: 'errorMessage',
-  errorDetails: 'errorDetails',
-  syncMetadata: 'syncMetadata'
+  staffPermissions: 'staffPermissions'
 };
 
 exports.Prisma.ProductionHistoryScalarFieldEnum = {
@@ -796,20 +432,12 @@ exports.Prisma.RecipeScalarFieldEnum = {
   portionUnit: 'portionUnit',
   portionsPerBatch: 'portionsPerBatch',
   sellingPrice: 'sellingPrice',
-  wholesalePrice: 'wholesalePrice',
   shelfLife: 'shelfLife',
   shelfLifeId: 'shelfLifeId',
   storage: 'storage',
   storageId: 'storageId',
-  suggestedPrice: 'suggestedPrice'
-};
-
-exports.Prisma.RecipeCollectionScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  recipeId: 'recipeId',
-  collectionId: 'collectionId',
-  order: 'order'
+  suggestedPrice: 'suggestedPrice',
+  wholesalePrice: 'wholesalePrice'
 };
 
 exports.Prisma.RecipeItemScalarFieldEnum = {
@@ -894,26 +522,6 @@ exports.Prisma.SalesRecordScalarFieldEnum = {
   externalSource: 'externalSource'
 };
 
-exports.Prisma.ScheduledTaskScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  siteId: 'siteId',
-  templateId: 'templateId',
-  assignedTo: 'assignedTo',
-  scheduleType: 'scheduleType',
-  scheduleTime: 'scheduleTime',
-  scheduleDays: 'scheduleDays',
-  timeWindow: 'timeWindow',
-  isActive: 'isActive',
-  startDate: 'startDate',
-  endDate: 'endDate',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  timeWindowStart: 'timeWindowStart',
-  timeWindowEnd: 'timeWindowEnd',
-  enforceTimeWindow: 'enforceTimeWindow'
-};
-
 exports.Prisma.SeasonalTrendScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -955,109 +563,6 @@ exports.Prisma.ShelfLifeOptionScalarFieldEnum = {
   companyId: 'companyId'
 };
 
-exports.Prisma.ShiftScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  membershipId: 'membershipId',
-  companyId: 'companyId',
-  date: 'date',
-  startTime: 'startTime',
-  endTime: 'endTime',
-  breakDuration: 'breakDuration',
-  shiftType: 'shiftType',
-  location: 'location',
-  status: 'status',
-  productionPlanId: 'productionPlanId',
-  notes: 'notes',
-  confirmedBy: 'confirmedBy'
-};
-
-exports.Prisma.ShiftTemplateScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  name: 'name',
-  description: 'description',
-  dayOfWeek: 'dayOfWeek',
-  startTime: 'startTime',
-  endTime: 'endTime',
-  breakDuration: 'breakDuration',
-  shiftType: 'shiftType',
-  location: 'location',
-  defaultRole: 'defaultRole',
-  isActive: 'isActive'
-};
-
-exports.Prisma.ShopifyOrderScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  shopifyOrderId: 'shopifyOrderId',
-  shopifyOrderNumber: 'shopifyOrderNumber',
-  customerName: 'customerName',
-  customerEmail: 'customerEmail',
-  customerPhone: 'customerPhone',
-  totalPrice: 'totalPrice',
-  currency: 'currency',
-  orderDate: 'orderDate',
-  fulfillmentStatus: 'fulfillmentStatus',
-  financialStatus: 'financialStatus',
-  shippingAddress: 'shippingAddress',
-  deliveryDate: 'deliveryDate',
-  status: 'status',
-  processedAt: 'processedAt',
-  notes: 'notes',
-  shopifyData: 'shopifyData'
-};
-
-exports.Prisma.ShopifyOrderItemScalarFieldEnum = {
-  id: 'id',
-  orderId: 'orderId',
-  recipeId: 'recipeId',
-  shopifyProductId: 'shopifyProductId',
-  shopifyVariantId: 'shopifyVariantId',
-  productTitle: 'productTitle',
-  variantTitle: 'variantTitle',
-  sku: 'sku',
-  quantity: 'quantity',
-  price: 'price',
-  addedToProduction: 'addedToProduction',
-  productionItemId: 'productionItemId'
-};
-
-exports.Prisma.ShopifyProductMappingScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  recipeId: 'recipeId',
-  shopifyProductId: 'shopifyProductId',
-  shopifyVariantId: 'shopifyVariantId',
-  productTitle: 'productTitle',
-  variantTitle: 'variantTitle',
-  sku: 'sku',
-  quantityMultiplier: 'quantityMultiplier',
-  isActive: 'isActive'
-};
-
-exports.Prisma.SmartAlertScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  alertType: 'alertType',
-  severity: 'severity',
-  title: 'title',
-  message: 'message',
-  actionRequired: 'actionRequired',
-  relatedEntityType: 'relatedEntityType',
-  relatedEntityId: 'relatedEntityId',
-  isRead: 'isRead',
-  isDismissed: 'isDismissed',
-  createdAt: 'createdAt'
-};
-
 exports.Prisma.StorageOptionScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -1085,11 +590,7 @@ exports.Prisma.SubscriptionScalarFieldEnum = {
   currentPeriodStart: 'currentPeriodStart',
   currentPeriodEnd: 'currentPeriodEnd',
   cancelAtPeriodEnd: 'cancelAtPeriodEnd',
-  canceledAt: 'canceledAt',
-  maxIngredients: 'maxIngredients',
-  maxRecipes: 'maxRecipes',
-  aiSubscriptionType: 'aiSubscriptionType',
-  metadata: 'metadata'
+  canceledAt: 'canceledAt'
 };
 
 exports.Prisma.SupplierScalarFieldEnum = {
@@ -1117,90 +618,6 @@ exports.Prisma.SupplierScalarFieldEnum = {
   companyId: 'companyId'
 };
 
-exports.Prisma.TaskCommentScalarFieldEnum = {
-  id: 'id',
-  taskInstanceId: 'taskInstanceId',
-  taskCompletionId: 'taskCompletionId',
-  companyId: 'companyId',
-  commentText: 'commentText',
-  mentionedUsers: 'mentionedUsers',
-  createdBy: 'createdBy',
-  createdByName: 'createdByName',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.TaskCompletionScalarFieldEnum = {
-  id: 'id',
-  taskInstanceId: 'taskInstanceId',
-  companyId: 'companyId',
-  siteId: 'siteId',
-  templateId: 'templateId',
-  completedBy: 'completedBy',
-  completedByName: 'completedByName',
-  completedByRole: 'completedByRole',
-  completedAt: 'completedAt',
-  completionDate: 'completionDate',
-  pinVerified: 'pinVerified',
-  deviceId: 'deviceId',
-  ipAddress: 'ipAddress',
-  taskName: 'taskName',
-  taskCategory: 'taskCategory',
-  durationMinutes: 'durationMinutes',
-  notes: 'notes',
-  status: 'status',
-  flagReason: 'flagReason',
-  priorityLevel: 'priorityLevel',
-  checklistItemsTotal: 'checklistItemsTotal',
-  checklistItemsCompleted: 'checklistItemsCompleted',
-  photosCount: 'photosCount',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.TaskInstanceScalarFieldEnum = {
-  id: 'id',
-  scheduledTaskId: 'scheduledTaskId',
-  companyId: 'companyId',
-  siteId: 'siteId',
-  templateId: 'templateId',
-  assignedTo: 'assignedTo',
-  dueDate: 'dueDate',
-  dueTime: 'dueTime',
-  status: 'status',
-  priority: 'priority',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.TaskPhotoScalarFieldEnum = {
-  id: 'id',
-  taskCompletionId: 'taskCompletionId',
-  checklistItemId: 'checklistItemId',
-  companyId: 'companyId',
-  filePath: 'filePath',
-  fileName: 'fileName',
-  fileSize: 'fileSize',
-  mimeType: 'mimeType',
-  isBeforePhoto: 'isBeforePhoto',
-  uploadedBy: 'uploadedBy',
-  uploadedAt: 'uploadedAt',
-  thumbnailPath: 'thumbnailPath'
-};
-
-exports.Prisma.TaskTemplateScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  category: 'category',
-  name: 'name',
-  description: 'description',
-  emoji: 'emoji',
-  isSystemTemplate: 'isSystemTemplate',
-  isActive: 'isActive',
-  createdBy: 'createdBy',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.TeamInvitationScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -1214,99 +631,6 @@ exports.Prisma.TeamInvitationScalarFieldEnum = {
   expiresAt: 'expiresAt'
 };
 
-exports.Prisma.TemperatureReadingScalarFieldEnum = {
-  id: 'id',
-  sensorId: 'sensorId',
-  companyId: 'companyId',
-  temperatureValue: 'temperatureValue',
-  temperatureUnit: 'temperatureUnit',
-  recordedAt: 'recordedAt',
-  isOutOfRange: 'isOutOfRange'
-};
-
-exports.Prisma.TemperatureRecordScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  templateId: 'templateId',
-  taskInstanceId: 'taskInstanceId',
-  applianceName: 'applianceName',
-  applianceType: 'applianceType',
-  recordType: 'recordType',
-  temperature: 'temperature',
-  unit: 'unit',
-  checkPeriod: 'checkPeriod',
-  location: 'location',
-  notes: 'notes',
-  recordedBy: 'recordedBy',
-  recordedAt: 'recordedAt',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.TemperatureSensorScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  siteId: 'siteId',
-  sensorName: 'sensorName',
-  sensorType: 'sensorType',
-  location: 'location',
-  targetTemperature: 'targetTemperature',
-  minThreshold: 'minThreshold',
-  maxThreshold: 'maxThreshold',
-  isActive: 'isActive',
-  lastReadingAt: 'lastReadingAt',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.TemplateApplianceScalarFieldEnum = {
-  id: 'id',
-  templateId: 'templateId',
-  companyId: 'companyId',
-  applianceName: 'applianceName',
-  applianceType: 'applianceType',
-  location: 'location',
-  orderIndex: 'orderIndex',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.TemplateChecklistItemScalarFieldEnum = {
-  id: 'id',
-  templateId: 'templateId',
-  itemText: 'itemText',
-  itemOrder: 'itemOrder',
-  requiresPhoto: 'requiresPhoto',
-  requiresTemperature: 'requiresTemperature',
-  requiresNotes: 'requiresNotes',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.TimesheetScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  membershipId: 'membershipId',
-  companyId: 'companyId',
-  clockInAt: 'clockInAt',
-  clockOutAt: 'clockOutAt',
-  breakStart: 'breakStart',
-  breakEnd: 'breakEnd',
-  totalHours: 'totalHours',
-  breakHours: 'breakHours',
-  status: 'status',
-  approvedBy: 'approvedBy',
-  approvedAt: 'approvedAt',
-  rejectionReason: 'rejectionReason',
-  shiftId: 'shiftId',
-  clockInLocation: 'clockInLocation',
-  clockOutLocation: 'clockOutLocation',
-  clockInIp: 'clockInIp',
-  clockOutIp: 'clockOutIp',
-  adjustmentHours: 'adjustmentHours',
-  adjustmentReason: 'adjustmentReason',
-  notes: 'notes'
-};
-
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -1317,7 +641,6 @@ exports.Prisma.UserScalarFieldEnum = {
   hasCompletedOnboarding: 'hasCompletedOnboarding',
   ingredientCount: 'ingredientCount',
   isActive: 'isActive',
-  isAdmin: 'isAdmin',
   lastLoginAt: 'lastLoginAt',
   recipeCount: 'recipeCount',
   stripeCustomerId: 'stripeCustomerId',
@@ -1340,26 +663,6 @@ exports.Prisma.UserPreferenceScalarFieldEnum = {
   navigationItems: 'navigationItems',
   targetFoodCost: 'targetFoodCost',
   timerSettings: 'timerSettings'
-};
-
-exports.Prisma.WebhookLogScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  companyId: 'companyId',
-  integrationId: 'integrationId',
-  provider: 'provider',
-  eventType: 'eventType',
-  webhookId: 'webhookId',
-  method: 'method',
-  headers: 'headers',
-  body: 'body',
-  status: 'status',
-  processedAt: 'processedAt',
-  error: 'error',
-  responseStatus: 'responseStatus',
-  responseBody: 'responseBody',
-  ipAddress: 'ipAddress',
-  userAgent: 'userAgent'
 };
 
 exports.Prisma.WholesaleCustomerScalarFieldEnum = {
@@ -1393,7 +696,48 @@ exports.Prisma.WholesaleCustomerScalarFieldEnum = {
   totalOrders: 'totalOrders',
   totalValue: 'totalValue',
   totalPaid: 'totalPaid',
-  outstandingBalance: 'outstandingBalance'
+  outstandingBalance: 'outstandingBalance',
+  customerType: 'customerType'
+};
+
+exports.Prisma.WholesaleDeliveryNoteScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  deliveryNoteNumber: 'deliveryNoteNumber',
+  orderId: 'orderId',
+  customerId: 'customerId',
+  companyId: 'companyId',
+  deliveryDate: 'deliveryDate',
+  deliveredBy: 'deliveredBy',
+  signature: 'signature',
+  notes: 'notes',
+  pdfUrl: 'pdfUrl',
+  emailSent: 'emailSent',
+  emailSentAt: 'emailSentAt'
+};
+
+exports.Prisma.WholesaleInvoiceScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  invoiceNumber: 'invoiceNumber',
+  orderId: 'orderId',
+  customerId: 'customerId',
+  companyId: 'companyId',
+  issueDate: 'issueDate',
+  dueDate: 'dueDate',
+  subtotal: 'subtotal',
+  taxRate: 'taxRate',
+  taxAmount: 'taxAmount',
+  total: 'total',
+  status: 'status',
+  paidDate: 'paidDate',
+  paidAmount: 'paidAmount',
+  notes: 'notes',
+  pdfUrl: 'pdfUrl',
+  emailSent: 'emailSent',
+  emailSentAt: 'emailSentAt'
 };
 
 exports.Prisma.WholesaleOrderScalarFieldEnum = {
@@ -1424,6 +768,21 @@ exports.Prisma.WholesaleOrderItemScalarFieldEnum = {
   notes: 'notes'
 };
 
+exports.Prisma.WholesalePaymentScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  invoiceId: 'invoiceId',
+  customerId: 'customerId',
+  companyId: 'companyId',
+  amount: 'amount',
+  paymentDate: 'paymentDate',
+  paymentMethod: 'paymentMethod',
+  reference: 'reference',
+  notes: 'notes',
+  createdBy: 'createdBy'
+};
+
 exports.Prisma.WholesaleProductScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
@@ -1440,247 +799,6 @@ exports.Prisma.WholesaleProductScalarFieldEnum = {
   sortOrder: 'sortOrder',
   imageUrl: 'imageUrl',
   notes: 'notes'
-};
-
-exports.Prisma.WholesaleInvoiceScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  invoiceNumber: 'invoiceNumber',
-  orderId: 'orderId',
-  customerId: 'customerId',
-  companyId: 'companyId',
-  issueDate: 'issueDate',
-  dueDate: 'dueDate',
-  subtotal: 'subtotal',
-  taxRate: 'taxRate',
-  taxAmount: 'taxAmount',
-  total: 'total',
-  status: 'status',
-  paidDate: 'paidDate',
-  paidAmount: 'paidAmount',
-  notes: 'notes',
-  pdfUrl: 'pdfUrl',
-  emailSent: 'emailSent',
-  emailSentAt: 'emailSentAt'
-};
-
-exports.Prisma.WholesaleDeliveryNoteScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  deliveryNoteNumber: 'deliveryNoteNumber',
-  orderId: 'orderId',
-  customerId: 'customerId',
-  companyId: 'companyId',
-  deliveryDate: 'deliveryDate',
-  deliveredBy: 'deliveredBy',
-  signature: 'signature',
-  notes: 'notes',
-  pdfUrl: 'pdfUrl',
-  emailSent: 'emailSent',
-  emailSentAt: 'emailSentAt'
-};
-
-exports.Prisma.WholesalePaymentScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  invoiceId: 'invoiceId',
-  customerId: 'customerId',
-  companyId: 'companyId',
-  amount: 'amount',
-  paymentDate: 'paymentDate',
-  paymentMethod: 'paymentMethod',
-  reference: 'reference',
-  notes: 'notes',
-  createdBy: 'createdBy'
-};
-
-exports.Prisma.UserAppSubscriptionScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId',
-  app: 'app',
-  stripeSubscriptionId: 'stripeSubscriptionId',
-  stripePriceId: 'stripePriceId',
-  status: 'status',
-  currentPeriodStart: 'currentPeriodStart',
-  currentPeriodEnd: 'currentPeriodEnd',
-  cancelAtPeriodEnd: 'cancelAtPeriodEnd'
-};
-
-exports.Prisma.MentorSubscriptionScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId',
-  companyId: 'companyId',
-  stripeSubscriptionId: 'stripeSubscriptionId',
-  stripePriceId: 'stripePriceId',
-  status: 'status',
-  subscriptionType: 'subscriptionType',
-  currentPeriodStart: 'currentPeriodStart',
-  currentPeriodEnd: 'currentPeriodEnd',
-  cancelAtPeriodEnd: 'cancelAtPeriodEnd'
-};
-
-exports.Prisma.MentorConversationScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  userId: 'userId',
-  title: 'title',
-  isArchived: 'isArchived'
-};
-
-exports.Prisma.MentorMessageScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  conversationId: 'conversationId',
-  role: 'role',
-  content: 'content',
-  metadata: 'metadata',
-  tokensUsed: 'tokensUsed'
-};
-
-exports.Prisma.MentorKnowledgeIndexScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  entityType: 'entityType',
-  entityId: 'entityId',
-  embedding: 'embedding',
-  content: 'content',
-  metadata: 'metadata',
-  lastIndexedAt: 'lastIndexedAt'
-};
-
-exports.Prisma.MentorConfigScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  enabled: 'enabled',
-  dataSources: 'dataSources',
-  piiMaskingEnabled: 'piiMaskingEnabled',
-  piiMaskingRules: 'piiMaskingRules',
-  conversationRetention: 'conversationRetention',
-  enableInternetSearch: 'enableInternetSearch',
-  enableProactiveAlerts: 'enableProactiveAlerts',
-  preferences: 'preferences'
-};
-
-exports.Prisma.MentorGoalScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  userId: 'userId',
-  title: 'title',
-  description: 'description',
-  targetValue: 'targetValue',
-  currentValue: 'currentValue',
-  unit: 'unit',
-  targetDate: 'targetDate',
-  status: 'status',
-  category: 'category'
-};
-
-exports.Prisma.MentorProgressScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  goalId: 'goalId',
-  value: 'value',
-  notes: 'notes'
-};
-
-exports.Prisma.MentorInsightScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  companyId: 'companyId',
-  insightType: 'insightType',
-  title: 'title',
-  content: 'content',
-  priority: 'priority',
-  isRead: 'isRead',
-  isDismissed: 'isDismissed',
-  metadata: 'metadata',
-  relatedEntityType: 'relatedEntityType',
-  relatedEntityId: 'relatedEntityId'
-};
-
-exports.Prisma.MentorReminderScalarFieldEnum = {
-  id: 'id',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  companyId: 'companyId',
-  userId: 'userId',
-  title: 'title',
-  description: 'description',
-  reminderType: 'reminderType',
-  dueDate: 'dueDate',
-  isCompleted: 'isCompleted',
-  completedAt: 'completedAt',
-  isRecurring: 'isRecurring',
-  recurringRule: 'recurringRule',
-  metadata: 'metadata'
-};
-
-exports.Prisma.StaffProfileScalarFieldEnum = {
-  id: 'id',
-  membershipId: 'membershipId',
-  employmentStartDate: 'employmentStartDate',
-  position: 'position',
-  status: 'status',
-  emergencyContactName: 'emergencyContactName',
-  emergencyContactPhone: 'emergencyContactPhone',
-  notes: 'notes',
-  performanceNotes: 'performanceNotes',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.TrainingModuleScalarFieldEnum = {
-  id: 'id',
-  companyId: 'companyId',
-  title: 'title',
-  description: 'description',
-  category: 'category',
-  isTemplate: 'isTemplate',
-  estimatedDuration: 'estimatedDuration',
-  refreshFrequencyDays: 'refreshFrequencyDays',
-  createdBy: 'createdBy',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.TrainingContentScalarFieldEnum = {
-  id: 'id',
-  moduleId: 'moduleId',
-  type: 'type',
-  content: 'content',
-  order: 'order',
-  metadata: 'metadata',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.TrainingRecordScalarFieldEnum = {
-  id: 'id',
-  membershipId: 'membershipId',
-  moduleId: 'moduleId',
-  status: 'status',
-  startedAt: 'startedAt',
-  completedAt: 'completedAt',
-  signedOffBy: 'signedOffBy',
-  signedOffAt: 'signedOffAt',
-  nextRefreshDate: 'nextRefreshDate',
-  completionNotes: 'completionNotes',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -1712,11 +830,6 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-exports.App = exports.$Enums.App = {
-  plato: 'plato',
-  plato_bake: 'plato_bake'
-};
-
 exports.BaseUnit = exports.$Enums.BaseUnit = {
   g: 'g',
   ml: 'ml',
@@ -1751,104 +864,49 @@ exports.Unit = exports.$Enums.Unit = {
 exports.MemberRole = exports.$Enums.MemberRole = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
-  EMPLOYEE: 'EMPLOYEE'
+  STAFF: 'STAFF'
 };
 
 exports.Prisma.ModelName = {
   ActivityLog: 'ActivityLog',
   AllergenSheetTemplate: 'AllergenSheetTemplate',
-  AnalyticsSnapshot: 'AnalyticsSnapshot',
   Category: 'Category',
-  ChecklistItemCompletion: 'ChecklistItemCompletion',
-  Collection: 'Collection',
   Company: 'Company',
   CustomReport: 'CustomReport',
   CustomerPricing: 'CustomerPricing',
-  DailyTemperatureCheck: 'DailyTemperatureCheck',
-  EquipmentIssue: 'EquipmentIssue',
-  EquipmentRegister: 'EquipmentRegister',
-  ExternalMapping: 'ExternalMapping',
-  FeatureModule: 'FeatureModule',
   GeneratedDocument: 'GeneratedDocument',
   Ingredient: 'Ingredient',
   IngredientPriceHistory: 'IngredientPriceHistory',
-  IntegrationConfig: 'IntegrationConfig',
-  IntegrationSync: 'IntegrationSync',
-  Inventory: 'Inventory',
-  InventoryMovement: 'InventoryMovement',
   LabelTemplate: 'LabelTemplate',
-  LeaveBalance: 'LeaveBalance',
-  LeaveRequest: 'LeaveRequest',
   Membership: 'Membership',
-  MfaDevice: 'MfaDevice',
-  Notification: 'Notification',
-  OAuthAccount: 'OAuthAccount',
-  PayrollIntegration: 'PayrollIntegration',
-  PayrollLine: 'PayrollLine',
-  PayrollRun: 'PayrollRun',
-  PayrollSyncLog: 'PayrollSyncLog',
   ProductionHistory: 'ProductionHistory',
   ProductionItem: 'ProductionItem',
   ProductionItemAllocation: 'ProductionItemAllocation',
   ProductionPlan: 'ProductionPlan',
   ProductionTask: 'ProductionTask',
   Recipe: 'Recipe',
-  RecipeCollection: 'RecipeCollection',
   RecipeItem: 'RecipeItem',
   RecipeSection: 'RecipeSection',
   RecipeSubRecipe: 'RecipeSubRecipe',
   RecipeUpdateLog: 'RecipeUpdateLog',
   RecipeVersion: 'RecipeVersion',
   SalesRecord: 'SalesRecord',
-  ScheduledTask: 'ScheduledTask',
   SeasonalTrend: 'SeasonalTrend',
   Session: 'Session',
   ShelfLifeOption: 'ShelfLifeOption',
-  Shift: 'Shift',
-  ShiftTemplate: 'ShiftTemplate',
-  ShopifyOrder: 'ShopifyOrder',
-  ShopifyOrderItem: 'ShopifyOrderItem',
-  ShopifyProductMapping: 'ShopifyProductMapping',
-  SmartAlert: 'SmartAlert',
   StorageOption: 'StorageOption',
   Subscription: 'Subscription',
   Supplier: 'Supplier',
-  TaskComment: 'TaskComment',
-  TaskCompletion: 'TaskCompletion',
-  TaskInstance: 'TaskInstance',
-  TaskPhoto: 'TaskPhoto',
-  TaskTemplate: 'TaskTemplate',
   TeamInvitation: 'TeamInvitation',
-  TemperatureReading: 'TemperatureReading',
-  TemperatureRecord: 'TemperatureRecord',
-  TemperatureSensor: 'TemperatureSensor',
-  TemplateAppliance: 'TemplateAppliance',
-  TemplateChecklistItem: 'TemplateChecklistItem',
-  Timesheet: 'Timesheet',
   User: 'User',
   UserPreference: 'UserPreference',
-  WebhookLog: 'WebhookLog',
   WholesaleCustomer: 'WholesaleCustomer',
+  WholesaleDeliveryNote: 'WholesaleDeliveryNote',
+  WholesaleInvoice: 'WholesaleInvoice',
   WholesaleOrder: 'WholesaleOrder',
   WholesaleOrderItem: 'WholesaleOrderItem',
-  WholesaleProduct: 'WholesaleProduct',
-  WholesaleInvoice: 'WholesaleInvoice',
-  WholesaleDeliveryNote: 'WholesaleDeliveryNote',
   WholesalePayment: 'WholesalePayment',
-  UserAppSubscription: 'UserAppSubscription',
-  MentorSubscription: 'MentorSubscription',
-  MentorConversation: 'MentorConversation',
-  MentorMessage: 'MentorMessage',
-  MentorKnowledgeIndex: 'MentorKnowledgeIndex',
-  MentorConfig: 'MentorConfig',
-  MentorGoal: 'MentorGoal',
-  MentorProgress: 'MentorProgress',
-  MentorInsight: 'MentorInsight',
-  MentorReminder: 'MentorReminder',
-  StaffProfile: 'StaffProfile',
-  TrainingModule: 'TrainingModule',
-  TrainingContent: 'TrainingContent',
-  TrainingRecord: 'TrainingRecord'
+  WholesaleProduct: 'WholesaleProduct'
 };
 
 /**

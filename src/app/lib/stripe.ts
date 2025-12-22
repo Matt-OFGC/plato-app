@@ -11,13 +11,9 @@ export const STRIPE_CONFIG = {
   secretKey: process.env.STRIPE_SECRET_KEY || "",
   publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || "",
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
-  // Simplified pricing - MVP and AI subscriptions only
+  // MVP subscription pricing only
   mvp: {
     monthlyPriceId: process.env.STRIPE_MVP_MONTHLY_PRICE_ID || "",
-  },
-  ai: {
-    unlimitedPriceId: process.env.STRIPE_AI_UNLIMITED_MONTHLY_PRICE_ID || "",
-    cappedPriceId: process.env.STRIPE_AI_CAPPED_MONTHLY_PRICE_ID || "",
   },
   // Tier-based prices (for backwards compatibility - deprecated, will be removed)
   products: {
@@ -125,38 +121,6 @@ export async function createMVPCheckout(
   });
 }
 
-// Create checkout session for AI subscription
-export async function createAICheckout(
-  customerId: string,
-  subscriptionType: "unlimited" | "capped",
-  successUrl: string,
-  cancelUrl: string
-): Promise<Stripe.Checkout.Session> {
-  const priceId = subscriptionType === "unlimited" 
-    ? STRIPE_CONFIG.ai.unlimitedPriceId 
-    : STRIPE_CONFIG.ai.cappedPriceId;
-
-  if (!priceId) {
-    throw new Error(`AI ${subscriptionType} price ID not configured`);
-  }
-
-  return await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    metadata: {
-      type: "ai",
-      subscriptionType,
-    },
-  });
-}
 
 // Legacy function for backward compatibility (deprecated)
 export async function createCheckoutSession(

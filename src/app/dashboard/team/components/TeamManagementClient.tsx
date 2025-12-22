@@ -33,33 +33,27 @@ interface TeamManagementClientProps {
 
 function getRoleDisplayName(role: string): string {
   switch (role) {
-    case "OWNER": return "Owner";
     case "ADMIN": return "Admin";
-    case "EDITOR": return "Editor";
-    case "VIEWER": return "Viewer";
-    case "MEMBER": return "Member";
+    case "MANAGER": return "Manager";
+    case "STAFF": return "Staff";
     default: return role;
   }
 }
 
 function getRoleDescription(role: string): string {
   switch (role) {
-    case "OWNER": return "Full access to all features and settings";
-    case "ADMIN": return "Can manage team members and most settings";
-    case "EDITOR": return "Can create and edit content";
-    case "VIEWER": return "Read-only access";
-    case "MEMBER": return "Standard member access";
+    case "ADMIN": return "Full access to all features and settings";
+    case "MANAGER": return "Can view and edit everything except company settings";
+    case "STAFF": return "Read-only access (can be granted permissions to edit ingredients and recipes)";
     default: return "";
   }
 }
 
 function getRoleBadgeColor(role: string): string {
   switch (role) {
-    case "OWNER": return "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 border-amber-500/30";
     case "ADMIN": return "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border-[var(--brand-primary)]/20";
-    case "EDITOR": return "bg-blue-500/10 text-blue-700 border-blue-500/20";
-    case "VIEWER": return "bg-gray-500/10 text-gray-700 border-gray-500/20";
-    case "MEMBER": return "bg-purple-500/10 text-purple-700 border-purple-500/20";
+    case "MANAGER": return "bg-blue-500/10 text-blue-700 border-blue-500/20";
+    case "STAFF": return "bg-gray-500/10 text-gray-700 border-gray-500/20";
     default: return "bg-gray-500/10 text-gray-700 border-gray-500/20";
   }
 }
@@ -74,7 +68,7 @@ export default function TeamManagementClient({
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
-  const [inviteRole, setInviteRole] = useState("VIEWER");
+  const [inviteRole, setInviteRole] = useState("STAFF");
   const [invitePosition, setInvitePosition] = useState("");
   const [invitePhone, setInvitePhone] = useState("");
   const [inviteStartDate, setInviteStartDate] = useState("");
@@ -86,7 +80,7 @@ export default function TeamManagementClient({
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const canManageAll = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
+  const canManageAll = currentUserRole === "ADMIN";
 
   const tabs: Array<{ id: string; label: string; icon?: string }> = [
     { id: "overview", label: "Overview" },
@@ -455,10 +449,9 @@ export default function TeamManagementClient({
                     onChange={(e) => setInviteRole(e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20 transition-colors"
                   >
-                    {currentUserRole === "OWNER" && <option value="OWNER">Owner - Full access</option>}
-                    <option value="ADMIN">Admin - Can manage team</option>
-                    <option value="EDITOR">Editor - Can create and edit</option>
-                    <option value="VIEWER">Viewer - Read-only access</option>
+                    <option value="ADMIN">Admin - Full access</option>
+                    <option value="MANAGER">Manager - Can edit most things</option>
+                    <option value="STAFF">Staff - Read-only (can grant permissions)</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">{getRoleDescription(inviteRole)}</p>
                 </div>

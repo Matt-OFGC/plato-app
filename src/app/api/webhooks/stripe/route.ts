@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, STRIPE_CONFIG, getTierFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { getModuleFromStripePriceId } from "@/lib/stripe-features";
 import { logger } from "@/lib/logger";
 import Stripe from "stripe";
 
@@ -62,12 +61,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Get user by Stripe customer ID
   const user = await prisma.user.findUnique({
     where: { stripeCustomerId: customerId },
-    include: {
-      memberships: {
-        where: { role: { in: ["OWNER", "ADMIN"] } }, // Backward compatibility: include OWNER
-        include: { company: true },
-      },
-    },
   });
 
   if (!user) {
@@ -80,33 +73,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscriptionItem = subscription.items.data[0];
   const price = subscriptionItem.price;
 
-  // Check subscription type from metadata
-  const subscriptionType = session.metadata?.type;
-
-  // Handle AI subscription
-  if (subscriptionType === "ai") {
-    const aiSubscriptionType = session.metadata?.subscriptionType as "unlimited" | "capped" | undefined;
-    await handleAICheckout(user.id, subscription, subscriptionItem, aiSubscriptionType || "unlimited");
-    return;
-  }
-
-  // Handle feature module subscriptions (backward compatibility)
-  const moduleName = getModuleFromStripePriceId(price.id);
-  const isFeatureModule = session.metadata?.type === "feature_module" || moduleName !== null;
-
-  if (isFeatureModule && moduleName) {
-    // Handle Mentor subscription separately (it's company-scoped, not user-scoped)
-    if (moduleName === "mentor") {
-      await handleMentorCheckout(user.id, subscription, subscriptionItem);
-      return;
-    }
-    
-    // Handle other feature module subscriptions (backward compatibility)
-    await handleFeatureModuleCheckout(user.id, moduleName, subscription, subscriptionItem);
-    return;
-  }
-
-  // Handle MVP subscription (or legacy tier-based subscriptions)
   // Determine tier from price ID - map all paid tiers to "paid"
   const tierInfo = getTierFromPriceId(price.id);
   const tier = tierInfo?.tier || "paid"; // Default to paid for MVP
@@ -123,14 +89,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         stripeProductId: price.product as string,
         status: subscription.status,
         tier: "paid", // All MVP subscriptions are "paid"
-        price: price.unit_amount ? price.unit_amount / 100 : 19.99,
+        price: price.unit_amount ? price.unit_amount / 100 : 20.00,
         currency: price.currency,
         interval: interval,
         currentPeriodStart: new Date(subscription.current_period_start * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        maxIngredients: null, // Paid tier has unlimited
-        maxRecipes: null, // Paid tier has unlimited
-        aiSubscriptionType: null, // MVP subscription doesn't include AI
       },
       update: {
         stripeSubscriptionId: subscriptionId,
@@ -138,13 +101,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         stripeProductId: price.product as string,
         status: subscription.status,
         tier: "paid",
-        price: price.unit_amount ? price.unit_amount / 100 : 19.99,
+        price: price.unit_amount ? price.unit_amount / 100 : 20.00,
         currency: price.currency,
         interval: interval,
         currentPeriodStart: new Date(subscription.current_period_start * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        maxIngredients: null,
-        maxRecipes: null,
       },
     }),
     prisma.user.update({
@@ -161,256 +122,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   await prisma.$transaction(operations);
 }
 
-async function handleAICheckout(
-  userId: number,
-  subscription: Stripe.Subscription,
-  subscriptionItem: Stripe.SubscriptionItem,
-  subscriptionType: "unlimited" | "capped"
-) {
-  // Get user's company (check ADMIN role)
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      memberships: {
-        where: { role: "ADMIN" },
-        include: { company: true },
-      },
-    },
-  });
-
-  if (!user || user.memberships.length === 0) {
-    logger.error(`[handleAICheckout] User ${userId} has no company`, { userId }, 'Webhooks/Stripe');
-    return;
-  }
-
-  const companyId = user.memberships[0].company.id;
-
-  // Import Mentor subscription handler
-  const { upsertMentorSubscription } = await import("@/lib/mentor/subscription");
-
-  await upsertMentorSubscription(userId, companyId, {
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: subscriptionItem.price.id,
-    status: subscription.status,
-    subscriptionType: subscriptionType,
-    currentPeriodStart: new Date(subscription.current_period_start * 1000),
-    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-  });
-}
-
-async function handleMentorCheckout(
-  userId: number,
-  subscription: Stripe.Subscription,
-  subscriptionItem: Stripe.SubscriptionItem
-) {
-  // Get user's company (check ADMIN role)
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      memberships: {
-        where: { role: "ADMIN" },
-        include: { company: true },
-      },
-    },
-  });
-
-  if (!user || user.memberships.length === 0) {
-    logger.error(`[handleMentorCheckout] User ${userId} has no company`, { userId }, 'Webhooks/Stripe');
-    return;
-  }
-
-  const companyId = user.memberships[0].company.id;
-
-  // Import Mentor subscription handler
-  const { upsertMentorSubscription } = await import("@/lib/mentor/subscription");
-
-  // Determine subscription type from price ID
-  const priceId = subscriptionItem.price.id;
-  const subscriptionType = priceId === STRIPE_CONFIG.ai.unlimitedPriceId ? "unlimited" : "capped";
-
-  await upsertMentorSubscription(userId, companyId, {
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: subscriptionItem.price.id,
-    status: subscription.status,
-    subscriptionType: subscriptionType,
-    currentPeriodStart: new Date(subscription.current_period_start * 1000),
-    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-  });
-}
-
-async function handleFeatureModuleCheckout(
-  userId: number,
-  moduleName: string,
-  subscription: Stripe.Subscription,
-  subscriptionItem: Stripe.SubscriptionItem
-) {
-  // Convert trial to paid if it's Recipes
-  const existingTrial = await prisma.featureModule.findUnique({
-    where: {
-      userId_moduleName: {
-        userId,
-        moduleName: moduleName,
-      },
-    },
-  });
-
-  if (existingTrial && existingTrial.isTrial) {
-    // Upgrade from trial to paid
-    await prisma.featureModule.update({
-      where: {
-        userId_moduleName: {
-          userId,
-          moduleName: moduleName,
-        },
-      },
-      data: {
-        stripeSubscriptionItemId: subscriptionItem.id,
-        stripePriceId: subscriptionItem.price.id,
-        status: subscription.status,
-        isTrial: false,
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      },
-    });
-
-    // For Recipes, remove trial limits (set to unlimited)
-    if (moduleName === "recipes") {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          maxIngredients: null,
-          maxRecipes: null,
-        },
-      });
-    }
-  } else {
-    // Create new feature module
-    await prisma.featureModule.create({
-      data: {
-        userId,
-        moduleName: moduleName,
-        stripeSubscriptionItemId: subscriptionItem.id,
-        stripePriceId: subscriptionItem.price.id,
-        status: subscription.status,
-        isTrial: false,
-        unlockedAt: new Date(),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      },
-    });
-
-    // For Recipes, remove trial limits (set to unlimited)
-    if (moduleName === "recipes") {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          maxIngredients: null,
-          maxRecipes: null,
-        },
-      });
-    }
-  }
-}
-
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const user = await prisma.user.findUnique({
     where: { stripeCustomerId: subscription.customer as string },
-    include: {
-      memberships: {
-        where: { role: { in: ["OWNER", "ADMIN"] } }, // Backward compatibility
-        include: { company: true },
-      },
-    },
   });
 
   if (!user) return;
 
   const subscriptionItem = subscription.items.data[0];
   const price = subscriptionItem.price;
-  const priceId = price.id;
 
-  // Check if this is an AI subscription
-  const isAISubscription = priceId === STRIPE_CONFIG.ai.unlimitedPriceId || 
-                          priceId === STRIPE_CONFIG.ai.cappedPriceId;
-
-  if (isAISubscription) {
-    // Handle AI subscription update
-    if (user.memberships.length > 0) {
-      const companyId = user.memberships[0].company.id;
-      const subscriptionType = priceId === STRIPE_CONFIG.ai.unlimitedPriceId ? "unlimited" : "capped";
-      const { upsertMentorSubscription } = await import("@/lib/mentor/subscription");
-      await upsertMentorSubscription(user.id, companyId, {
-        stripeSubscriptionId: subscription.id,
-        stripePriceId: price.id,
-        status: subscription.status,
-        subscriptionType: subscriptionType,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      });
-    }
-    return;
-  }
-
-  // Check if this is a feature module subscription (backward compatibility)
-  const moduleName = getModuleFromStripePriceId(price.id);
-  if (moduleName === "mentor") {
-    // Handle Mentor subscription update (backward compatibility)
-    const membership = await prisma.membership.findFirst({
-      where: {
-        userId: user.id,
-        role: { in: ["OWNER", "ADMIN"] },
-      },
-      include: { company: true },
-    });
-
-    if (membership?.company) {
-      const subscriptionType = priceId === STRIPE_CONFIG.ai.unlimitedPriceId ? "unlimited" : "capped";
-      const { upsertMentorSubscription } = await import("@/lib/mentor/subscription");
-      await upsertMentorSubscription(user.id, membership.company.id, {
-        stripeSubscriptionId: subscription.id,
-        stripePriceId: price.id,
-        status: subscription.status,
-        subscriptionType: subscriptionType,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      });
-    }
-    return;
-  }
-  
-  if (moduleName) {
-    // Update feature module (backward compatibility)
-    await prisma.featureModule.updateMany({
-      where: {
-        userId: user.id,
-        moduleName: moduleName,
-      },
-      data: {
-        status: subscription.status,
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-      },
-    });
-
-    // If canceled and it's Recipes, restore free tier limits (5/5)
-    if (subscription.status === "canceled" && moduleName === "recipes") {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          maxIngredients: 5,
-          maxRecipes: 5,
-        },
-      });
-    }
-    return;
-  }
-
-  // Handle MVP subscription update (or legacy tier-based)
+  // Handle MVP subscription update
   const tierInfo = getTierFromPriceId(price.id);
   const tier = tierInfo?.tier || "paid"; // Map all to "paid"
   const interval = tierInfo?.interval || "month";
@@ -421,20 +143,18 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       where: { stripeSubscriptionId: subscription.id },
       data: {
         status: subscription.status,
-        tier: "paid", // All MVP subscriptions are "paid"
+        tier: "paid",
         interval: interval,
         currentPeriodStart: new Date(subscription.current_period_start * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-        maxIngredients: subscription.status === "active" ? null : 5, // Set limits if canceled
-        maxRecipes: subscription.status === "active" ? null : 5,
       },
     }),
     prisma.user.update({
       where: { id: user.id },
       data: {
-        subscriptionTier: "paid",
+        subscriptionTier: subscription.status === "active" ? "paid" : "free",
         subscriptionInterval: interval,
         subscriptionStatus: subscription.status,
         subscriptionEndsAt: subscription.status === "active" 
@@ -448,89 +168,17 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const user = await prisma.user.findUnique({
     where: { stripeCustomerId: subscription.customer as string },
-    include: {
-      memberships: {
-        where: { role: { in: ["OWNER", "ADMIN"] } }, // Backward compatibility
-        include: { company: true },
-      },
-    },
   });
 
   if (!user) return;
 
-  // Check if this is an AI subscription or feature module subscription
-  if (subscription.items.data.length > 0) {
-    const price = subscription.items.data[0].price;
-    const priceId = price.id;
-    
-    // Check if AI subscription
-    const isAISubscription = priceId === STRIPE_CONFIG.ai.unlimitedPriceId || 
-                            priceId === STRIPE_CONFIG.ai.cappedPriceId;
-    
-    if (isAISubscription) {
-      // Handle AI subscription deletion
-      if (user.memberships.length > 0) {
-        const companyId = user.memberships[0].company.id;
-        const { upsertMentorSubscription } = await import("@/lib/mentor/subscription");
-        await upsertMentorSubscription(user.id, companyId, {
-          status: "canceled",
-          cancelAtPeriodEnd: false,
-        });
-      }
-      return;
-    }
-
-    const moduleName = getModuleFromStripePriceId(price.id);
-    
-    if (moduleName === "mentor") {
-      // Handle Mentor subscription deletion (backward compatibility)
-      if (user.memberships.length > 0) {
-        const companyId = user.memberships[0].company.id;
-        const { upsertMentorSubscription } = await import("@/lib/mentor/subscription");
-        await upsertMentorSubscription(user.id, companyId, {
-          status: "canceled",
-          cancelAtPeriodEnd: false,
-        });
-      }
-      return;
-    }
-    
-    if (moduleName) {
-      // Cancel feature module (backward compatibility)
-      await prisma.featureModule.updateMany({
-        where: {
-          userId: user.id,
-          moduleName: moduleName,
-        },
-        data: {
-          status: "canceled",
-          canceledAt: new Date(),
-        },
-      });
-
-      // If Recipes, restore free tier limits (5/5)
-      if (moduleName === "recipes") {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            maxIngredients: 5,
-            maxRecipes: 5,
-          },
-        });
-      }
-      return;
-    }
-  }
-
-  // Handle MVP subscription deletion (or legacy tier-based)
+  // Handle MVP subscription deletion
   await prisma.$transaction([
     prisma.subscription.updateMany({
       where: { stripeSubscriptionId: subscription.id },
       data: {
         status: "canceled",
         canceledAt: new Date(),
-        maxIngredients: 5, // Restore free tier limits
-        maxRecipes: 5,
       },
     }),
     prisma.user.update({

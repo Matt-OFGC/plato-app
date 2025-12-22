@@ -40,8 +40,8 @@ export default async function TeamPage() {
       },
     });
     
-    // Check if user has ADMIN or OWNER role (ADMIN-only access for team management)
-    if (!membership || !membership.isActive || (membership.role !== "ADMIN" && membership.role !== "OWNER")) {
+    // Check if user has ADMIN role (ADMIN-only access for team management)
+    if (!membership || !membership.isActive || membership.role !== "ADMIN") {
       redirect("/dashboard?error=access_denied");
     }
     

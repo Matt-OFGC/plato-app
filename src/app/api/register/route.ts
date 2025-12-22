@@ -167,12 +167,12 @@ export async function POST(req: NextRequest) {
         });
 
         // Create membership with explicit isActive: true
-        // Use OWNER role for consistency - user created this company
+        // User who creates account becomes ADMIN
         const membership = await tx.membership.create({ 
           data: { 
             userId: user.id, 
             companyId: co.id, 
-            role: "OWNER", // Changed from ADMIN to OWNER - user created this company
+            role: "ADMIN", // User who creates account becomes ADMIN
             isActive: true // Explicitly set to true
           } 
         });
@@ -235,7 +235,7 @@ export async function POST(req: NextRequest) {
           },
         });
         
-        // Create user
+        // Create user with free tier subscription
         const newUser = await tx.user.create({
           data: {
             email,
@@ -243,6 +243,8 @@ export async function POST(req: NextRequest) {
             passwordHash,
             verificationToken,
             verificationTokenExpiresAt,
+            subscriptionTier: "free",
+            subscriptionStatus: "free",
             preferences: {
               create: { currency }
             }
@@ -250,11 +252,12 @@ export async function POST(req: NextRequest) {
         });
         
         // Create membership with explicit isActive: true
+        // User who creates account becomes ADMIN
         const membership = await tx.membership.create({ 
           data: { 
             userId: newUser.id, 
             companyId: co.id, 
-            role: "OWNER",
+            role: "ADMIN", // User who creates account becomes ADMIN
             isActive: true // Explicitly set to true
           } 
         });

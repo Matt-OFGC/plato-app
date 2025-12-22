@@ -5,8 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
 import { AppSwitcher } from "./AppSwitcher";
 import { useAppContext } from "./AppContextProvider";
-import { SectionUnlockModal } from "./unlock/SectionUnlockModal";
-import type { FeatureModuleName } from "@/lib/stripe-features";
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,98 +17,7 @@ export function Sidebar() {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   
   const { activeApp, switchToApp } = useAppContext();
-  const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean; status: string | null }> | null>(null);
-  const [isLoadingUnlockStatus, setIsLoadingUnlockStatus] = useState(true);
-  const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Fetch unlock status function
-  const fetchUnlockStatus = async (showLoading = false) => {
-    if (showLoading) setIsRefreshing(true);
-    setIsLoadingUnlockStatus(true);
-    try {
-      const res = await fetch(`/api/features/unlock-status?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-        credentials: 'include', // Ensure cookies are sent
-      });
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`[Sidebar] API returned ${res.status}:`, errorText);
-        // Don't set unlockStatus to null on error - keep previous state
-        setIsLoadingUnlockStatus(false);
-        return;
-      }
-      
-      const data = await res.json();
-      console.log('[Sidebar] Full unlock-status response:', JSON.stringify(data, null, 2));
-      if (data.unlockStatus) {
-        console.log('[Sidebar] Unlock status updated:', data.unlockStatus);
-        console.log('[Sidebar] Module statuses:', {
-          recipes: data.unlockStatus.recipes?.unlocked,
-          production: data.unlockStatus.production?.unlocked,
-          make: data.unlockStatus.make?.unlocked,
-          teams: data.unlockStatus.teams?.unlocked,
-          safety: data.unlockStatus.safety?.unlocked,
-        });
-        console.log('[Sidebar] Setting unlockStatus state with:', data.unlockStatus);
-        setUnlockStatus(data.unlockStatus);
-        setIsLoadingUnlockStatus(false);
-      } else if (data.error) {
-        console.error('[Sidebar] Error fetching unlock status:', data.error);
-        console.error('[Sidebar] Full error response:', data);
-        // If we get an error but have debug info, set a default locked state
-        if (data.debug) {
-          console.warn('[Sidebar] Setting default locked state due to error');
-          setUnlockStatus({
-            recipes: { unlocked: false, isTrial: false, status: null },
-            production: { unlocked: false, isTrial: false, status: null },
-            make: { unlocked: false, isTrial: false, status: null },
-            teams: { unlocked: false, isTrial: false, status: null },
-            safety: { unlocked: false, isTrial: false, status: null },
-          });
-        }
-        setIsLoadingUnlockStatus(false);
-      } else {
-        console.warn('[Sidebar] No unlockStatus in response:', data);
-        setIsLoadingUnlockStatus(false);
-      }
-    } catch (err) {
-      console.error("[Sidebar] Failed to fetch unlock status:", err);
-      // On network error, don't change unlockStatus - keep previous state
-      setIsLoadingUnlockStatus(false);
-    } finally {
-      if (showLoading) setIsRefreshing(false);
-    }
-  };
-
-  // Fetch unlock status on mount
-  useEffect(() => {
-    fetchUnlockStatus();
-  }, []);
-
-  // Refresh unlock status when window gains focus (user switches back to tab)
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('[Sidebar] Window focused, refreshing unlock status');
-      fetchUnlockStatus();
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
-
-  // Listen for custom event to refresh unlock status (can be triggered from admin panel)
-  useEffect(() => {
-    const handleRefreshUnlockStatus = () => {
-      console.log('[Sidebar] Refresh unlock status event received');
-      fetchUnlockStatus(true);
-    };
-    window.addEventListener('refresh-unlock-status', handleRefreshUnlockStatus);
-    return () => window.removeEventListener('refresh-unlock-status', handleRefreshUnlockStatus);
-  }, []);
+  // All MVP features are unlocked - no unlock status needed
   
   // Debug: Log active app and filtered items
   useEffect(() => {
@@ -345,36 +252,9 @@ export function Sidebar() {
                 const items = grouped[sectionKey] || [];
                 if (items.length === 0) return null;
 
-                const moduleName = moduleMap[sectionKey];
-                const moduleStatus = moduleName ? unlockStatus?.[moduleName] : null;
-                // Don't show as locked until we have data (isLoadingUnlockStatus === false)
-                // This prevents false locks while data is loading
-                const isLocked = isLoadingUnlockStatus 
-                  ? false  // Don't lock until we know the status
-                  : (moduleName ? !moduleStatus?.unlocked : false);
-                const isTrial = moduleName && moduleStatus?.isTrial;
-                
-                // For brand restrictions: completely hide sections not in brand's feature list
-                // If section is locked but user has paid subscription, it's a brand restriction - hide it
-                // If section is locked and user is on free tier, show it as locked (so they can upgrade)
-                const isBrandRestricted = isLocked && !isTrial && moduleStatus?.status !== "trialing";
-                if (isBrandRestricted) {
-                  // Completely hide this section (brand restriction, not a free tier lock)
-                  return null;
-                }
-                
-                // Enhanced debug logging for ALL modules (not just locked ones)
-                if (moduleName && typeof window !== 'undefined') {
-                  console.log(`[Sidebar] 📊 Section ${sectionKey} (${moduleName}):`, {
-                    isLoadingUnlockStatus,
-                    moduleStatus,
-                    unlocked: moduleStatus?.unlocked,
-                    isLocked,
-                    unlockStatusExists: !!unlockStatus,
-                    unlockStatusKeys: unlockStatus ? Object.keys(unlockStatus) : [],
-                    fullUnlockStatus: unlockStatus,
-                  });
-                }
+                // All MVP features are unlocked - no checks needed
+                const isLocked = false;
+                const isTrial = false;
 
                 return (
                   <div key={sectionKey} className="space-y-1">
@@ -382,11 +262,7 @@ export function Sidebar() {
                     {(!isTouchDevice || !collapsed || pinned) && (
                       <div className="px-2 py-1.5 flex items-center justify-between group/section">
                         <button
-                          onClick={() => {
-                            if (isLocked && moduleName) {
-                              setUnlockModal(moduleName);
-                            }
-                          }}
+                          onClick={() => {}}
                           className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-gray-700 transition-colors"
                         >
                           <span>{sectionLabels[sectionKey] || sectionKey.toUpperCase()}</span>
@@ -794,14 +670,6 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Unlock Modal */}
-      {unlockModal && (
-        <SectionUnlockModal
-          isOpen={!!unlockModal}
-          onClose={() => setUnlockModal(null)}
-          moduleName={unlockModal}
-        />
-      )}
     </>
   );
 }

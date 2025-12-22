@@ -3,8 +3,6 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
-import { SectionUnlockModal } from "./unlock/SectionUnlockModal";
-import { FeatureModuleName } from "@/lib/stripe-features";
 import { getAppConfig, appExists, getAllApps } from "@/lib/apps/registry";
 import { getAppAwareRoute, getAppFromRoute } from "@/lib/app-routes";
 import type { App } from "@/lib/apps/types";
@@ -34,8 +32,6 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
   const appFeatures = appConfig?.features || [];
   
   const [searchTerm, setSearchTerm] = useState("");
-  const [unlockStatus, setUnlockStatus] = useState<Record<string, { unlocked: boolean; isTrial: boolean }> | null>(null);
-  const [unlockModal, setUnlockModal] = useState<FeatureModuleName | null>(null);
   const [showAppSwitcher, setShowAppSwitcher] = useState(false);
   const [userApps, setUserApps] = useState<Array<{ id: App; name: string; hasAccess: boolean }>>([]);
 
@@ -55,86 +51,7 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
       .catch((err) => console.error("Failed to fetch user apps:", err));
   }, []);
 
-  // Fetch unlock status on mount and when pathname changes
-  const fetchUnlockStatus = () => {
-    fetch("/api/features/unlock-status", {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache',
-      }
-    })
-      .then((res) => {
-        if (!res.ok) {
-          // Handle 404 and other errors gracefully without throwing
-          if (res.status === 404) {
-            // Route not found - use default unlocked status
-            setUnlockStatus({
-              recipes: { unlocked: true, isTrial: true },
-              production: { unlocked: false, isTrial: false },
-              make: { unlocked: false, isTrial: false },
-              teams: { unlocked: false, isTrial: false },
-              safety: { unlocked: false, isTrial: false },
-            });
-            return;
-          }
-          // For other errors, try to parse JSON for error details
-          return res.json().catch(() => {
-            // If JSON parsing fails, use default status
-            setUnlockStatus({
-              recipes: { unlocked: true, isTrial: true },
-              production: { unlocked: false, isTrial: false },
-              make: { unlocked: false, isTrial: false },
-              teams: { unlocked: false, isTrial: false },
-              safety: { unlocked: false, isTrial: false },
-            });
-          });
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (!data) return; // Already handled in error case
-        
-        if (data.unlockStatus) {
-          setUnlockStatus(data.unlockStatus);
-        } else if (data.error) {
-          // API returned an error response but with valid JSON
-          setUnlockStatus({
-            recipes: { unlocked: true, isTrial: true },
-            production: { unlocked: false, isTrial: false },
-            make: { unlocked: false, isTrial: false },
-            teams: { unlocked: false, isTrial: false },
-            safety: { unlocked: false, isTrial: false },
-          });
-        }
-      })
-      .catch((err) => {
-        // Only log non-404 errors to avoid console noise
-        if (!err.message?.includes('404')) {
-          console.error("Failed to fetch unlock status:", err);
-        }
-        setUnlockStatus({
-          recipes: { unlocked: true, isTrial: true },
-          production: { unlocked: false, isTrial: false },
-          make: { unlocked: false, isTrial: false },
-          teams: { unlocked: false, isTrial: false },
-          safety: { unlocked: false, isTrial: false },
-        });
-      });
-  };
-
-  useEffect(() => {
-    fetchUnlockStatus();
-  }, []);
-
-  useEffect(() => {
-    fetchUnlockStatus();
-  }, [pathname]);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchUnlockStatus();
-    }
-  }, [isOpen]);
+  // All MVP features are unlocked - no need to fetch unlock status
 
   // Get filtered navigation items based on app features
   const navigationItems = getFilteredNavigationItems(currentApp, appFeatures);
@@ -167,15 +84,8 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
         if (item.appContext === 'global') return true;
         
         return true;
-      })
-      .filter(item => {
-        // Check unlock status for locked features
-        if (item.appContext === 'production' && !unlockStatus?.production?.unlocked) return false;
-        if (item.appContext === 'make' && !unlockStatus?.make?.unlocked) return false;
-        if (item.appContext === 'teams' && !unlockStatus?.teams?.unlocked) return false;
-        if (item.appContext === 'safety' && !unlockStatus?.safety?.unlocked) return false;
-        return true;
       });
+      // All MVP features are accessible - no unlock checks needed
     
     const items = dashboard ? [dashboard, ...otherItems] : otherItems;
     
@@ -190,7 +100,7 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
     }
 
     return items;
-  }, [navigationItems, appFeatures, unlockStatus, searchTerm]);
+  }, [navigationItems, appFeatures, searchTerm]);
 
   // Close sidebar when route changes
   useEffect(() => {
@@ -353,41 +263,19 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
               const isActive = normalizedPathname === normalizedHref || 
                 (normalizedHref !== "/dashboard" && normalizedHref !== "/bake" && normalizedPathname.startsWith(normalizedHref + "/"));
               
-              const isLocked = 
-                (item.appContext === 'production' && !unlockStatus?.production?.unlocked) ||
-                (item.appContext === 'make' && !unlockStatus?.make?.unlocked) ||
-                (item.appContext === 'teams' && !unlockStatus?.teams?.unlocked) ||
-                (item.appContext === 'safety' && !unlockStatus?.safety?.unlocked);
-              
                       return (
                         <a
                           key={item.value}
                   href={appAwareHref}
-                  onClick={(e) => {
-                    if (isLocked) {
-                      e.preventDefault();
-                      // Show unlock modal for locked features
-                      if (item.appContext === 'production') setUnlockModal("production");
-                      if (item.appContext === 'make') setUnlockModal("make");
-                      if (item.appContext === 'teams') setUnlockModal("teams");
-                      if (item.appContext === 'safety') setUnlockModal("safety");
-                    } else {
-                      onClose();
-                    }
-                  }}
+                  onClick={() => onClose()}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
                               isActive
                       ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
                       : 'text-gray-700 hover:bg-gray-50'
-                  } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  }`}
                 >
                   <div className="w-5 h-5 flex-shrink-0">{item.icon}</div>
                   <span className="flex-1">{item.label}</span>
-                  {isLocked && (
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  )}
                         </a>
                       );
             })}
@@ -436,14 +324,6 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
         </div>
       </div>
 
-      {/* Unlock Modal */}
-      {unlockModal && (
-        <SectionUnlockModal
-          isOpen={!!unlockModal}
-          onClose={() => setUnlockModal(null)}
-          moduleName={unlockModal}
-        />
-      )}
     </>
   );
 }

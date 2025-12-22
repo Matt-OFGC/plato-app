@@ -26,7 +26,7 @@ export default async function BusinessSettingsPage() {
     );
   }
 
-  // Check if user has ADMIN or OWNER role (ADMIN-only access)
+  // Check if user has ADMIN role (ADMIN-only access)
   const membership = await prisma.membership.findUnique({
     where: {
       userId_companyId: {
@@ -40,7 +40,7 @@ export default async function BusinessSettingsPage() {
     },
   });
 
-  if (!membership || !membership.isActive || (membership.role !== "ADMIN" && membership.role !== "OWNER")) {
+  if (!membership || !membership.isActive || membership.role !== "ADMIN") {
     redirect("/dashboard?error=access_denied");
   }
 

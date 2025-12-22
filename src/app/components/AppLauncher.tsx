@@ -88,18 +88,9 @@ export function AppLauncher({
   // Filter apps based on MVP mode
   const apps = allApps.filter(app => {
     // Map hrefs to navigation item values
-    const hrefToValue: Record<string, string> = {
-      '/dashboard/recipes': 'recipes',
-      '/dashboard/team': 'team',
-      '/dashboard/wholesale': 'wholesale',
-      '/dashboard/messages': 'messages',
-    };
-    const value = hrefToValue[app.href];
-    if (value) {
-      return isNavigationItemVisible(value);
-    }
-    // If not in map, show it (e.g., dashboard)
-    return true;
+    // Show all MVP apps - filter out non-MVP apps
+    const nonMvpApps = ['/dashboard/messages', '/dashboard/analytics', '/dashboard/safety', '/dashboard/training', '/dashboard/staff', '/dashboard/mentor', '/dashboard/integrations', '/dashboard/collections', '/dashboard/inventory', '/dashboard/scheduling'];
+    return !nonMvpApps.includes(app.href);
   });
 
   return (

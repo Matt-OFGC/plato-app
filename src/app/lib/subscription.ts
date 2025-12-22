@@ -1,31 +1,46 @@
 /**
  * Subscription utilities - simplified system
- * Free tier: 5 ingredients, 5 recipes, only recipes section
- * Paid tier: Unlimited everything, all sections unlocked
+ * Free tier: 5 ingredients, 5 recipes
+ * Paid tier: Unlimited everything
  */
 
-import { checkSectionAccess, checkRecipesLimits, isRecipesTrial } from "./features";
+import { isPaid, getIngredientLimit, getRecipeLimit } from "./subscription-simple";
 import { prisma } from "./prisma";
 
 /**
- * Check if user can access production features
+ * Create feature gate error (deprecated - all features are MVP now)
+ * Kept for backwards compatibility
  */
-export async function canAccessProduction(userId: number): Promise<boolean> {
-  return checkSectionAccess(userId, "production");
+export function createFeatureGateError(module: string, featureName: string) {
+  return {
+    error: `${featureName} is not available on your current plan. Please upgrade to access this feature.`,
+    code: "FEATURE_GATED",
+    module,
+  };
 }
 
 /**
- * Check if user can access wholesale features (part of Production)
+ * Check if user can access production features
+ * All users can access production (it's part of MVP)
+ */
+export async function canAccessProduction(userId: number): Promise<boolean> {
+  return true; // Production is part of MVP
+}
+
+/**
+ * Check if user can access wholesale features
+ * All users can access wholesale (it's part of MVP)
  */
 export async function canAccessWholesale(userId: number): Promise<boolean> {
-  return checkSectionAccess(userId, "production");
+  return true; // Wholesale is part of MVP
 }
 
 /**
  * Check if user can invite team members
+ * All users can invite team members (it's part of MVP)
  */
 export async function canInviteTeamMembers(userId: number): Promise<boolean> {
-  return checkSectionAccess(userId, "teams");
+  return true; // Team management is part of MVP
 }
 
 /**
@@ -34,8 +49,24 @@ export async function canInviteTeamMembers(userId: number): Promise<boolean> {
  * Paid tier: Unlimited
  */
 export async function canAddIngredient(userId: number): Promise<boolean> {
-  const limits = await checkRecipesLimits(userId);
-  return limits.withinIngredientsLimit;
+  const limit = await getIngredientLimit(userId);
+  if (limit === Infinity) {
+    return true;
+  }
+  
+  // Count current ingredients
+  const count = await prisma.ingredient.count({
+    where: {
+      companyId: {
+        in: await prisma.membership.findMany({
+          where: { userId, isActive: true },
+          select: { companyId: true },
+        }).then(memberships => memberships.map(m => m.companyId)),
+      },
+    },
+  });
+  
+  return count < limit;
 }
 
 /**
@@ -44,8 +75,24 @@ export async function canAddIngredient(userId: number): Promise<boolean> {
  * Paid tier: Unlimited
  */
 export async function canAddRecipe(userId: number): Promise<boolean> {
-  const limits = await checkRecipesLimits(userId);
-  return limits.withinRecipesLimit;
+  const limit = await getRecipeLimit(userId);
+  if (limit === Infinity) {
+    return true;
+  }
+  
+  // Count current recipes
+  const count = await prisma.recipe.count({
+    where: {
+      companyId: {
+        in: await prisma.membership.findMany({
+          where: { userId, isActive: true },
+          select: { companyId: true },
+        }).then(memberships => memberships.map(m => m.companyId)),
+      },
+    },
+  });
+  
+  return count < limit;
 }
 
 /**
@@ -95,21 +142,5 @@ export async function getUserSubscription(userId: number) {
     endsAt: user.subscriptionEndsAt,
     interval: user.subscriptionInterval,
     subscription,
-  };
-}
-
-/**
- * Create feature gate error response
- */
-export function createFeatureGateError(
-  requiredModule: string,
-  featureName: string
-) {
-  return {
-    error: "Feature not available",
-    code: "FEATURE_GATED",
-    requiredModule,
-    featureName,
-    message: `${featureName} requires a paid subscription. Please upgrade to unlock this feature.`,
   };
 }

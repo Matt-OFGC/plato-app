@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { updateSubscriptionSeats } from "@/lib/stripe";
 import { MemberRole } from "@/generated/prisma";
 import { logger } from "@/lib/logger";
 import { getInvitationMetadata, deleteInvitationMetadata } from "@/lib/invitation-metadata-store";
@@ -63,59 +62,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Get the company owner's subscription to update billing
-    const ownerMembership = await prisma.membership.findFirst({
-      where: { 
-        companyId: invitation.companyId,
-        role: "OWNER",
-        isActive: true,
-      },
-      include: { user: true },
-    });
+    // Get invitation metadata (for staffPermissions if STAFF role)
+    const metadata = getInvitationMetadata(invitation.id);
+    const staffPermissions = metadata?.staffPermissions;
 
-    if (!ownerMembership) {
-      return NextResponse.json({ 
-        error: "Company owner not found" 
-      }, { status: 404 });
-    }
-
-    const ownerSubscription = await prisma.subscription.findUnique({
-      where: { userId: ownerMembership.userId },
-    });
-
-    if (!ownerSubscription || ownerSubscription.status !== 'active') {
-      return NextResponse.json({ 
-        error: "Company subscription not active" 
-      }, { status: 400 });
-    }
-
-    // Calculate new seat count
-    const currentMembers = await prisma.membership.count({
-      where: { 
-        companyId: invitation.companyId,
-        isActive: true,
-      },
-    });
-
-    const additionalSeatsNeeded = Math.max(0, currentMembers + 1 - 1); // +1 for new member, -1 for base seat
-
-    // Update Stripe subscription if additional seats needed
-    if (additionalSeatsNeeded > 0 && ownerSubscription.stripeSubscriptionId) {
-      try {
-        await updateSubscriptionSeats(
-          ownerSubscription.stripeSubscriptionId,
-          1, // base seats
-          additionalSeatsNeeded
-        );
-      } catch (stripeError) {
-        logger.error("Failed to update Stripe subscription", stripeError, "Team/Accept");
-        return NextResponse.json({ 
-          error: "Failed to update billing. Please contact support." 
-        }, { status: 500 });
-      }
-    }
-
-    // Create the membership
+    // Create the membership with staffPermissions if STAFF role
     const membership = await prisma.membership.create({
       data: {
         userId: user.id,
@@ -124,47 +75,12 @@ export async function POST(request: NextRequest) {
         invitedBy: invitation.invitedBy,
         acceptedAt: new Date(),
         isActive: true,
+        staffPermissions: invitation.role === "STAFF" && staffPermissions ? staffPermissions : null,
       },
     });
 
-    // Retrieve and use profile data from metadata storage
-    const profileData = getInvitationMetadata(invitation.id);
-
-    // Update user name if provided
-    if (profileData?.name && !user.name) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { name: profileData.name },
-      });
-    }
-
-    // Create staff profile if profile data exists and staffProfile model is available
-    if (profileData && prisma.staffProfile) {
-      try {
-        await prisma.staffProfile.create({
-          data: {
-            membershipId: membership.id,
-            position: profileData.position || null,
-            status: "active",
-            employmentStartDate: profileData.employmentStartDate 
-              ? new Date(profileData.employmentStartDate) 
-              : null,
-            emergencyContactName: profileData.emergencyContactName || null,
-            emergencyContactPhone: profileData.emergencyContactPhone || null,
-            notes: profileData.notes || null,
-          },
-        });
-        logger.info(`Staff profile created for membership ${membership.id}`, { membershipId: membership.id }, "Team/Accept");
-      } catch (profileError: any) {
-        // If profile already exists or model doesn't exist, that's okay
-        if (profileError.code !== "P2002") {
-          logger.warn("Failed to create staff profile", profileError, "Team/Accept");
-        }
-      }
-    }
-
     // Clean up metadata after use
-    if (profileData) {
+    if (metadata) {
       deleteInvitationMetadata(invitation.id);
     }
 
@@ -172,12 +88,6 @@ export async function POST(request: NextRequest) {
     await prisma.teamInvitation.update({
       where: { id: invitation.id },
       data: { acceptedAt: new Date() },
-    });
-
-    // Update company seat count
-    await prisma.company.update({
-      where: { id: invitation.companyId },
-      data: { seatsUsed: { increment: 1 } },
     });
 
     return NextResponse.json({ 

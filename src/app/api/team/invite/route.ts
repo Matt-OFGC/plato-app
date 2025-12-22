@@ -3,10 +3,8 @@ import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
 import { checkPermission } from "@/lib/permissions";
 import { MemberRole } from "@/generated/prisma";
-import { updateSubscriptionSeats } from "@/lib/stripe";
 import { sendTeamInviteEmail } from "@/lib/email";
 import crypto from "crypto";
-import { canInviteTeamMembers, createFeatureGateError } from "@/lib/subscription";
 import { logger } from "@/lib/logger";
 import { storeInvitationMetadata } from "@/lib/invitation-metadata-store";
 
@@ -23,67 +21,54 @@ export async function POST(request: NextRequest) {
       name,
       role, 
       companyId,
-      // Staff profile fields
-      position,
-      phone,
-      employmentStartDate,
-      emergencyContactName,
-      emergencyContactPhone,
-      notes,
+      staffPermissions, // { canEditIngredients?: boolean, canEditRecipes?: boolean }
     } = body;
 
     if (!email || !role || !companyId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Validate role
+    const validRoles = ["ADMIN", "MANAGER", "STAFF"];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json({ 
+        error: `Invalid role. Must be one of: ${validRoles.join(", ")}` 
+      }, { status: 400 });
+    }
+
+    // Validate staffPermissions if role is STAFF
+    if (role === "STAFF" && staffPermissions) {
+      if (typeof staffPermissions !== "object") {
+        return NextResponse.json({ 
+          error: "staffPermissions must be an object" 
+        }, { status: 400 });
+      }
+      const perms = staffPermissions as { canEditIngredients?: boolean; canEditRecipes?: boolean };
+      if (perms.canEditIngredients !== undefined && typeof perms.canEditIngredients !== "boolean") {
+        return NextResponse.json({ 
+          error: "canEditIngredients must be a boolean" 
+        }, { status: 400 });
+      }
+      if (perms.canEditRecipes !== undefined && typeof perms.canEditRecipes !== "boolean") {
+        return NextResponse.json({ 
+          error: "canEditRecipes must be a boolean" 
+        }, { status: 400 });
+      }
+    }
+
     // Check if user has permission to manage team
-    const canManage = await checkPermission(session.id, companyId, "manage:team");
+    const canManage = await checkPermission(session.id, companyId, "team:manage");
     if (!canManage) {
       return NextResponse.json({ error: "No permission to manage team" }, { status: 403 });
     }
 
-    // Check if user has access to team features
-    const hasTeamAccess = await canInviteTeamMembers(session.id);
-    if (!hasTeamAccess) {
-      return NextResponse.json(
-        createFeatureGateError("teams", "Team Collaboration"),
-        { status: 403 }
-      );
-    }
-
-    // Check if company has reached seat limit
+    // Check if company exists
     const company = await prisma.company.findUnique({
       where: { id: companyId },
-      include: { 
-        memberships: {
-          where: { isActive: true }
-        }
-      },
     });
 
     if (!company) {
       return NextResponse.json({ error: "Company not found" }, { status: 404 });
-    }
-
-    // Get current subscription to check seat limits
-    const subscription = await prisma.subscription.findUnique({
-      where: { userId: session.id },
-    });
-
-    if (!subscription || subscription.status !== 'active') {
-      return NextResponse.json({ 
-        error: "Active subscription required to invite team members" 
-      }, { status: 400 });
-    }
-
-    // Calculate current seat usage and limits
-    const currentActiveMembers = company.memberships.length;
-    const maxSeats = company.maxSeats;
-
-    if (currentActiveMembers >= maxSeats) {
-      return NextResponse.json({ 
-        error: `Maximum seats (${maxSeats}) reached. Please upgrade your plan to add more team members.` 
-      }, { status: 400 });
     }
 
     // Check if user already has membership
@@ -131,11 +116,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Store staff profile data - we'll create the profile when invitation is accepted
-    // For MVP, store this data temporarily. We'll create the staff profile in the accept endpoint
-    // If staffProfile model exists, create it after membership is created
-    // Store profile data in invitation metadata or handle in accept endpoint
-
     // Get inviter info for email
     const inviter = await prisma.user.findUnique({
       where: { id: session.id },
@@ -157,22 +137,10 @@ export async function POST(request: NextRequest) {
       // Don't fail the invitation if email fails - they still have the URL
     }
 
-    // Note: We don't update Stripe subscription here because the user hasn't accepted yet
-    // The subscription will be updated when they accept the invitation
-
-    // Store staff profile metadata for later use when invitation is accepted
-    const profileData = {
-      name: name || null,
-      position: position || null,
-      phone: phone || null,
-      employmentStartDate: employmentStartDate || null,
-      emergencyContactName: emergencyContactName || null,
-      emergencyContactPhone: emergencyContactPhone || null,
-      notes: notes || null,
-    };
-
-    // Store metadata in memory (will be used when invitation is accepted)
-    storeInvitationMetadata(invitation.id, profileData);
+    // Store staffPermissions metadata for STAFF role (will be used when invitation is accepted)
+    if (role === "STAFF" && staffPermissions) {
+      storeInvitationMetadata(invitation.id, { staffPermissions });
+    }
     
     // Don't expose the full invitation object or token in response
     return NextResponse.json({ 

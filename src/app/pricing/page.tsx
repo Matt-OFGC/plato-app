@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleUpgrade = async (type: "mvp" | "ai-unlimited" | "ai-capped") => {
+  const handleUpgrade = async (type: "mvp") => {
     setIsLoading(true);
     try {
       const response = await fetch("/api/subscription/checkout", {
@@ -55,9 +55,9 @@ export default function PricingPage() {
       type: null,
     },
     {
-      id: "mvp",
+      id: "paid",
       name: "Plato MVP",
-      price: 19.99,
+      price: 20,
       description: "Full access to all MVP features",
       features: [
         "Unlimited ingredients",
@@ -68,48 +68,14 @@ export default function PricingPage() {
         "Export to PDF",
         "Production planning",
         "Team management",
+        "Wholesale management",
         "All MVP features",
         "Priority support",
       ],
-      cta: "Subscribe to MVP",
+      cta: "Subscribe Now",
       popular: true,
       isLink: false,
       type: "mvp" as const,
-    },
-    {
-      id: "ai-unlimited",
-      name: "AI Assistant - Unlimited",
-      price: 50,
-      description: "Unlimited AI conversations (requires MVP)",
-      features: [
-        "Unlimited AI conversations",
-        "Business insights and advice",
-        "Pricing recommendations",
-        "Goal tracking",
-        "Proactive alerts",
-        "Internet search for benchmarks",
-      ],
-      cta: "Add AI Unlimited",
-      popular: false,
-      isLink: false,
-      type: "ai-unlimited" as const,
-    },
-    {
-      id: "ai-capped",
-      name: "AI Assistant - Capped",
-      price: 25,
-      description: "Capped AI usage (requires MVP)",
-      features: [
-        "100 messages per month",
-        "Business insights and advice",
-        "Pricing recommendations",
-        "Goal tracking",
-        "Proactive alerts",
-      ],
-      cta: "Add AI Capped",
-      popular: false,
-      isLink: false,
-      type: "ai-capped" as const,
     },
   ];
 

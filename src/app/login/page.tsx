@@ -3,7 +3,6 @@
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/ui/PasswordInput";
-import { OAuthButtons } from "@/components/OAuthButtons";
 
 function LoginForm() {
   const sp = useSearchParams();
@@ -151,19 +150,6 @@ function LoginForm() {
                 </div>
               </div>
             )}
-
-            {/* OAuth Login Buttons */}
-            <OAuthButtons />
-
-            {/* Divider - show if OAuth buttons are present */}
-            <div className="relative mt-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">Or continue with email</span>
-              </div>
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>

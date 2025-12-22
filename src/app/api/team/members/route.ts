@@ -80,10 +80,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { membershipId, role, companyId } = body;
+    const { membershipId, role, companyId, staffPermissions } = body;
 
     if (!membershipId || !role || !companyId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Validate role
+    const validRoles = ["ADMIN", "MANAGER", "STAFF"];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json({ 
+        error: `Invalid role. Must be one of: ${validRoles.join(", ")}` 
+      }, { status: 400 });
     }
 
     // Check if user has permission to manage team
@@ -118,13 +126,33 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Validate staffPermissions if role is STAFF
+    let finalStaffPermissions = null;
+    if (role === "STAFF") {
+      if (staffPermissions) {
+        if (typeof staffPermissions !== "object") {
+          return NextResponse.json({ 
+            error: "staffPermissions must be an object" 
+          }, { status: 400 });
+        }
+        const perms = staffPermissions as { canEditIngredients?: boolean; canEditRecipes?: boolean };
+        finalStaffPermissions = {
+          canEditIngredients: perms.canEditIngredients === true,
+          canEditRecipes: perms.canEditRecipes === true,
+        };
+      }
+    }
+
     // Get old role for audit
     const oldRole = membership.role;
 
-    // Update role
+    // Update role and staffPermissions
     const updated = await prisma.membership.update({
       where: { id: membershipId },
-      data: { role },
+      data: { 
+        role,
+        staffPermissions: finalStaffPermissions,
+      },
     });
 
     // Audit role change

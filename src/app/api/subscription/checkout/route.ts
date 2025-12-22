@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { createMVPCheckout, createAICheckout, createStripeCustomer } from "@/lib/stripe";
+import { createMVPCheckout, createStripeCustomer } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
@@ -12,12 +12,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type } = body; // "mvp", "ai-unlimited", or "ai-capped"
+    const { type } = body; // Only "mvp" supported now
 
-    // Validate subscription type
-    if (!type || !["mvp", "ai-unlimited", "ai-capped"].includes(type)) {
+    // Validate subscription type - only MVP supported
+    if (!type || type !== "mvp") {
       return NextResponse.json(
-        { error: "Invalid subscription type. Must be 'mvp', 'ai-unlimited', or 'ai-capped'" },
+        { error: "Invalid subscription type. Must be 'mvp'" },
         { status: 400 }
       );
     }
@@ -46,40 +46,8 @@ export async function POST(request: NextRequest) {
     const successUrl = `${request.nextUrl.origin}/dashboard/account?success=true`;
     const cancelUrl = `${request.nextUrl.origin}/pricing?canceled=true`;
 
-    let checkoutSession;
-
-    if (type === "mvp") {
-      // Create MVP subscription checkout
-      checkoutSession = await createMVPCheckout(customerId, successUrl, cancelUrl);
-    } else {
-      // Create AI subscription checkout
-      const subscriptionType = type === "ai-unlimited" ? "unlimited" : "capped";
-      
-      // For AI subscriptions, we need a company
-      const membership = await prisma.membership.findFirst({
-        where: {
-          userId: user.id,
-          isActive: true,
-        },
-        include: {
-          company: true,
-        },
-      });
-
-      if (!membership || !membership.company) {
-        return NextResponse.json(
-          { error: "Company required for AI subscription" },
-          { status: 400 }
-        );
-      }
-
-      checkoutSession = await createAICheckout(
-        customerId,
-        subscriptionType,
-        successUrl,
-        cancelUrl
-      );
-    }
+    // Create MVP subscription checkout
+    const checkoutSession = await createMVPCheckout(customerId, successUrl, cancelUrl);
 
     return NextResponse.json({
       url: checkoutSession.url,

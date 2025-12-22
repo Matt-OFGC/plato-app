@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No company found" }, { status: 404 });
     }
 
-    // Check if user has ADMIN or OWNER role (required for company settings)
+    // Check if user has ADMIN role (required for company settings)
     const membership = await prisma.membership.findUnique({
       where: {
         userId_companyId: {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!membership || !membership.isActive || (membership.role !== "ADMIN" && membership.role !== "OWNER")) {
+    if (!membership || !membership.isActive || membership.role !== "ADMIN") {
       return NextResponse.json({ error: "No permission to manage company settings" }, { status: 403 });
     }
 

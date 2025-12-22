@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { canAccessProduction, createFeatureGateError } from "@/lib/subscription";
+import { canAccessProduction } from "@/lib/subscription";
 import { hasCompanyAccess } from "@/lib/current";
 import { createOptimizedResponse } from "@/lib/api-optimization";
 
@@ -12,14 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has access to production features
-    const hasAccess = await canAccessProduction(session.id);
-    if (!hasAccess) {
-      return NextResponse.json(
-        createFeatureGateError("production", "Production Planning"),
-        { status: 403 }
-      );
-    }
+    // Production is part of MVP - all users have access
 
     const body = await request.json();
     const { name, startDate, endDate, items, companyId, notes } = body;

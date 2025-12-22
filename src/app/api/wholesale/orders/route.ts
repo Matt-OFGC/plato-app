@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
 import { prisma } from "@/lib/prisma";
-import { canAccessWholesale, createFeatureGateError } from "@/lib/subscription";
 import { hasCompanyAccess } from "@/lib/current";
 import { createOptimizedResponse } from "@/lib/api-optimization";
 
@@ -13,13 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has access to wholesale features
-    const hasAccess = await canAccessWholesale(session.id);
-    if (!hasAccess) {
-      return NextResponse.json(
-        createFeatureGateError("production", "Wholesale Orders"),
-        { status: 403 }
-      );
-    }
+    // Wholesale is part of MVP - all users have access
 
     const body = await request.json();
     const {

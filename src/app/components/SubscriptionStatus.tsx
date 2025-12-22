@@ -11,10 +11,6 @@ interface SubscriptionData {
       maxRecipes: number | null;
     };
   };
-  aiSubscription: {
-    active: boolean;
-    type: "unlimited" | "capped" | null;
-  } | null;
   user: {
     subscriptionTier: string;
     subscriptionStatus: string;
@@ -89,7 +85,7 @@ export function SubscriptionStatus() {
     return null;
   }
 
-  const { subscription: sub, aiSubscription, user } = subscription;
+  const { subscription: sub, user } = subscription;
   const isPaid = sub.tier === "paid" || ["professional", "team", "business", "plato-bake"].includes(sub.tier.toLowerCase());
   const isActive = user.subscriptionStatus === "active" || user.subscriptionStatus === "free";
 
@@ -103,7 +99,7 @@ export function SubscriptionStatus() {
               {isPaid ? "✨ MVP Plan" : "Free Trial"}
             </h3>
             <p className="text-sm text-gray-700">
-              {isPaid ? "Unlimited ingredients and recipes" : "Limited to 5 ingredients and 5 recipes"}
+              {isPaid ? "Unlimited ingredients and recipes" : "Limited to 5 ingredients and 2 recipes"}
             </p>
           </div>
           <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
@@ -135,23 +131,6 @@ export function SubscriptionStatus() {
           </div>
         </div>
       </div>
-
-      {/* AI Subscription Status */}
-      {aiSubscription?.active && (
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-lg font-bold text-purple-900 mb-1">AI Assistant Active</h4>
-              <p className="text-sm text-purple-800">
-                {aiSubscription.type === "unlimited" ? "Unlimited conversations" : "100 messages/month"}
-              </p>
-            </div>
-            <span className="px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-semibold">
-              {aiSubscription.type === "unlimited" ? "Unlimited" : "Capped"}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Upgrade or Manage Section */}
       {!isPaid && (
