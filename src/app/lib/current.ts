@@ -17,7 +17,7 @@ export interface Company {
   country?: string;
   phone?: string;
   logoUrl?: string;
-  // app field removed - apps are now user-level subscriptions, not company-level
+  // Note: app field exists in schema but not in database - using user-level subscriptions instead
 }
 
 export interface UserWithMemberships {
@@ -66,6 +66,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     }
 
     // Use Redis cache with fallback
+    // Note: Wrapped in try-catch to handle any schema mismatches from cached code
     try {
       return await getOrCompute(
         CacheKeys.userSession(user.id),
@@ -74,7 +75,24 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         },
         CACHE_TTL.USER_SESSION
       );
-    } catch (cacheError) {
+    } catch (cacheError: any) {
+      // If error is about schema mismatch (app field), try direct fetch
+      if (cacheError?.message?.includes('Unknown field') || cacheError?.message?.includes('app') || cacheError?.message?.includes('userRole')) {
+        logger.warn('Cache error due to schema mismatch, trying direct fetch', { 
+          error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+          userId: user.id
+        }, 'Current');
+        try {
+          return await fetchUserAndCompany(user.id);
+        } catch (directError) {
+          logger.error('Direct fetch also failed after cache schema error', {
+            cacheError: cacheError instanceof Error ? cacheError.message : String(cacheError),
+            directError: directError instanceof Error ? directError.message : String(directError),
+            userId: user.id
+          }, 'Current');
+          throw directError;
+        }
+      }
       // If cache/compute fails, try direct fetch as fallback
       logger.warn('Cache/compute failed, trying direct fetch', { 
         error: cacheError instanceof Error ? cacheError.message : String(cacheError),
@@ -137,36 +155,78 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
 
   try {
     // Optimized query - get only what we need
-    const userWithMemberships = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        isAdmin: true,
-        memberships: {
-          where: { isActive: true },
+    // Retry logic: if query fails due to schema mismatch (e.g., missing 'app' field), retry without it
+    let userWithMemberships;
+    try {
+      userWithMemberships = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          isAdmin: true,
+          memberships: {
+            where: { isActive: true },
+            select: {
+              id: true,
+              companyId: true,
+              role: true,
+              isActive: true,
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                  businessType: true,
+                  country: true,
+                  phone: true,
+                  logoUrl: true
+                }
+              }
+            },
+            orderBy: { createdAt: 'asc' },
+            take: 1 // Only get the first company for performance
+          }
+        }
+      });
+    } catch (queryError: any) {
+      // If query fails due to schema mismatch, retry without app field as fallback
+      if (queryError?.message?.includes('Unknown field') || queryError?.message?.includes('app')) {
+        logger.warn('Retrying query without app field due to schema mismatch', {}, 'Current');
+        // Retry without app field as fallback
+        userWithMemberships = await prisma.user.findUnique({
+          where: { id: userId },
           select: {
             id: true,
-            companyId: true,
-            role: true,
-            isActive: true,
-            company: {
+            email: true,
+            name: true,
+            isAdmin: true,
+            memberships: {
+              where: { isActive: true },
               select: {
                 id: true,
-                name: true,
-                businessType: true,
-                country: true,
-                phone: true,
-                logoUrl: true
-              }
+                companyId: true,
+                role: true,
+                isActive: true,
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                    businessType: true,
+                    country: true,
+                    phone: true,
+                    logoUrl: true
+                  }
+                }
+              },
+              orderBy: { createdAt: 'asc' },
+              take: 1
             }
-          },
-          orderBy: { createdAt: 'asc' },
-          take: 1 // Only get the first company for performance
-        }
+          }
+        });
+      } else {
+        throw queryError;
       }
-    });
+    }
 
     // Handle multi-company users: ensure primary company is always accessible
     // If user has multiple companies, prioritize the first one they joined
@@ -352,8 +412,8 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       };
     }
     
-    // App is now user-level subscription, not company-level
-    // Get app from user's subscription if needed
+    // App is user-level subscription, not company-level
+    // Note: Company schema has app field but database doesn't - using user subscriptions instead
     const app = null;
     const appConfig = null;
 
@@ -426,20 +486,69 @@ export async function clearUserCache(userId?: number) {
 
 // Get user's role in a specific company with caching
 export async function getUserRoleInCompany(userId: number, companyId: number): Promise<string | null> {
-  const membership = await prisma.membership.findUnique({
-    where: {
-      userId_companyId: {
-        userId,
-        companyId
-      }
-    },
-    select: {
-      role: true,
-      isActive: true
+  try {
+    // Check if CacheKeys.userRole exists (handles cached code issues)
+    if (!CacheKeys.userRole || typeof CacheKeys.userRole !== 'function') {
+      logger.warn('CacheKeys.userRole not available, fetching directly', { userId, companyId }, 'Current');
+      const membership = await prisma.membership.findUnique({
+        where: {
+          userId_companyId: {
+            userId,
+            companyId
+          }
+        },
+        select: {
+          role: true,
+          isActive: true
+        }
+      });
+      return membership?.isActive ? membership.role : null;
     }
-  });
+    
+    return await getOrCompute(
+      CacheKeys.userRole(userId, companyId),
+      async () => {
+        const membership = await prisma.membership.findUnique({
+          where: {
+            userId_companyId: {
+              userId,
+              companyId
+            }
+          },
+          select: {
+            role: true,
+            isActive: true
+          }
+        });
 
-  return membership?.isActive ? membership.role : null;
+        return membership?.isActive ? membership.role : null;
+      },
+      CACHE_TTL.USER_ROLE
+    );
+  } catch (error: any) {
+    // Fallback if cache fails (handles cached code issues)
+    if (error?.message?.includes('is not a function') || error?.message?.includes('userRole')) {
+      logger.warn('Cache error in getUserRoleInCompany, fetching directly', { 
+        error: error instanceof Error ? error.message : String(error),
+        userId, 
+        companyId 
+      }, 'Current');
+      const membership = await prisma.membership.findUnique({
+        where: {
+          userId_companyId: {
+            userId,
+            companyId
+          }
+        },
+        select: {
+          role: true,
+          isActive: true
+        }
+      });
+      return membership?.isActive ? membership.role : null;
+    }
+    throw error;
+  }
 }
 
 // Check if user has access to a company

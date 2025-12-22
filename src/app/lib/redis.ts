@@ -3,18 +3,21 @@
 /**
  * Redis cache utilities
  * Note: This is a placeholder implementation. In production, you would use a real Redis client.
+ * Updated: 2024-12-21 - Fixed CacheKeys.userRole and removed initRedis/getCache
  */
 
 export const CacheKeys = {
   userSession: (userId: number) => `user:session:${userId}`,
   userCompanies: (userId: number) => `user:companies:${userId}`,
   company: (companyId: number) => `company:${companyId}`,
+  userRole: (userId: number, companyId: number) => `user:role:${userId}:${companyId}`,
 };
 
 export const CACHE_TTL = {
   USER_SESSION: 15 * 60 * 1000, // 15 minutes
   USER_COMPANIES: 30 * 60 * 1000, // 30 minutes
   COMPANY: 60 * 60 * 1000, // 1 hour
+  USER_ROLE: 5 * 60 * 1000, // 5 minutes
 };
 
 /**
