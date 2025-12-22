@@ -14,7 +14,15 @@ export async function sendEmail(to: string, subject: string, html: string) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     
     // Ensure from email is properly formatted
-    const fromEmailEnv = process.env.RESEND_FROM_EMAIL || 'noreply@getplato.uk';
+    // Handle malformed email addresses (e.g., "Plato <getplato.uk>" missing @)
+    let fromEmailEnv = process.env.RESEND_FROM_EMAIL || 'noreply@getplato.uk';
+    
+    // If it has < but no @, it's malformed - use default
+    if (fromEmailEnv.includes('<') && !fromEmailEnv.includes('@')) {
+      logger.warn('RESEND_FROM_EMAIL is malformed (missing @), using default', { fromEmailEnv }, 'Email');
+      fromEmailEnv = 'noreply@getplato.uk';
+    }
+    
     // Format: "Name <email@domain.com>" or just "email@domain.com"
     const fromEmail = fromEmailEnv.includes('@') 
       ? (fromEmailEnv.includes('<') ? fromEmailEnv : `Plato <${fromEmailEnv}>`)
