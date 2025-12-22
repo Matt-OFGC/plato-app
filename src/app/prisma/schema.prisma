@@ -8,11 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum App {
-  plato
-  plato_bake
-}
-
 model ActivityLog {
   id         Int      @id @default(autoincrement())
   createdAt  DateTime @default(now())
@@ -150,7 +145,6 @@ model Collection {
   @@index([companyId])
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model Company {
   id                    Int                     @id @default(autoincrement())
   createdAt             DateTime                @default(now())
@@ -182,7 +176,7 @@ model Company {
   website               String?
   safety_enabled        Boolean?                @default(true)
   data_retention_days   Int?                    @default(730)
-  app                   App                     @default(plato)
+  brand                 Brand                   @default(plato)
   ActivityLog           ActivityLog[]
   AllergenSheetTemplate AllergenSheetTemplate[]
   AnalyticsSnapshot     AnalyticsSnapshot[]
@@ -232,21 +226,13 @@ model Company {
   Timesheet             Timesheet[]
   WebhookLog            WebhookLog[]
   WholesaleCustomer     WholesaleCustomer[]
-  WholesaleOrder        WholesaleOrder[]
-  WholesaleProduct      WholesaleProduct[]
-  WholesaleInvoice      WholesaleInvoice[]
   WholesaleDeliveryNote WholesaleDeliveryNote[]
+  WholesaleInvoice      WholesaleInvoice[]
+  WholesaleOrder        WholesaleOrder[]
   WholesalePayment      WholesalePayment[]
-  MentorSubscription    MentorSubscription[]
-  MentorConversation    MentorConversation[]
-  MentorKnowledgeIndex  MentorKnowledgeIndex[]
-  MentorConfig          MentorConfig?
-  MentorGoal            MentorGoal[]
-  MentorInsight         MentorInsight[]
-  MentorReminder        MentorReminder[]
-  TrainingModule        TrainingModule[]
+  WholesaleProduct      WholesaleProduct[]
 
-  @@index([app])
+  @@index([brand])
 }
 
 model CustomReport {
@@ -674,7 +660,7 @@ model Membership {
   pin            String?
   pinHash        String?
   updatedAt      DateTime       @default(now())
-  role           MemberRole     @default(EMPLOYEE)
+  role           MemberRole
   currency       String         @default("GBP")
   employmentType String?
   endDate        DateTime?
@@ -693,8 +679,6 @@ model Membership {
   PayrollLine    PayrollLine[]
   Shift          Shift[]
   Timesheet      Timesheet[]
-  StaffProfile   StaffProfile?
-  TrainingRecord TrainingRecord[]
 
   @@unique([userId, companyId])
   @@index([companyId])
@@ -975,12 +959,12 @@ model Recipe {
   portionUnit                                            BaseUnit?
   portionsPerBatch                                       Int?
   sellingPrice                                           Decimal?
-  wholesalePrice                                         Decimal?
   shelfLife                                              String?
   shelfLifeId                                            Int?
   storage                                                String?
   storageId                                              Int?
   suggestedPrice                                         Decimal?
+  wholesalePrice                                         Decimal?                @db.Decimal(10, 2)
   CustomerPricing                                        CustomerPricing[]
   Inventory                                              Inventory[]
   ProductionHistory                                      ProductionHistory[]
@@ -1398,7 +1382,7 @@ model Subscription {
   stripePriceId        String?
   stripeProductId      String?
   status               String    @default("active")
-  tier                 String    @default("paid") // Simplified: "free" or "paid"
+  tier                 String    @default("professional")
   price                Decimal   @default(19.00)
   currency             String    @default("GBP")
   interval             String    @default("month")
@@ -1408,8 +1392,8 @@ model Subscription {
   canceledAt           DateTime?
   maxIngredients       Int?
   maxRecipes           Int?
-  aiSubscriptionType   String?   // null, "unlimited", or "capped"
   metadata             Json?
+  aiSubscriptionType   String?
   User                 User      @relation(fields: [userId], references: [id])
 }
 
@@ -1574,7 +1558,7 @@ model TeamInvitation {
   updatedAt  DateTime
   companyId  Int
   email      String
-  role       MemberRole @default(EMPLOYEE)
+  role       MemberRole
   invitedBy  Int
   token      String     @unique
   acceptedAt DateTime?
@@ -1728,7 +1712,7 @@ model User {
   subscriptionEndsAt                             DateTime?
   subscriptionInterval                           String                  @default("month")
   subscriptionStatus                             String                  @default("free")
-  subscriptionTier                               String                  @default("free") // Simplified: "free" or "paid"
+  subscriptionTier                               String                  @default("starter")
   emailVerified                                  Boolean                 @default(false)
   verificationToken                              String?                 @unique
   verificationTokenExpiresAt                     DateTime?
@@ -1752,14 +1736,7 @@ model User {
   TaskPhoto                                      TaskPhoto[]
   TemperatureRecord                              TemperatureRecord[]
   UserPreference                                 UserPreference?
-  UserAppSubscription                            UserAppSubscription[]
   WholesalePayment                               WholesalePayment[]
-  MentorSubscription                            MentorSubscription[]
-  MentorConversation                            MentorConversation[]
-  MentorGoal                                    MentorGoal[]
-  MentorReminder                                MentorReminder[]
-  TrainingModuleCreatedBy                       TrainingModule[] @relation("TrainingModuleCreatedBy")
-  TrainingRecordSignedOffBy                     TrainingRecord[] @relation("TrainingRecordSignedOffBy")
 }
 
 model UserPreference {
@@ -1824,54 +1801,114 @@ model WholesaleCustomer {
   deliveryDays             String[]
   preferredDeliveryTime    String?
   paymentTerms             String?
-  creditLimit              Decimal?
+  creditLimit              Decimal?                   @db.Decimal(10, 2)
   taxId                    String?
   accountManager           String?
   specialInstructions      String?
   orderFrequency           String?
   lastOrderDate            DateTime?
-  totalOrders              Int                        @default(0)
-  totalValue               Decimal                    @default(0)
-  totalPaid                Decimal                    @default(0)
-  outstandingBalance       Decimal                    @default(0)
+  totalOrders              Int?                       @default(0)
+  totalValue               Decimal?                   @default(0) @db.Decimal(10, 2)
+  totalPaid                Decimal?                   @default(0) @db.Decimal(10, 2)
+  outstandingBalance       Decimal?                   @default(0) @db.Decimal(10, 2)
+  customerType             String?                    @default("wholesale")
   CustomerPricing          CustomerPricing[]
   ProductionItem           ProductionItem[]
   ProductionItemAllocation ProductionItemAllocation[]
   Company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  WholesaleOrder           WholesaleOrder[]
-  WholesaleInvoice         WholesaleInvoice[]
   WholesaleDeliveryNote    WholesaleDeliveryNote[]
+  WholesaleInvoice         WholesaleInvoice[]
+  WholesaleOrder           WholesaleOrder[]
   WholesalePayment         WholesalePayment[]
 
   @@index([companyId])
+  @@index([deliveryDays], type: Gin)
   @@index([isActive])
   @@index([portalToken])
 }
 
+model WholesaleDeliveryNote {
+  id                 Int               @id @default(autoincrement())
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime
+  deliveryNoteNumber String            @unique
+  orderId            Int
+  customerId         Int
+  companyId          Int
+  deliveryDate       DateTime
+  deliveredBy        String?
+  signature          String?
+  notes              String?
+  pdfUrl             String?
+  emailSent          Boolean?          @default(false)
+  emailSentAt        DateTime?
+  Company            Company           @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  WholesaleCustomer  WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  WholesaleOrder     WholesaleOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([orderId])
+}
+
+model WholesaleInvoice {
+  id                Int                @id @default(autoincrement())
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime
+  invoiceNumber     String             @unique
+  orderId           Int?
+  customerId        Int
+  companyId         Int
+  issueDate         DateTime           @default(now())
+  dueDate           DateTime
+  subtotal          Decimal            @db.Decimal(10, 2)
+  taxRate           Decimal?           @default(0) @db.Decimal(5, 2)
+  taxAmount         Decimal?           @default(0) @db.Decimal(10, 2)
+  total             Decimal            @db.Decimal(10, 2)
+  status            String             @default("draft")
+  paidDate          DateTime?
+  paidAmount        Decimal?           @db.Decimal(10, 2)
+  notes             String?
+  pdfUrl            String?
+  emailSent         Boolean?           @default(false)
+  emailSentAt       DateTime?
+  Company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  WholesaleCustomer WholesaleCustomer  @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  WholesaleOrder    WholesaleOrder?    @relation(fields: [orderId], references: [id], onUpdate: NoAction)
+  WholesalePayment  WholesalePayment[]
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([dueDate])
+  @@index([invoiceNumber])
+  @@index([orderId])
+  @@index([status])
+}
+
 model WholesaleOrder {
-  id                    Int                  @id @default(autoincrement())
-  createdAt             DateTime             @default(now())
+  id                    Int                     @id @default(autoincrement())
+  createdAt             DateTime                @default(now())
   updatedAt             DateTime
   customerId            Int
   companyId             Int
   orderNumber           String?
   deliveryDate          DateTime?
-  status                String               @default("pending")
+  status                String                  @default("pending")
   notes                 String?
-  isRecurring           Boolean              @default(false)
+  isRecurring           Boolean                 @default(false)
   recurringInterval     String?
   recurringIntervalDays Int?
   recurringEndDate      DateTime?
   nextRecurrenceDate    DateTime?
   recurringStatus       String?
   parentOrderId         Int?
-  Company               Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  WholesaleCustomer     WholesaleCustomer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  WholesaleOrder        WholesaleOrder?      @relation("WholesaleOrderToWholesaleOrder", fields: [parentOrderId], references: [id])
-  other_WholesaleOrder  WholesaleOrder[]     @relation("WholesaleOrderToWholesaleOrder")
-  WholesaleOrderItem    WholesaleOrderItem[]
-  WholesaleInvoice      WholesaleInvoice[]
   WholesaleDeliveryNote WholesaleDeliveryNote[]
+  WholesaleInvoice      WholesaleInvoice[]
+  Company               Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  WholesaleCustomer     WholesaleCustomer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  WholesaleOrder        WholesaleOrder?         @relation("WholesaleOrderToWholesaleOrder", fields: [parentOrderId], references: [id])
+  other_WholesaleOrder  WholesaleOrder[]        @relation("WholesaleOrderToWholesaleOrder")
+  WholesaleOrderItem    WholesaleOrderItem[]
 
   @@index([companyId])
   @@index([customerId])
@@ -1895,6 +1932,30 @@ model WholesaleOrderItem {
 
   @@index([orderId])
   @@index([recipeId])
+}
+
+model WholesalePayment {
+  id                Int               @id @default(autoincrement())
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  invoiceId         Int
+  customerId        Int
+  companyId         Int
+  amount            Decimal           @db.Decimal(10, 2)
+  paymentDate       DateTime          @default(now())
+  paymentMethod     String
+  reference         String?
+  notes             String?
+  createdBy         Int
+  Company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  User              User              @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  WholesaleCustomer WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  WholesaleInvoice  WholesaleInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([invoiceId])
+  @@index([paymentDate])
 }
 
 model WholesaleProduct {
@@ -1923,88 +1984,6 @@ model WholesaleProduct {
   @@index([recipeId])
 }
 
-model WholesaleInvoice {
-  id            Int                  @id @default(autoincrement())
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime
-  invoiceNumber  String               @unique
-  orderId        Int?
-  customerId     Int
-  companyId      Int
-  issueDate      DateTime             @default(now())
-  dueDate        DateTime
-  subtotal       Decimal
-  taxRate        Decimal              @default(0)
-  taxAmount      Decimal              @default(0)
-  total          Decimal
-  status         String               @default("draft")
-  paidDate       DateTime?
-  paidAmount     Decimal?
-  notes          String?
-  pdfUrl         String?
-  emailSent      Boolean              @default(false)
-  emailSentAt    DateTime?
-  Company        Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  WholesaleCustomer WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  WholesaleOrder    WholesaleOrder?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  WholesalePayment  WholesalePayment[]
-
-  @@index([customerId])
-  @@index([companyId])
-  @@index([orderId])
-  @@index([status])
-  @@index([dueDate])
-  @@index([invoiceNumber])
-}
-
-model WholesaleDeliveryNote {
-  id                 Int                  @id @default(autoincrement())
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime
-  deliveryNoteNumber  String               @unique
-  orderId             Int
-  customerId          Int
-  companyId           Int
-  deliveryDate        DateTime
-  deliveredBy         String?
-  signature           String?
-  notes               String?
-  pdfUrl              String?
-  emailSent           Boolean              @default(false)
-  emailSentAt         DateTime?
-  Company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  WholesaleCustomer   WholesaleCustomer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  WholesaleOrder      WholesaleOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([customerId])
-  @@index([companyId])
-  @@index([orderId])
-}
-
-model WholesalePayment {
-  id            Int                  @id @default(autoincrement())
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime
-  invoiceId      Int
-  customerId     Int
-  companyId      Int
-  amount         Decimal
-  paymentDate    DateTime             @default(now())
-  paymentMethod  String
-  reference      String?
-  notes          String?
-  createdBy      Int
-  Company        Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  WholesaleCustomer WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  WholesaleInvoice  WholesaleInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  User              User               @relation(fields: [createdBy], references: [id])
-
-  @@index([invoiceId])
-  @@index([customerId])
-  @@index([companyId])
-  @@index([paymentDate])
-}
-
 enum BaseUnit {
   g
   ml
@@ -2012,30 +1991,15 @@ enum BaseUnit {
   slices
 }
 
-model UserAppSubscription {
-  id                   Int       @id @default(autoincrement())
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  userId               Int
-  app                  App
-  stripeSubscriptionId String?   @unique
-  stripePriceId        String?
-  status               String    @default("active") // active, canceled, expired
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean   @default(false)
-  User                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, app])
-  @@index([userId])
-  @@index([userId, status])
-  @@index([app])
+enum Brand {
+  plato
+  plato_bake
 }
 
 enum MemberRole {
-  ADMIN    // Full access including AI, can manage team and billing
-  MANAGER  // Can view and edit everything except AI
-  EMPLOYEE // View-only access
+  ADMIN
+  MANAGER
+  EMPLOYEE
 }
 
 enum Unit {
@@ -2060,251 +2024,4 @@ enum Unit {
   large
   medium
   small
-}
-
-model MentorSubscription {
-  id                   Int       @id @default(autoincrement())
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  userId               Int
-  companyId            Int
-  stripeSubscriptionId String?    @unique
-  stripePriceId        String?
-  status               String    @default("active") // active, canceled, expired
-  subscriptionType     String    @default("unlimited") // "unlimited" or "capped"
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean   @default(false)
-  User                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Company              Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, companyId])
-  @@index([userId])
-  @@index([companyId])
-  @@index([userId, status])
-  @@index([status])
-}
-
-model MentorConversation {
-  id          Int            @id @default(autoincrement())
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  companyId   Int
-  userId      Int
-  title       String?
-  isArchived  Boolean        @default(false)
-  Company     Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  User         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  MentorMessage MentorMessage[]
-
-  @@index([companyId])
-  @@index([userId])
-  @@index([companyId, createdAt(sort: Desc)])
-  @@index([companyId, isArchived])
-}
-
-model MentorMessage {
-  id             Int              @id @default(autoincrement())
-  createdAt      DateTime         @default(now())
-  conversationId Int
-  role           String           // "user" or "assistant"
-  content         String
-  metadata       Json?            // Store context, data sources used, etc.
-  tokensUsed     Int?              // Track token usage for cost calculation
-  MentorConversation MentorConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId])
-  @@index([conversationId, createdAt])
-}
-
-model MentorKnowledgeIndex {
-  id            Int      @id @default(autoincrement())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  companyId     Int
-  entityType    String   // "recipe", "ingredient", "sales", etc.
-  entityId      Int?
-  embedding     String?  // Store vector embedding (JSON or base64)
-  content       String   // The text content that was embedded
-  metadata      Json?    // Additional metadata about the entity
-  lastIndexedAt DateTime @default(now())
-  Company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@unique([companyId, entityType, entityId])
-  @@index([companyId])
-  @@index([companyId, entityType])
-  @@index([entityType, entityId])
-  @@index([lastIndexedAt])
-}
-
-model MentorConfig {
-  id                    Int      @id @default(autoincrement())
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  companyId             Int      @unique
-  enabled               Boolean  @default(true)
-  dataSources           Json?    // Which data sources to include (recipes, ingredients, etc.)
-  piiMaskingEnabled     Boolean  @default(true)
-  piiMaskingRules       Json?    // Custom PII masking rules
-  conversationRetention Int      @default(90) // Days to keep conversations
-  enableInternetSearch  Boolean  @default(true)
-  enableProactiveAlerts Boolean  @default(true)
-  preferences           Json?    // User preferences for Mentor behavior
-  Company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-}
-
-model MentorGoal {
-  id            Int             @id @default(autoincrement())
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  companyId     Int
-  userId        Int
-  title         String
-  description   String?
-  targetValue   Decimal?
-  currentValue  Decimal?        @default(0)
-  unit          String?         // e.g., "percentage", "GBP", "count"
-  targetDate    DateTime?
-  status        String          @default("active") // active, completed, paused, canceled
-  category      String?         // e.g., "food_cost", "revenue", "efficiency"
-  Company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  User          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  MentorProgress MentorProgress[]
-
-  @@index([companyId])
-  @@index([userId])
-  @@index([companyId, status])
-  @@index([companyId, createdAt(sort: Desc)])
-}
-
-model MentorProgress {
-  id          Int        @id @default(autoincrement())
-  createdAt   DateTime   @default(now())
-  goalId      Int
-  value       Decimal
-  notes       String?
-  MentorGoal  MentorGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
-
-  @@index([goalId])
-  @@index([goalId, createdAt(sort: Desc)])
-}
-
-model MentorInsight {
-  id            Int      @id @default(autoincrement())
-  createdAt     DateTime @default(now())
-  companyId     Int
-  insightType   String   // "pricing", "efficiency", "trend", "alert", etc.
-  title         String
-  content       String
-  priority      String   @default("normal") // low, normal, high, urgent
-  isRead        Boolean  @default(false)
-  isDismissed   Boolean  @default(false)
-  metadata      Json?    // Additional data, charts, etc.
-  relatedEntityType String? // "recipe", "ingredient", etc.
-  relatedEntityId   Int?
-  Company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([companyId, isRead, isDismissed])
-  @@index([companyId, createdAt(sort: Desc)])
-  @@index([insightType])
-}
-
-model MentorReminder {
-  id              Int      @id @default(autoincrement())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  companyId       Int
-  userId          Int?
-  title           String
-  description     String?
-  reminderType   String   // "birthday", "compliance", "custom", etc.
-  dueDate         DateTime
-  isCompleted     Boolean  @default(false)
-  completedAt     DateTime?
-  isRecurring     Boolean  @default(false)
-  recurringRule   String?  // e.g., "monthly", "weekly", "yearly"
-  metadata        Json?    // Additional reminder data
-  Company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  User            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([companyId])
-  @@index([companyId, dueDate])
-  @@index([companyId, isCompleted])
-  @@index([userId])
-}
-
-model StaffProfile {
-  id                    Int            @id @default(autoincrement())
-  membershipId          Int            @unique
-  employmentStartDate   DateTime?
-  position              String?
-  status                String         @default("active")
-  emergencyContactName  String?
-  emergencyContactPhone String?
-  notes                 String?
-  performanceNotes      String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  Membership            Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-
-  @@index([membershipId])
-}
-
-model TrainingModule {
-  id                 Int              @id @default(autoincrement())
-  companyId           Int
-  title               String
-  description         String?
-  category            String?
-  isTemplate          Boolean          @default(false)
-  estimatedDuration   Int?             // in minutes
-  refreshFrequencyDays Int?            // how often training needs to be refreshed
-  createdBy           Int
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  Company             Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  CreatedBy           User             @relation("TrainingModuleCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
-  content             TrainingContent[]
-  records             TrainingRecord[]
-
-  @@index([companyId])
-}
-
-model TrainingContent {
-  id        Int            @id @default(autoincrement())
-  moduleId  Int
-  type      String         // 'text', 'image', 'video', 'animation'
-  content   String?        // text content or URL
-  order     Int            @default(0)
-  metadata  Json?          // additional metadata for videos, animations, etc.
-  createdAt DateTime       @default(now())
-  Module    TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  @@index([moduleId, order])
-}
-
-model TrainingRecord {
-  id             Int            @id @default(autoincrement())
-  membershipId   Int
-  moduleId       Int
-  status         String         @default("not_started") // 'not_started', 'in_progress', 'completed', 'expired'
-  startedAt      DateTime?
-  completedAt    DateTime?
-  signedOffBy    Int?           // manager userId
-  signedOffAt    DateTime?
-  nextRefreshDate DateTime?
-  completionNotes String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  Membership     Membership     @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  Module         TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  SignedOffBy    User?          @relation("TrainingRecordSignedOffBy", fields: [signedOffBy], references: [id], onDelete: SetNull)
-
-  @@unique([membershipId, moduleId])
-  @@index([membershipId])
-  @@index([moduleId])
-  @@index([status])
 }
