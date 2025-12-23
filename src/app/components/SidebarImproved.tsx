@@ -221,6 +221,11 @@ export function Sidebar() {
               const filteredItems = getFilteredNavigationItems(activeApp?.id || null)
                 .filter(item => item.value !== 'dashboard' && item.value !== 'account');
               
+              // Debug: Log what items we're getting
+              if (typeof window !== 'undefined') {
+                console.log('🔍 Sidebar Items:', filteredItems.map(i => i.value));
+              }
+              
               // Group items by app context
               const grouped = filteredItems.reduce((acc, item) => {
                 const context = item.appContext || 'global';
