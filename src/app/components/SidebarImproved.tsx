@@ -229,24 +229,17 @@ export function Sidebar() {
                 return acc;
               }, {} as Record<string, typeof filteredItems>);
 
-              // Define section order and labels
-              const sectionOrder = ['recipes', 'teams', 'production', 'make', 'safety', 'global'];
+              // Define section order and labels (MVP only)
+              const sectionOrder = ['recipes', 'teams', 'production', 'global'];
               const sectionLabels: Record<string, string> = {
                 recipes: 'RECIPES',
                 teams: 'TEAMS',
-                production: 'PRODUCTION DETAIL',
-                make: 'MAKE',
-                safety: 'HYGIENE & SAFETY',
-                global: 'OTHER'
+                production: 'PRODUCTION',
+                global: 'SETTINGS'
               };
               
-              const moduleMap: Record<string, FeatureModuleName> = {
-                recipes: 'recipes',
-                teams: 'teams',
-                production: 'production',
-                make: 'make',
-                safety: 'safety',
-              };
+              // MVP: No feature modules, all features accessible
+              const moduleMap: Record<string, string> = {};
 
               return sectionOrder.map(sectionKey => {
                 const items = grouped[sectionKey] || [];
