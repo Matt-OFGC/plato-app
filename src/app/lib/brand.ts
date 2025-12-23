@@ -9,20 +9,13 @@ import type { BrandConfig } from "@/lib/brands/types";
 
 /**
  * Get brand for a company
- * Note: Company model uses 'app' field, not 'brand' field
+ * Note: App field removed from Company model - apps are now user-level subscriptions
+ * This function returns null as brands/apps are no longer company-level
  */
 export async function getCompanyBrand(companyId: number): Promise<Brand | null> {
-  try {
-    const company = await prisma.company.findUnique({
-      where: { id: companyId },
-      select: { app: true },
-    });
-    // Map app to brand (they're the same concept)
-    return (company?.app as Brand | null) || null;
-  } catch (error) {
-    console.error(`[getCompanyBrand] Error getting brand for company ${companyId}:`, error);
-    return null;
-  }
+  // App field removed - apps are now user-level subscriptions, not company-level
+  // Return null as there's no company-level brand/app anymore
+  return null;
 }
 
 /**

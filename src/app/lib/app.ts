@@ -9,18 +9,13 @@ import type { AppConfig } from "@/lib/apps/types";
 
 /**
  * Get app for a company
+ * Note: App field removed from Company model - apps are now user-level subscriptions
+ * This function returns null as apps are no longer company-level
  */
 export async function getCompanyApp(companyId: number): Promise<App | null> {
-  try {
-    const company = await prisma.company.findUnique({
-      where: { id: companyId },
-      select: { app: true },
-    });
-    return company?.app || null;
-  } catch (error) {
-    console.error(`[getCompanyApp] Error getting app for company ${companyId}:`, error);
-    return null;
-  }
+  // App field removed - apps are now user-level subscriptions, not company-level
+  // Return null as there's no company-level app anymore
+  return null;
 }
 
 /**
