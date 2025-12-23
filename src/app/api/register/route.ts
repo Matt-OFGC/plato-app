@@ -345,37 +345,55 @@ export async function POST(req: NextRequest) {
     // Log the full error for debugging
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorName = error instanceof Error ? error.name : 'Unknown';
     
     // Enhanced error logging with request ID
     logger.error(`[Register API] Registration failed (Error ID: ${errorId})`, {
       error: errorMessage,
+      errorName,
       stack: errorStack,
       errorId,
       url: req.url,
+      errorObject: error instanceof Error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      } : error,
     }, 'Registration');
     
-    logger.error("[Register API] Error", {
-      errorMessage,
-      errorStack,
-      error,
+    // Log to console for immediate visibility
+    console.error('[Register API] Registration error:', {
+      name: errorName,
+      message: errorMessage,
+      stack: errorStack,
       errorId,
-    }, 'Registration');
+    });
     
     logAuthError(error, "registration", errorId, req);
     
     // Map to user-friendly error
     const authError = mapAuthError(error, errorId);
     
-    // Provide more specific error messages
+    // Provide more specific error messages based on error type
     let userFriendlyMessage = authError.message;
-    if (errorMessage.includes('Unique constraint') || errorMessage.includes('duplicate')) {
-      if (errorMessage.includes('email')) {
+    const errorStr = errorMessage.toLowerCase();
+    
+    if (errorStr.includes('unique constraint') || errorStr.includes('duplicate') || errorStr.includes('p2002')) {
+      if (errorStr.includes('email')) {
         userFriendlyMessage = "An account with this email already exists. Please sign in instead.";
-      } else if (errorMessage.includes('slug')) {
+      } else if (errorStr.includes('slug')) {
         userFriendlyMessage = "This company name is already taken. Please try a different name.";
+      } else {
+        userFriendlyMessage = "This information is already in use. Please try different details.";
       }
-    } else if (errorMessage.includes('transaction') || errorMessage.includes('rollback')) {
+    } else if (errorStr.includes('transaction') || errorStr.includes('rollback')) {
       userFriendlyMessage = "Registration partially failed. Please try again. If this persists, contact support.";
+    } else if (errorStr.includes('p1001') || errorStr.includes('connection') || errorStr.includes('database') || errorStr.includes('can\'t reach')) {
+      userFriendlyMessage = "Database connection error. Please try again in a moment.";
+    } else if (errorStr.includes('p2003') || errorStr.includes('foreign key')) {
+      userFriendlyMessage = "Registration failed due to a data integrity issue. Please try again.";
+    } else if (errorStr.includes('timeout')) {
+      userFriendlyMessage = "Request timed out. Please try again.";
     }
     
     // Ensure we always return JSON, even on error
