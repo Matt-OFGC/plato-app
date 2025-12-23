@@ -548,13 +548,12 @@ export function Sidebar() {
                   }, {} as Record<string, typeof filteredItems>);
 
                   // Define section order and labels
-                  const sectionOrder = ['recipes', 'teams', 'production', 'safety', 'global'];
+                  const sectionOrder = ['recipes', 'teams', 'production', 'global'];
                   const sectionLabels: Record<string, string> = {
                     recipes: 'RECIPES',
                     teams: 'TEAMS',
-                    production: 'PRODUCTION DETAIL',
-                    safety: 'HYGIENE & SAFETY',
-                    global: 'OTHER'
+                    production: 'PRODUCTION',
+                    global: 'SETTINGS'
                   };
 
                   let itemIndex = 0;
