@@ -74,16 +74,22 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
         CACHE_TTL.USER_SESSION
       );
     } catch (cacheError: any) {
-      // If error is about schema mismatch (app field), try direct fetch
-      if (cacheError?.message?.includes('Unknown field') || cacheError?.message?.includes('app') || cacheError?.message?.includes('userRole')) {
-        logger.warn('Cache error due to schema mismatch, trying direct fetch', { 
+      // If error is about Redis import or function issues, try direct fetch immediately
+      if (cacheError?.message?.includes('is not a function') || 
+          cacheError?.message?.includes('TURBOPACK') ||
+          cacheError?.message?.includes('redis') ||
+          cacheError?.message?.includes('Unknown field') || 
+          cacheError?.message?.includes('app') || 
+          cacheError?.message?.includes('userRole')) {
+        logger.warn('Cache error detected, trying direct fetch', { 
           error: cacheError instanceof Error ? cacheError.message : String(cacheError),
-          userId: user.id
+          userId: user.id,
+          errorType: cacheError?.message?.includes('is not a function') ? 'import_error' : 'schema_mismatch'
         }, 'Current');
         try {
           return await fetchUserAndCompany(user.id);
         } catch (directError) {
-          logger.error('Direct fetch also failed after cache schema error', {
+          logger.error('Direct fetch also failed after cache error', {
             cacheError: cacheError instanceof Error ? cacheError.message : String(cacheError),
             directError: directError instanceof Error ? directError.message : String(directError),
             userId: user.id
