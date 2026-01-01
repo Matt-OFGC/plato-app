@@ -313,6 +313,14 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       logger.error('getCurrentUserAndCompany: companyId still null after auto-repair', {
         userId,
         email: userWithMemberships.email,
+        hasMemberships: userWithMemberships.memberships.length > 0,
+        membershipCount: userWithMemberships.memberships.length,
+        memberships: userWithMemberships.memberships.map(m => ({
+          id: m.id,
+          companyId: m.companyId,
+          isActive: m.isActive,
+          role: m.role
+        }))
       }, 'Current');
       
       // Return fallback - user can still access but with limited functionality
@@ -338,11 +346,82 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       appConfig
     };
   } catch (error) {
-    logger.error('Database error in fetchUserAndCompany', error, 'Current');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    logger.error('Database error in fetchUserAndCompany', {
+      error: errorMessage,
+      stack: errorStack,
+      userId,
+      errorType: error?.constructor?.name || typeof error
+    }, 'Current');
     
     // In development, provide more detailed error information
     if (process.env.NODE_ENV === 'development') {
-      logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', error, 'Current');
+      logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', {
+        error: errorMessage,
+        stack: errorStack,
+        userId
+      }, 'Current');
+    }
+    
+    // Try to get user and check for memberships directly as fallback
+    try {
+      const user = await getUserFromSession();
+      if (user) {
+        // Try one more time to get memberships directly
+        const directMemberships = await prisma.membership.findMany({
+          where: { userId: user.id },
+          include: {
+            company: {
+              select: {
+                id: true,
+                name: true,
+                businessType: true,
+                country: true,
+                phone: true,
+                logoUrl: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'asc' },
+          take: 1
+        });
+        
+        if (directMemberships.length > 0) {
+          const membership = directMemberships[0];
+          logger.info('Recovered company from direct membership query', {
+            userId: user.id,
+            companyId: membership.companyId,
+            membershipId: membership.id,
+            isActive: membership.isActive
+          }, 'Current');
+          
+          return {
+            companyId: membership.companyId,
+            company: membership.company as Company,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name || undefined,
+              memberships: directMemberships.map(m => ({
+                id: m.id,
+                companyId: m.companyId,
+                role: m.role,
+                isActive: m.isActive,
+                company: m.company
+              }))
+            },
+            app: null,
+            appConfig: null
+          };
+        }
+      }
+    } catch (fallbackError) {
+      logger.error('Fallback recovery also failed', {
+        error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+        originalError: errorMessage
+      }, 'Current');
     }
     
     // Return a fallback structure to prevent page crashes
