@@ -3,6 +3,7 @@
  * Note: This is a placeholder implementation. In production, you would use a real Redis client.
  * Updated: 2024-12-21 - Fixed CacheKeys.userRole and removed initRedis/getCache
  * Updated: 2025-01-22 - Removed "use server" directive to fix Turbopack import issues
+ * Updated: 2025-01-22 - Cache bust: Force Turbopack recompilation
  */
 
 export const CacheKeys = {

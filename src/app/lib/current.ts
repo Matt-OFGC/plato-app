@@ -1,3 +1,5 @@
+// Cache bust 2025-01-22-2
+// Cache bust: 2025-01-22 - Force Turbopack recompilation
 import { prisma } from './prisma';
 import { getUserFromSession } from './auth-simple';
 import type { App } from '@/lib/apps/types';
