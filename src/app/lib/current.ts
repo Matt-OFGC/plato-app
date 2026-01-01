@@ -63,57 +63,17 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
       };
     }
 
-    // Use Redis cache with fallback
-    // Note: Wrapped in try-catch to handle any schema mismatches from cached code
+    // Temporarily bypass cache to avoid import issues - Redis is placeholder anyway
+    // TODO: Re-enable cache once Redis is properly configured
     try {
-      return await getOrCompute(
-        CacheKeys.userSession(user.id),
-        async () => {
-          return await fetchUserAndCompany(user.id);
-        },
-        CACHE_TTL.USER_SESSION
-      );
-    } catch (cacheError: any) {
-      // If error is about Redis import or function issues, try direct fetch immediately
-      if (cacheError?.message?.includes('is not a function') || 
-          cacheError?.message?.includes('TURBOPACK') ||
-          cacheError?.message?.includes('redis') ||
-          cacheError?.message?.includes('Unknown field') || 
-          cacheError?.message?.includes('app') || 
-          cacheError?.message?.includes('userRole')) {
-        logger.warn('Cache error detected, trying direct fetch', { 
-          error: cacheError instanceof Error ? cacheError.message : String(cacheError),
-          userId: user.id,
-          errorType: cacheError?.message?.includes('is not a function') ? 'import_error' : 'schema_mismatch'
-        }, 'Current');
-        try {
-          return await fetchUserAndCompany(user.id);
-        } catch (directError) {
-          logger.error('Direct fetch also failed after cache error', {
-            cacheError: cacheError instanceof Error ? cacheError.message : String(cacheError),
-            directError: directError instanceof Error ? directError.message : String(directError),
-            userId: user.id
-          }, 'Current');
-          throw directError;
-        }
-      }
-      // If cache/compute fails, try direct fetch as fallback
-      logger.warn('Cache/compute failed, trying direct fetch', { 
-        error: cacheError instanceof Error ? cacheError.message : String(cacheError),
-        stack: cacheError instanceof Error ? cacheError.stack : undefined,
+      return await fetchUserAndCompany(user.id);
+    } catch (fetchError: any) {
+      // If fetch fails, log and let outer catch handle it
+      logger.error('fetchUserAndCompany failed', {
+        error: fetchError instanceof Error ? fetchError.message : String(fetchError),
         userId: user.id
       }, 'Current');
-      try {
-        return await fetchUserAndCompany(user.id);
-      } catch (directFetchError) {
-        // If direct fetch also fails, log and return fallback
-        logger.error('Direct fetch also failed after cache error', {
-          cacheError: cacheError instanceof Error ? cacheError.message : String(cacheError),
-          directError: directFetchError instanceof Error ? directFetchError.message : String(directFetchError),
-          userId: user.id
-        }, 'Current');
-        throw directFetchError; // Will be caught by outer try/catch
-      }
+      throw fetchError;
     }
   } catch (error) {
     // Log the error but don't throw - return fallback to prevent page crashes
