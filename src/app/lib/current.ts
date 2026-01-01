@@ -5,6 +5,7 @@ import type { AppConfig } from '@/lib/apps/types';
 import { getAppConfig } from '@/lib/apps/registry';
 import { logger } from './logger';
 import { CacheKeys, deleteCache } from './redis';
+import { generateDefaultCompanyName, generateCompanySlug } from './company-defaults';
 
 export interface Company {
   id: number;
@@ -203,21 +204,71 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       }
     }
     
-    // If still no company, return null
-    // Registration should have created company + membership
+    // If still no company, create one as a safety net
+    // This handles edge cases where registration didn't complete properly
     if (!companyId || !company) {
-      logger.warn('User has no memberships', {
+      logger.warn('User has no memberships - creating company as safety net', {
         userId,
         email: userWithMemberships.email
       }, 'Current');
       
-      return {
-        companyId: null,
-        company: null,
-        user: userWithMemberships,
-        app: null,
-        appConfig: null
-      };
+      try {
+        const defaultCompanyName = generateDefaultCompanyName(userWithMemberships.email);
+        const slug = await generateCompanySlug(defaultCompanyName);
+        
+        const result = await prisma.$transaction(async (tx) => {
+          // Create company
+          const newCompany = await tx.company.create({
+            data: {
+              name: defaultCompanyName,
+              slug,
+              country: 'United Kingdom',
+            },
+          });
+          
+          // Create active membership
+          const newMembership = await tx.membership.create({
+            data: {
+              userId,
+              companyId: newCompany.id,
+              role: 'ADMIN',
+              isActive: true,
+            },
+          });
+          
+          return { company: newCompany, membership: newMembership };
+        });
+        
+        // Clear cache
+        await deleteCache(CacheKeys.userSession(userId));
+        
+        logger.info(`Created company ${result.company.id} for user ${userId} (safety net)`);
+        
+        // Set company data
+        companyId = result.company.id;
+        company = {
+          id: result.company.id,
+          name: result.company.name,
+          businessType: result.company.businessType || undefined,
+          country: result.company.country || undefined,
+          phone: result.company.phone || undefined,
+          logoUrl: result.company.logoUrl || undefined
+        };
+      } catch (createError) {
+        logger.error('Failed to create company as safety net', {
+          error: createError instanceof Error ? createError.message : String(createError),
+          userId
+        }, 'Current');
+        
+        // Return null if creation fails
+        return {
+          companyId: null,
+          company: null,
+          user: userWithMemberships,
+          app: null,
+          appConfig: null
+        };
+      }
     }
     
     // App is user-level subscription, not company-level
