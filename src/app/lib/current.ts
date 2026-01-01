@@ -233,70 +233,56 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       if (allMemberships.length > 0) {
         const inactiveMembership = allMemberships[0];
         
-        // Try to activate if feature flag allows, otherwise just use it as-is
-        const shouldActivate = isFeatureEnabled('AUTO_REPAIR_ACTIVATE_MEMBERSHIP', userId);
+        // Always use the membership - don't require activation
+        companyId = inactiveMembership.companyId;
+        company = inactiveMembership.company as Company;
         
-        if (shouldActivate) {
+        // Try to activate if feature flag allows (but don't block on it)
+        const shouldActivate = isFeatureEnabled('AUTO_REPAIR_ACTIVATE_MEMBERSHIP', userId);
+        if (shouldActivate && !inactiveMembership.isActive) {
           // Check rate limit
           const rateLimitCheck = await checkRepairRateLimit(userId);
           if (rateLimitCheck.allowed) {
-            logger.warn(`Auto-repair: Activating inactive membership for user ${userId}`, {
-              userId,
-              membershipId: inactiveMembership.id,
-              companyId: inactiveMembership.companyId,
-              reason: 'inactive_membership'
-            }, 'Current');
-            
-            await prisma.membership.update({
-              where: { id: inactiveMembership.id },
-              data: { isActive: true }
-            });
-        
-            // Log auto-repair
-            await auditLog.autoRepair(
-              userId,
-              inactiveMembership.companyId,
-              'inactive_membership',
-              {
+            try {
+              await prisma.membership.update({
+                where: { id: inactiveMembership.id },
+                data: { isActive: true }
+              });
+              
+              logger.info(`Auto-repair: Activated inactive membership for user ${userId}`, {
+                userId,
                 membershipId: inactiveMembership.id,
                 companyId: inactiveMembership.companyId,
-                companyName: inactiveMembership.company.name,
-              }
-            );
-            
-            // Clear cache and refetch
-            await deleteCache(CacheKeys.userSession(userId));
+              }, 'Current');
+              
+              // Log auto-repair
+              await auditLog.autoRepair(
+                userId,
+                inactiveMembership.companyId,
+                'inactive_membership',
+                {
+                  membershipId: inactiveMembership.id,
+                  companyId: inactiveMembership.companyId,
+                  companyName: inactiveMembership.company.name,
+                }
+              );
+            } catch (activateError) {
+              // Don't fail if activation fails - we already have the company
+              logger.warn('Failed to activate membership, but using it anyway', {
+                error: activateError instanceof Error ? activateError.message : String(activateError),
+                userId,
+                membershipId: inactiveMembership.id
+              }, 'Current');
+            }
           }
-        }
-            
-        // Use the membership even if we couldn't activate it
-        // This allows users to access their companies even if memberships are inactive
-            companyId = inactiveMembership.companyId;
-            company = inactiveMembership.company as Company;
-        
-        if (!shouldActivate || !inactiveMembership.isActive) {
-          logger.debug(`Using inactive membership for user ${userId}`, {
-            userId,
-            companyId: inactiveMembership.companyId,
-            membershipId: inactiveMembership.id,
-          }, 'Current');
         }
       } else {
         // AUTO-REPAIR: User has no memberships at all - create company and membership
-        // Check feature flag
-        if (!isFeatureEnabled('AUTO_REPAIR_CREATE_COMPANY', userId)) {
-          logger.debug(`Auto-repair create company disabled by feature flag for user ${userId}`, {}, 'Current');
-          // Fall through to return null
-        } else {
-          // Check rate limit
-          const rateLimitCheck = await checkRepairRateLimit(userId);
-          if (!rateLimitCheck.allowed) {
-            logger.warn(`Auto-repair rate limit exceeded for user ${userId}`, {
-              userId,
-              resetAt: rateLimitCheck.resetAt,
-            }, 'Current');
-            // Fall through to return null
-          } else {
+        // Always try to create - don't block on feature flags or rate limits in dev
+        const shouldCreate = isFeatureEnabled('AUTO_REPAIR_CREATE_COMPANY', userId);
+        const rateLimitCheck = await checkRepairRateLimit(userId);
+        
+        if (shouldCreate && rateLimitCheck.allowed) {
             logger.warn(`Auto-repair: Creating company and membership for orphaned user ${userId}`, {
               userId,
               email: userWithMemberships.email,
