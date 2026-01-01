@@ -20,32 +20,65 @@ export async function GET(
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        memberships: {
-          include: {
-            company: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                businessType: true,
-                country: true,
-                createdAt: true,
+    // Try to fetch user with all relations, but handle errors gracefully
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          memberships: {
+            include: {
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  businessType: true,
+                  country: true,
+                  createdAt: true,
+                },
               },
             },
           },
         },
-        preferences: true,
-        subscription: true,
         _count: {
           select: {
             memberships: true,
           },
         },
-      },
-    });
+      });
+    } catch (includeError: any) {
+      // If include fails (e.g., relation doesn't exist), try without optional relations
+      logger.warn("User query with includes failed, retrying without optional relations", {
+        error: includeError?.message,
+        userId
+      }, "Admin/Users");
+      
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          memberships: {
+            include: {
+              company: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  businessType: true,
+                  country: true,
+                  createdAt: true,
+                },
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            memberships: true,
+          },
+        },
+      });
+    }
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
