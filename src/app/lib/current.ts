@@ -4,11 +4,7 @@ import type { App } from '@/lib/apps/types';
 import type { AppConfig } from '@/lib/apps/types';
 import { getAppConfig } from '@/lib/apps/registry';
 import { logger } from './logger';
-import { getOrCompute, CacheKeys, CACHE_TTL, deleteCache } from './redis';
-import { generateDefaultCompanyName, generateCompanySlug } from './company-defaults';
-import { auditLog } from './audit-log';
-import { isFeatureEnabled } from './feature-flags';
-import { checkRepairRateLimit } from './rate-limit-repair';
+import { CacheKeys, deleteCache } from './redis';
 
 export interface Company {
   id: number;
@@ -113,10 +109,11 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
 }
 
 // Internal function to fetch user and company data
+// Simplified: Just get user's first active membership's company
+// No auto-repair, no fallbacks - registration should handle company creation
 async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
-
   try {
-    // Optimized query - get only what we need
+    // Simple query: get user's first active membership's company
     const userWithMemberships = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -142,188 +139,28 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
             }
           },
           orderBy: { createdAt: 'asc' },
-          take: 1 // Only get the first company for performance
+          take: 1
         }
       }
     });
-
-    // Handle multi-company users: ensure primary company is always accessible
-    // If user has multiple companies, prioritize the first one they joined
-    // Users can switch companies via company selector if needed
 
     if (!userWithMemberships) {
       throw new Error('User not found');
     }
 
     // Get the primary company (first active membership)
-    let primaryMembership = userWithMemberships.memberships[0];
-    let companyId = primaryMembership?.companyId || null;
-    let company = primaryMembership?.company || null;
+    const primaryMembership = userWithMemberships.memberships[0];
+    const companyId = primaryMembership?.companyId || null;
+    const company = primaryMembership?.company || null;
     
-    // Log if user has no memberships for debugging
-    if (userWithMemberships.memberships.length === 0) {
-      logger.warn('User has no memberships', {
+    // If user has no active memberships, return null
+    // Registration should have created company + membership
+    if (!companyId || !company) {
+      logger.warn('User has no active memberships', {
         userId,
         email: userWithMemberships.email
       }, 'Current');
-    }
-    
-    // AUTO-REPAIR: If no active membership found, check for inactive ones
-    if (!companyId) {
-      const allMemberships = await prisma.membership.findMany({
-        where: { userId },
-        include: {
-          company: {
-            select: {
-              id: true,
-              name: true,
-              businessType: true,
-              country: true,
-              phone: true,
-              logoUrl: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'asc' }
-      });
       
-      // If user has inactive memberships, use the first one (even if inactive)
-      // This ensures users can always access their companies
-      if (allMemberships.length > 0) {
-        const inactiveMembership = allMemberships[0];
-        
-        // Always use the membership - don't require activation
-        companyId = inactiveMembership.companyId;
-        company = inactiveMembership.company as Company;
-        
-        // Try to activate if feature flag allows (but don't block on it)
-        const shouldActivate = isFeatureEnabled('AUTO_REPAIR_ACTIVATE_MEMBERSHIP', userId);
-        if (shouldActivate && !inactiveMembership.isActive) {
-          // Check rate limit
-          const rateLimitCheck = await checkRepairRateLimit(userId);
-          if (rateLimitCheck.allowed) {
-            try {
-              await prisma.membership.update({
-                where: { id: inactiveMembership.id },
-                data: { isActive: true }
-              });
-              
-              logger.info(`Auto-repair: Activated inactive membership for user ${userId}`, {
-                userId,
-                membershipId: inactiveMembership.id,
-                companyId: inactiveMembership.companyId,
-              }, 'Current');
-              
-              // Log auto-repair
-              await auditLog.autoRepair(
-                userId,
-                inactiveMembership.companyId,
-                'inactive_membership',
-                {
-                  membershipId: inactiveMembership.id,
-                  companyId: inactiveMembership.companyId,
-                  companyName: inactiveMembership.company.name,
-                }
-              );
-            } catch (activateError) {
-              // Don't fail if activation fails - we already have the company
-              logger.warn('Failed to activate membership, but using it anyway', {
-                error: activateError instanceof Error ? activateError.message : String(activateError),
-                userId,
-                membershipId: inactiveMembership.id
-              }, 'Current');
-            }
-          }
-        }
-      } else {
-        // AUTO-REPAIR: User has no memberships at all - create company and membership
-        // Always try to create - don't block on feature flags or rate limits in dev
-        const shouldCreate = isFeatureEnabled('AUTO_REPAIR_CREATE_COMPANY', userId);
-        const rateLimitCheck = await checkRepairRateLimit(userId);
-        
-        if (shouldCreate && rateLimitCheck.allowed) {
-            logger.warn(`Auto-repair: Creating company and membership for orphaned user ${userId}`, {
-              userId,
-              email: userWithMemberships.email,
-              reason: 'no_membership'
-            }, 'Current');
-            
-            const defaultCompanyName = generateDefaultCompanyName(userWithMemberships.email);
-            const slug = await generateCompanySlug(defaultCompanyName);
-            
-            const repairResult = await prisma.$transaction(async (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) => {
-          // Create company
-          const newCompany = await tx.company.create({
-            data: {
-              name: defaultCompanyName,
-              slug,
-              country: 'United Kingdom',
-            },
-          });
-          
-          // Create active membership
-          const newMembership = await tx.membership.create({
-            data: {
-              userId,
-              companyId: newCompany.id,
-              role: 'ADMIN',
-              isActive: true, // Explicitly set to true
-            },
-          });
-          
-            return { company: newCompany, membership: newMembership };
-          });
-          
-          // Clear cache
-          await deleteCache(CacheKeys.userSession(userId));
-          
-          // Log auto-repair
-          await auditLog.autoRepair(
-            userId,
-            repairResult.company.id,
-            'orphaned_user',
-            {
-              companyId: repairResult.company.id,
-              companyName: repairResult.company.name,
-              membershipId: repairResult.membership.id,
-              role: repairResult.membership.role,
-            }
-          );
-          
-          logger.info(`Auto-repair successful: Created company ${repairResult.company.id} for user ${userId}`);
-          
-          // Set company data
-          companyId = repairResult.company.id;
-          company = {
-            id: repairResult.company.id,
-            name: repairResult.company.name,
-            businessType: repairResult.company.businessType || undefined,
-            country: repairResult.company.country || undefined,
-            phone: repairResult.company.phone || undefined,
-            logoUrl: repairResult.company.logoUrl || undefined
-            };
-          }
-        }
-      }
-    }
-    
-    // After auto-repair, companyId should always exist, but handle edge case
-    if (!companyId || !company) {
-      // This should never happen, but log and return fallback
-      logger.error('getCurrentUserAndCompany: companyId still null after auto-repair', {
-        userId,
-        email: userWithMemberships.email,
-        hasMemberships: userWithMemberships.memberships.length > 0,
-        membershipCount: userWithMemberships.memberships.length,
-        memberships: userWithMemberships.memberships.map(m => ({
-          id: m.id,
-          companyId: m.companyId,
-          isActive: m.isActive,
-          role: m.role
-        }))
-      }, 'Current');
-      
-      // Return fallback - user can still access but with limited functionality
       return {
         companyId: null,
         company: null,
@@ -334,7 +171,6 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     }
     
     // App is user-level subscription, not company-level
-    // Note: app field removed from Company schema - using user subscriptions instead
     const app = null;
     const appConfig = null;
 
@@ -346,86 +182,12 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       appConfig
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
     logger.error('Database error in fetchUserAndCompany', {
-      error: errorMessage,
-      stack: errorStack,
-      userId,
-      errorType: error?.constructor?.name || typeof error
+      error: error instanceof Error ? error.message : String(error),
+      userId
     }, 'Current');
     
-    // In development, provide more detailed error information
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug('Database connection failed. Check your .env file and DATABASE_URL.', {
-        error: errorMessage,
-        stack: errorStack,
-        userId
-      }, 'Current');
-    }
-    
-    // Try to get user and check for memberships directly as fallback
-    try {
-      const user = await getUserFromSession();
-      if (user) {
-        // Try one more time to get memberships directly
-        const directMemberships = await prisma.membership.findMany({
-          where: { userId: user.id },
-          include: {
-            company: {
-              select: {
-                id: true,
-                name: true,
-                businessType: true,
-                country: true,
-                phone: true,
-                logoUrl: true
-              }
-            }
-          },
-          orderBy: { createdAt: 'asc' },
-          take: 1
-        });
-        
-        if (directMemberships.length > 0) {
-          const membership = directMemberships[0];
-          logger.info('Recovered company from direct membership query', {
-            userId: user.id,
-            companyId: membership.companyId,
-            membershipId: membership.id,
-            isActive: membership.isActive
-          }, 'Current');
-          
-          return {
-            companyId: membership.companyId,
-            company: membership.company as Company,
-            user: {
-              id: user.id,
-              email: user.email,
-              name: user.name || undefined,
-              memberships: directMemberships.map(m => ({
-                id: m.id,
-                companyId: m.companyId,
-                role: m.role,
-                isActive: m.isActive,
-                company: m.company
-              }))
-            },
-            app: null,
-            appConfig: null
-          };
-        }
-      }
-    } catch (fallbackError) {
-      logger.error('Fallback recovery also failed', {
-        error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-        originalError: errorMessage
-      }, 'Current');
-    }
-    
-    // Return a fallback structure to prevent page crashes
-    // Try to get user from session, but don't fail if that also errors
+    // Return fallback structure
     try {
       const user = await getUserFromSession();
       return {
@@ -440,9 +202,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
         app: null,
         appConfig: null
       };
-    } catch (sessionError) {
-      // Last resort - return empty structure
-      logger.error('Failed to get user session in error handler', sessionError, 'Current');
+    } catch {
       return {
         companyId: null,
         company: null,

@@ -86,10 +86,9 @@ export function CompanyLoadingError({
     }, 100);
   };
 
-  const defaultTitle = "Unable to Load Company Information";
+  const defaultTitle = "Account Setup Required";
   const defaultDescription = 
-    "We're having trouble loading your company information. This might be a temporary issue. " +
-    "Please try refreshing the page, or contact support if the problem persists.";
+    "Your account needs to be set up. Please try refreshing the page, or contact support if the problem persists.";
 
   return (
     <div className="app-container">
@@ -204,9 +203,8 @@ export function CompanyLoadingError({
               <div className="mt-6 pt-6 border-t border-yellow-200">
                 <p className="text-sm font-medium text-yellow-900 mb-2">💡 What you can do:</p>
                 <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-                  <li>Refresh the page to retry loading your company information</li>
+                  <li>Refresh the page to retry loading your account</li>
                   <li>Check if you're logged into the correct account</li>
-                  <li>Try switching to a different company if you have multiple companies</li>
                   <li>Contact support if the issue persists after refreshing</li>
                 </ul>
               </div>
