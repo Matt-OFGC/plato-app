@@ -436,70 +436,32 @@ export async function clearUserCache(userId?: number) {
   // For now, we'll clear individual caches as needed
 }
 
-// Get user's role in a specific company with caching
+// Get user's role in a specific company
+// Temporarily bypass cache to avoid import issues
 export async function getUserRoleInCompany(userId: number, companyId: number): Promise<string | null> {
   try {
-    // Check if CacheKeys.userRole exists (handles cached code issues)
-    if (!CacheKeys.userRole || typeof CacheKeys.userRole !== 'function') {
-      logger.warn('CacheKeys.userRole not available, fetching directly', { userId, companyId }, 'Current');
-      const membership = await prisma.membership.findUnique({
-        where: {
-          userId_companyId: {
-            userId,
-            companyId
-          }
-        },
-        select: {
-          role: true,
-          isActive: true
+    // Direct fetch - bypass cache to avoid Redis import issues
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_companyId: {
+          userId,
+          companyId
         }
-      });
-      return membership?.isActive ? membership.role : null;
-    }
-    
-    return await getOrCompute(
-      CacheKeys.userRole(userId, companyId),
-      async () => {
-        const membership = await prisma.membership.findUnique({
-          where: {
-            userId_companyId: {
-              userId,
-              companyId
-            }
-          },
-          select: {
-            role: true,
-            isActive: true
-          }
-        });
-
-        return membership?.isActive ? membership.role : null;
       },
-      CACHE_TTL.USER_ROLE
-    );
+      select: {
+        role: true,
+        isActive: true
+      }
+    });
+
+    return membership?.isActive ? membership.role : null;
   } catch (error: any) {
-    // Fallback if cache fails (handles cached code issues)
-    if (error?.message?.includes('is not a function') || error?.message?.includes('userRole')) {
-      logger.warn('Cache error in getUserRoleInCompany, fetching directly', { 
-        error: error instanceof Error ? error.message : String(error),
-        userId, 
-        companyId 
-      }, 'Current');
-      const membership = await prisma.membership.findUnique({
-        where: {
-          userId_companyId: {
-            userId,
-            companyId
-          }
-        },
-        select: {
-          role: true,
-          isActive: true
-        }
-      });
-      return membership?.isActive ? membership.role : null;
-    }
-    throw error;
+    logger.error('Error fetching user role in company', {
+      error: error instanceof Error ? error.message : String(error),
+      userId,
+      companyId
+    }, 'Current');
+    return null;
   }
 }
 
