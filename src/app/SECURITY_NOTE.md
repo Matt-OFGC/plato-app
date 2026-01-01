@@ -90,3 +90,5 @@ git grep -i "DATABASE_URL" -- "*.ts" "*.js" "*.json" "*.md" 2>/dev/null | grep -
 
 The only thing that happened locally was creating the tables. The connection string itself lives securely in Vercel.
 
+
+

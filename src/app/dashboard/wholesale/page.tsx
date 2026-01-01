@@ -21,7 +21,7 @@ export default async function WholesalePage() {
   }
   
   // Get user's role in the company
-  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "VIEWER";
+  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "EMPLOYEE";
 
   // Get customers
   const customers = await prisma.wholesaleCustomer.findMany({

@@ -21,7 +21,7 @@ export default async function WholesaleCustomersPage() {
   }
 
   // Get user's role in the company
-  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "MEMBER";
+  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "EMPLOYEE";
 
   // Get wholesale customers
   let customers = [];

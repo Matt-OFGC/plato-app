@@ -135,7 +135,8 @@ export async function POST(req: NextRequest) {
     const appParam = params.get("app");
     const referer = req.headers.get('referer') || '';
     const pathname = req.nextUrl.pathname;
-    const app: 'plato' | 'plato_bake' = appParam === 'plato_bake' || referer.includes('/bake/') || pathname.includes('/bake/') ? 'plato_bake' : 'plato';
+    // MVP: Only plato app exists
+    const app: 'plato' = 'plato';
 
     let user;
     
@@ -210,7 +211,7 @@ export async function POST(req: NextRequest) {
         ok: true, 
         userId: user.id,
         companyId: result.company.id,
-        message: `New ${app === 'plato_bake' ? 'Plato Bake' : 'Plato'} company created successfully! You can now sign in.`
+        message: `New Plato company created successfully! You can now sign in.`
       });
     } else {
       // New user - create user and company

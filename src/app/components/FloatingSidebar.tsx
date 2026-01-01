@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ALL_NAVIGATION_ITEMS, getFilteredNavigationItems } from "@/lib/navigation-config";
-import { getAppConfig, appExists, getAllApps } from "@/lib/apps/registry";
-import { getAppAwareRoute, getAppFromRoute } from "@/lib/app-routes";
+import { ALL_NAVIGATION_ITEMS } from "@/lib/navigation-config";
+import { getAppConfig } from "@/lib/apps/registry";
 import type { App } from "@/lib/apps/types";
 import { CompanySwitcher } from "./CompanySwitcher";
 
@@ -18,76 +17,50 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Detect app from route path (e.g., /bake/*) or query params (e.g., ?app=plato_bake)
-  const appFromRoute = getAppFromRoute(pathname);
-  const appParam = searchParams?.get("app");
-  // Prioritize route detection over query params, default to plato only if on /dashboard
-  let currentApp: App = "plato";
-  if (appFromRoute) {
-    currentApp = appFromRoute;
-  } else if (appParam && appExists(appParam)) {
-    currentApp = appParam;
-  }
+  // MVP: Always use 'plato' app - no app detection needed
+  const currentApp: App = "plato";
   const appConfig = getAppConfig(currentApp);
-  const appFeatures = appConfig?.features || [];
   
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAppSwitcher, setShowAppSwitcher] = useState(false);
-  const [userApps, setUserApps] = useState<Array<{ id: App; name: string; hasAccess: boolean }>>([]);
-
-  // Fetch user's apps for app switcher
-  useEffect(() => {
-    fetch("/api/user/apps")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.apps) {
-          setUserApps(data.apps.map((app: any) => ({
-            id: app.id,
-            name: app.name,
-            hasAccess: app.hasAccess,
-          })));
-        }
-      })
-      .catch((err) => console.error("Failed to fetch user apps:", err));
-  }, []);
+  
+  // MVP: No app switcher needed - removed userApps fetch
 
   // All MVP features are unlocked - no need to fetch unlock status
 
-  // Get filtered navigation items based on app features
-  const navigationItems = getFilteredNavigationItems(currentApp, appFeatures);
+  // MVP: Use ALL_NAVIGATION_ITEMS directly (bypass any function that might be cached)
+  // Explicitly define which items should show (whitelist approach)
+  const MVP_ITEM_VALUES = ['dashboard', 'ingredients', 'recipes', 'recipe-mixer', 'team', 'production', 'wholesale', 'account'];
   
   // Flatten all navigation items into a simple list (no sections/dropdowns)
   const allNavItems = useMemo(() => {
-    // Get dashboard first
-    const dashboard = navigationItems.find(item => item.value === 'dashboard');
+    // Filter to ONLY MVP items from ALL_NAVIGATION_ITEMS (direct import, no function call)
+    const mvpItems = ALL_NAVIGATION_ITEMS.filter(item => MVP_ITEM_VALUES.includes(item.value));
     
-    // Get all other items, filtering by app features
-    const otherItems = navigationItems
+    // Get dashboard first
+    const dashboard = mvpItems.find(item => item.value === 'dashboard');
+    
+    // Get all other MVP items (exclude dashboard and account - account shown separately at bottom)
+    const otherItems = mvpItems
       .filter(item => {
+        // Exclude dashboard and account (account shown separately at bottom)
         if (item.value === 'dashboard' || item.value === 'account') return false;
         
-        // Map appContext to feature names
-        const appContextToFeature: Record<string, string> = {
-          'recipes': 'recipes',
-          'production': 'production',
-          'make': 'make',
-          'teams': 'teams',
-          'safety': 'safety',
-        };
-        
-        const featureName = appContextToFeature[item.appContext];
-        if (featureName && appFeatures.length > 0) {
-          return appFeatures.includes(featureName);
-        }
-        
-        // Show global items
-        if (item.appContext === 'global') return true;
-        
-        return true;
+        // Only show MVP items
+        return MVP_ITEM_VALUES.includes(item.value);
       });
-      // All MVP features are accessible - no unlock checks needed
     
     const items = dashboard ? [dashboard, ...otherItems] : otherItems;
+    
+    // Debug: Log what we're getting
+    if (typeof window !== 'undefined') {
+      console.log('🔍 FloatingSidebar Debug:', {
+        currentApp,
+        allNavigationItemsFromConfig: ALL_NAVIGATION_ITEMS.map(i => i.value),
+        mvpItems: mvpItems.map(i => i.value),
+        nonMvpItems: ALL_NAVIGATION_ITEMS.filter(i => !MVP_ITEM_VALUES.includes(i.value)).map(i => i.value),
+        finalItems: items.map(i => i.value)
+      });
+    }
     
     // Filter by search term if present
     if (searchTerm.trim()) {
@@ -100,7 +73,7 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
     }
 
     return items;
-  }, [navigationItems, appFeatures, searchTerm]);
+  }, [searchTerm]); // Removed navigationItems dependency - using direct import
 
   // Close sidebar when route changes
   useEffect(() => {
@@ -122,35 +95,15 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
     }
   }, [isOpen]);
 
-  const handleAppSwitch = (appId: App) => {
-    // Update URL with app-specific route
-    if (appId === "plato") {
-      router.push("/dashboard");
-    } else if (appId === "plato_bake") {
-      router.push("/bake");
-    } else {
-      // For future apps, use the pattern
-      const appPrefix = `/${appId.replace("_", "-")}`;
-      router.push(appPrefix);
-    }
-    setShowAppSwitcher(false);
-  };
+  // MVP: No app switching - removed handleAppSwitch
 
-  // Helper function to generate app-aware routes
+  // Helper function to generate routes (MVP: no app-aware conversion needed)
   const getAppAwareHref = (href: string): string => {
-    // Ensure we're using the correct app - prioritize route detection
-    const appToUse = appFromRoute || currentApp;
-    let convertedRoute = getAppAwareRoute(href, appToUse);
-    
-    // Final safety check: ensure /plato-bake is always converted to /bake
-    if (convertedRoute.includes("/plato-bake")) {
-      convertedRoute = convertedRoute.replace(/\/plato-bake/g, "/bake");
-    }
-    
-    return convertedRoute;
+    // MVP: Just return the href as-is, no app conversion needed
+    return href;
   };
 
-  const settingsItem = navigationItems.find(item => item.value === 'account');
+  const settingsItem = ALL_NAVIGATION_ITEMS.find(item => item.value === 'account');
 
   return (
     <>
@@ -174,50 +127,14 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
           <div className="mb-3">
             <CompanySwitcher />
           </div>
-          {/* App Switcher - Clickable app name */}
-          <div className="relative mb-3">
-            <button 
-              onClick={() => setShowAppSwitcher(!showAppSwitcher)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-left"
-            >
+          {/* App Name - MVP: No app switcher, just show "Plato" */}
+          <div className="mb-3">
+            <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50">
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <span className="text-base font-semibold text-gray-900 flex-1">{appConfig.name}</span>
-              <svg className={`w-4 h-4 text-gray-400 transform transition-transform ${showAppSwitcher ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {/* App Switcher Dropdown */}
-            {showAppSwitcher && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                {userApps.length > 0 ? (
-                  userApps.map((app) => {
-                    const appConfigItem = getAppConfig(app.id);
-                    const isCurrentApp = currentApp === app.id;
-                    return (
-                      <button
-                        key={app.id}
-                        onClick={() => handleAppSwitch(app.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors ${
-                          isCurrentApp ? 'bg-[var(--brand-secondary)]' : ''
-                        }`}
-                      >
-                        <span className={`text-sm font-medium ${isCurrentApp ? 'text-[var(--brand-primary)]' : 'text-gray-700'}`}>
-                          {appConfigItem.name}
-                        </span>
-                        {!app.hasAccess && app.id !== "plato" && (
-                          <span className="ml-auto text-xs text-gray-400">Locked</span>
-                        )}
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="px-3 py-2 text-sm text-gray-500">No apps available</div>
-                )}
-              </div>
-            )}
+              <span className="text-base font-semibold text-gray-900 flex-1">Plato</span>
+            </div>
           </div>
 
           {/* Search Bar */}
@@ -249,24 +166,19 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
         <div className="flex-1 overflow-y-auto">
           <div className="py-2">
             {allNavItems.map(item => {
-              // Preserve app context in the URL - convert first
-              let appAwareHref = getAppAwareHref(item.href);
+              // MVP: Use href as-is, no app conversion
+              const href = item.href;
               
-              // Final safety check: ensure no /plato-bake routes slip through
-              if (appAwareHref.includes("/plato-bake")) {
-                appAwareHref = appAwareHref.replace(/\/plato-bake/g, "/bake");
-              }
-              
-              // Check active state using the converted app-aware href
+              // Check active state
               const normalizedPathname = pathname.endsWith("/") && pathname !== "/" ? pathname.slice(0, -1) : pathname;
-              const normalizedHref = appAwareHref.endsWith("/") && appAwareHref !== "/" ? appAwareHref.slice(0, -1) : appAwareHref;
+              const normalizedHref = href.endsWith("/") && href !== "/" ? href.slice(0, -1) : href;
               const isActive = normalizedPathname === normalizedHref || 
-                (normalizedHref !== "/dashboard" && normalizedHref !== "/bake" && normalizedPathname.startsWith(normalizedHref + "/"));
+                (normalizedHref !== "/dashboard" && normalizedPathname.startsWith(normalizedHref + "/"));
               
                       return (
                         <a
                           key={item.value}
-                  href={appAwareHref}
+                  href={href}
                   onClick={() => onClose()}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
                               isActive
@@ -287,7 +199,7 @@ function FloatingSidebarInner({ isOpen, onClose }: FloatingSidebarProps) {
           {/* Settings */}
           {settingsItem && (
               <a
-              href={getAppAwareHref(settingsItem.href)}
+              href={settingsItem.href}
                 onClick={onClose}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors rounded-lg ${
                   pathname === settingsItem.href || pathname.startsWith(settingsItem.href)

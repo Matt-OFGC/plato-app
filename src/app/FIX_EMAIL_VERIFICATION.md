@@ -64,3 +64,5 @@ If `RESEND_FROM_EMAIL` is malformed in Vercel:
 
 The code will automatically format it as `Plato <noreply@getplato.uk>` when sending.
 
+
+

@@ -79,3 +79,5 @@ This will tell you:
 
 The domain verification is the most important step - without it, Resend won't send emails from `@getplato.uk` addresses.
 
+
+

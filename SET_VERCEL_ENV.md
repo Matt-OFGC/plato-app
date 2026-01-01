@@ -49,3 +49,5 @@ After setting the variable and redeploying, you can verify it's working by:
 
 The `NEXT_PUBLIC_` prefix is important - it makes the variable available to both server and client-side code in Next.js.
 
+
+

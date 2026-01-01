@@ -20,7 +20,7 @@ export default async function InvoicesPage() {
   }
   
   // Get user's role in the company
-  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "VIEWER";
+  const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "EMPLOYEE";
 
   // Get all invoices for this company
   const invoices = await prisma.wholesaleInvoice.findMany({

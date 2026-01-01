@@ -36,10 +36,7 @@ export const STRIPE_CONFIG = {
       monthlyPriceId: process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID || "",
       annualPriceId: process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID || "",
     },
-    "plato-bake": {
-      productId: process.env.STRIPE_PLATO_BAKE_PRODUCT_ID || "",
-      monthlyPriceId: process.env.STRIPE_PLATO_BAKE_MONTHLY_PRICE_ID || "",
-    },
+    // MVP: plato-bake removed
     seat: {
       productId: process.env.STRIPE_SEAT_PRODUCT_ID || "",
       priceId: process.env.STRIPE_SEAT_PRICE_ID || "",
@@ -74,9 +71,7 @@ export function getTierFromPriceId(priceId: string): { tier: string; interval: "
   if (priceId === STRIPE_CONFIG.products.business.annualPriceId) {
     return { tier: "paid", interval: "year" };
   }
-  if (priceId === STRIPE_CONFIG.products["plato-bake"].monthlyPriceId) {
-    return { tier: "paid", interval: "month" };
-  }
+  // MVP: plato-bake removed - price ID check removed
   if (priceId === STRIPE_CONFIG.products.pro.priceId) {
     return { tier: "paid", interval: "month" };
   }
@@ -125,7 +120,7 @@ export async function createMVPCheckout(
 // Legacy function for backward compatibility (deprecated)
 export async function createCheckoutSession(
   customerId: string,
-  tier: "professional" | "team" | "business" | "plato-bake",
+  tier: "professional" | "team" | "business", // MVP: plato-bake removed
   interval: "month" | "year" = "month",
   successUrl: string,
   cancelUrl: string,

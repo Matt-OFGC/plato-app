@@ -177,3 +177,5 @@ The application is now simplified to MVP-only features:
 
 All other features have been removed. The permission system is clean and simple, and the subscription model is straightforward (Free: 5/5, Paid: £20/month unlimited).
 
+
+

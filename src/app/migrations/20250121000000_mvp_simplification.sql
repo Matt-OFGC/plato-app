@@ -117,3 +117,5 @@ WHERE "tier" IS NULL OR "tier" NOT IN ('free', 'paid');
 -- Note: We can't drop enum types if they're still referenced, so this is commented out
 -- DROP TYPE IF EXISTS "Brand" CASCADE;
 
+
+

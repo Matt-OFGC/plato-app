@@ -40,8 +40,9 @@ export async function isBrand(companyId: number, brand: Brand): Promise<boolean>
 /**
  * Check if company is Plato Bake
  */
+// MVP: plato_bake removed - this function always returns false
 export async function isPlatoBake(companyId: number): Promise<boolean> {
-  return isBrand(companyId, "plato_bake");
+  return false;
 }
 
 /**

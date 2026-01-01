@@ -37,7 +37,7 @@ export async function isPaid(userId: number): Promise<boolean> {
     }
 
     // Backward compatibility: old tiers are considered paid
-    const oldPaidTiers = ["professional", "team", "business", "plato-bake"];
+    const oldPaidTiers = ["professional", "team", "business"]; // MVP: plato-bake removed
     if (oldPaidTiers.includes(tierLower)) {
       if (user.subscriptionEndsAt) {
         return new Date(user.subscriptionEndsAt) > new Date();

@@ -7,6 +7,7 @@ import { getAppFromRoute } from "../app-routes";
 
 /**
  * App configurations
+ * MVP: Only Plato app exists - plato_bake removed
  */
 const APP_CONFIGS: Record<App, AppConfig> = {
   plato: {
@@ -16,59 +17,45 @@ const APP_CONFIGS: Record<App, AppConfig> = {
     primaryColor: "#059669",
     accentColor: "#10b981",
     secondaryColor: "#f0fdf4",
-    features: ["recipes", "production", "teams", "safety"],
+    features: ["recipes", "production", "teams"], // MVP features only
     route: "/dashboard",
-  },
-  plato_bake: {
-    id: "plato_bake",
-    name: "Plato Bake",
-    tagline: "Bakery Operations Management",
-    primaryColor: "#d97706",
-    accentColor: "#f59e0b",
-    secondaryColor: "#fef3c7",
-    features: ["recipes", "production"],
-    route: "/bake",
   },
 };
 
 /**
  * Get app configuration by app ID
+ * MVP: Always return plato config
  */
 export function getAppConfig(app: App): AppConfig {
-  return APP_CONFIGS[app] || APP_CONFIGS.plato;
+  // MVP: Always return plato config, ignore plato_bake
+  return APP_CONFIGS.plato;
 }
 
 /**
  * Check if an app exists
+ * MVP: Only plato exists
  */
 export function appExists(appId: string): appId is App {
-  return appId === "plato" || appId === "plato_bake";
+  return appId === "plato";
 }
 
 /**
  * Get all available apps
+ * MVP: Only return plato app
  */
 export function getAllApps(): AppConfig[] {
-  return Object.values(APP_CONFIGS);
+  // MVP: Only return plato app, hide plato_bake
+  return [APP_CONFIGS.plato];
 }
 
 /**
  * Get app by route path
  * This is a legacy function for compatibility - use getAppFromRoute from app-routes instead
+ * MVP: Always returns plato config
  */
 export function getAppByRoute(route: string): AppConfig | null {
-  const app = getAppFromRoute(route);
-  if (app) {
-    return getAppConfig(app);
-  }
-  // Fallback: check if route starts with known app routes
-  if (route.startsWith("/bake")) {
-    return getAppConfig("plato_bake");
-  }
-  if (route.startsWith("/dashboard")) {
-    return getAppConfig("plato");
-  }
-  return null;
+  // MVP: Always return plato config
+  return getAppConfig("plato");
 }
 
 

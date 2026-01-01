@@ -103,3 +103,5 @@ npx prisma db push --accept-data-loss
 3. **Run manual setup** - If build didn't create tables, run manually
 4. **Test registration** - After tables are created, try again
 
+
+

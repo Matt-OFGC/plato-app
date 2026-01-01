@@ -26,20 +26,14 @@ export function applyAppTheme(app: App) {
   // Remove existing app classes
   document.documentElement.classList.remove("app-plato", "app-plato-bake");
   
-  // Add app-specific class
-  if (app === "plato_bake") {
-    document.documentElement.classList.add("app-plato-bake");
-  } else {
-    document.documentElement.classList.add("app-plato");
-  }
+  // MVP: Only plato app exists - always add plato class
+  document.documentElement.classList.add("app-plato");
 }
 
 /**
  * Get app CSS class name
  */
 export function getAppClass(app: App): string {
-  if (app === "plato_bake") {
-    return "app-plato-bake";
-  }
+  // MVP: Only plato app exists
   return "app-plato";
 }

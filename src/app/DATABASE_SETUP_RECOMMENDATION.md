@@ -100,3 +100,5 @@ When you reset the database (as we discussed earlier), all tables were deleted. 
 
 The issue is just that tables need to be created. Once that's done, everything will work!
 
+
+

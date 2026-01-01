@@ -3,7 +3,8 @@
  */
 
 // App enum from Prisma schema
-export type App = "plato" | "plato_bake";
+// MVP: Only plato app exists
+export type App = "plato";
 
 /**
  * App configuration interface

@@ -17,7 +17,7 @@ export interface Company {
   country?: string;
   phone?: string;
   logoUrl?: string;
-  // Note: app field exists in schema but not in database - using user-level subscriptions instead
+  // Note: app field removed from schema - apps are now user-level subscriptions only
 }
 
 export interface UserWithMemberships {
@@ -117,76 +117,35 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
 
   try {
     // Optimized query - get only what we need
-    // Retry logic: if query fails due to schema mismatch (e.g., missing 'app' field), retry without it
-    let userWithMemberships;
-    try {
-      userWithMemberships = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          memberships: {
-            where: { isActive: true },
-            select: {
-              id: true,
-              companyId: true,
-              role: true,
-              isActive: true,
-              company: {
-                select: {
-                  id: true,
-                  name: true,
-                  businessType: true,
-                  country: true,
-                  phone: true,
-                  logoUrl: true
-                }
-              }
-            },
-            orderBy: { createdAt: 'asc' },
-            take: 1 // Only get the first company for performance
-          }
-        }
-      });
-    } catch (queryError: any) {
-      // If query fails due to schema mismatch, retry without app field as fallback
-      if (queryError?.message?.includes('Unknown field') || queryError?.message?.includes('app')) {
-        logger.warn('Retrying query without app field due to schema mismatch', {}, 'Current');
-        // Retry without app field as fallback
-        userWithMemberships = await prisma.user.findUnique({
-          where: { id: userId },
+    const userWithMemberships = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        memberships: {
+          where: { isActive: true },
           select: {
             id: true,
-            email: true,
-            name: true,
-            memberships: {
-              where: { isActive: true },
+            companyId: true,
+            role: true,
+            isActive: true,
+            company: {
               select: {
                 id: true,
-                companyId: true,
-                role: true,
-                isActive: true,
-                company: {
-                  select: {
-                    id: true,
-                    name: true,
-                    businessType: true,
-                    country: true,
-                    phone: true,
-                    logoUrl: true
-                  }
-                }
-              },
-              orderBy: { createdAt: 'asc' },
-              take: 1
+                name: true,
+                businessType: true,
+                country: true,
+                phone: true,
+                logoUrl: true
+              }
             }
-          }
-        });
-      } else {
-        throw queryError;
+          },
+          orderBy: { createdAt: 'asc' },
+          take: 1 // Only get the first company for performance
+        }
       }
-    }
+    });
 
     // Handle multi-company users: ensure primary company is always accessible
     // If user has multiple companies, prioritize the first one they joined
@@ -367,7 +326,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     }
     
     // App is user-level subscription, not company-level
-    // Note: Company schema has app field but database doesn't - using user subscriptions instead
+    // Note: app field removed from Company schema - using user subscriptions instead
     const app = null;
     const appConfig = null;
 

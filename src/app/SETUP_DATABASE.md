@@ -81,3 +81,5 @@ You should see tables like: `User`, `Company`, `Membership`, `Recipe`, `Ingredie
 - Make sure `DATABASE_URL` environment variable is set correctly
 - After setup, try registering again - it should work!
 
+
+

@@ -17,29 +17,14 @@ export async function GET(request: NextRequest) {
     const allApps = getAllApps();
     const isDevelopment = process.env.NODE_ENV !== "production";
     
-    // Return apps with their configs, marking which ones the user has access to
+    // MVP: Only return plato app - plato_bake removed
     // Everyone always has access to the default "plato" app
-    // In development, always allow access to plato_bake
-    const appsWithAccess = allApps.map(app => {
-      const hasAccess = app.id === "plato" || 
-                       userApps.includes(app.id) ||
-                       (app.id === "plato_bake" && isDevelopment);
-      
-      // Only log in development mode
-      if (app.id === "plato_bake" && process.env.NODE_ENV === 'development') {
-        logger.debug("plato_bake access check", {
-          userId: user.id,
-          userApps,
-          isDevelopment,
-          hasAccess,
-        }, "User/Apps");
-      }
-      
-      return {
+    const appsWithAccess = allApps
+      .filter(app => app.id === "plato") // MVP: Only show plato
+      .map(app => ({
         ...app,
-        hasAccess,
-      };
-    });
+        hasAccess: true, // Everyone has access to plato
+      }));
 
     return createOptimizedResponse({ apps: appsWithAccess }, {
       cacheType: 'user',
