@@ -121,14 +121,14 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
         id: true,
         email: true,
         name: true,
-        memberships: {
+        Membership: {
           where: { isActive: true },
           select: {
             id: true,
             companyId: true,
             role: true,
             isActive: true,
-            company: {
+            Company: {
               select: {
                 id: true,
                 name: true,
@@ -150,9 +150,9 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     }
 
     // Get the primary company (first active membership)
-    let primaryMembership = userWithMemberships.memberships[0];
+    let primaryMembership = userWithMemberships.Membership[0];
     let companyId = primaryMembership?.companyId || null;
-    let company = primaryMembership?.company || null;
+    let company = primaryMembership?.Company || null;
     
     // If no active membership, check for inactive ones (simple fallback)
     // Don't auto-create companies, but use existing memberships if they exist
@@ -160,7 +160,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       const allMemberships = await prisma.membership.findMany({
         where: { userId },
         include: {
-          company: {
+          Company: {
             select: {
               id: true,
               name: true,
@@ -178,7 +178,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       if (allMemberships.length > 0) {
         const membership = allMemberships[0];
         companyId = membership.companyId;
-        company = membership.company as Company;
+        company = membership.Company as Company;
         
         // Try to activate if inactive (but don't fail if it doesn't work)
         if (!membership.isActive) {
