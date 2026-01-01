@@ -14,91 +14,42 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeMemberships = searchParams.get("includeMemberships") === "true";
 
-    // Fetch all users with proper error handling
-    let users;
-    try {
-      users = await prisma.user.findMany({
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          isAdmin: true,
-          isActive: true,
-          subscriptionTier: true,
-          subscriptionStatus: true,
-          createdAt: true,
-          lastLoginAt: true,
-          memberships: includeMemberships ? {
-            select: {
-              id: true,
-              role: true,
-              isActive: true,
-              pin: true,
-              company: {
-                select: {
-                  id: true,
-                  name: true,
-                },
+    // Fetch all users
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        isActive: true,
+        subscriptionTier: true,
+        subscriptionStatus: true,
+        createdAt: true,
+        lastLoginAt: true,
+        memberships: includeMemberships ? {
+          select: {
+            id: true,
+            role: true,
+            isActive: true,
+            pin: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
               },
             },
-          } : undefined,
-          UserAppSubscription: {
-            select: {
-              app: true,
-              status: true,
-              currentPeriodEnd: true,
-            },
           },
-          _count: {
-            select: {
-              memberships: true,
-            },
+        } : undefined,
+        _count: {
+          select: {
+            memberships: true,
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-    } catch (queryError: any) {
-      // If UserAppSubscription relation doesn't exist, fetch without it
-      logger.warn("UserAppSubscription relation not found, fetching users without it", { error: queryError.message }, "Admin/Users");
-
-      users = await prisma.user.findMany({
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          isAdmin: true,
-          isActive: true,
-          subscriptionTier: true,
-          subscriptionStatus: true,
-          createdAt: true,
-          lastLoginAt: true,
-          memberships: includeMemberships ? {
-            select: {
-              id: true,
-              role: true,
-              isActive: true,
-              pin: true,
-              company: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          } : undefined,
-          _count: {
-            select: {
-              memberships: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-    }
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
     logger.info(`[Admin API] Fetched ${users.length} users from database`, { count: users.length }, "Admin/Users");
 

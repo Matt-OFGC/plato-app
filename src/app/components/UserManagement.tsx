@@ -23,11 +23,6 @@ interface User {
       name: string;
     };
   }>;
-  UserAppSubscription?: Array<{
-    app: string;
-    status: string;
-    currentPeriodEnd: string | null;
-  }>;
 }
 
 
@@ -304,65 +299,6 @@ export function UserManagement() {
   };
 
 
-  const handleGrantAppAccess = async (userId: number, app: "plato" | "plato_bake") => {
-    setActionLoading(true);
-    try {
-      const res = await fetch("/api/admin/users/grant-app", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, app }),
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        alert(data.message || `Successfully granted ${app} access`);
-        await fetchUsers();
-        if (selectedUser?.id === userId) {
-          await handleViewDetails(userId);
-        }
-      } else {
-        const error = await res.json();
-        alert(`Failed to grant app access: ${error.error || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Failed to grant app access:", error);
-      alert("Failed to grant app access");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRevokeAppAccess = async (userId: number, app: "plato" | "plato_bake") => {
-    if (!confirm(`Are you sure you want to revoke ${app} access from this user?`)) {
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      const res = await fetch("/api/admin/users/revoke-app", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, app }),
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        alert(data.message || `Successfully revoked ${app} access`);
-        await fetchUsers();
-        if (selectedUser?.id === userId) {
-          await handleViewDetails(userId);
-        }
-      } else {
-        const error = await res.json();
-        alert(`Failed to revoke app access: ${error.error || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Failed to revoke app access:", error);
-      alert("Failed to revoke app access");
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const handleResetPin = async (userId: number, membershipId: number, companyName: string) => {
     const customPin = prompt(`Enter new PIN for ${companyName} (4-6 digits, or leave empty for random):`);
@@ -500,9 +436,7 @@ export function UserManagement() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Type</th>
-                  {/* Removed Subscription column - using Feature Modules only */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apps</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Companies</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -540,25 +474,6 @@ export function UserManagement() {
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
                           Admin
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-wrap gap-1">
-                      {user.UserAppSubscription && user.UserAppSubscription.length > 0 ? (
-                        user.UserAppSubscription
-                          .filter(sub => sub.status === "active")
-                          .map((sub) => (
-                            <span
-                              key={sub.app}
-                              className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
-                              title={`${sub.app} - Expires: ${sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString() : "Never"}`}
-                            >
-                              {sub.app === "plato_bake" ? "Plato Bake" : "Plato"}
-                            </span>
-                          ))
-                      ) : (
-                        <span className="text-xs text-gray-400">No apps</span>
                       )}
                     </div>
                   </td>
@@ -785,98 +700,6 @@ export function UserManagement() {
                   </div>
                 </div>
               )}
-
-              {/* App Subscriptions */}
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-700">App Subscriptions</label>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Manage which apps this user has access to. Users can subscribe to multiple apps (e.g., Plato Bake, Plato Scheduling).
-                  </p>
-                  <div className="space-y-3">
-                    {/* Plato Bake */}
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">Plato Bake</span>
-                          {selectedUser.UserAppSubscription?.some(sub => sub.app === "plato_bake" && sub.status === "active") ? (
-                            <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
-                              Not Subscribed
-                            </span>
-                          )}
-                        </div>
-                        {selectedUser.UserAppSubscription?.find(sub => sub.app === "plato_bake")?.currentPeriodEnd && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Expires: {new Date(selectedUser.UserAppSubscription.find(sub => sub.app === "plato_bake")!.currentPeriodEnd!).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      {selectedUser.UserAppSubscription?.some(sub => sub.app === "plato_bake" && sub.status === "active") ? (
-                        <button
-                          onClick={() => handleRevokeAppAccess(selectedUser.id, "plato_bake")}
-                          disabled={actionLoading}
-                          className="px-3 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
-                        >
-                          Revoke Access
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleGrantAppAccess(selectedUser.id, "plato_bake")}
-                          disabled={actionLoading}
-                          className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200"
-                        >
-                          Grant Access
-                        </button>
-                      )}
-                    </div>
-                    {/* Plato (Main App) */}
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">Plato (Main App)</span>
-                          {selectedUser.UserAppSubscription?.some(sub => sub.app === "plato" && sub.status === "active") ? (
-                            <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
-                              Not Subscribed
-                            </span>
-                          )}
-                        </div>
-                        {selectedUser.UserAppSubscription?.find(sub => sub.app === "plato")?.currentPeriodEnd && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Expires: {new Date(selectedUser.UserAppSubscription.find(sub => sub.app === "plato")!.currentPeriodEnd!).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      {selectedUser.UserAppSubscription?.some(sub => sub.app === "plato" && sub.status === "active") ? (
-                        <button
-                          onClick={() => handleRevokeAppAccess(selectedUser.id, "plato")}
-                          disabled={actionLoading}
-                          className="px-3 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
-                        >
-                          Revoke Access
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleGrantAppAccess(selectedUser.id, "plato")}
-                          disabled={actionLoading}
-                          className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200"
-                        >
-                          Grant Access
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Subscription Tier Management */}
               <div>
