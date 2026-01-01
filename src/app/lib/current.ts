@@ -149,14 +149,64 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     }
 
     // Get the primary company (first active membership)
-    const primaryMembership = userWithMemberships.memberships[0];
-    const companyId = primaryMembership?.companyId || null;
-    const company = primaryMembership?.company || null;
+    let primaryMembership = userWithMemberships.memberships[0];
+    let companyId = primaryMembership?.companyId || null;
+    let company = primaryMembership?.company || null;
     
-    // If user has no active memberships, return null
+    // If no active membership, check for inactive ones (simple fallback)
+    // Don't auto-create companies, but use existing memberships if they exist
+    if (!companyId) {
+      const allMemberships = await prisma.membership.findMany({
+        where: { userId },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              businessType: true,
+              country: true,
+              phone: true,
+              logoUrl: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 1
+      });
+      
+      if (allMemberships.length > 0) {
+        const membership = allMemberships[0];
+        companyId = membership.companyId;
+        company = membership.company as Company;
+        
+        // Try to activate if inactive (but don't fail if it doesn't work)
+        if (!membership.isActive) {
+          try {
+            await prisma.membership.update({
+              where: { id: membership.id },
+              data: { isActive: true }
+            });
+            logger.info(`Activated inactive membership for user ${userId}`, {
+              userId,
+              membershipId: membership.id,
+              companyId: membership.companyId
+            }, 'Current');
+          } catch (activateError) {
+            // Don't fail - use the membership anyway
+            logger.warn('Failed to activate membership, using it anyway', {
+              error: activateError instanceof Error ? activateError.message : String(activateError),
+              userId,
+              membershipId: membership.id
+            }, 'Current');
+          }
+        }
+      }
+    }
+    
+    // If still no company, return null
     // Registration should have created company + membership
     if (!companyId || !company) {
-      logger.warn('User has no active memberships', {
+      logger.warn('User has no memberships', {
         userId,
         email: userWithMemberships.email
       }, 'Current');
