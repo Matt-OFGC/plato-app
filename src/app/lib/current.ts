@@ -201,6 +201,14 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     let companyId = primaryMembership?.companyId || null;
     let company = primaryMembership?.company || null;
     
+    // Log if user has no memberships for debugging
+    if (userWithMemberships.memberships.length === 0) {
+      logger.warn('User has no memberships', {
+        userId,
+        email: userWithMemberships.email
+      }, 'Current');
+    }
+    
     // AUTO-REPAIR: If no active membership found, check for inactive ones
     if (!companyId) {
       const allMemberships = await prisma.membership.findMany({
