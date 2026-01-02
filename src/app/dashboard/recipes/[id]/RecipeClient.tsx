@@ -548,67 +548,65 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
           {/* Photos View - Compact Layout */}
           {viewMode === "photos" && (
-            <div>
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-                  {/* Recipe Image - Left Side */}
-                  <div className="flex-shrink-0">
-                    <div className="aspect-[3/4] bg-gradient-to-br from-emerald-100 to-blue-100 relative overflow-hidden rounded-xl">
-                      <Image
-                        src={imageUrl || recipe.imageUrl || "/images/placeholder-cake.png"}
-                        alt={isNew ? recipeTitle || "New Recipe" : recipe.title}
-                        fill
-                        className="object-cover"
-                        priority
-                        unoptimized={(imageUrl || recipe.imageUrl)?.startsWith('/uploads/')}
-                        onError={(e) => {
-                          console.error('Photo view image failed to load:', imageUrl || recipe.imageUrl);
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/images/placeholder-cake.png';
-                        }}
-                      />
-                    </div>
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden h-[calc(100vh-170px)] max-h-[calc(100vh-170px)]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 h-full">
+                {/* Recipe Image - Left Side */}
+                <div className="flex-shrink-0 h-full">
+                  <div className="relative w-full h-full min-h-[320px] bg-gradient-to-br from-emerald-100 to-blue-100 overflow-hidden rounded-xl">
+                    <Image
+                      src={imageUrl || recipe.imageUrl || "/images/placeholder-cake.png"}
+                      alt={isNew ? recipeTitle || "New Recipe" : recipe.title}
+                      fill
+                      className="object-cover"
+                      priority
+                      unoptimized={(imageUrl || recipe.imageUrl)?.startsWith('/uploads/')}
+                      onError={(e) => {
+                        console.error('Photo view image failed to load:', imageUrl || recipe.imageUrl);
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/placeholder-cake.png';
+                      }}
+                    />
                   </div>
+                </div>
 
-                  {/* Content - Right Side */}
-                  <div className="flex flex-col gap-6">
-                    {/* Recipe Title & Info */}
-                    <div>
-                      <h1 className="text-2xl font-bold text-gray-900 mb-2">{isNew ? recipeTitle || "New Recipe" : recipe.title}</h1>
-                      <div className="flex items-center gap-3 text-gray-600 mb-3">
-                        <span>{categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}</span>
-                        <span>•</span>
-                        <span>{servings} servings</span>
-                        {recipe.sellPrice && (
-                          <>
-                            <span>•</span>
-                            <span className="font-semibold text-emerald-600">£{recipe.sellPrice.toFixed(2)}</span>
-                          </>
-                        )}
-                      </div>
-                      {recipe.description && (
-                        <p className="text-gray-700 leading-relaxed">
-                          {recipe.description}
-                        </p>
+                {/* Content - Right Side */}
+                <div className="flex flex-col gap-4 h-full overflow-hidden">
+                  {/* Recipe Title & Info */}
+                  <div className="shrink-0">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">{isNew ? recipeTitle || "New Recipe" : recipe.title}</h1>
+                    <div className="flex items-center gap-3 text-gray-600 mb-3 flex-wrap">
+                      <span>{categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}</span>
+                      <span>•</span>
+                      <span>{servings} servings</span>
+                      {recipe.sellPrice && (
+                        <>
+                          <span>•</span>
+                          <span className="font-semibold text-emerald-600">£{recipe.sellPrice.toFixed(2)}</span>
+                        </>
                       )}
                     </div>
+                    {recipe.description && (
+                      <p className="text-gray-700 leading-relaxed">
+                        {recipe.description}
+                      </p>
+                    )}
+                  </div>
 
+                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden">
                     {/* Ingredients - Grouped by Section */}
-                    <div>
+                    <div className="flex flex-col min-w-0">
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Ingredients</h3>
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                      <div className="space-y-3 flex-1 overflow-auto pr-1">
                         {localSteps.map((step, stepIndex) => {
                           const stepIngredients = localIngredients.filter(ing => ing.stepId === step.id);
                           if (stepIngredients.length === 0) return null;
                           
                           return (
                             <div key={step.id || stepIndex}>
-                              {/* Section Header */}
                               <div className="flex items-center gap-2 mb-2 pt-2">
                                 <div className="w-0.5 h-4 bg-emerald-400 rounded-full"></div>
                                 <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wide">{step.title}</h4>
                               </div>
-                              {/* Section Ingredients */}
                               <div className="space-y-1.5 ml-3">
                                 {stepIngredients.map((ingredient, ingIndex) => (
                                   <div key={ingIndex} className="flex items-center justify-between py-1">
@@ -617,7 +615,6 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                                   </div>
                                 ))}
                               </div>
-                              {/* Subtle divider between sections */}
                               {stepIndex < localSteps.length - 1 && (
                                 <div className="mt-3 mb-1 border-t border-gray-100"></div>
                               )}
@@ -628,17 +625,15 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     </div>
 
                     {/* Instructions/Method - Grouped by Section */}
-                    <div>
+                    <div className="flex flex-col min-w-0">
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Method</h3>
-                      <div className="space-y-4 max-h-[300px] overflow-y-auto">
+                      <div className="space-y-4 flex-1 overflow-auto pr-1">
                         {localSteps.map((step, index) => (
                           <div key={index}>
-                            {/* Section Header */}
                             <div className="flex items-center gap-2 mb-2">
                               <div className="w-0.5 h-4 bg-blue-400 rounded-full"></div>
                               <h4 className="text-xs font-medium text-gray-600 uppercase tracking-wide">{step.title}</h4>
                             </div>
-                            {/* Section Instructions */}
                             <div className="ml-3 space-y-2">
                               {typeof step.instructions === 'string' ? (
                                 <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{step.instructions}</p>
@@ -655,7 +650,6 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                                 ))
                               ) : null}
                             </div>
-                            {/* Subtle divider between sections */}
                             {index < localSteps.length - 1 && (
                               <div className="mt-4 mb-2 border-t border-gray-100"></div>
                             )}
