@@ -69,10 +69,26 @@ export default function CustomerPortalPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState("weekly");
+  const [earliestDate, setEarliestDate] = useState<string>("");
 
   useEffect(() => {
     loadPortalData();
   }, [token]);
+
+  useEffect(() => {
+    // Compute earliest delivery date on the client to guide the user
+    const now = new Date();
+    const nextWorking = computeEarliestDelivery(now);
+    const y = nextWorking.getFullYear();
+    const m = String(nextWorking.getMonth() + 1).padStart(2, "0");
+    const d = String(nextWorking.getDate()).padStart(2, "0");
+    const iso = `${y}-${m}-${d}`;
+    setEarliestDate(iso);
+    setDeliveryDate((prev) => {
+      if (!prev) return iso;
+      return prev < iso ? iso : prev;
+    });
+  }, []);
 
   async function loadPortalData() {
     try {
@@ -125,6 +141,37 @@ export default function CustomerPortalPage() {
     const newCart = new Map(cart);
     newCart.delete(productId);
     setCart(newCart);
+  }
+
+  function isWorkingDay(date: Date) {
+    const day = date.getDay();
+    return day >= 1 && day <= 5; // Mon-Fri
+  }
+
+  function addWorkingDays(start: Date, workingDays: number) {
+    const d = new Date(start);
+    let remaining = workingDays;
+    while (remaining > 0) {
+      d.setDate(d.getDate() + 1);
+      if (isWorkingDay(d)) {
+        remaining -= 1;
+      }
+    }
+    return d;
+  }
+
+  function computeEarliestDelivery(now: Date) {
+    const start = new Date(now);
+    if (start.getHours() >= 12) {
+      start.setDate(start.getDate() + 1);
+    }
+    while (!isWorkingDay(start)) {
+      start.setDate(start.getDate() + 1);
+    }
+    start.setHours(0, 0, 0, 0);
+    const earliest = addWorkingDays(start, 4);
+    earliest.setHours(0, 0, 0, 0);
+    return earliest;
   }
 
   async function submitOrder() {
@@ -195,7 +242,16 @@ export default function CustomerPortalPage() {
     product.category?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const cartTotal = Array.from(cart.values()).reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotalItems = Array.from(cart.values()).reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotalAmount = Array.from(cart.values()).reduce((sum, item) => {
+    const price = item.price ? Number(item.price) : 0;
+    return sum + price * item.quantity;
+  }, 0);
+  const currencySymbol = filteredProducts?.[0]?.currency === 'USD'
+    ? '$'
+    : filteredProducts?.[0]?.currency === 'EUR'
+      ? '€'
+      : '£';
 
   if (loading) {
     return (
@@ -229,24 +285,26 @@ export default function CustomerPortalPage() {
         <div className="app-container py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {data.company.logoUrl && (
-                <img
-                  src={data.company.logoUrl}
-                  alt={data.company.name}
-                  className="h-12 w-auto"
-                />
-              )}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{data.company.name}</h1>
-                <p className="text-sm text-gray-600">Ordering Portal for {data.customer.name}</p>
+                {data.company.logoUrl && (
+                  <img
+                    src={data.company.logoUrl}
+                    alt={data.company.name}
+                    className="h-12 w-auto"
+                  />
+                )}
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{data.company.name}</h1>
+                  <p className="text-sm text-gray-600">Ordering Portal for {data.customer.name}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-100 rounded-lg">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="font-semibold text-green-800">{cartTotal} items</span>
-            </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-100 rounded-lg">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="font-semibold text-green-800">
+                  {cartTotalItems} items · {currencySymbol}{cartTotalAmount.toFixed(2)}
+                </span>
+              </div>
           </div>
         </div>
       </div>
@@ -286,42 +344,44 @@ export default function CustomerPortalPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 mb-4"
               />
 
-              {/* Product Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Product List */}
+              <div className="space-y-3">
                 {filteredProducts.map((product) => (
-                  <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
-                    {product.imageUrl && (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-32 object-cover rounded-lg mb-3"
-                      />
-                    )}
-                    <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
-                    {product.description && (
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.description}</p>
-                    )}
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="text-sm flex-1">
-                        {product.price && (
-                          <div className="font-bold text-green-700 text-lg">
-                            {product.currency === 'GBP' ? '£' : product.currency === 'USD' ? '$' : '€'}{parseFloat(product.price).toFixed(2)}
-                            <span className="text-sm font-normal text-gray-600 ml-1">{product.unit || 'each'}</span>
-                          </div>
-                        )}
-                        <div className="text-gray-500 text-xs mt-1">
-                          {product.yieldQuantity && product.recipeId && (
-                            <span>Batch size: {product.yieldQuantity} {product.yieldUnit}</span>
+                  <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      {product.imageUrl && (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded-md"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-semibold text-gray-900 truncate">{product.name}</h3>
+                          {product.price && (
+                            <div className="font-bold text-green-700 text-sm whitespace-nowrap">
+                              {product.currency === 'GBP' ? '£' : product.currency === 'USD' ? '$' : '€'}{parseFloat(product.price).toFixed(2)}
+                              <span className="text-xs font-normal text-gray-600 ml-1">{product.unit || 'each'}</span>
+                            </div>
                           )}
-                          {product.category && <span className="ml-2">• {product.category}</span>}
+                        </div>
+                        {product.description && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{product.description}</p>
+                        )}
+                        <div className="text-gray-500 text-xs mt-1 flex items-center gap-2 flex-wrap">
+                          {product.yieldQuantity && product.recipeId && (
+                            <span>Batch: {product.yieldQuantity} {product.yieldUnit}</span>
+                          )}
+                          {product.category && <span>• {product.category}</span>}
                           {product.hasCustomPrice && (
-                            <span className="ml-2 text-blue-600 font-medium">✓ Your Price</span>
+                            <span className="text-blue-600 font-medium">✓ Your Price</span>
                           )}
                         </div>
                       </div>
                       <button
                         onClick={() => addToCart(product)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium shadow-sm"
                       >
                         Add
                       </button>
@@ -382,8 +442,14 @@ export default function CustomerPortalPage() {
 
           {/* Cart & Order Form */}
           <div className="lg:col-span-1">
-            <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-24">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Your Order</h2>
+              <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-24">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Your Order</h2>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Estimated total</p>
+                    <p className="text-lg font-semibold text-gray-900">{currencySymbol}{cartTotalAmount.toFixed(2)}</p>
+                  </div>
+                </div>
 
               {/* Cart Items */}
               {cart.size === 0 ? (
@@ -437,9 +503,22 @@ export default function CustomerPortalPage() {
                   <input
                     type="date"
                     value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    min={earliestDate || undefined}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (earliestDate && val < earliestDate) {
+                        setDeliveryDate(earliestDate);
+                      } else {
+                        setDeliveryDate(val);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                   />
+                  {earliestDate && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Earliest available: {earliestDate}
+                    </p>
+                  )}
                 </div>
 
                 <div>
