@@ -13,6 +13,9 @@ export async function GET(
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const invoiceId = parseInt(params.id, 10);
+    if (Number.isNaN(invoiceId)) {
+      return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
+    }
 
     const invoice = await prisma.wholesaleInvoice.findUnique({
       where: { id: invoiceId },
@@ -52,6 +55,9 @@ export async function PUT(
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const invoiceId = parseInt(params.id, 10);
+    if (Number.isNaN(invoiceId)) {
+      return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
+    }
     const body = await req.json().catch(() => ({}));
 
     const existing = await prisma.wholesaleInvoice.findUnique({

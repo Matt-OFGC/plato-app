@@ -21,6 +21,9 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
   }
 
   const invoiceId = parseInt(params.id, 10);
+  if (Number.isNaN(invoiceId)) {
+    redirect("/dashboard/wholesale/invoices");
+  }
 
   const invoice = await prisma.wholesaleInvoice.findUnique({
     where: { id: invoiceId },
