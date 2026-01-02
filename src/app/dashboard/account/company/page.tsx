@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
-import { BusinessSettingsClient } from "../business/BusinessSettingsClient";
+import { BusinessSettingsClient } from "../../business/BusinessSettingsClient";
 import { CompanyLoadingErrorServer } from "@/components/CompanyLoadingErrorServer";
 import { redirect } from "next/navigation";
 import { getUserFromSession } from "@/lib/auth-simple";
