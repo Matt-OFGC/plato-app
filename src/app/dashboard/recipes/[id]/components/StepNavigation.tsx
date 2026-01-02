@@ -24,22 +24,22 @@ export default function StepNavigation({
           <button
             key={step.id}
             onClick={() => onStepChange(index)}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
+            className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl border transition-all backdrop-blur-md ${
               isActive
-                ? "bg-green-500 border-green-500 text-white shadow-lg hover:bg-green-600 hover:shadow-xl"
-                : "bg-white/80 backdrop-blur-xl border-gray-200/50 text-gray-700 hover:bg-white hover:shadow-md"
+                ? "bg-green-500/90 border-green-400 text-white shadow-lg shadow-green-200/70 hover:bg-green-600"
+                : "bg-white/60 border-white/60 text-gray-700 shadow-sm hover:bg-white/80"
             }`}
           >
             <span
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+              className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-semibold ${
                 isActive
-                  ? "bg-white/20 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  ? "bg-white/30 text-white"
+                  : "bg-gray-100 text-gray-700"
               }`}
             >
               {index + 1}
             </span>
-            <span className="text-sm font-medium">{step.title}</span>
+            <span className="text-sm font-semibold">{step.title}</span>
           </button>
         );
       })}
