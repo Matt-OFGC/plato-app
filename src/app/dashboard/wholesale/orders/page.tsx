@@ -112,15 +112,6 @@ export default async function WholesaleOrdersPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Wholesale Orders
-        </h1>
-        <p className="text-gray-600">
-          Manage incoming orders from your wholesale customers
-        </p>
-      </div>
-
       <WholesaleOrders
         orders={orders}
         customers={customers}
