@@ -784,15 +784,7 @@ export default function IngredientsPanel({
             <div className="space-y-3 md:space-y-4">
               {ingredientsBySection.map((sectionGroup, sectionIndex) => (
                 <div key={sectionIndex} className="space-y-2">
-                  {/* Section Header */}
-                  <div className="flex items-center gap-2 pt-2 pb-1 border-b border-gray-200">
-                    <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                      {/instruction/i.test(sectionGroup.sectionTitle) ? "Ingredients" : sectionGroup.sectionTitle}
-                    </h3>
-                  </div>
-                  
-                  {/* Section Ingredients */}
+                  {/* Section Ingredients (header removed to avoid duplicate label) */}
                   {sectionGroup.ingredients.map((ingredient) => {
                     return renderIngredientItem(ingredient);
                   })}
