@@ -140,6 +140,14 @@ export async function GET(
         id: customer.id,
         name: customer.name,
         companyId: customer.companyId,
+        contactName: customer.contactName,
+        email: customer.email,
+        phone: customer.phone,
+        address: customer.address,
+        city: customer.city,
+        postcode: customer.postcode,
+        country: customer.country,
+        notes: customer.notes,
       },
       company: customer.company,
       products: formattedProducts,
@@ -169,6 +177,68 @@ export async function GET(
     logger.error("Get portal info error", error, "Wholesale/Portal");
     return NextResponse.json(
       { error: "Failed to load portal" },
+      { status: 500 }
+    );
+  }
+}
+
+// Update customer info from portal
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  try {
+    const { token } = await params;
+    const customer = await prisma.wholesaleCustomer.findUnique({
+      where: { portalToken: token },
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: "Invalid portal token" }, { status: 404 });
+    }
+
+    if (!customer.portalEnabled) {
+      return NextResponse.json({ error: "Portal access is disabled" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const allowed = {
+      contactName: body.contactName ?? null,
+      email: body.email ?? null,
+      phone: body.phone ?? null,
+      address: body.address ?? null,
+      city: body.city ?? null,
+      postcode: body.postcode ?? null,
+      country: body.country ?? null,
+      notes: body.notes ?? null,
+    };
+
+    const updated = await prisma.wholesaleCustomer.update({
+      where: { id: customer.id },
+      data: allowed,
+      select: {
+        id: true,
+        name: true,
+        contactName: true,
+        email: true,
+        phone: true,
+        address: true,
+        city: true,
+        postcode: true,
+        country: true,
+        notes: true,
+      },
+    });
+
+    return NextResponse.json(serializeResponse(updated), {
+      status: 200,
+      headers: { "Content-Encoding": "identity" },
+    });
+  } catch (error) {
+    const { logger } = await import("@/lib/logger");
+    logger.error("Update portal customer error", error, "Wholesale/Portal");
+    return NextResponse.json(
+      { error: "Failed to update customer info" },
       { status: 500 }
     );
   }
