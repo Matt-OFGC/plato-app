@@ -509,7 +509,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         )}
       {/* Top Header - Compact - Hidden in Photos view */}
       {viewMode !== "photos" && (
-        <div className="flex-shrink-0 px-6 pt-6 pb-4">
+        <div className="flex-shrink-0 px-6 pt-2 pb-2">
           <div className="max-w-[1600px] mx-auto">
             <RecipeHeader
               title={isNew ? recipeTitle || "New Recipe" : recipe.title}
@@ -557,7 +557,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     setLocalSteps(newSteps);
                     setActiveStepIndex(newSteps.length - 1);
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all bg-green-500/90 border-green-400 text-white shadow-lg shadow-green-200/70 hover:bg-green-600 backdrop-blur-md"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all bg-green-500/90 border-green-400 text-white shadow-md shadow-green-200/70 hover:bg-green-600 backdrop-blur-md text-sm"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
