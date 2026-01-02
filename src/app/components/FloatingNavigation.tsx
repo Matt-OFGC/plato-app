@@ -105,12 +105,20 @@ const getTabsForPath = (pathname: string, activeApp: string | null): { tabs: str
     };
   }
 
-  // Settings section - Subscription, Pricing, Content, Suppliers, Timers, Preferences
-  // Show tabs on all settings pages for consistent navigation
-  if (pathname.startsWith('/dashboard/account')) {
+  // Settings section - add Company tab + legacy tabs
+  // Works for /settings (rewritten) and /dashboard/account routes
+  if (pathname.startsWith('/dashboard/account') || pathname.startsWith('/settings')) {
     return { 
-      tabs: ['Subscription', 'Pricing', 'Content', 'Suppliers', 'Timers', 'Preferences'],
-      links: ['/dashboard/account/subscription', '/dashboard/account/pricing', '/dashboard/account/content', '/dashboard/account/suppliers', '/dashboard/account/timers', '/dashboard/account/preferences']
+      tabs: ['Company', 'Subscription', 'Pricing', 'Content', 'Suppliers', 'Timers', 'Preferences'],
+      links: [
+        '/dashboard/account/company',
+        '/dashboard/account/subscription',
+        '/dashboard/account/pricing',
+        '/dashboard/account/content',
+        '/dashboard/account/suppliers',
+        '/dashboard/account/timers',
+        '/dashboard/account/preferences'
+      ]
     };
   }
 

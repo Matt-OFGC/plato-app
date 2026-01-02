@@ -164,46 +164,6 @@ export default async function AccountPage() {
         ))}
       </div>
 
-      {/* Company & Wholesale Settings */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Company & Wholesale Settings</h2>
-            <p className="text-gray-600 mt-1">
-              Business profile, address, contact, and wholesale invoicing details (bank, payment instructions).
-            </p>
-          </div>
-          {!isAdmin && (
-            <span className="px-3 py-1 text-sm rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-              View only (Admin required to edit)
-            </span>
-          )}
-        </div>
-
-        {company ? (
-          isAdmin ? (
-            <BusinessSettingsClient company={company} />
-          ) : (
-            <div className="space-y-4 text-sm text-gray-700">
-              <p className="text-gray-800 font-semibold">Company: {company.name}</p>
-              <p>Business type: {company.businessType || "—"}</p>
-              <p>Phone: {company.phone || "—"}</p>
-              <p>Email: {company.email || "—"}</p>
-              <p>Website: {company.website || "—"}</p>
-              <p>Address: {[company.address, company.city, company.postcode].filter(Boolean).join(", ") || "—"}</p>
-              <div className="border-t pt-3">
-                <p className="text-gray-800 font-semibold">Invoicing / Bank</p>
-                <p>Bank: {company.invoicingBankName || "—"}</p>
-                <p>Account: {company.invoicingBankAccount || "—"}</p>
-                <p>Sort code: {company.invoicingSortCode || "—"}</p>
-                <p>Payment instructions: {company.invoicingInstructions || "—"}</p>
-              </div>
-            </div>
-          )
-        ) : (
-          <p className="text-gray-500">Company details not available.</p>
-        )}
-      </div>
     </div>
   );
 }

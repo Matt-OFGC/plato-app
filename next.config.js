@@ -263,6 +263,10 @@ const nextConfig = {
         source: '/settings',
         destination: '/dashboard/account',
       },
+      {
+        source: '/settings/:path*',
+        destination: '/dashboard/account/:path*',
+      },
     ];
   },
 };
