@@ -92,7 +92,7 @@ export default function InstructionsPanel({
             <p className="text-sm md:text-base">No instructions available</p>
           </div>
         ) : (
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-2.5 md:space-y-3">
             {displayedSteps.map((step, stepIndex) => {
               const actualIndex = steps.findIndex(s => s.id === step.id);
               return (

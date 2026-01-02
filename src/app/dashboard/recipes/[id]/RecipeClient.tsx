@@ -557,7 +557,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     setLocalSteps(newSteps);
                     setActiveStepIndex(newSteps.length - 1);
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border transition-all bg-green-500/90 border-green-400 text-white shadow-lg shadow-green-200/70 hover:bg-green-600 backdrop-blur-md"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all bg-green-500/90 border-green-400 text-white shadow-lg shadow-green-200/70 hover:bg-green-600 backdrop-blur-md"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

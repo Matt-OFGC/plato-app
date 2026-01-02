@@ -16,7 +16,7 @@ export default function StepNavigation({
   totalSteps,
 }: StepNavigationProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-1.5 flex-wrap">
       {steps.map((step, index) => {
         const isActive = index === activeStepIndex;
         
@@ -24,7 +24,7 @@ export default function StepNavigation({
           <button
             key={step.id}
             onClick={() => onStepChange(index)}
-            className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl border transition-all backdrop-blur-md ${
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all backdrop-blur-md ${
               isActive
                 ? "bg-green-500/90 border-green-400 text-white shadow-lg shadow-green-200/70 hover:bg-green-600"
                 : "bg-white/60 border-white/60 text-gray-700 shadow-sm hover:bg-white/80"
