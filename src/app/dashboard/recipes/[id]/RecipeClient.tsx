@@ -536,13 +536,33 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         <div className={`max-w-[1600px] mx-auto ${viewMode === "photos" ? "px-6 pt-0 pb-28" : "px-6 pb-6"}`}>
           {/* Step Navigation - Show in Steps and Edit modes */}
           {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-4 flex items-center gap-3 flex-wrap">
               <StepNavigation
                 steps={localSteps}
                 activeStepIndex={activeStepIndex}
                 onStepChange={setActiveStepIndex}
                 totalSteps={localSteps.length}
               />
+              {viewMode === "edit" && (
+                <button
+                  onClick={() => {
+                    const newStep = {
+                      id: `step-${Date.now()}`,
+                      title: "",
+                      instructions: [],
+                    };
+                    const newSteps = [...localSteps, newStep];
+                    setLocalSteps(newSteps);
+                    setActiveStepIndex(newSteps.length - 1);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all bg-green-500 border-green-500 text-white shadow-lg hover:bg-green-600 hover:shadow-xl"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Step
+                </button>
+              )}
             </div>
           )}
 

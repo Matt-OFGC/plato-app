@@ -38,15 +38,6 @@ export default function InstructionsPanel({
     onStepsChange(newSteps);
   };
 
-  const handleAddStep = () => {
-    const newStep: RecipeStep = {
-      id: `step-${Date.now()}`,
-      title: "",  // Empty string so placeholder shows
-      instructions: [],  // Empty array so placeholder shows
-    };
-    onStepsChange([...steps, newStep]);
-  };
-
   const handleDeleteStep = (stepId: string) => {
     const newSteps = steps.filter((s) => s.id !== stepId);
     if (newSteps.length === 0) return; // Don't allow deleting all steps
@@ -92,19 +83,6 @@ export default function InstructionsPanel({
       {/* Header */}
       <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200/50 flex-shrink-0">
         <h2 className="text-lg md:text-xl font-bold text-gray-900">INSTRUCTIONS</h2>
-        
-        {/* Add Step Button - Show in Edit mode */}
-        {viewMode === "edit" && (
-          <button
-            onClick={handleAddStep}
-            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500 text-white hover:bg-green-600 transition-colors shadow-sm"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Step
-          </button>
-        )}
       </div>
 
       {/* Instructions List */}
