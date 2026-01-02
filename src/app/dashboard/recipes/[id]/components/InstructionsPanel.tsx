@@ -112,7 +112,7 @@ export default function InstructionsPanel({
                         type="text"
                         value={step.title}
                         onChange={(e) => handleUpdateStepTitle(step.id, e.target.value)}
-                        className="px-3 py-1 rounded-full bg-white/80 backdrop-blur-sm text-gray-700 text-xs font-medium border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-sm text-gray-800 text-sm md:text-base font-semibold border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Step title..."
                       />
                     ) : (
