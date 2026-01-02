@@ -533,7 +533,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
       {/* Main Content Area - Flex Grow to Fill Space */}
       <div className="flex-1 min-h-0 overflow-auto">
-        <div className={`max-w-[1600px] mx-auto ${viewMode === "photos" ? "px-6 pt-0" : "px-6"} pb-6`}>
+        <div className={`max-w-[1600px] mx-auto ${viewMode === "photos" ? "px-6 pt-0 pb-28" : "px-6 pb-6"}`}>
           {/* Step Navigation - Show in Steps and Edit modes */}
           {(viewMode === "steps" || viewMode === "edit") && localSteps.length > 0 && (
             <div className="mb-4">
@@ -548,7 +548,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
           {/* Photos View - Compact Layout */}
           {viewMode === "photos" && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden h-[calc(100vh-170px)] max-h-[calc(100vh-170px)]">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden h-[calc(100vh-240px)] max-h-[calc(100vh-240px)] min-h-[520px]">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 h-full">
                 {/* Recipe Image - Left Side */}
                 <div className="flex-shrink-0 h-full">
