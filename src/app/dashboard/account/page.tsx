@@ -1,6 +1,10 @@
 import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUserAndCompany } from "@/lib/current";
+import { BusinessSettingsClient } from "../business/BusinessSettingsClient";
+import { CompanyLoadingErrorServer } from "@/components/CompanyLoadingErrorServer";
 
 // Force dynamic rendering since this page uses cookies
 export const dynamic = 'force-dynamic';
@@ -8,6 +12,54 @@ export const dynamic = 'force-dynamic';
 export default async function AccountPage() {
   const user = await getUserFromSession();
   if (!user) redirect("/login");
+
+  const result = await getCurrentUserAndCompany();
+  const { companyId } = result;
+
+  if (!companyId) {
+    return <CompanyLoadingErrorServer result={result} page="account-settings" />;
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId_companyId: {
+        userId: user.id,
+        companyId,
+      },
+    },
+    select: {
+      role: true,
+      isActive: true,
+    },
+  });
+
+  const isAdmin = !!membership && membership.isActive && membership.role === "ADMIN";
+
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: {
+      id: true,
+      name: true,
+      businessType: true,
+      country: true,
+      logoUrl: true,
+      slug: true,
+      isProfilePublic: true,
+      profileBio: true,
+      showTeam: true,
+      showContact: true,
+      phone: true,
+      email: true,
+      website: true,
+      address: true,
+      city: true,
+      postcode: true,
+      invoicingBankName: true,
+      invoicingBankAccount: true,
+      invoicingSortCode: true,
+      invoicingInstructions: true,
+    },
+  });
 
   const settingsPages = [
     {
@@ -86,14 +138,16 @@ export default async function AccountPage() {
   ];
 
   return (
-    <div>
+    <div className="space-y-10">
       {/* Page Header */}
-      <div className="mb-8">
+      <div>
         <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Settings</h1>
-        <p className="text-gray-500 text-lg mb-6">Manage your account preferences, pricing, and content organization</p>
+        <p className="text-gray-500 text-lg mb-4">
+          Manage your account, company profile, and wholesale invoicing details from one place.
+        </p>
       </div>
 
-      {/* Settings Cards Grid */}
+      {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {settingsPages.map((page) => (
           <Link
@@ -108,6 +162,47 @@ export default async function AccountPage() {
             <p className="text-sm text-gray-500">{page.description}</p>
           </Link>
         ))}
+      </div>
+
+      {/* Company & Wholesale Settings */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Company & Wholesale Settings</h2>
+            <p className="text-gray-600 mt-1">
+              Business profile, address, contact, and wholesale invoicing details (bank, payment instructions).
+            </p>
+          </div>
+          {!isAdmin && (
+            <span className="px-3 py-1 text-sm rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+              View only (Admin required to edit)
+            </span>
+          )}
+        </div>
+
+        {company ? (
+          isAdmin ? (
+            <BusinessSettingsClient company={company} />
+          ) : (
+            <div className="space-y-4 text-sm text-gray-700">
+              <p className="text-gray-800 font-semibold">Company: {company.name}</p>
+              <p>Business type: {company.businessType || "—"}</p>
+              <p>Phone: {company.phone || "—"}</p>
+              <p>Email: {company.email || "—"}</p>
+              <p>Website: {company.website || "—"}</p>
+              <p>Address: {[company.address, company.city, company.postcode].filter(Boolean).join(", ") || "—"}</p>
+              <div className="border-t pt-3">
+                <p className="text-gray-800 font-semibold">Invoicing / Bank</p>
+                <p>Bank: {company.invoicingBankName || "—"}</p>
+                <p>Account: {company.invoicingBankAccount || "—"}</p>
+                <p>Sort code: {company.invoicingSortCode || "—"}</p>
+                <p>Payment instructions: {company.invoicingInstructions || "—"}</p>
+              </div>
+            </div>
+          )
+        ) : (
+          <p className="text-gray-500">Company details not available.</p>
+        )}
       </div>
     </div>
   );

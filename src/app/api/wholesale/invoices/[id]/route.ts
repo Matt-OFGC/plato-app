@@ -6,14 +6,13 @@ import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { id } = await params;
-    const invoiceId = parseInt(id, 10);
+    const invoiceId = parseInt(params.id, 10);
 
     const invoice = await prisma.wholesaleInvoice.findUnique({
       where: { id: invoiceId },
@@ -46,14 +45,13 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { id } = await params;
-    const invoiceId = parseInt(id, 10);
+    const invoiceId = parseInt(params.id, 10);
     const body = await req.json().catch(() => ({}));
 
     const existing = await prisma.wholesaleInvoice.findUnique({
