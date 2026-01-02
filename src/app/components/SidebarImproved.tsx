@@ -360,9 +360,9 @@ export function Sidebar() {
             {/* Settings Link */}
             <div className="relative group/nav-item">
               <a 
-                href="/dashboard/account" 
+                href="/settings" 
                 className={`w-10 h-10 rounded-xl liquid-glass liquid-glass-hover liquid-glass-ripple flex items-center justify-center transition-all duration-200 touch-manipulation ${
-                  pathname.startsWith('/dashboard/account')
+                  pathname.startsWith('/settings') || pathname.startsWith('/dashboard/account')
                     ? 'liquid-glass-glow scale-105 shadow-lg shadow-indigo-500/20 text-indigo-700' 
                     : `${colors.text}`
                 }`}
@@ -375,7 +375,7 @@ export function Sidebar() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                {pathname.startsWith('/dashboard/account') && (
+                {(pathname.startsWith('/settings') || pathname.startsWith('/dashboard/account')) && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full opacity-80" />
                 )}
               </a>

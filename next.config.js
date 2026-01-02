@@ -255,6 +255,16 @@ const nextConfig = {
       },
     ];
   },
+
+  // Friendly routes
+  async rewrites() {
+    return [
+      {
+        source: '/settings',
+        destination: '/dashboard/account',
+      },
+    ];
+  },
 };
 
 module.exports = withPWA(nextConfig);

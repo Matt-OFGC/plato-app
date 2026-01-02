@@ -78,7 +78,7 @@ export function MobileBottomNav() {
     {
       label: "More",
       href: "/dashboard/settings",
-      paths: ["/dashboard/settings", "/dashboard/team", "/dashboard/account"],
+      paths: ["/dashboard/settings", "/dashboard/team", "/settings", "/dashboard/account"],
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

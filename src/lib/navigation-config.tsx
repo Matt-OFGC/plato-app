@@ -100,7 +100,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   },
   { 
     value: "account",
-    href: "/dashboard/account", 
+  href: "/settings", 
     label: "Settings", 
     shortLabel: "Settings",
     appContext: "global", // Changed to global so it shows in all apps
