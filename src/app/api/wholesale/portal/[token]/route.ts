@@ -118,6 +118,23 @@ export async function GET(
       take: 5,
     });
 
+    // Get customer invoices
+    const invoices = await prisma.wholesaleInvoice.findMany({
+      where: { customerId: customer.id, companyId: customer.companyId },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        status: true,
+        total: true,
+        currency: true,
+        issueDate: true,
+        dueDate: true,
+        paidAmount: true,
+      },
+      orderBy: { issueDate: "desc" },
+      take: 20,
+    });
+
     return createOptimizedResponse({
       customer: {
         id: customer.id,
@@ -132,6 +149,11 @@ export async function GET(
           ...item,
           price: item.price ? item.price.toString() : null,
         })),
+      })),
+      invoices: invoices.map((inv) => ({
+        ...inv,
+        total: inv.total?.toString() ?? "0",
+        paidAmount: inv.paidAmount?.toString() ?? "0",
       })),
     }, {
       cacheType: 'dynamic',

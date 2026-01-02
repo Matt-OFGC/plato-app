@@ -41,6 +41,16 @@ interface CustomerPortalData {
   };
   products: Product[];
   recentOrders: any[];
+  invoices: Array<{
+    id: number;
+    invoiceNumber: string | null;
+    status: string;
+    total: string;
+    currency: string;
+    issueDate: string | null;
+    dueDate: string | null;
+    paidAmount: string | null;
+  }>;
 }
 
 export default function CustomerPortalPage() {
@@ -159,6 +169,24 @@ export default function CustomerPortalPage() {
       alert("Network error");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function downloadInvoice(inv: CustomerPortalData["invoices"][number]) {
+    try {
+      const res = await fetch(`/api/wholesale/invoices/${inv.id}/pdf`);
+      if (!res.ok) throw new Error("Failed to download invoice");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const label = inv.invoiceNumber || `invoice-${inv.id}`;
+      const customerSlug = data?.customer.name?.toLowerCase().replace(/[^a-z0-9]+/gi, "-") || "invoice";
+      link.href = url;
+      link.download = `${customerSlug}-${label}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      alert(error?.message || "Download failed");
     }
   }
 
@@ -302,6 +330,54 @@ export default function CustomerPortalPage() {
                 ))}
               </div>
             </div>
+
+            {/* Invoices */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Invoices</h2>
+                <span className="text-sm text-gray-500">Latest invoices for your account</span>
+              </div>
+              {data.invoices && data.invoices.length > 0 ? (
+                <div className="space-y-2">
+                  {data.invoices.map((inv) => (
+                    <div key={inv.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {inv.invoiceNumber || `Invoice ${inv.id}`}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Issued {inv.issueDate ? new Date(inv.issueDate).toLocaleDateString() : "—"} · Due {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {inv.currency || "GBP"} {Number(inv.total || 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          inv.status === "paid"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            : inv.status === "overdue"
+                            ? "bg-red-50 text-red-700 border border-red-100"
+                            : inv.status === "sent"
+                            ? "bg-blue-50 text-blue-700 border border-blue-100"
+                            : "bg-gray-50 text-gray-700 border border-gray-100"
+                        }`}>
+                          {inv.status}
+                        </span>
+                        <button
+                          onClick={() => downloadInvoice(inv)}
+                          className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-100"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No invoices yet.</p>
+              )}
+            </div>
           </div>
 
           {/* Cart & Order Form */}
@@ -356,7 +432,7 @@ export default function CustomerPortalPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Date (Optional)
+                    Delivery Date (Required · 4 working days min, 12pm cutoff)
                   </label>
                   <input
                     type="date"

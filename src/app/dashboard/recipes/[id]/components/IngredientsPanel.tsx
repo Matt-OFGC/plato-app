@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { Ingredient, RecipeStep } from "@/lib/mocks/recipe";
 import { scaleQuantity, formatQty } from "@/lib/recipe-scaling";
 import { computeIngredientUsageCostWithDensity, Unit, toBase, BaseUnit } from "@/lib/units";
@@ -161,6 +162,8 @@ export default function IngredientsPanel({
   const [ingredientSearch, setIngredientSearch] = React.useState<Record<string, string>>({});
   const [searchResults, setSearchResults] = React.useState<Record<string, typeof availableIngredients>>({});
   const [dropdownPosition, setDropdownPosition] = React.useState<Record<string, 'above' | 'below'>>({});
+  const [dropdownMaxHeight, setDropdownMaxHeight] = React.useState<Record<string, number>>({});
+  const [dropdownCoords, setDropdownCoords] = React.useState<Record<string, { left: number; width: number; top: number; bottom: number; viewportHeight: number }>>({});
   const inputRefs = React.useRef<Record<string, HTMLInputElement | null>>({});
 
   // Function to calculate dropdown position
@@ -169,15 +172,31 @@ export default function IngredientsPanel({
     if (!input) return;
     
     const rect = input.getBoundingClientRect();
+    setDropdownCoords(prev => ({
+      ...prev,
+      [ingredientId]: {
+        left: rect.left,
+        width: rect.width,
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportHeight: window.innerHeight,
+      }
+    }));
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const dropdownHeight = 320; // max-h-80 = 320px
-    
-    // If not enough space below but enough above, position above
-    if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-      setDropdownPosition(prev => ({ ...prev, [ingredientId]: 'above' }));
-    } else {
+    const dropdownHeight = 320; // desired max height
+    const viewportPadding = 16;
+
+    // Prefer rendering below; only flip above if there is substantially more room above.
+    const belowHeight = Math.max(spaceBelow - viewportPadding, 160);
+    const aboveHeight = Math.max(spaceAbove - viewportPadding, 160);
+
+    if (belowHeight >= 200 || belowHeight >= aboveHeight) {
       setDropdownPosition(prev => ({ ...prev, [ingredientId]: 'below' }));
+      setDropdownMaxHeight(prev => ({ ...prev, [ingredientId]: Math.min(dropdownHeight, belowHeight) }));
+    } else {
+      setDropdownPosition(prev => ({ ...prev, [ingredientId]: 'above' }));
+      setDropdownMaxHeight(prev => ({ ...prev, [ingredientId]: Math.min(dropdownHeight, aboveHeight) }));
     }
   }, []);
 
@@ -422,30 +441,40 @@ export default function IngredientsPanel({
                   
                   {/* Searchable dropdown - shows all ingredients initially, filters as you type */}
                   {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0) || ingredientSearch[ingredient.id]?.length === 0 ? (
-                    <div 
-                      className={`absolute left-0 right-0 z-[110] bg-white border-2 border-emerald-300 rounded-lg shadow-2xl max-h-80 overflow-y-auto ${
-                        dropdownPosition[ingredient.id] === 'above' 
-                          ? 'bottom-full mb-1' 
-                          : 'top-full mt-1'
-                      }`}
-                    >
-                      <div className="py-1">
-                        {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : availableIngredients).map((result, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleSelectIngredient(ingredient.id, result)}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-emerald-50 flex items-center justify-between group transition-colors border-b border-gray-100 last:border-b-0"
+                    dropdownCoords[ingredient.id]
+                      ? createPortal(
+                          <div 
+                            className="fixed z-[120] bg-white border-2 border-emerald-300 rounded-lg shadow-2xl overflow-y-auto"
+                            style={{
+                              left: dropdownCoords[ingredient.id].left,
+                              width: dropdownCoords[ingredient.id].width,
+                              top: dropdownPosition[ingredient.id] === 'below' ? dropdownCoords[ingredient.id].bottom + 6 : undefined,
+                              bottom: dropdownPosition[ingredient.id] === 'above'
+                                ? dropdownCoords[ingredient.id].viewportHeight - dropdownCoords[ingredient.id].top + 6
+                                : undefined,
+                              maxHeight: dropdownMaxHeight[ingredient.id] ?? 320,
+                            }}
                           >
-                            <span className="font-medium text-gray-900 group-hover:text-emerald-700">
-                              {result.name}
-                            </span>
-                            <span className="text-xs text-gray-500 group-hover:text-emerald-600 font-medium">
-                              {result.unit} • £{result.costPerUnit.toFixed(3)}/{result.unit}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                            <div className="py-1">
+                              {(searchResults[ingredient.id] && searchResults[ingredient.id].length > 0 ? searchResults[ingredient.id] : availableIngredients).map((result, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => handleSelectIngredient(ingredient.id, result)}
+                                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-emerald-50 flex items-center justify-between group transition-colors border-b border-gray-100 last:border-b-0"
+                                >
+                                  <span className="font-medium text-gray-900 group-hover:text-emerald-700">
+                                    {result.name}
+                                  </span>
+                                  <span className="text-xs text-gray-500 group-hover:text-emerald-600 font-medium">
+                                    {result.unit} • £{result.costPerUnit.toFixed(3)}/{result.unit}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>,
+                          document.body
+                        )
+                      : null
                   ) : null}
                 </div>
                 

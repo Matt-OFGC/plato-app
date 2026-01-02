@@ -3,6 +3,38 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail, generateOrderConfirmationEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 
+function isWorkingDay(date: Date) {
+  const day = date.getDay();
+  return day >= 1 && day <= 5; // Mon-Fri
+}
+
+function addWorkingDays(start: Date, workingDays: number) {
+  const d = new Date(start);
+  let remaining = workingDays;
+  while (remaining > 0) {
+    d.setDate(d.getDate() + 1);
+    if (isWorkingDay(d)) {
+      remaining -= 1;
+    }
+  }
+  return d;
+}
+
+function computeEarliestDelivery(now: Date) {
+  const start = new Date(now);
+  if (start.getHours() >= 12) {
+    start.setDate(start.getDate() + 1);
+  }
+  // Move to next working day if today/tomorrow is weekend
+  while (!isWorkingDay(start)) {
+    start.setDate(start.getDate() + 1);
+  }
+  start.setHours(0, 0, 0, 0);
+  const earliest = addWorkingDays(start, 4);
+  earliest.setHours(0, 0, 0, 0);
+  return earliest;
+}
+
 // Create order from customer portal (no authentication required, uses token)
 export async function POST(
   request: NextRequest,
@@ -36,6 +68,25 @@ export async function POST(
     if (!items || items.length === 0) {
       return NextResponse.json(
         { error: "Order must contain at least one item" },
+        { status: 400 }
+      );
+    }
+
+    if (!deliveryDate) {
+      return NextResponse.json(
+        { error: "Delivery date is required" },
+        { status: 400 }
+      );
+    }
+
+    const requestedDelivery = new Date(deliveryDate);
+    const earliest = computeEarliestDelivery(new Date());
+    const requestedAtMidnight = new Date(requestedDelivery);
+    requestedAtMidnight.setHours(0, 0, 0, 0);
+
+    if (requestedAtMidnight < earliest) {
+      return NextResponse.json(
+        { error: `Earliest available delivery is ${earliest.toLocaleDateString()}` },
         { status: 400 }
       );
     }

@@ -23,7 +23,7 @@ export default async function InvoicesPage() {
   const currentUserRole = await getUserRoleInCompany(user.id, companyId) || "EMPLOYEE";
 
   // Get all invoices for this company
-  const invoices = await prisma.wholesaleInvoice.findMany({
+  const invoicesRaw = await prisma.wholesaleInvoice.findMany({
     where: { companyId },
     include: {
       customer: true,
@@ -33,6 +33,8 @@ export default async function InvoicesPage() {
       issueDate: 'desc',
     },
   });
+  // Serialize Prisma decimals/dates to plain objects
+  const invoices = JSON.parse(JSON.stringify(invoicesRaw));
 
   // Get customers for filtering
   const customers = await prisma.wholesaleCustomer.findMany({

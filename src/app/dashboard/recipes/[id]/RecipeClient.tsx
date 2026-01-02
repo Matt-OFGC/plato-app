@@ -509,7 +509,10 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         )}
       {/* Top Header - Compact - Hidden in Photos view */}
       {viewMode !== "photos" && (
-        <div className="flex-shrink-0 px-6 pt-2 pb-2">
+        <div
+          className="flex-shrink-0 px-6 pt-[13px] pb-[13px]"
+          style={{ marginLeft: 0, marginRight: 0 }}
+        >
           <div className="max-w-[1600px] mx-auto">
             <RecipeHeader
               title={isNew ? recipeTitle || "New Recipe" : recipe.title}

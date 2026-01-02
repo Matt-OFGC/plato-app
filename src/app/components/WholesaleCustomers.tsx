@@ -29,6 +29,26 @@ interface WholesaleCustomersProps {
   companyId: number;
 }
 
+interface CustomerSummary {
+  customerId: number;
+  orderCount: number;
+  invoiceCount: number;
+  totals: {
+    totalInvoiced: number;
+    totalPaid: number;
+    outstanding: number;
+    averageInvoice: number;
+  };
+  counts: {
+    paid: number;
+    sent: number;
+    draft: number;
+    overdue: number;
+  };
+  lastOrderDate: string | null;
+  lastInvoiceDate: string | null;
+}
+
 export function WholesaleCustomers({
   customers: initialCustomers,
   companyId,
@@ -41,7 +61,11 @@ export function WholesaleCustomers({
   const [selectedCustomer, setSelectedCustomer] = useState<WholesaleCustomer | null>(null);
   const [generatingToken, setGeneratingToken] = useState(false);
   const [portalUrl, setPortalUrl] = useState("");
-  const [shortUrl, setShortUrl] = useState("");
+  const [portalStatusMessage, setPortalStatusMessage] = useState<string | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileData, setProfileData] = useState<CustomerSummary | null>(null);
+  const [profileLoadingId, setProfileLoadingId] = useState<number | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   
   // Form state
   const [name, setName] = useState("");
@@ -168,33 +192,72 @@ export function WholesaleCustomers({
     }
   }
 
-  async function generatePortalToken(customer: WholesaleCustomer) {
+  async function enableOrRegeneratePortal(customer: WholesaleCustomer) {
     setSelectedCustomer(customer);
     setGeneratingToken(true);
+    setPortalStatusMessage(null);
 
     try {
-      const res = await fetch("/api/wholesale/portal/generate-token", {
+      const res = await fetch(`/api/wholesale/customers/${customer.id}/portal`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: customer.id }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setPortalUrl(data.portalUrl);
-        setShortUrl(data.shortUrl);
         setCustomers(customers.map(c => 
           c.id === customer.id ? { ...c, portalToken: data.token, portalEnabled: true } : c
         ));
+        setPortalStatusMessage("Portal link generated");
         setShowPortalModal(true);
       } else {
-        const errorData = await res.json();
-        alert(errorData.error || "Failed to generate portal token");
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || "Failed to generate portal link");
       }
     } catch (error) {
       alert("Network error");
     } finally {
       setGeneratingToken(false);
+    }
+  }
+
+  async function disablePortal(customer: WholesaleCustomer) {
+    setPortalStatusMessage(null);
+    try {
+      const res = await fetch(`/api/wholesale/customers/${customer.id}/portal`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to disable portal");
+      }
+      setCustomers(customers.map(c =>
+        c.id === customer.id ? { ...c, portalToken: null, portalEnabled: false } : c
+      ));
+      setPortalUrl("");
+      setPortalStatusMessage("Portal disabled");
+      setShowPortalModal(false);
+    } catch (error: any) {
+      alert(error?.message || "Failed to disable portal");
+    }
+  }
+
+  async function sendPortalEmail(customer: WholesaleCustomer) {
+    if (!customer.email) {
+      alert("Customer has no email on file.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/wholesale/customers/${customer.id}/send-portal`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to send portal link");
+      }
+      alert("Portal link sent");
+    } catch (error: any) {
+      alert(error?.message || "Failed to send portal link");
     }
   }
 
@@ -205,6 +268,26 @@ export function WholesaleCustomers({
 
   function viewOrders(customerId: number) {
     window.location.href = `/dashboard/wholesale/orders?customerId=${customerId}`;
+  }
+
+  async function viewProfile(customer: WholesaleCustomer) {
+    setProfileError(null);
+    setProfileLoadingId(customer.id);
+    try {
+      const res = await fetch(`/api/wholesale/customers/${customer.id}/summary`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to load profile");
+      }
+      const data = await res.json();
+      setProfileData(data);
+      setShowProfileModal(true);
+    } catch (error: any) {
+      setProfileError(error?.message || "Failed to load profile");
+      alert(error?.message || "Failed to load profile");
+    } finally {
+      setProfileLoadingId(null);
+    }
   }
 
   const activeCustomers = customers.filter(c => c.isActive);
@@ -309,26 +392,33 @@ export function WholesaleCustomers({
                     >
                       Pricing
                     </button>
-                    {customer.portalEnabled && customer.portalToken ? (
-                      <button
-                        onClick={() => {
+                    <button
+                      onClick={() => viewProfile(customer)}
+                      className="px-3 py-1.5 text-xs bg-emerald-50 text-emerald-700 rounded hover:bg-emerald-100 transition-colors font-medium"
+                      disabled={profileLoadingId === customer.id}
+                    >
+                      {profileLoadingId === customer.id ? "Loading..." : "Profile"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (customer.portalEnabled && customer.portalToken) {
                           setSelectedCustomer(customer);
                           setPortalUrl(`${window.location.origin}/wholesale/portal/${customer.portalToken}`);
                           setShowPortalModal(true);
-                        }}
-                        className="col-span-2 px-3 py-1.5 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors font-medium"
-                      >
-                        Portal Link
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => generatePortalToken(customer)}
-                        disabled={generatingToken}
-                        className="col-span-2 px-3 py-1.5 text-xs bg-purple-50 text-purple-700 rounded hover:bg-purple-100 transition-colors font-medium disabled:opacity-50"
-                      >
-                        {generatingToken ? "Generating..." : "Enable Portal"}
-                      </button>
-                    )}
+                          setPortalStatusMessage(null);
+                        } else {
+                          enableOrRegeneratePortal(customer);
+                        }
+                      }}
+                      disabled={generatingToken}
+                      className={`col-span-2 px-3 py-1.5 text-xs rounded transition-colors font-medium disabled:opacity-50 ${
+                        customer.portalEnabled && customer.portalToken
+                          ? "bg-green-50 text-green-700 hover:bg-green-100"
+                          : "bg-purple-50 text-purple-700 hover:bg-purple-100"
+                      }`}
+                    >
+                      {generatingToken ? "Generating..." : customer.portalEnabled && customer.portalToken ? "Portal Link" : "Enable Portal"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -570,6 +660,120 @@ export function WholesaleCustomers({
         )}
       </AnimatePresence>
 
+      {/* Profile Modal */}
+      <AnimatePresence>
+        {showProfileModal && profileData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowProfileModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Customer Insights</p>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {customers.find((c) => c.id === profileData.customerId)?.name || "Customer"}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowProfileModal(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Close"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-160px)]">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-lg">
+                    <p className="text-xs text-emerald-700">Total Invoiced</p>
+                    <p className="text-xl font-semibold text-emerald-900">£{profileData.totals.totalInvoiced.toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <p className="text-xs text-blue-700">Outstanding</p>
+                    <p className="text-xl font-semibold text-blue-900">£{profileData.totals.outstanding.toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg">
+                    <p className="text-xs text-indigo-700">Avg Invoice</p>
+                    <p className="text-xl font-semibold text-indigo-900">£{profileData.totals.averageInvoice.toFixed(2)}</p>
+                  </div>
+                  <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg">
+                    <p className="text-xs text-orange-700">Orders</p>
+                    <p className="text-xl font-semibold text-orange-900">{profileData.orderCount}</p>
+                  </div>
+                  <div className="p-4 bg-teal-50 border border-teal-100 rounded-lg">
+                    <p className="text-xs text-teal-700">Invoices</p>
+                    <p className="text-xl font-semibold text-teal-900">{profileData.invoiceCount}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-xs text-gray-600">Paid</p>
+                    <p className="text-xl font-semibold text-gray-900">£{profileData.totals.totalPaid.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border border-gray-200 rounded-lg">
+                    <p className="text-sm font-semibold text-gray-900 mb-3">Invoice Status</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Paid</span>
+                        <span className="font-semibold">{profileData.counts.paid}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Sent</span>
+                        <span className="font-semibold">{profileData.counts.sent}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Draft</span>
+                        <span className="font-semibold">{profileData.counts.draft}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Overdue</span>
+                        <span className="font-semibold">{profileData.counts.overdue}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border border-gray-200 rounded-lg text-sm space-y-2">
+                    <p className="text-sm font-semibold text-gray-900">Recent Activity</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Last Order</span>
+                      <span className="font-semibold">
+                        {profileData.lastOrderDate ? new Date(profileData.lastOrderDate).toLocaleDateString() : "—"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Last Invoice</span>
+                      <span className="font-semibold">
+                        {profileData.lastInvoiceDate ? new Date(profileData.lastInvoiceDate).toLocaleDateString() : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {profileError && (
+                  <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
+                    {profileError}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Portal Link Modal */}
       <AnimatePresence>
         {showPortalModal && selectedCustomer && (
@@ -592,35 +796,15 @@ export function WholesaleCustomers({
                   Customer Portal Link
                 </h2>
                 <p className="text-gray-600 mt-1">Share this link with {selectedCustomer.name}</p>
+                {portalStatusMessage && (
+                  <p className="text-xs text-emerald-700 mt-1">{portalStatusMessage}</p>
+                )}
               </div>
 
               <div className="p-6 space-y-4">
-                {/* Short URL - Easy to share */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Short URL (Easy to Share) 🎯
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={shortUrl}
-                      readOnly
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-green-50 text-sm font-medium"
-                    />
-                    <button
-                      onClick={() => copyPortalUrl(shortUrl)}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Use this shorter link to easily share with customers</p>
-                </div>
-
-                {/* Full URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Portal URL
+                    Portal URL
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -638,6 +822,30 @@ export function WholesaleCustomers({
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <button
+                    onClick={() => window.open(portalUrl, '_blank')}
+                    className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold"
+                  >
+                    Preview Portal
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => selectedCustomer && enableOrRegeneratePortal(selectedCustomer)}
+                      disabled={generatingToken}
+                      className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {generatingToken ? "Regenerating..." : "Regenerate Link"}
+                    </button>
+                    <button
+                      onClick={() => selectedCustomer && disablePortal(selectedCustomer)}
+                      className="px-3 py-2 text-sm bg-white border border-red-200 text-red-700 rounded-lg hover:bg-red-50"
+                    >
+                      Disable Portal
+                    </button>
+                  </div>
+                </div>
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -649,37 +857,29 @@ export function WholesaleCustomers({
                       </p>
                       <ul className="text-sm text-blue-800 space-y-1">
                         <li>• Share this unique link with your customer</li>
-                        <li>• They can browse products and place orders directly</li>
+                        <li>• They can browse products, place orders, and view invoices</li>
                         <li>• You'll receive orders in your dashboard</li>
-                        <li>• No login required - the link is secure and unique</li>
+                        <li>• Signed link only; no login required</li>
                       </ul>
                     </div>
                   </div>
                 </div>
 
-                {/* Preview Portal Button */}
-                <div>
-                  <button
-                    onClick={() => window.open(portalUrl, '_blank')}
-                    className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    Preview Portal (Test View)
-                  </button>
-                </div>
-
                 {selectedCustomer.email && (
-                  <div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => sendPortalEmail(selectedCustomer)}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                    >
+                      Send Link to {selectedCustomer.email}
+                    </button>
                     <button
                       onClick={() => {
-                        window.location.href = `mailto:${selectedCustomer.email}?subject=Your Ordering Portal&body=Hi ${selectedCustomer.contactName || ''},\n\nYou can now place orders directly through our ordering portal:\n\n${portalUrl}\n\nBest regards`;
+                        window.location.href = `mailto:${selectedCustomer.email}?subject=Your Ordering Portal&body=Hi ${selectedCustomer.contactName || ''},%0A%0AYou can now place orders directly through our ordering portal:%0A${portalUrl}%0A%0ABest regards`;
                       }}
-                      className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                     >
-                      Email Link to Customer
+                      Open Email Client
                     </button>
                   </div>
                 )}

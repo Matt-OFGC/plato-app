@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { InvoiceImportModal } from "@/components/wholesale/InvoiceImportModal";
@@ -46,18 +47,44 @@ export default function InvoicesPageClient({
   customers,
 }: InvoicesPageClientProps) {
   const router = useRouter();
+  const [invoiceList, setInvoiceList] = useState(invoices);
+  const handleOpenInvoice = (id?: number | string | null) => {
+    if (id === null || id === undefined) return;
+    const target = String(id);
+    router.push(`/dashboard/wholesale/invoices/${target}`);
+  };
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterCustomer, setFilterCustomer] = useState<string>("all");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const canManage = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
 
   // Filter invoices
-  const filteredInvoices = invoices.filter((invoice) => {
+  const filteredInvoices = invoiceList.filter((invoice) => {
     if (filterStatus !== "all" && invoice.status !== filterStatus) return false;
     if (filterCustomer !== "all" && invoice.customer?.id?.toString() !== filterCustomer) return false;
     return true;
   });
+
+  const handleDeleteInvoice = async (invoiceId: number, invoiceNumber: string) => {
+    if (deletingId) return;
+    const confirmed = confirm(`Delete invoice ${invoiceNumber}? This cannot be undone.`);
+    if (!confirmed) return;
+    setDeletingId(invoiceId);
+    try {
+      const res = await fetch(`/api/wholesale/invoices/${invoiceId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete invoice");
+      }
+      setInvoiceList((prev) => prev.filter((inv) => inv.id !== invoiceId));
+    } catch (error: any) {
+      alert(error?.message || "Failed to delete invoice");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Calculate totals
   const totalOutstanding = filteredInvoices
@@ -208,10 +235,27 @@ export default function InvoicesPageClient({
                   <tr
                     key={invoice.id}
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => router.push(`/dashboard/wholesale/invoices/${invoice.id}`)}
+                    onClick={() => handleOpenInvoice(invoice.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleOpenInvoice(invoice.id);
+                      }
+                    }}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{invoice.invoiceNumber}</div>
+                      <Link
+                        href={invoice.id ? `/dashboard/wholesale/invoices/${invoice.id}` : "#"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenInvoice(invoice.id);
+                        }}
+                        className="font-medium text-gray-900 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
+                      >
+                        {invoice.invoiceNumber}
+                      </Link>
                       {invoice.notes?.includes("IMPORTED INVOICE") && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
                           Imported
@@ -237,9 +281,22 @@ export default function InvoicesPageClient({
                         {invoice.status}
                       </span>
                     </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {invoice.paidDate ? format(new Date(invoice.paidDate), "MMM d, yyyy") : "—"}
-                  </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {invoice.paidDate ? format(new Date(invoice.paidDate), "MMM d, yyyy") : "—"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteInvoice(invoice.id, invoice.invoiceNumber);
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300 transition-colors text-sm disabled:opacity-60"
+                        disabled={deletingId === invoice.id}
+                        aria-label={`Delete invoice ${invoice.invoiceNumber}`}
+                      >
+                        {deletingId === invoice.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

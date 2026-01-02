@@ -112,3 +112,36 @@ export async function PUT(
     return NextResponse.json({ error: "Failed to update invoice" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const invoiceId = parseInt(params.id, 10);
+    if (Number.isNaN(invoiceId)) {
+      return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
+    }
+
+    const existing = await prisma.wholesaleInvoice.findUnique({
+      where: { id: invoiceId },
+      select: { companyId: true },
+    });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const allowed = await hasCompanyAccess(session.id, existing.companyId);
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    await prisma.wholesaleInvoice.delete({
+      where: { id: invoiceId },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    logger.error("Invoice delete failed", error, "Wholesale/Invoices");
+    return NextResponse.json({ error: "Failed to delete invoice" }, { status: 500 });
+  }
+}
