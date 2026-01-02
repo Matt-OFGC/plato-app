@@ -20,7 +20,7 @@ const ingredientSchema = z.object({
   supplierId: z.string().optional().transform((v) => v === "" ? null : (v ? parseInt(v) : null)),
   packQuantity: z.coerce.number().positive(),
   packUnit: unitEnum,
-  packPrice: z.coerce.number().nonnegative(),
+  packPrice: z.coerce.number().nonnegative(), // allow zero for free ingredients
   currency: z.string().min(1).default("GBP"),
   densityGPerMl: z
     .union([z.coerce.number().positive().nullable(), z.literal("")])
@@ -57,7 +57,7 @@ const ingredientSchema = z.object({
         typeof tier.packQuantity === 'number' && 
         typeof tier.packPrice === 'number' &&
         tier.packQuantity > 0 &&
-        tier.packPrice > 0
+        tier.packPrice >= 0
       );
       return valid ? parsed : null;
     } catch {

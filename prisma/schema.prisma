@@ -300,6 +300,7 @@ model Company {
   templateAppliances     TemplateAppliance[]     @relation("templateAppliances")
   temperatureRecords     TemperatureRecord[]     @relation("temperatureRecords")
   dailyTemperatureChecks DailyTemperatureCheck[] @relation("dailyTemperatureChecks")
+  wholesaleInvoices      WholesaleInvoice[]
 }
 
 model Membership {
@@ -583,11 +584,16 @@ model WholesaleCustomer {
   portalToken           String?                    @unique
   portalShortCode       String?                    @unique
   portalEnabled         Boolean                    @default(false)
+  standingOrderEnabled  Boolean                    @default(false)
+  standingOrderNotes    String?
+  deliveryWindow        String?
+  standingSchedule      Json?
   customPricing         CustomerPricing[]
   productionItems       ProductionItem[]
   productionAllocations ProductionItemAllocation[]
   company               Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   orders                WholesaleOrder[]
+  invoices              WholesaleInvoice[]
 
   @@index([companyId])
   @@index([isActive])
@@ -616,6 +622,7 @@ model WholesaleOrder {
   parentOrder           WholesaleOrder?      @relation("RecurringOrders", fields: [parentOrderId], references: [id])
   recurringOrders       WholesaleOrder[]     @relation("RecurringOrders")
   items                 WholesaleOrderItem[]
+  invoices              WholesaleInvoice[]
 
   @@index([customerId])
   @@index([companyId])
@@ -639,6 +646,32 @@ model WholesaleOrderItem {
 
   @@index([orderId])
   @@index([recipeId])
+}
+
+model WholesaleInvoice {
+  id           Int               @id @default(autoincrement())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  companyId    Int
+  customerId   Int
+  invoiceNumber String?
+  issueDate    DateTime?
+  dueDate      DateTime?
+  status       String            @default("pending")
+  total        Decimal           @default(0)
+  currency     String            @default("GBP")
+  notes        String?
+  customer     WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  order        WholesaleOrder?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      Int?
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@index([issueDate])
+  @@index([dueDate])
+  @@unique([companyId, invoiceNumber])
 }
 
 model CustomerPricing {

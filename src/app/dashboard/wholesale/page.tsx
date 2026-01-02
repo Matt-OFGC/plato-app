@@ -30,6 +30,10 @@ export default async function WholesalePage() {
       id: true,
       name: true,
       isActive: true,
+      standingOrderEnabled: true,
+      standingOrderNotes: true,
+      deliveryWindow: true,
+      standingSchedule: true,
       _count: {
         select: {
           orders: true,
@@ -54,66 +58,77 @@ export default async function WholesalePage() {
     take: 10,
   });
 
-  // Get recent invoices
-  const recentInvoices = await prisma.wholesaleInvoice.findMany({
-    where: { companyId },
-    include: {
-      WholesaleCustomer: {
-        select: {
-          id: true,
-          name: true,
+  // Invoices (guarded if table not present yet)
+  const invoicesResult = await (async () => {
+    try {
+      const recentInvoices = await prisma.wholesaleInvoice.findMany({
+        where: { companyId },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
-      },
-    },
-    orderBy: { issueDate: 'desc' },
-    take: 10,
-  });
+        orderBy: { issueDate: 'desc' },
+        take: 10,
+      });
 
-  // Calculate total outstanding
-  const totalOutstanding = await prisma.wholesaleInvoice.aggregate({
-    where: {
-      companyId,
-      status: { not: 'paid' },
-    },
-    _sum: {
-      total: true,
-    },
-  });
+      const totalOutstanding = await prisma.wholesaleInvoice.aggregate({
+        where: {
+          companyId,
+          status: { not: 'paid' },
+        },
+        _sum: {
+          total: true,
+        },
+      });
 
-  // Count overdue invoices
-  const overdueCount = await prisma.wholesaleInvoice.count({
-    where: {
-      companyId,
-      status: { not: 'paid' },
-      dueDate: { lt: new Date() },
-    },
-  });
+      const overdueCount = await prisma.wholesaleInvoice.count({
+        where: {
+          companyId,
+          status: { not: 'paid' },
+          dueDate: { lt: new Date() },
+        },
+      });
+
+      return { recentInvoices, totalOutstanding, overdueCount };
+    } catch (err: any) {
+      console.warn('[WholesalePage] Invoice queries disabled (table missing?)', err?.message || err);
+      return {
+        recentInvoices: [],
+        totalOutstanding: { _sum: { total: 0 } },
+        overdueCount: 0,
+      };
+    }
+  })();
 
   return (
     <WholesalePageClient
       companyId={companyId}
       currentUserRole={currentUserRole}
       customers={customers}
-        recentOrders={recentOrders.map((order: typeof recentOrders[0]) => ({
+      recentOrders={recentOrders.map((order: typeof recentOrders[0]) => ({
         ...order,
         customer: {
           id: order.customer.id,
           name: order.customer.name,
         },
       }))}
-        recentInvoices={recentInvoices.map((invoice: typeof recentInvoices[0]) => ({
+      recentInvoices={invoicesResult.recentInvoices.map((invoice: typeof invoicesResult.recentInvoices[0]) => ({
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
         total: invoice.total.toString(),
         status: invoice.status,
         dueDate: invoice.dueDate,
         customer: {
-          id: invoice.WholesaleCustomer.id,
-          name: invoice.WholesaleCustomer.name,
+          id: invoice.customer.id,
+          name: invoice.customer.name,
         },
       }))}
-      totalOutstanding={(totalOutstanding._sum.total || 0).toString()}
-      overdueCount={overdueCount}
+      totalOutstanding={(invoicesResult.totalOutstanding._sum.total || 0).toString()}
+      overdueCount={invoicesResult.overdueCount}
     />
   );
   } catch (error) {

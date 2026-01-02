@@ -115,7 +115,7 @@ export function IngredientForm({
   const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
   const isCountUnit = countUnits.includes(purchaseUnit || initialData?.packUnit || '');
   const unitsForPriceCalc = isCountUnit ? purchaseSize : packSize;
-  const pricePerUnit = unitsForPriceCalc > 1 && packPrice > 0 ? packPrice / unitsForPriceCalc : null;
+  const pricePerUnit = unitsForPriceCalc > 1 && packPrice >= 0 ? packPrice / unitsForPriceCalc : null;
   
   // Sync packSize and purchaseSize with initialData when it changes (for edit mode)
   // BUT only if user hasn't manually modified packSize

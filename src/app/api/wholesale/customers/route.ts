@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
       notes,
       isActive,
       companyId,
+      customerType = "wholesale",
+      standingOrderEnabled,
+      standingOrderNotes,
+      deliveryWindow,
+      standingSchedule,
     } = body;
 
     if (!name || !companyId) {
@@ -61,6 +66,10 @@ export async function POST(request: NextRequest) {
         isActive: isActive ?? true,
         customerType: customerType || "wholesale",
         companyId: parsedCompanyId,
+        standingOrderEnabled: standingOrderEnabled ?? false,
+        standingOrderNotes,
+        deliveryWindow,
+        standingSchedule,
       },
       include: {
         _count: {

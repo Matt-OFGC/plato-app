@@ -60,6 +60,11 @@ export async function isPaid(userId: number): Promise<boolean> {
  */
 export async function hasAIAccess(companyId: number): Promise<boolean> {
   try {
+    // Some environments may not have the mentorSubscription model yet
+    if (!(prisma as any).mentorSubscription) {
+      return false;
+    }
+
     const subscription = await prisma.mentorSubscription.findFirst({
       where: {
         companyId,
@@ -88,6 +93,10 @@ export async function hasAIAccess(companyId: number): Promise<boolean> {
  */
 export async function getAISubscriptionType(companyId: number): Promise<"unlimited" | "capped" | null> {
   try {
+    if (!(prisma as any).mentorSubscription) {
+      return null;
+    }
+
     const subscription = await prisma.mentorSubscription.findFirst({
       where: {
         companyId,

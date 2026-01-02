@@ -26,8 +26,8 @@ export default async function InvoicesPage() {
   const invoices = await prisma.wholesaleInvoice.findMany({
     where: { companyId },
     include: {
-      WholesaleCustomer: true,
-      WholesaleOrder: true,
+      customer: true,
+      order: true,
     },
     orderBy: {
       issueDate: 'desc',
