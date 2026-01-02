@@ -788,7 +788,7 @@ export default function IngredientsPanel({
                   <div className="flex items-center gap-2 pt-2 pb-1 border-b border-gray-200">
                     <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
                     <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                      {sectionGroup.sectionTitle}
+                      {/instruction/i.test(sectionGroup.sectionTitle) ? "Ingredients" : sectionGroup.sectionTitle}
                     </h3>
                   </div>
                   
