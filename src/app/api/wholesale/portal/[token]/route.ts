@@ -157,7 +157,8 @@ export async function GET(
       })),
     }, {
       cacheType: 'dynamic',
-      compression: true,
+      // Let the platform handle compression; manual flag can cause decode errors.
+      compression: false,
     });
   } catch (error) {
     const { logger } = await import("@/lib/logger");
