@@ -9,6 +9,13 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
+    const origin = request.nextUrl.origin;
+    const makeAbsolute = (url: string | null | undefined) => {
+      if (!url) return null;
+      if (url.startsWith("http://") || url.startsWith("https://")) return url;
+      const cleaned = url.startsWith("/") ? url : `/${url}`;
+      return `${origin}${cleaned}`;
+    };
 
     const customer = await prisma.wholesaleCustomer.findUnique({
       where: { portalToken: token },
@@ -74,7 +81,7 @@ export async function GET(
     const formattedProducts = products.map(product => {
       const displayName = product.name || product.recipe?.name || "Product";
       const displayDescription = product.description || product.recipe?.description;
-      const displayImage = product.imageUrl || product.recipe?.imageUrl;
+      const displayImage = makeAbsolute(product.imageUrl || product.recipe?.imageUrl);
       const displayCategory = product.category || product.recipe?.category;
       
       // Check if customer has custom pricing for this recipe

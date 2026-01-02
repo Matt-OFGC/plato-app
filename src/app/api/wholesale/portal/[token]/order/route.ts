@@ -91,6 +91,17 @@ export async function POST(
       );
     }
 
+    // Ensure only one active standing order: cancel existing recurring orders for this customer
+    if (isRecurring) {
+      await prisma.wholesaleOrder.updateMany({
+        where: {
+          customerId: customer.id,
+          recurringStatus: "active",
+        },
+        data: { recurringStatus: "replaced" },
+      });
+    }
+
     // Calculate next recurrence date if this is a recurring order
     let nextRecurrenceDate = null;
     if (isRecurring && deliveryDate) {
