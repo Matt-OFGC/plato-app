@@ -86,26 +86,26 @@ export default function InstructionsPanel({
       </div>
 
       {/* Instructions List */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-5 py-3 md:py-4">
         {displayedSteps.length === 0 ? (
           <div className="p-6 md:p-8 text-center text-gray-400">
             <p className="text-sm md:text-base">No instructions available</p>
           </div>
         ) : (
-          <div className="space-y-4 md:space-y-6">
+          <div className="space-y-3 md:space-y-4">
             {displayedSteps.map((step, stepIndex) => {
               const actualIndex = steps.findIndex(s => s.id === step.id);
               return (
-              <div key={step.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl md:rounded-2xl p-4 md:p-6 border border-blue-100">
+              <div key={step.id} className="bg-white rounded-xl md:rounded-2xl p-3 md:p-4 border border-gray-200 shadow-sm">
                 {/* Step Number Badge */}
-                <div className="flex items-start gap-3 md:gap-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-bold text-lg md:text-xl shadow-lg flex-shrink-0">
+                <div className="flex items-start gap-3 md:gap-3.5">
+                  <div className="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-sm md:text-base shadow-md flex-shrink-0">
                     {actualIndex + 1}
                   </div>
                   
                   <div className="flex-1">
                 {/* Step Header with Metadata */}
-                <div className="space-y-3 mb-4">
+                <div className="space-y-2 mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     {viewMode === "edit" ? (
                       <input
@@ -140,7 +140,7 @@ export default function InstructionsPanel({
                   {viewMode === "edit" && (
                     <div className="flex items-center gap-2 flex-wrap">
                       {/* Temperature */}
-                      <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+                      <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200/70">
                         <svg className="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
                         </svg>
@@ -158,7 +158,7 @@ export default function InstructionsPanel({
                       </div>
 
                       {/* Duration */}
-                      <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+                      <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200/70">
                         <svg className="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                         </svg>
@@ -179,7 +179,7 @@ export default function InstructionsPanel({
                       {step.durationMin && (
                         <button
                           onClick={() => handleToggleTimer(step.id)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                             step.hasTimer
                               ? "bg-emerald-600 text-white"
                               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -196,9 +196,9 @@ export default function InstructionsPanel({
 
                   {/* Read-only metadata display (non-edit modes) */}
                   {viewMode !== "edit" && (
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
                       {typeof step.temperatureC === "number" && (
-                        <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200/70">
                           <svg className="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
                           </svg>
@@ -207,7 +207,7 @@ export default function InstructionsPanel({
                       )}
 
                       {typeof step.durationMin === "number" && (
-                        <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200/70">
                           <svg className="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                           </svg>
