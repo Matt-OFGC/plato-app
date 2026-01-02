@@ -301,6 +301,10 @@ model Company {
   temperatureRecords     TemperatureRecord[]     @relation("temperatureRecords")
   dailyTemperatureChecks DailyTemperatureCheck[] @relation("dailyTemperatureChecks")
   wholesaleInvoices      WholesaleInvoice[]
+  invoicingBankName      String?
+  invoicingBankAccount   String?
+  invoicingSortCode      String?
+  invoicingInstructions  String?
 }
 
 model Membership {
@@ -588,6 +592,9 @@ model WholesaleCustomer {
   standingOrderNotes    String?
   deliveryWindow        String?
   standingSchedule      Json?
+  defaultPaymentTerms   String?
+  defaultDueDays        Int?
+  purchaseOrderNumber   String?
   customPricing         CustomerPricing[]
   productionItems       ProductionItem[]
   productionAllocations ProductionItemAllocation[]
@@ -661,6 +668,10 @@ model WholesaleInvoice {
   total        Decimal           @default(0)
   currency     String            @default("GBP")
   notes        String?
+  paymentTerms String?
+  purchaseOrderNumber String?
+  paidDate     DateTime?
+  paidAmount   Decimal?
   customer     WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   order        WholesaleOrder?   @relation(fields: [orderId], references: [id], onDelete: Cascade)

@@ -32,6 +32,9 @@ export async function POST(request: NextRequest) {
       standingOrderNotes,
       deliveryWindow,
       standingSchedule,
+      defaultPaymentTerms,
+      defaultDueDays,
+      purchaseOrderNumber,
     } = body;
 
     if (!name || !companyId) {
@@ -52,6 +55,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsedDefaultDueDays =
+      defaultDueDays === undefined || defaultDueDays === null
+        ? null
+        : Number(defaultDueDays);
+
     const customer = await prisma.wholesaleCustomer.create({
       data: {
         name,
@@ -66,6 +74,9 @@ export async function POST(request: NextRequest) {
         isActive: isActive ?? true,
         customerType: customerType || "wholesale",
         companyId: parsedCompanyId,
+        defaultPaymentTerms: defaultPaymentTerms || null,
+        defaultDueDays: isNaN(parsedDefaultDueDays as any) ? null : parsedDefaultDueDays,
+        purchaseOrderNumber: purchaseOrderNumber || null,
         standingOrderEnabled: standingOrderEnabled ?? false,
         standingOrderNotes,
         deliveryWindow,

@@ -62,8 +62,20 @@ interface WholesaleOrder {
     contactName: string | null;
     email: string | null;
     phone: string | null;
+    defaultPaymentTerms?: string | null;
+    defaultDueDays?: number | null;
+    purchaseOrderNumber?: string | null;
+    address?: string | null;
+    city?: string | null;
+    postcode?: string | null;
   };
   items: OrderItem[];
+  invoices?: Array<{
+    id: number;
+    invoiceNumber: string | null;
+    status: string;
+    total: any;
+  }>;
 }
 
 interface Customer {
@@ -243,10 +255,17 @@ export function WholesaleOrders({
   products,
   companyId,
 }: WholesaleOrdersProps) {
+  const { toAppRoute } = useAppAwareRoute();
   const [orders, setOrders] = useState(initialOrders);
   const [showModal, setShowModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null);
   const [viewingOrder, setViewingOrder] = useState<WholesaleOrder | null>(null);
+  const [invoiceModalOrder, setInvoiceModalOrder] = useState<WholesaleOrder | null>(null);
+  const [invoicePaymentTerms, setInvoicePaymentTerms] = useState("");
+  const [invoiceDueDate, setInvoiceDueDate] = useState("");
+  const [invoicePurchaseOrderNumber, setInvoicePurchaseOrderNumber] = useState("");
+  const [invoiceNotes, setInvoiceNotes] = useState("");
+  const [invoiceSaving, setInvoiceSaving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [productSearch, setProductSearch] = useState("");
@@ -326,6 +345,31 @@ export function WholesaleOrders({
   function closeModal() {
     setShowModal(false);
     setEditingOrder(null);
+  }
+
+  function openInvoiceModal(order: WholesaleOrder) {
+    setInvoiceModalOrder(order);
+    setInvoicePaymentTerms(order.customer.defaultPaymentTerms || "");
+    const baseDate = order.deliveryDate ? new Date(order.deliveryDate) : new Date();
+    const dueDays = order.customer.defaultDueDays || null;
+    if (dueDays) {
+      const calculated = new Date(baseDate);
+      calculated.setDate(calculated.getDate() + dueDays);
+      setInvoiceDueDate(calculated.toISOString().slice(0, 10));
+    } else {
+      setInvoiceDueDate(baseDate.toISOString().slice(0, 10));
+    }
+    setInvoicePurchaseOrderNumber(order.customer.purchaseOrderNumber || "");
+    setInvoiceNotes(order.notes || "");
+  }
+
+  function closeInvoiceModal() {
+    setInvoiceModalOrder(null);
+    setInvoicePaymentTerms("");
+    setInvoiceDueDate("");
+    setInvoicePurchaseOrderNumber("");
+    setInvoiceNotes("");
+    setInvoiceSaving(false);
   }
 
   function updateItemQuantity(productId: number, quantity: number) {
@@ -559,6 +603,37 @@ export function WholesaleOrders({
     }
   }
 
+  async function handleCreateInvoice() {
+    if (!invoiceModalOrder) return;
+    setInvoiceSaving(true);
+    try {
+      const res = await fetch(`/api/wholesale/orders/${invoiceModalOrder.id}/create-invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentTerms: invoicePaymentTerms || null,
+          dueDate: invoiceDueDate || null,
+          purchaseOrderNumber: invoicePurchaseOrderNumber || null,
+          notes: invoiceNotes || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to create invoice");
+      }
+
+      const invoice = await res.json();
+      setOrders(orders.map(o => o.id === invoiceModalOrder.id ? { ...o, invoices: invoice ? [invoice] : o.invoices || [] } : o));
+      closeInvoiceModal();
+      alert("Invoice created for this order.");
+    } catch (error: any) {
+      alert(error?.message || "Failed to create invoice");
+    } finally {
+      setInvoiceSaving(false);
+    }
+  }
+
   const filteredOrders = filterStatus === "all" 
     ? orders 
     : orders.filter(o => o.status === filterStatus);
@@ -593,21 +668,6 @@ export function WholesaleOrders({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             New Order
-          </button>
-
-          <button
-            onClick={() => {
-              const route = toAppRoute(`/dashboard/production?fromOrders=true&orderIds=${filteredOrders.filter(o => o.status === 'pending' || o.status === 'confirmed').map(o => o.id).join(',')}`);
-              window.location.href = route;
-            }}
-            disabled={filteredOrders.filter(o => o.status === 'pending' || o.status === 'confirmed').length === 0}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Add pending/confirmed orders to production plan"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            Add to Production
           </button>
 
           {/* Status Filter */}
@@ -662,6 +722,11 @@ export function WholesaleOrders({
                       <span>Delivery: {format(new Date(order.deliveryDate), "MMM d, yyyy")}</span>
                     )}
                     <span>{order.items.length} item{order.items.length !== 1 ? 's' : ''}</span>
+                    {order.invoices && order.invoices.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-semibold">
+                        Invoice {order.invoices[0].invoiceNumber || `#${order.invoices[0].id}`}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -682,6 +747,16 @@ export function WholesaleOrders({
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => openInvoiceModal(order)}
+                    disabled={order.invoices && order.invoices.length > 0}
+                    className="p-2 text-gray-600 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={order.invoices && order.invoices.length > 0 ? "Invoice already exists for this order" : "Create invoice for this order"}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V9m-6-4l4 4m-4-4v4h4" />
                     </svg>
                   </button>
                   <button
@@ -1072,6 +1147,129 @@ export function WholesaleOrders({
                   className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
                 >
                   {saving ? (editingOrder ? "Updating..." : "Creating...") : (editingOrder ? "Update Order" : "Create Order")}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Invoice Modal */}
+      <AnimatePresence>
+        {invoiceModalOrder && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={closeInvoiceModal}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Create Invoice</h2>
+                    <p className="text-sm text-gray-600">
+                      {invoiceModalOrder.customer.name} • Order #{invoiceModalOrder.orderNumber || invoiceModalOrder.id}
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeInvoiceModal}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Payment Terms
+                    </label>
+                    <input
+                      type="text"
+                      value={invoicePaymentTerms}
+                      onChange={(e) => setInvoicePaymentTerms(e.target.value)}
+                      placeholder="e.g. Net 30"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Prefilled from customer defaults; shown on the invoice.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={invoiceDueDate}
+                      onChange={(e) => setInvoiceDueDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Purchase Order Number
+                    </label>
+                    <input
+                      type="text"
+                      value={invoicePurchaseOrderNumber}
+                      onChange={(e) => setInvoicePurchaseOrderNumber(e.target.value)}
+                      placeholder="Customer-provided PO"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Stored per customer; auto-populates their invoices.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes (optional)
+                    </label>
+                    <textarea
+                      value={invoiceNotes}
+                      onChange={(e) => setInvoiceNotes(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Payment or delivery notes"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 text-sm text-indigo-900">
+                  <p>
+                    Default terms and PO come from the customer record. You can edit them here for this invoice only.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
+                <button
+                  onClick={closeInvoiceModal}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateInvoice}
+                  disabled={invoiceSaving}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+                >
+                  {invoiceSaving ? "Creating..." : "Create Invoice"}
                 </button>
               </div>
             </motion.div>

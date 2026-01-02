@@ -38,6 +38,14 @@ export default async function WholesaleOrdersPage() {
           },
         },
       },
+      invoices: {
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          total: true,
+        },
+      },
     },
     orderBy: [
       { status: "asc" },

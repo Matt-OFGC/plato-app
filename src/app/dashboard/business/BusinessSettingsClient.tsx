@@ -20,6 +20,10 @@ interface Company {
   address: string | null;
   city: string | null;
   postcode: string | null;
+  invoicingBankName?: string | null;
+  invoicingBankAccount?: string | null;
+  invoicingSortCode?: string | null;
+  invoicingInstructions?: string | null;
 }
 
 interface BusinessSettingsClientProps {
@@ -42,6 +46,10 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
     showTeam: company.showTeam,
     showContact: company.showContact,
     isProfilePublic: company.isProfilePublic,
+    invoicingBankName: company.invoicingBankName || "",
+    invoicingBankAccount: company.invoicingBankAccount || "",
+    invoicingSortCode: company.invoicingSortCode || "",
+    invoicingInstructions: company.invoicingInstructions || "",
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -465,6 +473,70 @@ export function BusinessSettingsClient({ company }: BusinessSettingsClientProps)
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Wholesale Invoicing */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-gray-900">Wholesale Invoicing</h2>
+          <p className="text-sm text-gray-600">Bank and payment details shown on wholesale invoices.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Bank Name
+              </label>
+              <input
+                type="text"
+                name="invoicingBankName"
+                value={formData.invoicingBankName}
+                onChange={handleInputChange}
+                placeholder="e.g. Monzo, Barclays"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Bank Account
+              </label>
+              <input
+                type="text"
+                name="invoicingBankAccount"
+                value={formData.invoicingBankAccount}
+                onChange={handleInputChange}
+                placeholder="Account number or IBAN"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sort Code
+              </label>
+              <input
+                type="text"
+                name="invoicingSortCode"
+                value={formData.invoicingSortCode}
+                onChange={handleInputChange}
+                placeholder="e.g. 04-00-04"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Payment Instructions
+              </label>
+              <textarea
+                name="invoicingInstructions"
+                value={formData.invoicingInstructions}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="Add reference notes, payment links, or other instructions."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
           </div>
         </div>
 

@@ -45,6 +45,10 @@ export async function POST(request: NextRequest) {
       showTeam,
       showContact,
       isProfilePublic,
+      invoicingBankName,
+      invoicingBankAccount,
+      invoicingSortCode,
+      invoicingInstructions,
     } = body;
 
     // Update company
@@ -65,6 +69,10 @@ export async function POST(request: NextRequest) {
         showTeam: showTeam || false,
         showContact: showContact || false,
         isProfilePublic: isProfilePublic || false,
+        invoicingBankName: invoicingBankName || null,
+        invoicingBankAccount: invoicingBankAccount || null,
+        invoicingSortCode: invoicingSortCode || null,
+        invoicingInstructions: invoicingInstructions || null,
       },
     });
 

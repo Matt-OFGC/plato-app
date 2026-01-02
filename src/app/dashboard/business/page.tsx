@@ -64,6 +64,10 @@ export default async function BusinessSettingsPage() {
       address: true,
       city: true,
       postcode: true,
+      invoicingBankName: true,
+      invoicingBankAccount: true,
+      invoicingSortCode: true,
+      invoicingInstructions: true,
     }
   });
 

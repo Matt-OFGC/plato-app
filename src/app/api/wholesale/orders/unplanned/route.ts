@@ -43,12 +43,19 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    // If date range provided, filter by delivery date
+    // If date range provided, filter by delivery date but include orders with no deliveryDate
     if (startDate && endDate) {
-      where.deliveryDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
+      where.OR = [
+        {
+          deliveryDate: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        },
+        {
+          deliveryDate: null,
+        },
+      ];
     }
 
     // Get orders that are not linked to any production plans

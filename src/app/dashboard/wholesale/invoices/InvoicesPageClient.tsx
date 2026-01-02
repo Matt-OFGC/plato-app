@@ -14,19 +14,19 @@ interface Invoice {
   id: number;
   invoiceNumber: string;
   issueDate: Date;
-  dueDate: Date;
-  subtotal: any;
-  taxAmount: any;
+  dueDate: Date | null;
+  subtotal?: any;
+  taxAmount?: any;
   total: any;
   status: string;
-  paidDate: Date | null;
-  paidAmount: any;
+  paidDate?: Date | null;
+  paidAmount?: any;
   notes: string | null;
-  WholesaleCustomer: {
+  customer?: {
     id: number;
     name: string;
   };
-  WholesaleOrder: {
+  order?: {
     id: number;
     orderNumber: string | null;
   } | null;
@@ -55,7 +55,7 @@ export default function InvoicesPageClient({
   // Filter invoices
   const filteredInvoices = invoices.filter((invoice) => {
     if (filterStatus !== "all" && invoice.status !== filterStatus) return false;
-    if (filterCustomer !== "all" && invoice.WholesaleCustomer.id.toString() !== filterCustomer) return false;
+    if (filterCustomer !== "all" && invoice.customer?.id?.toString() !== filterCustomer) return false;
     return true;
   });
 
@@ -185,6 +185,9 @@ export default function InvoicesPageClient({
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
                   Status
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                  Paid Date
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -216,13 +219,13 @@ export default function InvoicesPageClient({
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{invoice.WholesaleCustomer.name}</div>
+                    <div className="text-sm text-gray-900">{invoice.customer?.name || "Unknown"}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {format(new Date(invoice.issueDate), "MMM d, yyyy")}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {format(new Date(invoice.dueDate), "MMM d, yyyy")}
+                    {invoice.dueDate ? format(new Date(invoice.dueDate), "MMM d, yyyy") : "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
@@ -234,6 +237,9 @@ export default function InvoicesPageClient({
                         {invoice.status}
                       </span>
                     </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {invoice.paidDate ? format(new Date(invoice.paidDate), "MMM d, yyyy") : "—"}
+                  </td>
                   </tr>
                 ))
               )}
