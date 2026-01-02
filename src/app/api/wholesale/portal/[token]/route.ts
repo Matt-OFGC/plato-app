@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createOptimizedResponse } from "@/lib/api-optimization";
+import { createOptimizedResponse, serializeResponse } from "@/lib/api-optimization";
 
 // Get customer info and available products by portal token
 export async function GET(
@@ -135,7 +135,7 @@ export async function GET(
       take: 20,
     });
 
-    return createOptimizedResponse({
+    const payload = {
       customer: {
         id: customer.id,
         name: customer.name,
@@ -155,10 +155,14 @@ export async function GET(
         total: inv.total?.toString() ?? "0",
         paidAmount: inv.paidAmount?.toString() ?? "0",
       })),
-    }, {
-      cacheType: 'dynamic',
-      // Let the platform handle compression; manual flag can cause decode errors.
-      compression: false,
+    };
+
+    // Use plain JSON response to avoid any accidental content-encoding issues
+    return NextResponse.json(serializeResponse(payload), {
+      status: 200,
+      headers: {
+        "Content-Encoding": "identity",
+      },
     });
   } catch (error) {
     const { logger } = await import("@/lib/logger");
