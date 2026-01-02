@@ -3,9 +3,6 @@ import { getUserFromSession } from './auth-simple';
 import type { Brand } from '@/lib/brands/types';
 import type { BrandConfig } from '@/lib/brands/types';
 import { getBrandConfig } from '@/lib/brands/registry';
-import type { App } from '@/lib/apps/types';
-import type { AppConfig } from '@/lib/apps/types';
-import { getAppConfig } from '@/lib/apps/registry';
 import { logger } from './logger';
 import { getCache, setCache, deleteCache, CACHE_TTL, CacheKeys } from './redis';
 
@@ -39,8 +36,8 @@ export interface CurrentUserAndCompany {
   user: UserWithMemberships;
   brand?: Brand | null;
   brandConfig?: BrandConfig | null;
-  app?: App | null;
-  appConfig?: AppConfig | null;
+  app?: null;
+  appConfig?: null;
 }
 
 // Get current user and their company information with caching
@@ -64,7 +61,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
   }
 
   try {
-    // Optimized query - get only what we need
+    // Optimized query - match Prisma schema (relation is `memberships`)
     const userWithMemberships = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -86,8 +83,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
                 businessType: true,
                 country: true,
                 phone: true,
-                logoUrl: true,
-                app: true
+                logoUrl: true
               }
             }
           },
@@ -133,14 +129,12 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
       };
     }
     
-    // Get app from company (Company model has 'app' field, not 'brand')
-    // Use optional chaining and type assertion to safely access app
-    const app = company && 'app' in company ? (company as any).app as App | null : null;
-    const appConfig = app ? getAppConfig(app) : null;
+    // App/brand moved to user-level subscriptions; keep null for compatibility
+    const app = null;
+    const appConfig = null;
     
-    // Convert app to brand for compatibility (they're the same type)
-    const brand = app as Brand | null;
-    const brandConfig = brand ? getBrandConfig(brand) : null;
+    const brand = null;
+    const brandConfig = null;
 
     const result = {
       companyId,

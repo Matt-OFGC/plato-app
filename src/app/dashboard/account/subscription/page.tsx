@@ -2,6 +2,7 @@ import { getUserFromSession } from "@/lib/auth-simple";
 import { redirect } from "next/navigation";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 import { getCurrentUserAndCompany } from "@/lib/current";
+import { buildSubscriptionStatusPayload } from "@/lib/subscription-status";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,8 @@ export default async function SubscriptionPage() {
     redirect("/dashboard?error=access_denied");
   }
 
+  const initialStatus = await buildSubscriptionStatusPayload(user.id, companyId);
+
   return (
     <div>
       {/* Page Header */}
@@ -41,7 +44,7 @@ export default async function SubscriptionPage() {
 
       {/* Subscription Content */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-        <SubscriptionStatus />
+        <SubscriptionStatus initialData={initialStatus} />
       </div>
     </div>
   );

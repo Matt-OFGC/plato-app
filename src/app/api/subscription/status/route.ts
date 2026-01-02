@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-simple";
-import { getUserSubscription } from "@/lib/subscription";
-import { hasAIAccess, getAISubscriptionType } from "@/lib/subscription-simple";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { createOptimizedResponse } from "@/lib/api-optimization";
+import { buildSubscriptionStatusPayload } from "@/lib/subscription-status";
 
 export async function GET() {
   try {
@@ -17,14 +16,25 @@ export async function GET() {
     const [user, membership] = await Promise.all([
       prisma.user.findUnique({
         where: { id: session.id },
+        select: {
+          id: true,
+          email: true,
+          subscriptionTier: true,
+          subscriptionStatus: true,
+          subscriptionEndsAt: true,
+          subscriptionInterval: true,
+        },
       }),
       prisma.membership.findFirst({
         where: {
           userId: session.id,
           isActive: true,
         },
-        include: {
-          company: true,
+        select: {
+          companyId: true,
+          company: {
+            select: { id: true },
+          },
         },
       }),
     ]);
@@ -33,46 +43,9 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get subscription and AI access in parallel
-    const [subscriptionResult, aiAccessResult] = await Promise.allSettled([
-      getUserSubscription(user.id),
-      membership?.company ? (async () => {
-        const companyId = membership.company.id;
-        const hasAI = await hasAIAccess(companyId);
-        if (hasAI) {
-          const aiType = await getAISubscriptionType(companyId);
-          return {
-            active: true,
-            type: aiType,
-          };
-        }
-        return null;
-      })() : Promise.resolve(null),
-    ]);
-    
-    // Get subscription data
-    const subscription = subscriptionResult.status === 'fulfilled' ? subscriptionResult.value : null;
-    
-    // Get AI subscription info if available
-    let aiSubscription = null;
-    if (aiAccessResult.status === 'fulfilled') {
-      aiSubscription = aiAccessResult.value;
-    } else {
-      // Log error but don't fail the request
-      logger.warn("Error getting AI subscription", aiAccessResult.reason, "Subscription/Status");
-    }
+    const payload = await buildSubscriptionStatusPayload(user.id, membership?.companyId ?? membership?.company?.id ?? null);
 
-    return createOptimizedResponse({
-      subscription: subscription,
-      aiSubscription,
-      user: {
-        id: user.id,
-        email: user.email,
-        subscriptionTier: user.subscriptionTier,
-        subscriptionStatus: user.subscriptionStatus,
-        subscriptionEndsAt: user.subscriptionEndsAt,
-      },
-    }, {
+    return createOptimizedResponse(payload, {
       cacheType: 'user', // User-specific data
       compression: true,
     });

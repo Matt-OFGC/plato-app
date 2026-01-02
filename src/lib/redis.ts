@@ -37,9 +37,9 @@ async function initRedis() {
       const importRedis = new Function('return import("ioredis")');
       redis = await importRedis();
     } catch (importError) {
-      // ioredis not installed - Redis is optional
-      console.warn("ioredis not available - Redis caching disabled");
-      return;
+      // ioredis not installed - Redis is optional; stay silent to avoid log noise
+      redisEnabled = false;
+      return null;
     }
     redisClient = new redis.Redis(redisUrl, {
       maxRetriesPerRequest: 3,
@@ -52,7 +52,7 @@ async function initRedis() {
     });
 
     redisClient.on("error", (error: Error) => {
-      logger.error("Redis connection error", error, "Redis");
+      logger.debug("Redis connection error (disabled caching)", error, "Redis");
       redisEnabled = false;
     });
 
@@ -65,7 +65,7 @@ async function initRedis() {
     redisEnabled = true;
     return redisClient;
   } catch (error) {
-    logger.warn("Redis initialization failed, caching disabled", error, "Redis");
+    logger.debug("Redis initialization failed, caching disabled", error, "Redis");
     redisEnabled = false;
     return null;
   }
@@ -88,6 +88,8 @@ export const CacheKeys = {
   userSession: (userId: number) => `user:session:${userId}`,
   companyInfo: (companyId: number) => `company:info:${companyId}`,
   userCompanies: (userId: number) => `user:${userId}:companies`,
+  userRole: (userId: number, companyId: number) => `user:role:${userId}:${companyId}`,
+  companyAccess: (userId: number, companyId: number) => `user:${userId}:company-access:${companyId}`,
   ingredients: (companyId: number) => `company:${companyId}:ingredients`,
   recipes: (companyId: number) => `company:${companyId}:recipes`,
   categories: (companyId: number) => `company:${companyId}:categories`,

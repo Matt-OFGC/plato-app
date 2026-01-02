@@ -1,10 +1,7 @@
-// Cache bust 2025-01-22-2
+// Cache bust 2025-01-22-3 - FORCE RECOMPILE AFTER RESTART
 // Cache bust: 2025-01-22 - Force Turbopack recompilation
 import { prisma } from './prisma';
 import { getUserFromSession } from './auth-simple';
-import type { App } from '@/lib/apps/types';
-import type { AppConfig } from '@/lib/apps/types';
-import { getAppConfig } from '@/lib/apps/registry';
 import { logger } from './logger';
 import { CacheKeys, deleteCache } from './redis';
 import { generateDefaultCompanyName, generateCompanySlug } from './company-defaults';
@@ -36,11 +33,12 @@ export interface CurrentUserAndCompany {
   companyId: number | null;
   company: Company | null;
   user: UserWithMemberships;
-  app?: App | null;
-  appConfig?: AppConfig | null;
+  app?: null;
+  appConfig?: null;
 }
 
 // Get current user and their company information with caching
+// UPDATED 2025-01-22-3: Using Membership and Company (capitalized), no app field
 export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany> {
   try {
     const user = await getUserFromSession();
@@ -65,7 +63,7 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
     // Temporarily bypass cache to avoid import issues - Redis is placeholder anyway
     // TODO: Re-enable cache once Redis is properly configured
     try {
-      return await fetchUserAndCompany(user.id);
+      return await fetchUserAndCompany_v2(user.id);
     } catch (fetchError: any) {
       // If fetch fails, log and let outer catch handle it
       logger.error('fetchUserAndCompany failed', {
@@ -114,23 +112,25 @@ export async function getCurrentUserAndCompany(): Promise<CurrentUserAndCompany>
 // Internal function to fetch user and company data
 // Simplified: Just get user's first active membership's company
 // No auto-repair, no fallbacks - registration should handle company creation
-async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompany> {
+// RENAMED 2025-01-22-5: Force Turbopack to recompile this function
+async function fetchUserAndCompany_v2(userId: number): Promise<CurrentUserAndCompany> {
   try {
-    // Simple query: get user's first active membership's company
+    // Simple query: get user's first active membership's company (schema uses lowercase relations)
+    // Cache bust 2025-01-22-4: FORCE RECOMPILE - using memberships/company
     const userWithMemberships = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         email: true,
         name: true,
-        Membership: {
+        memberships: {
           where: { isActive: true },
           select: {
             id: true,
             companyId: true,
             role: true,
             isActive: true,
-            Company: {
+            company: {
               select: {
                 id: true,
                 name: true,
@@ -138,6 +138,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
                 country: true,
                 phone: true,
                 logoUrl: true
+                // NOTE: NO app field - removed from schema
               }
             }
           },
@@ -152,9 +153,9 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
     }
 
     // Get the primary company (first active membership)
-    let primaryMembership = userWithMemberships.Membership[0];
+    let primaryMembership = userWithMemberships.memberships[0];
     let companyId = primaryMembership?.companyId || null;
-    let company = primaryMembership?.Company || null;
+    let company = primaryMembership?.company || null;
     
     // If no active membership, check for inactive ones (simple fallback)
     // Don't auto-create companies, but use existing memberships if they exist
@@ -162,7 +163,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       const allMemberships = await prisma.membership.findMany({
         where: { userId },
         include: {
-          Company: {
+          company: {
             select: {
               id: true,
               name: true,
@@ -180,7 +181,7 @@ async function fetchUserAndCompany(userId: number): Promise<CurrentUserAndCompan
       if (allMemberships.length > 0) {
         const membership = allMemberships[0];
         companyId = membership.companyId;
-        company = membership.Company as Company;
+        company = membership.company as Company;
         
         // Try to activate if inactive (but don't fail if it doesn't work)
         if (!membership.isActive) {
