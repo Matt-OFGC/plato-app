@@ -364,4 +364,85 @@ export const auditLog = {
       console.error('Failed to log auto-repair:', error);
     }
   },
+
+  async recipeDeleted(
+    userId: number,
+    recipeId: number,
+    recipeName: string,
+    companyId: number | null
+  ): Promise<void> {
+    try {
+      if (!companyId) {
+        await logSystemEvent(
+          'DELETE',
+          'Recipe',
+          recipeId.toString(),
+          {
+            recipeName,
+            timestamp: new Date().toISOString(),
+          }
+        );
+        return;
+      }
+
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: 'DELETE',
+          entity: 'Recipe',
+          entityId: recipeId,
+          entityName: recipeName,
+          details: {
+            recipeName,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log recipe deletion:', error);
+    }
+  },
+
+  async ingredientUpdated(
+    userId: number,
+    ingredientId: number,
+    ingredientName: string,
+    companyId: number | null,
+    changes: Record<string, any>
+  ): Promise<void> {
+    try {
+      if (!companyId) {
+        await logSystemEvent(
+          'UPDATE',
+          'Ingredient',
+          ingredientId.toString(),
+          {
+            ingredientName,
+            changes,
+            timestamp: new Date().toISOString(),
+          }
+        );
+        return;
+      }
+
+      await prisma.activityLog.create({
+        data: {
+          userId,
+          companyId,
+          action: 'UPDATE',
+          entity: 'Ingredient',
+          entityId: ingredientId,
+          entityName: ingredientName,
+          details: {
+            ingredientName,
+            changes,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Failed to log ingredient update:', error);
+    }
+  },
 };

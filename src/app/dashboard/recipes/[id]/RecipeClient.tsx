@@ -308,6 +308,9 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
   const handleSlicesPerBatchChange = (slices: number) => {
     setSlicesPerBatch(slices);
     setServings(slices);
+    if (viewMode === "edit") {
+      setBaseServingsState(slices);
+    }
   };
 
   const handleImageUpload = async (file: File) => {
@@ -342,6 +345,9 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
     setServings(newServings);
     if (recipeType === "batch") {
       setSlicesPerBatch(newServings);
+      if (viewMode === "edit") {
+        setBaseServingsState(newServings);
+      }
     }
   };
 
@@ -875,7 +881,30 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     >
                       −
                     </button>
-                    <span className="text-lg md:text-xl font-bold text-gray-900 min-w-[2rem] md:min-w-[2.5rem] text-center">{servings}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={servings}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val) && val > 0) {
+                          handleServingsChange(val);
+                        } else if (e.target.value === "") {
+                          // allow clearing while typing
+                          setServings(1);
+                          if (recipeType === "batch") setSlicesPerBatch(1);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        const normalized = !isNaN(val) && val > 0 ? val : 1;
+                        handleServingsChange(normalized);
+                      }}
+                      className="text-lg md:text-xl font-bold text-gray-900 w-[2.75rem] md:w-[3rem] text-center bg-transparent border border-gray-200 rounded-lg px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
                     <button
                       onClick={() => handleServingsChange(servings + 1)}
                       className="w-7 h-7 md:w-8 md:h-8 bg-white shadow-md rounded-lg flex items-center justify-center hover:shadow-lg transition-all border border-gray-200 text-gray-700 font-semibold text-sm mobile-touch-target"

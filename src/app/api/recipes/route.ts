@@ -168,17 +168,23 @@ export async function POST(request: NextRequest) {
             const stepIngredients = ingredients.filter((ing: any) => ing.stepId === step.id);
             
             for (const ing of stepIngredients) {
-              const dbIngredient = await tx.ingredient.findFirst({
-                where: { name: ing.name, companyId }
-              });
+              let ingredientId = ing.ingredientId as number | undefined;
 
-              if (dbIngredient) {
+              if (!ingredientId && ing.name) {
+                const dbIngredient = await tx.ingredient.findFirst({
+                  where: { name: ing.name, companyId }
+                });
+                ingredientId = dbIngredient?.id;
+              }
+
+              if (ingredientId) {
                 await tx.recipeItem.create({
                   data: {
                     recipeId: newRecipe.id,
-                    ingredientId: dbIngredient.id,
+                    ingredientId,
                     quantity: parseFloat(ing.quantity),
                     unit: ing.unit,
+                    note: ing.note || null,
                     sectionId: newSection.id,
                   }
                 });

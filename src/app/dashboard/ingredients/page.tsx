@@ -30,6 +30,20 @@ export default async function IngredientsPage({ searchParams }: Props) {
     packQuantity: ing.packQuantity.toNumber(),
     packPrice: ing.packPrice.toNumber(),
     densityGPerMl: ing.densityGPerMl?.toNumber() || null,
+    purchaseQuantity: ing.packQuantity.toNumber(),
+    purchaseUnit: ing.packUnit,
+    packCount: (() => {
+      if (!ing.customConversions) return null;
+      try {
+        const parsed = typeof ing.customConversions === "string" ? JSON.parse(ing.customConversions) : ing.customConversions;
+        if (parsed && typeof parsed._packCount === "number" && parsed._packCount > 0) {
+          return parsed._packCount;
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    })(),
     supplierRef: ing.supplierRef ? {
       ...ing.supplierRef,
       minimumOrder: ing.supplierRef.minimumOrder ? Number(ing.supplierRef.minimumOrder) : null,

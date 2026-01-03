@@ -94,73 +94,72 @@ export function IngredientForm({
   const [otherNutType, setOtherNutType] = useState<string>("");
   const [showOtherNutInput, setShowOtherNutInput] = useState<boolean>(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState<boolean>(false);
-  const [packSize, setPackSize] = useState<number>(initialData?.packQuantity || 1);
-  const [packSizeInput, setPackSizeInput] = useState<string>(() => (initialData?.packQuantity || 1).toString());
   const [packPrice, setPackPrice] = useState<number>(initialData?.packPrice || 0);
   const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
-  const [hasUserModifiedPackSize, setHasUserModifiedPackSize] = useState<boolean>(false);
   const [purchaseUnit, setPurchaseUnit] = useState<string>(initialData?.packUnit || '');
+  const [packCount, setPackCount] = useState<number>(() => {
+    const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
+    if (initialData?.customConversions) {
+      try {
+        const parsed = JSON.parse(initialData.customConversions);
+        if (parsed && typeof parsed._packCount === "number" && parsed._packCount > 0) {
+          return parsed._packCount;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    // If count unit and packQuantity is present, infer packCount as packQuantity (for counts)
+    if (initialData?.packUnit && countUnits.includes(initialData.packUnit)) {
+      return initialData.packQuantity || 1;
+    }
+    return 1;
+  });
   const [purchaseSize, setPurchaseSize] = useState<number>(() => {
-    // For count units, initialize from packQuantity
     if (initialData?.packUnit) {
       const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
       if (countUnits.includes(initialData.packUnit)) {
         return initialData.packQuantity || 1;
       }
     }
-    return 1;
+    // derive per-unit size if packCount is present
+    if (initialData?.packQuantity && initialData.packQuantity > 0 && packCount > 0) {
+      return Number(initialData.packQuantity) / packCount;
+    }
+    return initialData?.packQuantity || 1;
   });
-  const [purchaseSizeInput, setPurchaseSizeInput] = useState<string>(() => {
-    const initialPurchaseSize = (() => {
-      if (initialData?.packUnit) {
-        const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
-        if (countUnits.includes(initialData.packUnit)) {
-          return initialData.packQuantity || 1;
-        }
-      }
-      return initialData?.packQuantity || 1;
-    })();
-    return initialPurchaseSize.toString();
-  });
+  const [purchaseSizeInput, setPurchaseSizeInput] = useState<string>(() => purchaseSize.toString());
   
-  // Calculate price per unit
-  // For count units, use purchaseSize, otherwise use packSize
-  const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
-  const isCountUnit = countUnits.includes(purchaseUnit || initialData?.packUnit || '');
-  const unitsForPriceCalc = isCountUnit ? purchaseSize : packSize;
-  const pricePerUnit = unitsForPriceCalc > 1 && packPrice >= 0 ? packPrice / unitsForPriceCalc : null;
+  // Calculate price per unit using total purchase size (packCount * per-unit size)
+  const totalPurchaseSize = packCount > 0 ? purchaseSize * packCount : purchaseSize;
+  const pricePerUnit = totalPurchaseSize > 0 && packPrice >= 0 ? packPrice / totalPurchaseSize : null;
   
-  // Sync packSize and purchaseSize with initialData when it changes (for edit mode)
-  // BUT only if user hasn't manually modified packSize
-  // Also sync packPrice to ensure both update correctly
+  // Sync purchaseSize, packCount, price, and unit when editing
   useEffect(() => {
-    // Sync purchaseSize for count units
-    if (initialData?.packUnit) {
-      const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
-      if (countUnits.includes(initialData.packUnit) && initialData.packQuantity !== undefined && initialData.packQuantity > 0) {
-        setPurchaseSize(initialData.packQuantity);
-        setPurchaseSizeInput(initialData.packQuantity.toString());
-      }
-    }
-    
-    // Only sync packSize if user hasn't manually changed it
-    if (!hasUserModifiedPackSize && initialData?.packQuantity !== undefined && initialData.packQuantity > 0) {
-      console.log('IngredientForm: Setting packSize from initialData:', initialData.packQuantity);
-      setPackSize(initialData.packQuantity);
-      setPackSizeInput(initialData.packQuantity.toString());
-    }
     if (initialData?.packPrice !== undefined) {
       setPackPrice(initialData.packPrice);
     }
     if (initialData?.packUnit !== undefined) {
       setPurchaseUnit(initialData.packUnit);
     }
-  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, hasUserModifiedPackSize]);
-  
-  // Reset the "user modified" flag when initialData changes significantly (new ingredient or different ingredient)
-  useEffect(() => {
-    setHasUserModifiedPackSize(false);
-  }, [initialData?.name]); // Reset when ingredient name changes (new/different ingredient)
+    let nextPackCount = packCount;
+    if (initialData?.customConversions) {
+      try {
+        const parsed = JSON.parse(initialData.customConversions);
+        if (parsed && typeof parsed._packCount === "number" && parsed._packCount > 0) {
+          nextPackCount = parsed._packCount;
+          setPackCount(parsed._packCount);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    if (initialData?.packQuantity !== undefined && initialData.packQuantity > 0) {
+      const inferredPerUnit = nextPackCount > 0 ? Number(initialData.packQuantity) / nextPackCount : Number(initialData.packQuantity);
+      setPurchaseSize(inferredPerUnit);
+      setPurchaseSizeInput(inferredPerUnit.toString());
+    }
+  }, [initialData?.packQuantity, initialData?.packPrice, initialData?.packUnit, initialData?.customConversions]);
   
   // Debug: Log initialData when it changes
   useEffect(() => {
@@ -318,48 +317,30 @@ export function IngredientForm({
       formData.set("customConversions", JSON.stringify(conversionsObj));
     }
     
-    // Get purchase size, purchase unit, and pack size from form
+    // Get purchase size and per-unit unit from form
     const purchaseSize = parseFloat((ev.currentTarget.querySelector('#purchaseSize') as HTMLInputElement)?.value || '1');
     const purchaseUnit = (ev.currentTarget.querySelector('#purchaseUnit') as HTMLSelectElement)?.value || '';
-    // Read packSize from both state and DOM to ensure we get the correct value
-    // Prefer DOM value as it's the source of truth at submission time
-    const packSizeInput = ev.currentTarget.querySelector('#packSize') as HTMLInputElement;
-    const packSizeFromDOM = packSizeInput ? parseFloat(packSizeInput.value) : NaN;
-    const packSizeValue = (!isNaN(packSizeFromDOM) && packSizeFromDOM > 0) ? packSizeFromDOM : (packSize || 1);
     
-    // Count units (slices, each, etc.) - for these, Purchase Size IS the pack quantity
-    // For example: "100 slices" means packQuantity=100, packUnit=slices
-    const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
-    const isCountUnit = countUnits.includes(purchaseUnit);
+    // Derive total pack quantity for pricing: packCount * per-unit size
+    const finalPackQuantity = packCount > 0 ? purchaseSize * packCount : purchaseSize;
     
-    // If it's a count unit, use purchaseSize as packQuantity (user is buying X slices/each)
-    // Otherwise, use packSize (user is buying 1 case containing X bottles)
-    const finalPackQuantity = isCountUnit ? purchaseSize : packSizeValue;
-    
-    // Debug logging
-    console.log('Form submission packSize values:', {
-      packSizeState: packSize,
-      packSizeFromDOM: packSizeFromDOM,
-      packSizeInputValue: packSizeInput?.value,
-      purchaseSize,
-      purchaseUnit,
-      isCountUnit,
-      finalPackQuantity
-    });
-    
-    // Store packQuantity - for count units this is purchaseSize, otherwise it's packSize
+    // Store packQuantity
     formData.set("packQuantity", finalPackQuantity.toString());
     
     // Store packUnit as purchaseUnit (e.g., "slices", "each", "case", "box")
     formData.set("packUnit", purchaseUnit);
     
-    // Store purchase info in batchPricing for reference if pack size differs from purchase size
-    // This helps the system understand the relationship between purchase and pack
-    // For count units, purchaseSize IS packQuantity, so no batch pricing needed
-    if (!isCountUnit && packSizeValue !== purchaseSize) {
-      formData.set("batchPricing", JSON.stringify([{ packQuantity: packSizeValue, packPrice: 0 }]));
-    } else {
-      formData.set("batchPricing", "");
+    // Clear batchPricing since packQuantity is derived
+    formData.set("batchPricing", "");
+
+    // Persist packCount in customConversions metadata
+    if (customConversions.length > 0 || packCount !== 1) {
+      const conversionsObj = customConversions.reduce((acc, conv) => {
+        acc[conv.unit] = { value: conv.value, unit: conv.targetUnit };
+        return acc;
+      }, {} as Record<string, { value: number; unit: string }>);
+      conversionsObj._packCount = packCount;
+      formData.set("customConversions", JSON.stringify(conversionsObj));
     }
     
     if (selectedSupplierId) {
@@ -413,11 +394,40 @@ export function IngredientForm({
           <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 pb-2 border-b border-gray-300">Pack Details</h3>
             
-            {/* Purchase Size & Unit */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Pack Count + Per-Unit Size & Unit */}
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label htmlFor="packCount" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                  Pack Count <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="packCount"
+                  name="packCount"
+                  min="1"
+                  step="1"
+                  value={packCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val) && val > 0) {
+                      setPackCount(val);
+                    } else if (e.target.value === "") {
+                      setPackCount(1);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    const normalized = !isNaN(val) && val > 0 ? val : 1;
+                    setPackCount(normalized);
+                  }}
+                  required
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  placeholder="4"
+                />
+              </div>
               <div>
                 <label htmlFor="purchaseSize" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                  Purchase Size <span className="text-red-500">*</span>
+                  Per-Unit Size <span className="text-red-500">*</span>
                   <div className="relative">
                     <button
                       type="button"
@@ -430,8 +440,8 @@ export function IngredientForm({
                       </svg>
                     </button>
                     {showTooltip.purchaseSize && (
-                      <div className="absolute left-0 top-6 z-50 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
-                        How many you buy (e.g., 1 for single, 6 for case)
+                      <div className="absolute left-0 top-6 z-50 w-52 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                        Size of one unit in the pack (e.g., 3.5 kg per bag)
                       </div>
                     )}
                   </div>
@@ -441,7 +451,7 @@ export function IngredientForm({
                   id="purchaseSize"
                   name="purchaseSize"
                   step="0.01"
-                  min="0"
+                  min="0.01"
                   value={purchaseSizeInput}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -450,41 +460,24 @@ export function IngredientForm({
                       return;
                     }
                     const parsed = parseFloat(value);
-                    if (!isNaN(parsed) && parsed >= 0) {
+                    if (!isNaN(parsed) && parsed > 0) {
                       setPurchaseSize(parsed);
                     }
                   }}
                   onBlur={() => {
                     const parsed = parseFloat(purchaseSizeInput);
-                    const normalized = !isNaN(parsed) && parsed >= 0 ? parsed : 0;
+                    const normalized = !isNaN(parsed) && parsed > 0 ? parsed : 0.01;
                     setPurchaseSize(normalized);
                     setPurchaseSizeInput(normalized.toString());
                   }}
                   required
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                  placeholder="1"
+                  placeholder="3.5"
                 />
               </div>
               <div>
                 <label htmlFor="purchaseUnit" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                  Purchase Unit <span className="text-red-500">*</span>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      className="focus:outline-none"
-                      onMouseEnter={() => setShowTooltip({ ...showTooltip, purchaseUnit: true })}
-                      onMouseLeave={() => setShowTooltip({ ...showTooltip, purchaseUnit: false })}
-                    >
-                      <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
-                    {showTooltip.purchaseUnit && (
-                      <div className="absolute left-0 top-6 z-50 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
-                        What you're buying (case, box, pack, or standard units)
-                      </div>
-                    )}
-                  </div>
+                  Per-Unit Unit <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="purchaseUnit"
@@ -495,121 +488,36 @@ export function IngredientForm({
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
                 >
                 <option value="">Select...</option>
-                <optgroup label="Packaging">
-                  <option value="case">case</option>
-                  <option value="box">box</option>
-                  <option value="pack">pack</option>
-                  <option value="carton">carton</option>
-                  <option value="bundle">bundle</option>
+                <optgroup label="Count">
+                  <option value="slices">slices</option>
+                  <option value="each">each</option>
+                  <option value="large">large</option>
+                  <option value="medium">medium</option>
+                  <option value="small">small</option>
+                  <option value="pinch">pinch</option>
+                  <option value="dash">dash</option>
                 </optgroup>
-                <optgroup label="Weight/Mass">
-                  <option value="g">g (grams)</option>
-                  <option value="kg">kg (kilograms)</option>
-                  <option value="mg">mg (milligrams)</option>
-                  <option value="lb">lb (pounds)</option>
-                  <option value="oz">oz (ounces)</option>
+                <optgroup label="Weight">
+                  <option value="g">g</option>
+                  <option value="kg">kg</option>
+                  <option value="mg">mg</option>
+                  <option value="oz">oz</option>
+                  <option value="lb">lb</option>
                 </optgroup>
-                <optgroup label="Volume (Liquid)">
-                  <option value="ml">ml (milliliters)</option>
-                  <option value="l">l (liters)</option>
-                  <option value="tsp">tsp (teaspoons)</option>
-                  <option value="tbsp">tbsp (tablespoons)</option>
+                <optgroup label="Volume">
+                  <option value="ml">ml</option>
+                  <option value="l">l</option>
+                  <option value="floz">fl oz</option>
+                  <option value="tsp">tsp</option>
+                  <option value="tbsp">tbsp</option>
                   <option value="cup">cup</option>
-                  <option value="floz">fl oz (fluid ounces)</option>
                   <option value="pint">pint</option>
                   <option value="quart">quart</option>
                   <option value="gallon">gallon</option>
                 </optgroup>
-                <optgroup label="Count/Discrete">
-                  <option value="each">each</option>
-                  <option value="slices">slices</option>
-                </optgroup>
-                <optgroup label="Size-based">
-                  <option value="large">large</option>
-                  <option value="medium">medium</option>
-                  <option value="small">small</option>
-                </optgroup>
               </select>
               </div>
             </div>
-
-            {/* Pack Size (how many individual units in the purchase) */}
-            {/* Hide Pack Size for count units (slices, each, etc.) since Purchase Size IS the pack size */}
-            {(() => {
-              const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
-              const isCountUnit = countUnits.includes(purchaseUnit || initialData?.packUnit || '');
-              
-              if (isCountUnit) {
-                return null; // Don't show Pack Size for count units
-              }
-              
-              return (
-                <div>
-                  <label htmlFor="packSize" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                    Pack Size <span className="text-red-500">*</span>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        className="focus:outline-none"
-                        onMouseEnter={() => setShowTooltip({ ...showTooltip, packSize: true })}
-                        onMouseLeave={() => setShowTooltip({ ...showTooltip, packSize: false })}
-                      >
-                        <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
-                      {showTooltip.packSize && (
-                        <div className="absolute left-0 top-6 z-50 w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
-                          How many individual units are in this purchase? (e.g., 6 if a case contains 6 bottles)
-                        </div>
-                      )}
-                    </div>
-                  </label>
-                  <input
-                    type="number"
-                    id="packSize"
-                    name="packSize"
-                    step="1"
-                    min="1"
-                    value={packSizeInput}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Mark that user has manually modified this field
-                      setHasUserModifiedPackSize(true);
-                      // Allow empty string while typing
-                      if (value === '') {
-                        setPackSizeInput('');
-                        return;
-                      }
-                      // Parse the value
-                      const numValue = parseFloat(value);
-                      // Only update if it's a valid positive number
-                      if (!isNaN(numValue) && numValue >= 1) {
-                        setPackSizeInput(Math.floor(numValue).toString());
-                        setPackSize(Math.floor(numValue)); // Use floor to ensure integer
-                      } else {
-                        setPackSizeInput(value);
-                      }
-                    }}
-                    onBlur={(e) => {
-                      // Ensure minimum value of 1 on blur
-                      const value = parseFloat(e.target.value);
-                      if (isNaN(value) || value < 1) {
-                        setPackSize(1);
-                        setPackSizeInput('1');
-                      } else {
-                        const normalized = Math.floor(value);
-                        setPackSize(normalized);
-                        setPackSizeInput(normalized.toString());
-                      }
-                    }}
-                    required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                    placeholder="1"
-                  />
-                </div>
-              );
-            })()}
 
             {/* Price */}
             <div>
