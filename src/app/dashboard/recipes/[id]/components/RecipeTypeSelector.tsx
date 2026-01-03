@@ -45,17 +45,17 @@ export default function RecipeTypeSelector({
         </button>
       </div>
 
-      {/* Slices per batch (only show for batch type) */}
+      {/* Servings per batch (only show for batch type) */}
       {recipeType === "batch" && (
         <div>
           <p className="text-xs text-gray-500 text-center mb-2">
-            Slices per batch
+            Servings per batch
           </p>
           <div className="flex flex-col items-center gap-2">
             <button
               onClick={() => onSlicesPerBatchChange(slicesPerBatch + 1)}
               className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors flex items-center justify-center text-white text-xl font-bold shadow-sm"
-              aria-label="Increase slices"
+              aria-label="Increase servings"
             >
               +
             </button>
@@ -76,7 +76,7 @@ export default function RecipeTypeSelector({
             <button
               onClick={() => onSlicesPerBatchChange(Math.max(1, slicesPerBatch - 1))}
               className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors flex items-center justify-center text-white text-xl font-bold shadow-sm"
-              aria-label="Decrease slices"
+              aria-label="Decrease servings"
             >
               −
             </button>

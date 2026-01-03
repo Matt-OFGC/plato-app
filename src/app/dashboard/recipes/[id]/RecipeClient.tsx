@@ -2,7 +2,7 @@
 
 import { RecipeMock } from "@/lib/mocks/recipe";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useServings, useIngredientChecklist } from "@/lib/useLocalChecklist";
+import { useIngredientChecklist } from "@/lib/useLocalChecklist";
 import { saveRecipeChanges, saveSellPrice, saveRecipe, deleteRecipe, saveWholesalePrice } from "./actions";
 import { computeIngredientUsageCostWithDensity, toBase, Unit, BaseUnit } from "@/lib/units";
 import { getIngredientDensityOrDefault } from "@/lib/ingredient-densities";
@@ -11,7 +11,6 @@ import ServingsControl from "./components/ServingsControl";
 import CostAnalysis from "./components/CostAnalysis";
 import RecipeNotes from "./components/RecipeNotes";
 import RecipeMetadata from "./components/RecipeMetadata";
-import RecipeTypeSelector from "./components/RecipeTypeSelector";
 import StepNavigation from "./components/StepNavigation";
 import IngredientsPanel from "./components/IngredientsPanel";
 import InstructionsPanel from "./components/InstructionsPanel";
@@ -23,6 +22,7 @@ import { CategorySelector } from "@/components/CategorySelector";
 import { StorageSelector } from "@/components/StorageSelector";
 import { ShelfLifeSelector } from "@/components/ShelfLifeSelector";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type ViewMode = "whole" | "steps" | "edit" | "photos";
 
@@ -50,18 +50,39 @@ interface Props {
 }
 
 function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelfLifeOptions, recipeId, availableIngredients, isNew = false, wholesaleProduct, yieldUnit = "each" }: Props) {
+  const router = useRouter();
   const recipeView = useRecipeView();
   if (!recipeView) throw new Error("RecipeRedesignClientContent must be used within RecipeViewProvider");
   
   const { viewMode, setViewMode } = recipeView;
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const { servings, setServings } = useServings(recipe.id, recipe.baseServings);
+  const [baseServingsState, setBaseServingsState] = useState(recipe.baseServings);
+  const [servings, setServings] = useState(recipe.baseServings);
   const checklist = useIngredientChecklist(recipe.id);
   const [localIngredients, setLocalIngredients] = useState(recipe.ingredients);
   const [localSteps, setLocalSteps] = useState(recipe.steps);
   const [recipeTitle, setRecipeTitle] = useState(recipe.title);
   const [recipeType, setRecipeType] = useState<"single" | "batch">("batch");
   const [slicesPerBatch, setSlicesPerBatch] = useState(recipe.baseServings);
+
+  // Keep local base servings in sync with incoming props (e.g., after navigation)
+  useEffect(() => {
+    setBaseServingsState(recipe.baseServings);
+  }, [recipe.baseServings]);
+
+  // Keep servings and batch slices in sync with baseServingsState
+  useEffect(() => {
+    setServings(baseServingsState);
+    setSlicesPerBatch(baseServingsState);
+  }, [baseServingsState]);
+
+  // When leaving edit mode, reset view-mode servings to the saved default
+  useEffect(() => {
+    if (viewMode !== "edit") {
+      setServings(baseServingsState);
+      setSlicesPerBatch(baseServingsState);
+    }
+  }, [viewMode, baseServingsState]);
   // Store IDs instead of names for better data integrity
   const [categoryId, setCategoryId] = useState<number | null>(
     categories.find(c => c.name === recipe.category)?.id || null
@@ -160,10 +181,57 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
       return sum + calculateIngredientCost(ing);
     }, 0);
   }, [localIngredients, calculateIngredientCost]);
-  
+
+  const baseServingsSafe = baseServingsState > 0 ? baseServingsState : 1;
+  const scaledTotalCost = useMemo(() => {
+    return totalCost * (servings / baseServingsSafe);
+  }, [totalCost, servings, baseServingsSafe]);
+
+  const servingCount = useMemo(() => {
+    const count = recipeType === "batch" ? slicesPerBatch : servings;
+    return count > 0 ? count : 1;
+  }, [recipeType, slicesPerBatch, servings]);
+
   const [sellPrice, setSellPrice] = useState(recipe.sellPrice || (totalCost * 3));
   const [wholesalePrice, setWholesalePrice] = useState(wholesaleProduct?.isActive ? wholesaleProduct.price : 0);
   const [isWholesaleProduct, setIsWholesaleProduct] = useState(wholesaleProduct?.isActive || false);
+
+  const costPerServing = useMemo(() => {
+    if (!servingCount || !isFinite(servingCount)) return 0;
+    return scaledTotalCost / servingCount;
+  }, [scaledTotalCost, servingCount]);
+
+  const cogsPercent = useMemo(() => {
+    if (sellPrice <= 0) return 0;
+    return (costPerServing / sellPrice) * 100;
+  }, [costPerServing, sellPrice]);
+
+  const ovenSummaries = useMemo(() => {
+    const seen = new Set<string>();
+    const summaries: Array<{
+      temperatureC: number;
+      durationMin: number;
+      hasTimer: boolean;
+      stepId: string;
+    }> = [];
+
+    localSteps.forEach(step => {
+      if (typeof step.temperatureC === "number" && typeof step.durationMin === "number") {
+        const key = `${step.temperatureC}-${step.durationMin}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          summaries.push({
+            temperatureC: step.temperatureC,
+            durationMin: step.durationMin,
+            hasTimer: !!step.hasTimer,
+            stepId: step.id,
+          });
+        }
+      }
+    });
+
+    return summaries;
+  }, [localSteps]);
 
   // Collect allergens from ingredients
   const allergens = useMemo(() => {
@@ -233,21 +301,13 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
     return labels;
   }, [allergens]);
 
-  // Sync servings with slicesPerBatch when in batch mode
   const handleRecipeTypeChange = (type: "single" | "batch") => {
     setRecipeType(type);
-    if (type === "batch") {
-      // When switching to batch, sync servings with slicesPerBatch
-      setServings(slicesPerBatch);
-    }
   };
 
   const handleSlicesPerBatchChange = (slices: number) => {
     setSlicesPerBatch(slices);
-    // When in batch mode, sync servings with slices
-    if (recipeType === "batch") {
-      setServings(slices);
-    }
+    setServings(slices);
   };
 
   const handleImageUpload = async (file: File) => {
@@ -280,11 +340,20 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
 
   const handleServingsChange = (newServings: number) => {
     setServings(newServings);
-    // When in batch mode, sync slicesPerBatch with servings
     if (recipeType === "batch") {
       setSlicesPerBatch(newServings);
     }
   };
+
+  const handleDelete = useCallback(async () => {
+    if (!recipeId) return;
+    try {
+      await deleteRecipe(recipeId);
+      window.location.href = '/dashboard/recipes';
+    } catch (error) {
+      alert(`Failed to delete recipe: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [recipeId]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -296,6 +365,14 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         return;
       }
 
+      const outgoingYield = recipeType === "batch" ? slicesPerBatch : servings;
+      console.log("[handleSave] submitting", {
+        recipeType,
+        outgoingYield,
+        slicesPerBatch,
+        servings,
+      });
+
       if (isNew) {
         // Convert IDs to names for saving
         const categoryName = categoryId ? categories.find(c => c.id === categoryId)?.name || "" : "";
@@ -306,8 +383,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         const result = await saveRecipe({
           recipeId: null,
           name: recipeTitle.trim(),
-          yieldQuantity: servings,
-          yieldUnit: recipeType === "batch" ? "slices" : "each",
+          yieldQuantity: recipeType === "batch" ? slicesPerBatch : servings,
+          yieldUnit: "each",
           category: categoryName,
           storage: storageName,
           shelfLife: shelfLifeName,
@@ -336,6 +413,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
           category: categoryName,
           storage: storageName,
           shelfLife: shelfLifeName,
+          yieldQuantity: recipeType === "batch" ? slicesPerBatch : servings,
+          yieldUnit: "each",
           sellPrice,
           description,
           imageUrl,
@@ -344,6 +423,11 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
         });
 
         if (result.success) {
+          const newYield = recipeType === "batch" ? slicesPerBatch : servings;
+          setBaseServingsState(newYield);
+          setServings(newYield);
+          setSlicesPerBatch(newYield);
+          router.refresh();
           // Switch back to steps view after saving
           recipeView.setViewMode("steps");
         } else {
@@ -364,6 +448,13 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
       recipeView.updateSaveState(handleSave, isSaving);
     }
   }, [handleSave, isSaving, recipeView.updateSaveState]);
+
+  // Update delete handler in context (only for existing recipes)
+  useEffect(() => {
+    if (recipeView.updateDeleteHandler) {
+      recipeView.updateDeleteHandler(isNew ? undefined : handleDelete);
+    }
+  }, [recipeView.updateDeleteHandler, isNew, handleDelete]);
 
   const handlePrintAllergenSheet = () => {
     // Create a printable window
@@ -486,18 +577,6 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
     }
   };
 
-  const handleDelete = async () => {
-    if (!recipeId) return;
-    
-    try {
-      await deleteRecipe(recipeId);
-      // Redirect will happen server-side, but just in case:
-      window.location.href = '/dashboard/recipes';
-    } catch (error) {
-      alert(`Failed to delete recipe: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden">
         {recipeId && !isNew && (
@@ -519,6 +598,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
               category={categoryId ? categories.find(c => c.id === categoryId)?.name || "Uncategorized" : (recipe.category || "Uncategorized")}
               categoryId={categoryId}
               servings={servings}
+              ovenSummaries={ovenSummaries}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               onCategoryChange={(catId) => setCategoryId(catId)}
@@ -697,7 +777,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                 ingredients={localIngredients}
                 steps={localSteps}
                 servings={servings}
-                baseServings={recipe.baseServings}
+              baseServings={baseServingsState}
                 viewMode={viewMode}
                 activeStepIndex={activeStepIndex}
                 checklist={checklist}
@@ -757,7 +837,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                   {recipeType === "batch" && (
                     <>
                   <div className="h-4 w-px bg-gray-300" />
-                  <span className="text-xs text-gray-500">Slices:</span>
+                  <span className="text-xs text-gray-500">Servings:</span>
                   <button
                     onClick={() => handleSlicesPerBatchChange(Math.max(1, slicesPerBatch - 1))}
                     className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-700 font-semibold text-xs md:text-sm"
@@ -812,22 +892,22 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
               <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-2.5 xl:gap-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Cost</span>
-                  <span className="text-sm md:text-base lg:text-lg font-bold text-gray-900">£{(totalCost * (servings / recipe.baseServings)).toFixed(2)}</span>
+                  <span className="text-sm md:text-base lg:text-lg font-bold text-gray-900">£{scaledTotalCost.toFixed(2)}</span>
                 </div>
                 <div className="h-3 md:h-3 lg:h-4 w-px bg-gray-300" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Per Slice</span>
-                  <span className="text-sm md:text-base lg:text-lg font-bold text-gray-900">£{((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)).toFixed(2)}</span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">Per Serving</span>
+                  <span className="text-sm md:text-base lg:text-lg font-bold text-gray-900">£{costPerServing.toFixed(2)}</span>
                 </div>
                 <div className="h-3 md:h-3 lg:h-4 w-px bg-gray-300" />
                 <div className="flex flex-col">
                   <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0.5">COGS</span>
                   <span className={`text-sm md:text-base lg:text-lg font-bold ${
-                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 25 ? 'text-green-600' :
-                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 33 ? 'text-green-600' :
-                    ((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100) <= 40 ? 'text-yellow-600' : 'text-red-600'
+                    cogsPercent <= 25 ? 'text-green-600' :
+                    cogsPercent <= 33 ? 'text-green-600' :
+                    cogsPercent <= 40 ? 'text-yellow-600' : 'text-red-600'
                   }`}>
-                    {sellPrice > 0 ? `${((((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings)) / sellPrice) * 100).toFixed(1)}%` : 'N/A'}
+                    {sellPrice > 0 ? `${cogsPercent.toFixed(1)}%` : 'N/A'}
                   </span>
                 </div>
                 <button
@@ -1077,8 +1157,8 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
       <CostInsightsModal
         isOpen={isPricingModalOpen}
         onClose={() => setIsPricingModalOpen(false)}
-        totalCost={(totalCost * (servings / recipe.baseServings))}
-        costPerServing={((totalCost * (servings / recipe.baseServings)) / (recipeType === "batch" ? slicesPerBatch : servings))}
+        totalCost={scaledTotalCost}
+        costPerServing={costPerServing}
         recipeType={recipeType}
         slicesPerBatch={slicesPerBatch}
         sellPrice={sellPrice}

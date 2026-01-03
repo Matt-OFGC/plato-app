@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { CategorySelector } from "@/components/CategorySelector";
 import Link from "next/link";
+import TimerButton from "./TimerButton";
 
 interface RecipeHeaderProps {
   title: string;
@@ -20,6 +21,12 @@ interface RecipeHeaderProps {
   onTitleChange?: (title: string) => void;
   onDelete?: () => void;
   recipeId?: number | null;
+  ovenSummaries?: Array<{
+    temperatureC: number;
+    durationMin: number;
+    hasTimer: boolean;
+    stepId: string;
+  }>;
 }
 
 export default function RecipeHeader({
@@ -37,6 +44,7 @@ export default function RecipeHeader({
   onTitleChange,
   onDelete,
   recipeId,
+  ovenSummaries = [],
 }: RecipeHeaderProps) {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -172,6 +180,40 @@ export default function RecipeHeader({
               )}
             </div>
           </div>
+
+          {/* Oven summaries */}
+          {ovenSummaries.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap justify-end ml-auto">
+              {ovenSummaries.map((summary, idx) => (
+                <div
+                  key={`${summary.temperatureC}-${summary.durationMin}-${idx}`}
+                  className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-200/70"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 bg-white/0">
+                      <svg className="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
+                      </svg>
+                      <span className="text-sm font-semibold text-orange-700">{summary.temperatureC}°C</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white/0">
+                      <svg className="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm font-semibold text-blue-700">{summary.durationMin}m</span>
+                    </div>
+                  </div>
+                  {summary.hasTimer && recipeId && (
+                    <TimerButton
+                      recipeId={recipeId.toString()}
+                      stepId={summary.stepId}
+                      minutes={summary.durationMin}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
         </div>
       </div>

@@ -105,7 +105,7 @@ export default function CostAnalysis({
           {/* Cost Per Serving */}
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">
-              {recipeType === "batch" ? "Per Slice" : "Per Unit"}
+              {recipeType === "batch" ? "Per Serving" : "Per Unit"}
             </span>
             <span className="text-base font-semibold text-gray-900">
               £{costPerServing.toFixed(2)}

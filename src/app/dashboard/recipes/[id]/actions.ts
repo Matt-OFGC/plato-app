@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma";
 import { getCurrentUserAndCompany } from "@/lib/current";
 import { revalidatePath } from "next/cache";
 
@@ -178,7 +179,7 @@ export async function saveRecipe(data: {
         const newRecipe = await tx.recipe.create({
           data: {
             name: data.name.trim(),
-            yieldQuantity: data.yieldQuantity,
+            yieldQuantity: new Prisma.Decimal(data.yieldQuantity),
             yieldUnit: data.yieldUnit || "each",
             category: data.category || null,
             storage: data.storage || null,
@@ -209,7 +210,7 @@ export async function saveRecipe(data: {
           where: { id: data.recipeId },
           data: {
             ...(data.name && { name: data.name.trim() }),
-            ...(data.yieldQuantity && { yieldQuantity: data.yieldQuantity }),
+            ...(data.yieldQuantity !== undefined && { yieldQuantity: new Prisma.Decimal(data.yieldQuantity) }),
             ...(data.yieldUnit && { yieldUnit: data.yieldUnit }),
             category: data.category || null,
             storage: data.storage || null,
@@ -300,6 +301,8 @@ export async function saveRecipeChanges(data: {
   category?: string;
   storage?: string;
   shelfLife?: string;
+  yieldQuantity?: number;
+  yieldUnit?: string;
   sellPrice?: number;
   description?: string;
   imageUrl?: string;
@@ -320,6 +323,11 @@ export async function saveRecipeChanges(data: {
   }>;
 }) {
   try {
+    console.log("[saveRecipeChanges] input", {
+      recipeId: data.recipeId,
+      yieldQuantity: data.yieldQuantity,
+      yieldUnit: data.yieldUnit,
+    });
     const { companyId } = await getCurrentUserAndCompany();
 
     // Verify recipe belongs to user's company
@@ -357,8 +365,11 @@ export async function saveRecipeChanges(data: {
         lastPriceUpdate: data.sellPrice ? new Date() : undefined,
         ...(data.description !== undefined && { method: data.description }),
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+        ...(data.yieldQuantity !== undefined && { yieldQuantity: new Prisma.Decimal(data.yieldQuantity) }),
+        ...(data.yieldUnit !== undefined && { yieldUnit: data.yieldUnit }),
       },
     });
+    console.log("[saveRecipeChanges] updated yieldQuantity", data.yieldQuantity);
 
     // 2. Delete recipe items that are in sections (they'll be recreated)
     await prisma.recipeItem.deleteMany({
@@ -423,6 +434,10 @@ export async function saveRecipeChanges(data: {
         }
       }
     }
+
+    // Revalidate relevant pages so new yield is reflected
+    revalidatePath(`/dashboard/recipes/${data.recipeId}`);
+    revalidatePath('/dashboard/recipes');
 
     revalidatePath(`/dashboard/recipes/${data.recipeId}`);
     

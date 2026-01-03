@@ -95,6 +95,7 @@ export function IngredientForm({
   const [showOtherNutInput, setShowOtherNutInput] = useState<boolean>(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState<boolean>(false);
   const [packSize, setPackSize] = useState<number>(initialData?.packQuantity || 1);
+  const [packSizeInput, setPackSizeInput] = useState<string>(() => (initialData?.packQuantity || 1).toString());
   const [packPrice, setPackPrice] = useState<number>(initialData?.packPrice || 0);
   const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
   const [hasUserModifiedPackSize, setHasUserModifiedPackSize] = useState<boolean>(false);
@@ -108,6 +109,18 @@ export function IngredientForm({
       }
     }
     return 1;
+  });
+  const [purchaseSizeInput, setPurchaseSizeInput] = useState<string>(() => {
+    const initialPurchaseSize = (() => {
+      if (initialData?.packUnit) {
+        const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
+        if (countUnits.includes(initialData.packUnit)) {
+          return initialData.packQuantity || 1;
+        }
+      }
+      return initialData?.packQuantity || 1;
+    })();
+    return initialPurchaseSize.toString();
   });
   
   // Calculate price per unit
@@ -126,6 +139,7 @@ export function IngredientForm({
       const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
       if (countUnits.includes(initialData.packUnit) && initialData.packQuantity !== undefined && initialData.packQuantity > 0) {
         setPurchaseSize(initialData.packQuantity);
+        setPurchaseSizeInput(initialData.packQuantity.toString());
       }
     }
     
@@ -133,6 +147,7 @@ export function IngredientForm({
     if (!hasUserModifiedPackSize && initialData?.packQuantity !== undefined && initialData.packQuantity > 0) {
       console.log('IngredientForm: Setting packSize from initialData:', initialData.packQuantity);
       setPackSize(initialData.packQuantity);
+      setPackSizeInput(initialData.packQuantity.toString());
     }
     if (initialData?.packPrice !== undefined) {
       setPackPrice(initialData.packPrice);
@@ -427,10 +442,23 @@ export function IngredientForm({
                   name="purchaseSize"
                   step="0.01"
                   min="0"
-                  value={purchaseSize}
+                  value={purchaseSizeInput}
                   onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    setPurchaseSize(value);
+                    const value = e.target.value;
+                    setPurchaseSizeInput(value);
+                    if (value === "") {
+                      return;
+                    }
+                    const parsed = parseFloat(value);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      setPurchaseSize(parsed);
+                    }
+                  }}
+                  onBlur={() => {
+                    const parsed = parseFloat(purchaseSizeInput);
+                    const normalized = !isNaN(parsed) && parsed >= 0 ? parsed : 0;
+                    setPurchaseSize(normalized);
+                    setPurchaseSizeInput(normalized.toString());
                   }}
                   required
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
@@ -543,21 +571,24 @@ export function IngredientForm({
                     name="packSize"
                     step="1"
                     min="1"
-                    value={packSize}
+                    value={packSizeInput}
                     onChange={(e) => {
                       const value = e.target.value;
                       // Mark that user has manually modified this field
                       setHasUserModifiedPackSize(true);
                       // Allow empty string while typing
                       if (value === '') {
-                        setPackSize(1);
+                        setPackSizeInput('');
                         return;
                       }
                       // Parse the value
                       const numValue = parseFloat(value);
                       // Only update if it's a valid positive number
                       if (!isNaN(numValue) && numValue >= 1) {
+                        setPackSizeInput(Math.floor(numValue).toString());
                         setPackSize(Math.floor(numValue)); // Use floor to ensure integer
+                      } else {
+                        setPackSizeInput(value);
                       }
                     }}
                     onBlur={(e) => {
@@ -565,8 +596,11 @@ export function IngredientForm({
                       const value = parseFloat(e.target.value);
                       if (isNaN(value) || value < 1) {
                         setPackSize(1);
+                        setPackSizeInput('1');
                       } else {
-                        setPackSize(Math.floor(value));
+                        const normalized = Math.floor(value);
+                        setPackSize(normalized);
+                        setPackSizeInput(normalized.toString());
                       }
                     }}
                     required
@@ -607,8 +641,16 @@ export function IngredientForm({
                   name="packPrice"
                   step="0.01"
                   min="0"
-                  value={packPrice || ""}
-                  onChange={(e) => setPackPrice(parseFloat(e.target.value) || 0)}
+                  value={packPrice === 0 ? 0 : (Number.isFinite(packPrice) ? packPrice : "")}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setPackPrice(0);
+                      return;
+                    }
+                    const parsed = parseFloat(raw);
+                    setPackPrice(!isNaN(parsed) && parsed >= 0 ? parsed : 0);
+                  }}
                   required
                   className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
                   placeholder="25.00"

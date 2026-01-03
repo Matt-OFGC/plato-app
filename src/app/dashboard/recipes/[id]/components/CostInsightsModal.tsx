@@ -135,7 +135,7 @@ export default function CostInsightsModal({
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">
-                  {recipeType === "batch" ? `Per Slice (${slicesPerBatch} total)` : "Per Unit"}
+                  {recipeType === "batch" ? `Per Serving (${slicesPerBatch} total)` : "Per Unit"}
                 </p>
                 <p className="text-2xl font-bold text-emerald-600">£{costPerServing.toFixed(2)}</p>
               </div>

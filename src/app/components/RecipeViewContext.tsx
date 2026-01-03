@@ -10,9 +10,11 @@ interface RecipeViewContextType {
   onSave?: () => void;
   isSaving?: boolean;
   onPrint?: () => void;
+  onDelete?: () => void;
   title?: string;
   updateSaveState?: (onSave: (() => void) | undefined, isSaving: boolean | undefined) => void;
   updatePrintHandler?: (onPrint: (() => void) | undefined) => void;
+  updateDeleteHandler?: (onDelete: (() => void) | undefined) => void;
   updateTitle?: (title: string | undefined) => void;
 }
 
@@ -24,6 +26,7 @@ export function RecipeViewProvider({
   onSave,
   isSaving,
   onPrint,
+  onDelete,
   title
 }: { 
   children: ReactNode;
@@ -31,12 +34,14 @@ export function RecipeViewProvider({
   onSave?: () => void;
   isSaving?: boolean;
   onPrint?: () => void;
+  onDelete?: () => void;
   title?: string;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [currentOnSave, setCurrentOnSave] = useState<(() => void) | undefined>(onSave);
   const [currentIsSaving, setCurrentIsSaving] = useState<boolean | undefined>(isSaving);
   const [currentOnPrint, setCurrentOnPrint] = useState<(() => void) | undefined>(onPrint);
+  const [currentOnDelete, setCurrentOnDelete] = useState<(() => void) | undefined>(onDelete);
   const [currentTitle, setCurrentTitle] = useState<string | undefined>(title);
   
   // Update when props change
@@ -51,6 +56,10 @@ export function RecipeViewProvider({
   useEffect(() => {
     setCurrentOnPrint(() => onPrint);
   }, [onPrint]);
+
+  useEffect(() => {
+    setCurrentOnDelete(() => onDelete);
+  }, [onDelete]);
   
   useEffect(() => {
     setCurrentTitle(title);
@@ -65,6 +74,10 @@ export function RecipeViewProvider({
     setCurrentOnPrint(() => newOnPrint);
   }, []);
   
+  const updateDeleteHandler = useCallback((newOnDelete: (() => void) | undefined) => {
+    setCurrentOnDelete(() => newOnDelete);
+  }, []);
+
   const updateTitle = useCallback((newTitle: string | undefined) => {
     setCurrentTitle(newTitle);
   }, []);
@@ -76,9 +89,11 @@ export function RecipeViewProvider({
       onSave: currentOnSave, 
       isSaving: currentIsSaving, 
       onPrint: currentOnPrint, 
+      onDelete: currentOnDelete,
       title: currentTitle,
       updateSaveState,
       updatePrintHandler,
+      updateDeleteHandler,
       updateTitle
     }}>
       {children}

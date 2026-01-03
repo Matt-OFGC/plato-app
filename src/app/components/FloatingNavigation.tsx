@@ -607,6 +607,26 @@ export function FloatingNavigation({ onMenuClick, sidebarOpen }: FloatingNavigat
             )}
           </button>
 
+          {recipeView.viewMode === "edit" && recipeView.onDelete && (
+            <button
+              onClick={() => {
+                const confirmDelete = window.confirm("Are you sure you want to delete this recipe? This cannot be undone.");
+                if (confirmDelete) {
+                  recipeView.onDelete();
+                }
+              }}
+              className="bg-white/80 backdrop-blur-xl shadow-md border border-red-200/70 rounded-xl hover:bg-white hover:shadow-lg transition-all flex items-center gap-2
+                         max-md:px-3 max-md:py-1.5 max-md:gap-1.5
+                         md:px-4 md:py-2"
+              title="Delete recipe"
+            >
+              <svg className="text-red-600 max-md:w-3.5 max-md:h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h10" />
+              </svg>
+              <span className="text-red-700 font-medium max-md:text-xs md:text-sm">Delete</span>
+            </button>
+          )}
+
           {recipeView.onPrint && (
             <button
               onClick={recipeView.onPrint}
