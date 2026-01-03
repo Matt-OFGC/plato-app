@@ -660,7 +660,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
           {/* Photos View - Compact Layout */}
           {viewMode === "photos" && (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden h-[calc(100vh-240px)] max-h-[calc(100vh-240px)] min-h-[520px]">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 h-full">
+              <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-6 p-6 h-full">
                 {/* Recipe Image - Left Side */}
                 <div className="flex-shrink-0 h-full">
                   <div className="relative w-full h-full min-h-[320px] bg-gradient-to-br from-emerald-100 to-blue-100 overflow-hidden rounded-xl">
@@ -736,7 +736,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                     </div>
 
                     {/* Instructions/Method - Grouped by Section */}
-                    <div className="flex flex-col min-w-0">
+                    <div className="flex flex-col min-w-0 lg:border-l lg:border-gray-200 lg:pl-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Method</h3>
                       <div className="space-y-4 flex-1 overflow-auto pr-1">
                         {localSteps.map((step, index) => (
@@ -901,7 +901,7 @@ function RecipeRedesignClientContent({ recipe, categories, storageOptions, shelf
                         const normalized = !isNaN(val) && val > 0 ? val : 1;
                         handleServingsChange(normalized);
                       }}
-                      className="text-lg md:text-xl font-bold text-gray-900 w-[2.75rem] md:w-[3rem] text-center bg-transparent border border-gray-200 rounded-lg px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="text-lg md:text-xl font-bold text-gray-900 w-[2.75rem] md:w-[3rem] text-center bg-transparent border border-gray-200 rounded-lg px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       inputMode="numeric"
                       pattern="[0-9]*"
                     />

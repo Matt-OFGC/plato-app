@@ -95,7 +95,6 @@ export function IngredientForm({
   const [showOtherNutInput, setShowOtherNutInput] = useState<boolean>(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState<boolean>(false);
   const [packPrice, setPackPrice] = useState<number>(initialData?.packPrice || 0);
-  const [showTooltip, setShowTooltip] = useState<{ [key: string]: boolean }>({});
   const [purchaseUnit, setPurchaseUnit] = useState<string>(initialData?.packUnit || '');
   const [packCount, setPackCount] = useState<number>(() => {
     const countUnits = ['slices', 'each', 'large', 'medium', 'small', 'pinch', 'dash'];
@@ -129,6 +128,7 @@ export function IngredientForm({
     return initialData?.packQuantity || 1;
   });
   const [purchaseSizeInput, setPurchaseSizeInput] = useState<string>(() => purchaseSize.toString());
+  const [packMode, setPackMode] = useState<"single" | "bulk">(() => (packCount > 1 ? "bulk" : "single"));
   
   // Calculate price per unit using total purchase size (packCount * per-unit size)
   const totalPurchaseSize = packCount > 0 ? purchaseSize * packCount : purchaseSize;
@@ -391,60 +391,49 @@ export function IngredientForm({
           </div>
 
           {/* Pack Details Section */}
-          <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 pb-2 border-b border-gray-300">Pack Details</h3>
-            
-            {/* Pack Count + Per-Unit Size & Unit */}
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label htmlFor="packCount" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                  Pack Count <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  id="packCount"
-                  name="packCount"
-                  min="1"
-                  step="1"
-                  value={packCount}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!isNaN(val) && val > 0) {
-                      setPackCount(val);
-                    } else if (e.target.value === "") {
+        <div className="space-y-3 p-4 border border-gray-200 rounded-2xl bg-white/85 backdrop-blur-sm shadow-sm col-span-2">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Pack Details (what you buy)</h3>
+              <div className="relative inline-flex items-center bg-white/80 backdrop-blur-md border border-gray-200 rounded-full px-2 py-1.5 shadow-md transition-all">
+                <div
+                  className="absolute inset-y-1 left-1 rounded-full bg-emerald-500/15 transition-transform duration-200 ease-out shadow-inner"
+                  style={{
+                    width: "calc(50% - 0.5rem)",
+                    transform: packMode === "single" ? "translateX(0%)" : "translateX(100%)"
+                  }}
+                  aria-hidden="true"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (packMode !== "single") {
+                      setPackMode("single");
                       setPackCount(1);
                     }
                   }}
-                  onBlur={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    const normalized = !isNaN(val) && val > 0 ? val : 1;
-                    setPackCount(normalized);
-                  }}
-                  required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                  placeholder="4"
-                />
+                  className={`relative z-10 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    packMode === "single" ? "text-emerald-700" : "text-gray-700 hover:text-emerald-700"
+                  }`}
+                >
+                  Simple
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPackMode("bulk")}
+                  className={`relative z-10 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
+                    packMode === "bulk" ? "text-emerald-700" : "text-gray-700 hover:text-emerald-700"
+                  }`}
+                >
+                  Complex
+                </button>
               </div>
+            </div>
+          
+          {/* Pack fields */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label htmlFor="purchaseSize" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                  Per-Unit Size <span className="text-red-500">*</span>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      className="focus:outline-none"
-                      onMouseEnter={() => setShowTooltip({ ...showTooltip, purchaseSize: true })}
-                      onMouseLeave={() => setShowTooltip({ ...showTooltip, purchaseSize: false })}
-                    >
-                      <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
-                    {showTooltip.purchaseSize && (
-                      <div className="absolute left-0 top-6 z-50 w-52 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
-                        Size of one unit in the pack (e.g., 3.5 kg per bag)
-                      </div>
-                    )}
-                  </div>
+                <label htmlFor="purchaseSize" className="block text-xs font-semibold text-gray-700 mb-1">
+                  Purchase size <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -471,13 +460,18 @@ export function IngredientForm({
                     setPurchaseSizeInput(normalized.toString());
                   }}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                  placeholder="3.5"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                placeholder="1"
                 />
+              <p className="text-xs text-gray-500 mt-1">
+                {packMode === "single"
+                  ? "Example: 1 bag"
+                  : "Example: each bag is 3.5 kg (or each bar is 50 g)"}
+              </p>
               </div>
               <div>
-                <label htmlFor="purchaseUnit" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                  Per-Unit Unit <span className="text-red-500">*</span>
+                <label htmlFor="purchaseUnit" className="block text-xs font-semibold text-gray-700 mb-1">
+                  Purchase unit <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="purchaseUnit"
@@ -485,9 +479,9 @@ export function IngredientForm({
                   defaultValue={initialData?.packUnit || ""}
                   onChange={(e) => setPurchaseUnit(e.target.value)}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
                 >
-                <option value="">Select...</option>
+                <option value="">each, kg, ml…</option>
                 <optgroup label="Count">
                   <option value="slices">slices</option>
                   <option value="each">each</option>
@@ -516,155 +510,181 @@ export function IngredientForm({
                   <option value="gallon">gallon</option>
                 </optgroup>
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choose the unit you buy (each, kg, ml)
+              </p>
               </div>
+            {packMode === "bulk" && (
+              <div>
+                <label htmlFor="packCount" className="block text-xs font-semibold text-gray-700 mb-1">
+                  Units in this pack <span className="text-red-500">*</span>
+                </label>
+                  <input
+                    type="number"
+                    id="packCount"
+                    name="packCount"
+                    min="1"
+                    step="1"
+                    value={packCount}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val > 0) {
+                        setPackCount(val);
+                      } else if (e.target.value === "") {
+                        setPackCount(1);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      const normalized = !isNaN(val) && val > 0 ? val : 1;
+                      setPackCount(normalized);
+                    }}
+                    required
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                  placeholder="12"
+                  />
+                <p className="text-xs text-gray-500 mt-1">Example: box of 12 bars → 12</p>
+                </div>
+            )}
             </div>
 
             {/* Price */}
-            <div>
-              <label htmlFor="packPrice" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
-                Price <span className="text-red-500">*</span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <label htmlFor="packPrice" className="text-sm font-semibold text-gray-800">
+                  Price <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
-                  <button
-                    type="button"
-                    className="focus:outline-none"
-                    onMouseEnter={() => setShowTooltip({ ...showTooltip, packPrice: true })}
-                    onMouseLeave={() => setShowTooltip({ ...showTooltip, packPrice: false })}
-                  >
-                    <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                  {showTooltip.packPrice && (
-                    <div className="absolute left-0 top-6 z-50 w-56 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
-                      Price for the purchase size above. Use 0 for free ingredients like water.
-                    </div>
-                  )}
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">£</span>
+                  <input
+                    type="number"
+                    id="packPrice"
+                    name="packPrice"
+                    step="0.01"
+                    min="0"
+                    value={packPrice === 0 ? 0 : (Number.isFinite(packPrice) ? packPrice : "")}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        setPackPrice(0);
+                        return;
+                      }
+                      const parsed = parseFloat(raw);
+                      setPackPrice(!isNaN(parsed) && parsed >= 0 ? parsed : 0);
+                    }}
+                    required
+                    className="w-28 pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                    placeholder="6.50"
+                  />
                 </div>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">£</span>
-                <input
-                  type="number"
-                  id="packPrice"
-                  name="packPrice"
-                  step="0.01"
-                  min="0"
-                  value={packPrice === 0 ? 0 : (Number.isFinite(packPrice) ? packPrice : "")}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      setPackPrice(0);
-                      return;
-                    }
-                    const parsed = parseFloat(raw);
-                    setPackPrice(!isNaN(parsed) && parsed >= 0 ? parsed : 0);
-                  }}
-                  required
-                  className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                  placeholder="25.00"
-                />
               </div>
+              <p className="text-xs text-gray-500">
+                {packMode === "single"
+                  ? "Example: bag costs £3.50 → enter 3.50"
+                  : "Example: whole box costs £9.60 → enter 9.60"}
+              </p>
               {pricePerUnit && (
-                <p className="text-xs text-emerald-700 font-medium mt-1.5">
+                <p className="text-xs text-emerald-700 font-medium mt-1">
                   £{pricePerUnit.toFixed(2)} per unit
                 </p>
               )}
             </div>
           </div>
 
-          {/* Custom Unit Conversions */}
-          <div className="bg-emerald-50 border-2 border-emerald-200 rounded-lg p-3">
-            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">
-              Custom Unit Conversions <span className="text-gray-400 text-xs font-normal normal-case">(Optional)</span>
-            </label>
-            <p className="text-xs text-gray-600 mb-2 leading-tight">
-              Define how recipe units (tsp, tbsp, cup, etc.) convert to your purchase unit. 
-              Example: If you buy vanilla extract in 100ml bottles but recipes use teaspoons, 
-              you can specify "1 tsp = 5 ml" here.
-            </p>
+          {/* Custom Unit Conversions + Supplier */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-3">
+            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-lg p-3">
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">
+                Custom Unit Conversions <span className="text-gray-400 text-xs font-normal normal-case">(Optional)</span>
+              </label>
+              <p className="text-xs text-gray-600 mb-2 leading-tight">
+                Define how recipe units (tsp, tbsp, cup, etc.) convert to your purchase unit. 
+                Example: If you buy vanilla extract in 100ml bottles but recipes use teaspoons, 
+                you can specify \"1 tsp = 5 ml\" here.
+              </p>
 
-            {customConversions.length > 0 && (
-              <div className="space-y-1.5 mb-2">
-                {customConversions.map((conversion, index) => (
-                  <div key={index} className="flex gap-1.5 items-center bg-white p-1.5 rounded border border-emerald-200">
-                    <span className="text-xs font-medium text-gray-600">1</span>
-                    <select
-                      value={conversion.unit}
-                      onChange={(e) => updateCustomConversion(index, 'unit', e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
-                    >
-                      <option value="tsp">tsp</option>
-                      <option value="tbsp">tbsp</option>
-                      <option value="cup">cup</option>
-                      <option value="floz">fl oz</option>
-                      <option value="pint">pint</option>
-                      <option value="oz">oz</option>
-                      <option value="lb">lb</option>
-                    </select>
-                    <span className="text-xs font-medium text-gray-600">=</span>
-                    <input
-                      type="number"
-                      value={conversion.value}
-                      onChange={(e) => updateCustomConversion(index, 'value', parseFloat(e.target.value) || 0)}
-                      step="0.01"
-                      min="0"
-                      className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
-                      placeholder="5"
-                    />
-                    <select
-                      value={conversion.targetUnit}
-                      onChange={(e) => updateCustomConversion(index, 'targetUnit', e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
-                    >
-                      <option value="ml">ml</option>
-                      <option value="l">l</option>
-                      <option value="g">g</option>
-                      <option value="kg">kg</option>
-                      <option value="oz">oz</option>
-                      <option value="lb">lb</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeCustomConversion(index)}
-                      className="ml-auto p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Remove"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+              {customConversions.length > 0 && (
+                <div className="space-y-1.5 mb-2">
+                  {customConversions.map((conversion, index) => (
+                    <div key={index} className="flex gap-1.5 items-center bg-white p-1.5 rounded border border-emerald-200">
+                      <span className="text-xs font-medium text-gray-600">1</span>
+                      <select
+                        value={conversion.unit}
+                        onChange={(e) => updateCustomConversion(index, 'unit', e.target.value)}
+                        className="px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
+                      >
+                        <option value="tsp">tsp</option>
+                        <option value="tbsp">tbsp</option>
+                        <option value="cup">cup</option>
+                        <option value="floz">fl oz</option>
+                        <option value="pint">pint</option>
+                        <option value="oz">oz</option>
+                        <option value="lb">lb</option>
+                      </select>
+                      <span className="text-xs font-medium text-gray-600">=</span>
+                      <input
+                        type="number"
+                        value={conversion.value}
+                        onChange={(e) => updateCustomConversion(index, 'value', parseFloat(e.target.value) || 0)}
+                        step="0.01"
+                        min="0"
+                        className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
+                        placeholder="5"
+                      />
+                      <select
+                        value={conversion.targetUnit}
+                        onChange={(e) => updateCustomConversion(index, 'targetUnit', e.target.value)}
+                        className="px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs bg-white"
+                      >
+                        <option value="ml">ml</option>
+                        <option value="l">l</option>
+                        <option value="g">g</option>
+                        <option value="kg">kg</option>
+                        <option value="oz">oz</option>
+                        <option value="lb">lb</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomConversion(index)}
+                        className="ml-auto p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Remove"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            <button
-              type="button"
-              onClick={addCustomConversion}
-              className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100 rounded transition-colors border border-dashed border-emerald-300 w-full justify-center"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Add Rule
-            </button>
+              <button
+                type="button"
+                onClick={addCustomConversion}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100 rounded transition-colors border border-dashed border-emerald-300 w-full justify-center"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Rule
+              </button>
+            </div>
+
+            <div className="p-3 border border-gray-200 rounded-lg bg-gray-50/50">
+              <label htmlFor="supplierId" className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                Supplier <span className="text-gray-400 text-xs font-normal normal-case">(Optional)</span>
+              </label>
+              <SupplierSelector
+                suppliers={suppliers}
+                value={selectedSupplierId}
+                onChange={setSelectedSupplierId}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Second Row: Supplier and Notes */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Supplier Section */}
-          <div className="p-3 border border-gray-200 rounded-lg bg-gray-50/50">
-            <label htmlFor="supplierId" className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-              Supplier <span className="text-gray-400 text-xs font-normal normal-case">(Optional)</span>
-            </label>
-            <SupplierSelector
-              suppliers={suppliers}
-              value={selectedSupplierId}
-              onChange={setSelectedSupplierId}
-            />
-          </div>
-
+        {/* Notes & Additional Details Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Notes Section */}
           <div className="p-3 border border-gray-200 rounded-lg bg-gray-50/50">
             <label htmlFor="notes" className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
@@ -679,82 +699,85 @@ export function IngredientForm({
               placeholder="Any additional notes about this ingredient..."
             ></textarea>
           </div>
-        </div>
 
-        {/* Third Row: Additional Details - Collapsible */}
-        <div className="border border-gray-200 rounded-lg bg-gray-50/50 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-100/50 transition-colors"
-          >
-            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Additional Details</h3>
-            <svg
-              className={`w-5 h-5 text-gray-500 transition-transform ${showAdditionalDetails ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* Additional Details - Collapsible */}
+          <div className="border border-gray-200 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-white transition-colors"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          {showAdditionalDetails && (
-            <div className="px-4 pb-4 space-y-4 border-t border-gray-200 pt-4">
-              {/* Yield Quantity & Unit */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label htmlFor="yieldQuantity" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Yield Quantity <span className="text-gray-400 text-xs">(Optional)</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400/80"></div>
+                <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">Additional Details</h3>
+              </div>
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform ${showAdditionalDetails ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showAdditionalDetails && (
+              <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
+                {/* Yield Quantity & Unit */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="yieldQuantity" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Yield Quantity <span className="text-gray-400 text-xs">(Optional)</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="yieldQuantity"
+                      name="yieldQuantity"
+                      step="0.01"
+                      min="0"
+                      defaultValue={initialData?.yieldQuantity || ""}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                      placeholder="1"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="yieldUnit" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Yield Unit <span className="text-gray-400 text-xs">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="yieldUnit"
+                      name="yieldUnit"
+                      defaultValue={initialData?.yieldUnit || ""}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
+                      placeholder="kg, liter, each"
+                    />
+                  </div>
+                </div>
+
+                {/* Density */}
+                <div className="space-y-1">
+                  <label htmlFor="densityGPerMl" className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    Density (g/ml) <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+                    <UnitConversionHelp />
                   </label>
                   <input
                     type="number"
-                    id="yieldQuantity"
-                    name="yieldQuantity"
-                    step="0.01"
+                    id="densityGPerMl"
+                    name="densityGPerMl"
+                    step="0.001"
                     min="0"
-                    defaultValue={initialData?.yieldQuantity || ""}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                    placeholder="1"
+                    defaultValue={initialData?.densityGPerMl || ""}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus-border-emerald-500 transition-colors bg-white"
+                    placeholder="1.0 (for water)"
                   />
-                </div>
-                <div>
-                  <label htmlFor="yieldUnit" className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Yield Unit <span className="text-gray-400 text-xs">(Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="yieldUnit"
-                    name="yieldUnit"
-                    defaultValue={initialData?.yieldUnit || ""}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                    placeholder="kg, liter, each"
-                  />
+                  <p className="text-xs text-gray-500">
+                    Used for converting between weight and volume (e.g., ml to grams).
+                  </p>
                 </div>
               </div>
-
-              {/* Density */}
-              <div>
-                <label htmlFor="densityGPerMl" className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
-                  Density (g/ml) <span className="text-gray-400 text-xs font-normal">(Optional)</span>
-                  <UnitConversionHelp />
-                </label>
-                <input
-                  type="number"
-                  id="densityGPerMl"
-                  name="densityGPerMl"
-                  step="0.001"
-                  min="0"
-                  defaultValue={initialData?.densityGPerMl || ""}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors bg-white"
-                  placeholder="1.0 (for water)"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Used for converting between weight and volume (e.g., ml to grams).
-                </p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Specific Nut Types - Full Width if shown */}

@@ -276,7 +276,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
               <thead className="bg-gray-50">
                 <tr>
                   {isSelecting && (
-                    <th className="px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 lg:px-3 xl:px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <input
                         type="checkbox"
                         checked={selectedIds.size === ingredients.length && ingredients.length > 0}
@@ -293,7 +293,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                       <th
                         key={col.key}
                         style={{ width }}
-                        className={`px-2 lg:px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${showDivider ? "border-l border-gray-200/80" : ""} relative`}
+                        className={`px-2 lg:px-3 xl:px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${showDivider ? "border-l border-gray-200/80" : ""} relative`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span>{col.label}</span>
@@ -331,7 +331,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                   return (
                     <tr key={ing.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(ing.id) ? 'bg-emerald-50' : ''}`}>
                       {isSelecting && (
-                        <td className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap">
+                        <td className="px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap">
                           <input
                             type="checkbox"
                             checked={selectedIds.has(ing.id)}
@@ -346,7 +346,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                         const showDivider = col.key === "lastUpdated" || col.key === "actions";
                         if (col.key === "name") {
                           return (
-                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap">
+                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap">
                               <button 
                                 onClick={() => onEdit?.(ing)}
                                 className="text-sm font-medium text-gray-900 hover:text-emerald-600 text-left mobile-touch-target"
@@ -358,14 +358,14 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                         }
                         if (col.key === "supplier") {
                           return (
-                            <td key={col.key} style={{ width }} className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                            <td key={col.key} style={{ width }} className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap text-sm text-gray-600">
                               {ing.supplierRef?.name || ing.supplier || '-'}
                             </td>
                           );
                         }
                         if (col.key === "allergens") {
                           return (
-                            <td key={col.key} style={{ width }} className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-3 text-sm">
+                            <td key={col.key} style={{ width }} className="hidden xl:table-cell px-2 lg:px-3 xl:px-4 py-2.5 text-sm">
                               {ing.allergens && ing.allergens.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                   {ing.allergens.slice(0, 3).map((allergen, idx) => (
@@ -390,14 +390,14 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                         }
                         if (col.key === "packCount") {
                           return (
-                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap text-sm text-gray-900">
                               {ing.packCount ? ing.packCount : '-'}
                             </td>
                           );
                         }
                         if (col.key === "packSize") {
                           return (
-                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap text-sm text-gray-900">
                               {formatQuantity(displayQuantity, displayUnit)}
                             </td>
                           );
@@ -405,7 +405,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                         if (col.key === "purchaseSize") {
                           const hasPurchase = ing.purchaseQuantity && ing.purchaseUnit;
                           return (
-                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap text-sm text-gray-900">
                               {hasPurchase
                                 ? formatQuantity(Number(ing.purchaseQuantity), ing.purchaseUnit as string)
                                 : '-'}
@@ -414,21 +414,21 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                         }
                         if (col.key === "perUnitCost") {
                           return (
-                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap text-sm text-gray-900">
                               {perUnitCost !== null ? formatPerUnitCost(perUnitCost, ing.currency) : '-'}
                             </td>
                           );
                         }
                         if (col.key === "price") {
                           return (
-                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-sm font-semibold text-emerald-600">
+                            <td key={col.key} style={{ width }} className="px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap text-sm font-semibold text-emerald-600">
                               {formatCurrency(Number(ing.packPrice), ing.currency)}
                             </td>
                           );
                         }
                         if (col.key === "lastUpdated") {
                           return (
-                            <td key={col.key} style={{ width }} className={`hidden lg:table-cell px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap ${showDivider ? "border-l border-gray-200/80" : ""}`}>
+                            <td key={col.key} style={{ width }} className={`hidden lg:table-cell px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap ${showDivider ? "border-l border-gray-200/80" : ""}`}>
                               <span className={`text-xs px-2 py-1 rounded-full ${colorClass.replace('border', 'border-0')}`}>
                                 {formatLastUpdate(ing.lastPriceUpdate || new Date())}
                               </span>
@@ -437,7 +437,7 @@ export function IngredientsView({ ingredients, deleteIngredient, onEdit, onNew, 
                         }
                         if (col.key === "actions") {
                           return (
-                            <td key={col.key} style={{ width }} className={`px-2 lg:px-3 xl:px-4 py-3 whitespace-nowrap text-right text-sm font-medium ${showDivider ? "border-l border-gray-200/80" : ""}`}>
+                            <td key={col.key} style={{ width }} className={`px-2 lg:px-3 xl:px-4 py-2.5 whitespace-nowrap text-right text-sm font-medium ${showDivider ? "border-l border-gray-200/80" : ""}`}>
                               <button
                                 onClick={() => onEdit?.(ing)}
                                 className="inline-flex items-center gap-1 rounded-xl border border-emerald-100 bg-white/70 backdrop-blur-sm text-emerald-700 hover:text-emerald-800 hover:bg-white shadow-sm px-3 py-1.5 mr-2 lg:mr-3 transition-colors duration-150 mobile-touch-target"

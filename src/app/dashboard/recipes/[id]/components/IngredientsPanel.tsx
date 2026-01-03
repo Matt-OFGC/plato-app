@@ -66,29 +66,25 @@ export default function IngredientsPanel({
     return ingredients;
   }, [viewMode, ingredients, steps, activeStepIndex]);
 
-  // Group ingredients by section for whole view
+  // Group ingredients by section (step) for whole view
   const ingredientsBySection = React.useMemo(() => {
     if (viewMode !== "whole") return null;
-    
+
     const grouped: Record<string, Ingredient[]> = {};
-    
+
     ingredients.forEach((ing) => {
-      const step = steps.find(s => s.id === ing.stepId);
+      const step = steps.find((s) => s.id === ing.stepId);
       const stepTitle = step?.title || "Unknown";
-      
-      if (!grouped[stepTitle]) {
-        grouped[stepTitle] = [];
-      }
+      if (!grouped[stepTitle]) grouped[stepTitle] = [];
       grouped[stepTitle].push(ing);
     });
-    
-    // Return as array of { sectionTitle, ingredients } sorted by step order
+
     return steps
-      .map(step => ({
+      .map((step) => ({
         sectionTitle: step.title,
-        ingredients: grouped[step.title] || []
+        ingredients: grouped[step.title] || [],
       }))
-      .filter(group => group.ingredients.length > 0);
+      .filter((group) => group.ingredients.length > 0);
   }, [viewMode, ingredients, steps]);
 
   const [draggedId, setDraggedId] = React.useState<string | null>(null);
@@ -291,13 +287,63 @@ export default function IngredientsPanel({
     onIngredientsChange(newIngredients);
   };
 
-  // Helper function to render a single ingredient item
-  const renderIngredientItem = (ingredient: Ingredient) => {
-    const scaledQuantity = scaleQuantity(
-      ingredient.quantity,
-      baseServings,
-      servings
+  // Helper to compute formatted quantity
+  const formatQtyDisplay = (qty: number, unit?: string) => formatQty(qty, unit as Unit);
+
+  const computeIngredientCost = (ingredient: Ingredient, scaledQuantity: number) => {
+    const fullIngredient = availableIngredients.find(ai => 
+      ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
     );
+    if (!fullIngredient) return { label: "No price data", isError: false, value: 0, missing: true };
+
+    if (!ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
+      return { label: "£0.00", isError: false, value: 0, missing: false };
+    }
+
+    try {
+      const recipeBase = toBase(scaledQuantity, ingredient.unit as Unit);
+      const packBase = toBase(fullIngredient.packQuantity, fullIngredient.packUnit as Unit);
+      const density = fullIngredient.density;
+
+      let ingredientCost: number;
+
+      if (density && recipeBase.base === 'ml' && packBase.base === 'g') {
+        const packVolume = packBase.amount / density;
+        const costPerMl = fullIngredient.packPrice / packVolume;
+        ingredientCost = recipeBase.amount * costPerMl;
+      } else if (density && recipeBase.base === 'g' && packBase.base === 'ml') {
+        const packWeight = packBase.amount * density;
+        const costPerGram = fullIngredient.packPrice / packWeight;
+        ingredientCost = recipeBase.amount * costPerGram;
+      } else {
+        ingredientCost = computeIngredientUsageCostWithDensity(
+          scaledQuantity,
+          ingredient.unit as Unit,
+          fullIngredient.packPrice,
+          fullIngredient.packQuantity,
+          fullIngredient.packUnit as Unit,
+          density || undefined,
+          fullIngredient.batchPricing || null
+        );
+      }
+
+      const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
+      return { label: `£${displayCost.toFixed(2)}`, isError: false, value: displayCost, missing: false };
+    } catch (error) {
+      console.error('Error calculating ingredient cost:', error, {
+        ingredient: ingredient.name,
+        scaledQuantity,
+        unit: ingredient.unit,
+        packPrice: fullIngredient.packPrice,
+        packQuantity: fullIngredient.packQuantity,
+        packUnit: fullIngredient.packUnit,
+      });
+      return { label: "Error", isError: true, value: 0, missing: false };
+    }
+  };
+
+  // Helper function to render a single ingredient item
+  const renderIngredientItem = (ingredient: Ingredient, scaledQuantity: number, layers?: { title: string; quantity: number }[]) => {
     const isChecked = checklist.checked[ingredient.id] || false;
     const hasDropdownOpen = searchResults[ingredient.id] || ingredientSearch[ingredient.id]?.length === 0;
 
@@ -646,129 +692,41 @@ export default function IngredientsPanel({
                 </div>
                 
                 {/* Ingredient Name - Flexible */}
-                <div
-                  className={`text-sm font-medium flex-1 min-w-0 ${
-                    isChecked
-                      ? "text-gray-400 line-through"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
+                <div className="flex-1 min-w-0">
+                  <div
+                    className={`text-sm font-medium ${
+                      isChecked
+                        ? "text-gray-400 line-through"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {ingredient.name || <span className="text-gray-400 italic">Unnamed ingredient</span>}
+                  </div>
+                  {layers && layers.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {layers.map((layer) => (
+                        <div
+                          key={layer.title}
+                          className="flex items-center justify-between text-xs text-gray-700 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1"
+                        >
+                          <span className="font-semibold">{layer.title}</span>
+                          <span className="font-medium">{formatQtyDisplay(layer.quantity, ingredient.unit)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Cost - Right side - Always show */}
                 {(() => {
-                  const fullIngredient = availableIngredients.find(ai => 
-                    ai.name.toLowerCase().trim() === ingredient.name?.toLowerCase().trim()
+                  const cost = computeIngredientCost(ingredient, scaledQuantity);
+                  return (
+                    <div className={`text-sm font-bold flex-shrink-0 ${
+                      isChecked ? "text-gray-400 line-through" : cost.isError ? "text-red-600" : cost.missing ? "text-amber-600" : "text-gray-900"
+                    }`}>
+                      {cost.label}
+                    </div>
                   );
-                  
-                  // If ingredient not found, show message
-                  if (!fullIngredient) {
-                    return (
-                      <div className={`text-xs flex-shrink-0 ${
-                        isChecked ? "text-gray-400 line-through" : "text-amber-600"
-                      }`}>
-                        No price data
-                      </div>
-                    );
-                  }
-                  
-                  // If no quantity, show £0.00
-                  if (!ingredient.quantity || !scaledQuantity || scaledQuantity <= 0) {
-                    return (
-                      <div className={`text-sm font-semibold flex-shrink-0 ${
-                        isChecked ? "text-gray-400 line-through" : "text-gray-400"
-                      }`}>
-                        £0.00
-                      </div>
-                    );
-                  }
-                  
-                  // If missing pack price data, show message
-                  if (!fullIngredient.packPrice || !fullIngredient.packQuantity || fullIngredient.packQuantity <= 0) {
-                    return (
-                      <div className={`text-xs flex-shrink-0 ${
-                        isChecked ? "text-gray-400 line-through" : "text-amber-600"
-                      }`}>
-                        No pack price
-                      </div>
-                    );
-                  }
-                  
-                  try {
-                    // DIRECT CALCULATION using toBase
-                    // Don't pass density to toBase - it should only be used for cross-conversion
-                    const recipeBase = toBase(scaledQuantity, ingredient.unit as Unit);
-                    
-                    // packQuantity is already in base units, packUnit is the base unit
-                    // So we don't need to convert - just use packQuantity directly as the base amount
-                    const packBase = {
-                      amount: fullIngredient.packQuantity,
-                      base: fullIngredient.packUnit as BaseUnit
-                    };
-                    
-                    let ingredientCost = 0;
-                    
-                    // Get density (user-set or auto-lookup)
-                    const density = getIngredientDensityOrDefault(
-                      fullIngredient.name,
-                      fullIngredient.densityGPerMl
-                    );
-                    
-                    // If base units match, calculate directly
-                    if (recipeBase.base === packBase.base && recipeBase.amount > 0 && packBase.amount > 0 && isFinite(recipeBase.amount) && isFinite(packBase.amount)) {
-                      const costPerBaseUnit = fullIngredient.packPrice / packBase.amount;
-                      ingredientCost = recipeBase.amount * costPerBaseUnit;
-                    } else if (density && recipeBase.base === 'ml' && packBase.base === 'g') {
-                      // Recipe is volume (ml), pack is weight (g) - convert via density
-                      const packVolume = packBase.amount / density;
-                      const costPerMl = fullIngredient.packPrice / packVolume;
-                      ingredientCost = recipeBase.amount * costPerMl;
-                    } else if (density && recipeBase.base === 'g' && packBase.base === 'ml') {
-                      // Recipe is weight (g), pack is volume (ml) - convert via density
-                      const packWeight = packBase.amount * density;
-                      const costPerGram = fullIngredient.packPrice / packWeight;
-                      ingredientCost = recipeBase.amount * costPerGram;
-                    } else {
-                      // Fallback to original function if units don't match and no density conversion possible
-                      ingredientCost = computeIngredientUsageCostWithDensity(
-                        scaledQuantity,
-                        ingredient.unit as Unit,
-                        fullIngredient.packPrice,
-                        fullIngredient.packQuantity,
-                        fullIngredient.packUnit as Unit,
-                        density || undefined,
-                        fullIngredient.batchPricing || null
-                      );
-                    }
-                    
-                    // Always show the cost, even if 0
-                    const displayCost = isNaN(ingredientCost) || ingredientCost < 0 ? 0 : ingredientCost;
-                    
-                    return (
-                      <div className={`text-sm font-bold flex-shrink-0 ${
-                        isChecked ? "text-gray-400" : "text-gray-900"
-                      }`}>
-                        £{displayCost.toFixed(2)}
-                      </div>
-                    );
-                  } catch (error) {
-                    console.error('Error calculating ingredient cost:', error, {
-                      ingredient: ingredient.name,
-                      scaledQuantity,
-                      unit: ingredient.unit,
-                      packPrice: fullIngredient.packPrice,
-                      packQuantity: fullIngredient.packQuantity,
-                      packUnit: fullIngredient.packUnit,
-                    });
-                    return (
-                      <div className={`text-xs flex-shrink-0 ${
-                        isChecked ? "text-gray-400 line-through" : "text-red-600"
-                      }`}>
-                        Error
-                      </div>
-                    );
-                  }
                 })()}
               </div>
             </div>
@@ -804,19 +762,24 @@ export default function IngredientsPanel({
       {/* Ingredients List */}
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-3 md:py-4">
         {viewMode === "whole" && ingredientsBySection ? (
-          // Whole view: Group by sections
           ingredientsBySection.length === 0 ? (
             <div className="p-6 md:p-8 text-center text-gray-400">
               <p className="text-sm md:text-base">No ingredients in this recipe</p>
             </div>
           ) : (
             <div className="space-y-3 md:space-y-4">
-              {ingredientsBySection.map((sectionGroup, sectionIndex) => (
-                <div key={sectionIndex} className="space-y-2">
-                  {/* Section Ingredients (header removed to avoid duplicate label) */}
-                  {sectionGroup.ingredients.map((ingredient) => {
-                    return renderIngredientItem(ingredient);
-                  })}
+              {ingredientsBySection.map((section) => (
+                <div key={section.sectionTitle} className="bg-white/80 border border-gray-200/70 rounded-xl shadow-sm p-3 md:p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{section.sectionTitle}</span>
+                    <div className="h-px flex-1 ml-3 bg-gray-200/70" />
+                  </div>
+                  <div className="space-y-1.5 md:space-y-2">
+                    {section.ingredients.map((ingredient) => {
+                      const scaledQty = scaleQuantity(ingredient.quantity, baseServings, servings);
+                      return renderIngredientItem(ingredient, scaledQty);
+                    })}
+                  </div>
                 </div>
               ))}
             </div>
@@ -834,7 +797,8 @@ export default function IngredientsPanel({
         ) : (
           <div className="space-y-1.5 md:space-y-2">
             {displayedIngredients.map((ingredient) => {
-              return renderIngredientItem(ingredient);
+              const scaledQty = scaleQuantity(ingredient.quantity, baseServings, servings);
+              return renderIngredientItem(ingredient, scaledQty);
             })}
           </div>
         )}

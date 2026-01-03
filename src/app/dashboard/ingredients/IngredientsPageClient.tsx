@@ -123,12 +123,12 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
   };
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto px-4 lg:px-6">
       {/* Page Header */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-4 flex items-start justify-between">
         <div>
-          <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-2">Ingredients</h1>
-          <p className="text-gray-500 text-lg mb-6">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight mb-1">Ingredients</h1>
+          <p className="text-gray-500 text-base mb-4">Manage your ingredient inventory and pricing data with automatic unit conversion</p>
         </div>
         <button
           onClick={() => setIsBulkImportOpen(true)}
@@ -142,7 +142,7 @@ export function IngredientsPageClient({ ingredients, deleteIngredient, companyId
       </div>
 
       {/* Stale Price Alerts */}
-      <div className="mb-6">
+      <div className="mb-4">
         <StalePriceAlerts ingredients={ingredientsList.map(ing => ({
           id: ing.id,
           name: ing.name,
