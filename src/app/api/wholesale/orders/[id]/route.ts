@@ -33,6 +33,7 @@ export async function GET(
                 name: true,
                 yieldQuantity: true,
                 yieldUnit: true,
+                shelfLifeDays: true,
               },
             },
           },
@@ -185,6 +186,7 @@ export async function PATCH(
                 name: true,
                 yieldQuantity: true,
                 yieldUnit: true,
+                shelfLifeDays: true,
               },
             },
           },
@@ -223,12 +225,55 @@ export async function PATCH(
       }
     }
 
-    // If order was just marked as delivered, deduct from inventory
+    // If order was just marked as delivered, deduct from inventory and create customer-facing inventory (idempotent)
     if (status === "delivered" && existingOrder && existingOrder.status !== "delivered") {
       try {
-        // Deduct each item from inventory
+        const now = new Date();
+
+        const existingCustomerInventory = await prisma.customerInventory.count({
+          where: { orderId: order.id },
+        });
+
+        if (existingCustomerInventory === 0) {
+          await prisma.$transaction(
+            order.items.map((item, idx) => {
+              const shelfLifeDays = item.recipe?.shelfLifeDays ?? 5;
+              const expiryDate = new Date(now);
+              expiryDate.setDate(expiryDate.getDate() + shelfLifeDays);
+              const namePrefix = (item.recipe?.name || "XX")
+                .slice(0, 2)
+                .toUpperCase();
+              const batchId = `${namePrefix}-${now
+                .toISOString()
+                .slice(0, 10)
+                .replace(/-/g, "")}-${(idx + 1)
+                .toString()
+                .padStart(3, "0")}`;
+
+              return prisma.customerInventory.create({
+                data: {
+                  customerId: order.customerId,
+                  orderId: order.id,
+                  recipeId: item.recipeId,
+                  productionItemId: null,
+                  batchId,
+                  deliveryDate: now,
+                  expiryDate,
+                  originalQuantity: item.quantity,
+                  currentStock: item.quantity,
+                  status: "ACTIVE",
+                },
+              });
+            })
+          );
+        }
+
+        // Deduct each item from company inventory
         for (const item of order.items) {
-          const totalQuantity = item.quantity * parseFloat(item.recipe.yieldQuantity);
+          const yieldQuantity = Number(item.recipe?.yieldQuantity ?? 1);
+          const safeYieldQuantity =
+            Number.isFinite(yieldQuantity) && yieldQuantity > 0 ? yieldQuantity : 1;
+          const totalQuantity = item.quantity * safeYieldQuantity;
           
           await prisma.inventory.upsert({
             where: {

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
 function LoginForm() {
   const sp = useSearchParams();
-  const router = useRouter();
   const redirectTo = sp.get("redirect");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,24 +28,45 @@ function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
+        let deviceCompany: { companyId: number; companyName: string } | null = null;
+
         // Check if device mode should be offered
         if (data.canEnableDeviceMode && data.company) {
-          const enableDevice = confirm(
-            `Enable PIN login for this device?\n\n` +
-            `This will allow your team members to access ${data.company.name} using their PINs on this device.\n\n` +
-            `Click OK to enable, or Cancel to continue normally.`
-          );
+          try {
+            const deviceRes = await fetch("/api/device-login");
+            if (deviceRes.ok) {
+              const deviceData = await deviceRes.json();
+              deviceCompany = deviceData.deviceCompany || null;
+            }
+          } catch (err) {
+            console.warn("Device session check failed", err);
+          }
 
-          if (enableDevice) {
-            // Set up device mode
-            await fetch("/api/device-login", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
-                companyId: data.company.id,
-                companyName: data.company.name,
-              }),
-            });
+          const alreadyConfigured = deviceCompany?.companyId === data.company.id;
+          const switchingCompany = deviceCompany && deviceCompany.companyId !== data.company.id;
+
+          if (!alreadyConfigured) {
+            const enableDevice = confirm(
+              switchingCompany
+                ? `This device is currently configured for ${deviceCompany.companyName}.\n\n` +
+                  `Switch to ${data.company.name} to allow PIN logins for this company on this device?\n\n` +
+                  `Click OK to switch, or Cancel to keep the current setup.`
+                : `Enable PIN login for this device?\n\n` +
+                  `This will allow your team members to access ${data.company.name} using their PINs on this device.\n\n` +
+                  `Click OK to enable, or Cancel to continue normally.`
+            );
+
+            if (enableDevice) {
+              // Set up device mode
+              await fetch("/api/device-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                  companyId: data.company.id,
+                  companyName: data.company.name,
+                }),
+              });
+            }
           }
         }
 

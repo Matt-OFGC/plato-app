@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { InventoryTab } from "@/components/portal/InventoryTab";
+import { StockCheckTab } from "@/components/portal/StockCheckTab";
+import { AnalyticsTab } from "@/components/portal/AnalyticsTab";
 
 interface Product {
   id: number;
@@ -78,7 +81,9 @@ export default function CustomerPortalPage() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState("weekly");
   const [earliestDate, setEarliestDate] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"order" | "invoices" | "outstanding" | "history" | "company">("order");
+  const [activeTab, setActiveTab] = useState<
+    "order" | "inventory" | "stock-check" | "analytics" | "invoices" | "outstanding" | "history" | "company"
+  >("order");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
     contactName: "",
@@ -376,7 +381,7 @@ export default function CustomerPortalPage() {
             </div>
             <div className="flex justify-center">
               <div className="flex items-center gap-1.5 md:gap-2 bg-white/90 backdrop-blur-xl shadow-lg border border-gray-200/50 rounded-full px-2 md:px-3 py-2 overflow-x-auto max-md:scrollbar-hide">
-                {(["order","invoices","outstanding","history","company"] as const).map(tab => (
+                {(["order","inventory","stock-check","analytics","invoices","outstanding","history","company"] as const).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -385,6 +390,9 @@ export default function CustomerPortalPage() {
                     }`}
                   >
                     {tab === "order" ? "Order" :
+                     tab === "inventory" ? "Inventory" :
+                     tab === "stock-check" ? "Stock Check" :
+                     tab === "analytics" ? "Analytics" :
                      tab === "invoices" ? "Invoices" :
                      tab === "outstanding" ? "Outstanding" :
                      tab === "history" ? "Previous Orders" :
@@ -662,6 +670,24 @@ export default function CustomerPortalPage() {
               </div>
             </div>
           </div>
+          )}
+
+          {activeTab === "inventory" && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 lg:col-span-3">
+              <InventoryTab token={token} />
+            </div>
+          )}
+
+          {activeTab === "stock-check" && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 lg:col-span-3">
+              <StockCheckTab token={token} />
+            </div>
+          )}
+
+          {activeTab === "analytics" && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 lg:col-span-3">
+              <AnalyticsTab token={token} />
+            </div>
           )}
 
           {activeTab === "invoices" && (

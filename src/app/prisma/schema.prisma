@@ -891,6 +891,8 @@ model ProductionItem {
   ProductionPlan           ProductionPlan             @relation(fields: [planId], references: [id], onDelete: Cascade)
   Recipe                   Recipe                     @relation(fields: [recipeId], references: [id])
   ProductionItemAllocation ProductionItemAllocation[]
+  CustomerInventory        CustomerInventory[]
+  SalesSummary             SalesSummary[]
 
   @@index([customerId])
   @@index([planId])
@@ -972,6 +974,7 @@ model Recipe {
   wholesalePrice                                         Decimal?
   shelfLife                                              String?
   shelfLifeId                                            Int?
+  shelfLifeDays                                          Int?
   storage                                                String?
   storageId                                              Int?
   suggestedPrice                                         Decimal?
@@ -996,6 +999,8 @@ model Recipe {
   ShopifyProductMapping                                  ShopifyProductMapping[]
   WholesaleOrderItem                                     WholesaleOrderItem[]
   WholesaleProduct                                       WholesaleProduct[]
+  CustomerInventory                                      CustomerInventory[]
+  SalesSummary                                           SalesSummary[]
 
   @@unique([name, companyId])
   @@index([category])
@@ -1003,6 +1008,106 @@ model Recipe {
   @@index([companyId])
   @@index([companyId, name])
   @@index([companyId, updatedAt])
+}
+
+enum InventoryStatus {
+  ACTIVE
+  SOLD_OUT
+  EXPIRED
+}
+
+enum SummaryPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model CustomerInventory {
+  id               Int               @id @default(autoincrement())
+  customerId       Int
+  productionItemId Int?
+  recipeId         Int?
+  orderId          Int
+  batchId          String
+  deliveryDate     DateTime
+  expiryDate       DateTime
+  originalQuantity Int
+  currentStock     Int
+  status           InventoryStatus   @default(ACTIVE)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  customer         WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productionItem   ProductionItem?   @relation(fields: [productionItemId], references: [id])
+  recipe           Recipe?           @relation(fields: [recipeId], references: [id])
+  order            WholesaleOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stockChecks      StockCheck[]
+
+  @@index([customerId, status])
+  @@index([expiryDate])
+}
+
+model StockCheck {
+  id           Int               @id @default(autoincrement())
+  customerId   Int
+  inventoryId  Int
+  checkDate    DateTime
+  openingStock Int
+  sales        Int               @default(0)
+  wastage      Int               @default(0)
+  closingStock Int
+  notes        String?
+  createdAt    DateTime          @default(now())
+  customer     WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  inventory    CustomerInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@unique([inventoryId, checkDate])
+  @@index([customerId, checkDate])
+}
+
+model SalesSummary {
+  id               Int           @id @default(autoincrement())
+  customerId       Int
+  productionItemId Int?
+  recipeId         Int?
+  periodStart      DateTime
+  periodEnd        DateTime
+  periodType       SummaryPeriod
+  totalDelivered   Int
+  totalSold        Int
+  totalWasted      Int
+  sellThroughRate  Decimal
+  createdAt        DateTime      @default(now())
+  customer         WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productionItem   ProductionItem?   @relation(fields: [productionItemId], references: [id])
+  recipe           Recipe?           @relation(fields: [recipeId], references: [id])
+
+  @@unique([customerId, recipeId, periodStart, periodType])
+  @@index([customerId, periodStart])
+}
+
+model CustomInventoryItem {
+  id            Int               @id @default(autoincrement())
+  customerId    Int
+  itemName      String
+  currentStock  Int               @default(0)
+  shelfLifeDays Int?
+  createdAt     DateTime          @default(now())
+  customer      WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customChecks  CustomItemCheck[]
+}
+
+model CustomItemCheck {
+  id           Int               @id @default(autoincrement())
+  customItemId Int
+  checkDate    DateTime
+  openingStock Int
+  sales        Int               @default(0)
+  wastage      Int               @default(0)
+  closingStock Int
+  createdAt    DateTime          @default(now())
+  customItem   CustomInventoryItem @relation(fields: [customItemId], references: [id], onDelete: Cascade)
+
+  @@unique([customItemId, checkDate])
 }
 
 model RecipeCollection {
@@ -1829,6 +1934,10 @@ model WholesaleCustomer {
   CustomerPricing          CustomerPricing[]
   ProductionItem           ProductionItem[]
   ProductionItemAllocation ProductionItemAllocation[]
+  CustomerInventory        CustomerInventory[]
+  StockCheck               StockCheck[]
+  SalesSummary             SalesSummary[]
+  CustomInventoryItem      CustomInventoryItem[]
   Company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   WholesaleOrder           WholesaleOrder[]
   WholesaleInvoice         WholesaleInvoice[]
@@ -1864,6 +1973,7 @@ model WholesaleOrder {
   WholesaleOrderItem    WholesaleOrderItem[]
   WholesaleInvoice      WholesaleInvoice[]
   WholesaleDeliveryNote WholesaleDeliveryNote[]
+  CustomerInventory     CustomerInventory[]
 
   @@index([companyId])
   @@index([customerId])

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createOptimizedResponse, serializeResponse } from "@/lib/api-optimization";
+import { serializeResponse } from "@/lib/api-optimization";
 
 // Get customer info and available products by portal token
 export async function GET(
@@ -250,4 +250,3 @@ export async function PATCH(
     );
   }
 }
-

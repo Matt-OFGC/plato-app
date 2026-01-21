@@ -798,9 +798,74 @@ exports.Prisma.RecipeScalarFieldEnum = {
   wholesalePrice: 'wholesalePrice',
   shelfLife: 'shelfLife',
   shelfLifeId: 'shelfLifeId',
+  shelfLifeDays: 'shelfLifeDays',
   storage: 'storage',
   storageId: 'storageId',
   suggestedPrice: 'suggestedPrice'
+};
+
+exports.Prisma.CustomerInventoryScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  productionItemId: 'productionItemId',
+  recipeId: 'recipeId',
+  orderId: 'orderId',
+  batchId: 'batchId',
+  deliveryDate: 'deliveryDate',
+  expiryDate: 'expiryDate',
+  originalQuantity: 'originalQuantity',
+  currentStock: 'currentStock',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StockCheckScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  inventoryId: 'inventoryId',
+  checkDate: 'checkDate',
+  openingStock: 'openingStock',
+  sales: 'sales',
+  wastage: 'wastage',
+  closingStock: 'closingStock',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SalesSummaryScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  productionItemId: 'productionItemId',
+  recipeId: 'recipeId',
+  periodStart: 'periodStart',
+  periodEnd: 'periodEnd',
+  periodType: 'periodType',
+  totalDelivered: 'totalDelivered',
+  totalSold: 'totalSold',
+  totalWasted: 'totalWasted',
+  sellThroughRate: 'sellThroughRate',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.CustomInventoryItemScalarFieldEnum = {
+  id: 'id',
+  customerId: 'customerId',
+  itemName: 'itemName',
+  currentStock: 'currentStock',
+  shelfLifeDays: 'shelfLifeDays',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.CustomItemCheckScalarFieldEnum = {
+  id: 'id',
+  customItemId: 'customItemId',
+  checkDate: 'checkDate',
+  openingStock: 'openingStock',
+  sales: 'sales',
+  wastage: 'wastage',
+  closingStock: 'closingStock',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.RecipeCollectionScalarFieldEnum = {
@@ -1695,6 +1760,18 @@ exports.MemberRole = exports.$Enums.MemberRole = {
   EMPLOYEE: 'EMPLOYEE'
 };
 
+exports.InventoryStatus = exports.$Enums.InventoryStatus = {
+  ACTIVE: 'ACTIVE',
+  SOLD_OUT: 'SOLD_OUT',
+  EXPIRED: 'EXPIRED'
+};
+
+exports.SummaryPeriod = exports.$Enums.SummaryPeriod = {
+  DAILY: 'DAILY',
+  WEEKLY: 'WEEKLY',
+  MONTHLY: 'MONTHLY'
+};
+
 exports.App = exports.$Enums.App = {
   plato: 'plato',
   plato_bake: 'plato_bake'
@@ -1739,6 +1816,11 @@ exports.Prisma.ModelName = {
   ProductionPlan: 'ProductionPlan',
   ProductionTask: 'ProductionTask',
   Recipe: 'Recipe',
+  CustomerInventory: 'CustomerInventory',
+  StockCheck: 'StockCheck',
+  SalesSummary: 'SalesSummary',
+  CustomInventoryItem: 'CustomInventoryItem',
+  CustomItemCheck: 'CustomItemCheck',
   RecipeCollection: 'RecipeCollection',
   RecipeItem: 'RecipeItem',
   RecipeSection: 'RecipeSection',
